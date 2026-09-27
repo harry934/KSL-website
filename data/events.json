@@ -1,0 +1,26 @@
+{
+  "upcoming": [
+    {
+      "slug": "nairobi-international-trade-fair-2026",
+      "title": "Nairobi International Trade Fair",
+      "theme": "Promoting Innovation and Technology in Agriculture and Trade",
+      "date": "2026-10-03",
+      "timeStart": "08:00",
+      "timeEnd": "17:00",
+      "timezone": "Africa/Nairobi",
+      "venue": "Jamhuri Park, Nairobi",
+      "description": "KSL exhibits maritime engineering, vessel products, and yard capabilities alongside national trade and innovation showcases.",
+      "image": "img/ksl/yard.jpg",
+      "href": "event.html"
+    }
+  ],
+  "past": [
+    {
+      "slug": "kisumu-yard-operations-2025",
+      "title": "Kisumu Shipyard open day for county partners",
+      "date": "2025-05-20",
+      "venue": "Kisumu Shipyard",
+      "summary": "County and agency partners toured GRP production and ferry maintenance facilities."
+    }
+  ]
+}

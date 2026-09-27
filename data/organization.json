@@ -1,0 +1,25 @@
+{
+  "chartDownloadId": "strategic-plan",
+  "leadership": [
+    {
+      "role": "Managing Director",
+      "summary": "Accountable for overall performance, shipyard operations, and delivery of the strategic business plan."
+    },
+    {
+      "role": "Deputy Managing Director",
+      "summary": "Supports executive oversight across production, commercial, and corporate functions."
+    }
+  ],
+  "yards": [
+    {
+      "name": "Mombasa Shipyard",
+      "lead": "Yard Management Division",
+      "summary": "Coastal new build, naval refit, and heavy steel work with dry berth access at Mtongwe."
+    },
+    {
+      "name": "Kisumu Shipyard",
+      "lead": "Yard Management Division",
+      "summary": "Lake Victoria ferries, GRP craft, and inland fleet maintenance along Marine Drive."
+    }
+  ]
+}

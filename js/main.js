@@ -27,7 +27,7 @@
     
     
     // Facts counter
-    if ($('[data-toggle="counter-up"]').length) {
+    if ($('[data-toggle="counter-up"]').length && $.fn.counterUp) {
         $('[data-toggle="counter-up"]').counterUp({
             delay: 10,
             time: 2000
@@ -36,7 +36,7 @@
 
     // Portfolio isotope and filter
     var $portfolioContainer = $('.portfolio-container');
-    if ($portfolioContainer.length) {
+    if ($portfolioContainer.length && $.fn.isotope) {
         var portfolioIsotope = $portfolioContainer.isotope({
             itemSelector: '.portfolio-item',
             layoutMode: 'fitRows'
@@ -77,22 +77,6 @@
             revealObserver.observe(el);
         });
 
-        var heroVideo = document.querySelector(".ksl-hero-video");
-        if (heroVideo) {
-            var heroObserver = new IntersectionObserver(function (entries) {
-                entries.forEach(function (entry) {
-                    if (entry.isIntersecting) {
-                        var playPromise = heroVideo.play();
-                        if (playPromise && typeof playPromise.catch === "function") {
-                            playPromise.catch(function () {});
-                        }
-                    } else {
-                        heroVideo.pause();
-                    }
-                });
-            }, { threshold: 0.25 });
-            heroObserver.observe(heroVideo);
-        }
     } else {
         document.querySelectorAll(".ksl-morph").forEach(function (el) {
             el.classList.add("is-morphed");
@@ -132,22 +116,71 @@
         if (!Number.isFinite(heroVideoStart) || heroVideoStart < 0) {
             heroVideoStart = 0;
         }
+        var heroVideoAttached = false;
+
+        var seekHeroVideoToStart = function () {
+            if (heroVideo.duration > heroVideoStart + 0.5) {
+                heroVideo.currentTime = heroVideoStart;
+            }
+        };
+
+        var keepHeroVideoInRange = function () {
+            if (heroVideo.duration > heroVideoStart + 0.5 && heroVideo.currentTime < heroVideoStart - 0.25) {
+                heroVideo.currentTime = heroVideoStart;
+            }
+        };
+
         if (heroVideoStart > 0) {
-            var seekHeroVideoToStart = function () {
-                if (heroVideo.duration > heroVideoStart + 0.5) {
-                    heroVideo.currentTime = heroVideoStart;
-                }
-            };
-            var keepHeroVideoInRange = function () {
-                if (heroVideo.duration > heroVideoStart + 0.5 && heroVideo.currentTime < heroVideoStart - 0.25) {
-                    heroVideo.currentTime = heroVideoStart;
-                }
-            };
             heroVideo.addEventListener("loadedmetadata", seekHeroVideoToStart);
             heroVideo.addEventListener("timeupdate", keepHeroVideoInRange);
-            if (heroVideo.readyState >= 1) {
+        }
+
+        heroVideo.addEventListener("canplay", function () {
+            heroVideo.classList.add("is-ready");
+        }, { once: true });
+
+        var attachHeroVideo = function () {
+            if (heroVideoAttached) {
+                return;
+            }
+            heroVideoAttached = true;
+            var src = heroVideo.getAttribute("data-src");
+            if (src && !heroVideo.getAttribute("src")) {
+                heroVideo.setAttribute("src", src);
+                heroVideo.load();
+            }
+            if (heroVideo.readyState >= 1 && heroVideoStart > 0) {
                 seekHeroVideoToStart();
             }
+        };
+
+        var playHeroVideo = function () {
+            attachHeroVideo();
+            var playPromise = heroVideo.play();
+            if (playPromise && typeof playPromise.catch === "function") {
+                playPromise.catch(function () {});
+            }
+        };
+
+        var pauseHeroVideo = function () {
+            heroVideo.pause();
+        };
+
+        if (reduceMotion.matches) {
+            heroVideo.removeAttribute("data-src");
+        } else if ("IntersectionObserver" in window) {
+            var heroMediaObserver = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        playHeroVideo();
+                    } else {
+                        pauseHeroVideo();
+                    }
+                });
+            }, { threshold: 0.15 });
+            heroMediaObserver.observe(hero);
+        } else {
+            playHeroVideo();
         }
 
         var heroTicking = false;
@@ -582,6 +615,7 @@
                 img.src = photo.src;
                 img.alt = photo.title || "Kenya Shipyards Limited gallery";
                 img.loading = "lazy";
+                img.decoding = "async";
                 link.appendChild(img);
                 fig.appendChild(link);
                 if (photo.title) {
@@ -592,8 +626,56 @@
                 galleryRoot.appendChild(fig);
             });
             if (!visible) {
-                galleryRoot.innerHTML = '<p class="ksl-gallery-loading mb-0">No photos in this category yet.</p>';
+                galleryRoot.innerHTML = '<p class="ksl-gallery-empty mb-0">No photos in this category yet. Try another filter or view <a href="videos.html#photos">all photos</a>.</p>';
             }
+        };
+
+        var videoMount = document.getElementById("ksl-gallery-videos");
+        var featureMount = document.getElementById("ksl-video-feature");
+        var renderVideos = function (videos) {
+            if (!videos || !videos.length) {
+                return;
+            }
+            var featured = videos.find(function (v) { return v.featured; }) || videos[0];
+            var rest = videos.filter(function (v) { return v !== featured; });
+            function mountPlayer(parent, video) {
+                if (!parent || !video || !video.youtubeId) {
+                    return;
+                }
+                parent.innerHTML = "";
+                var iframe = document.createElement("iframe");
+                iframe.src = "https://www.youtube.com/embed/" + video.youtubeId;
+                iframe.title = video.title || "Kenya Shipyards Limited video";
+                iframe.loading = "lazy";
+                iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+                iframe.allowFullscreen = true;
+                parent.appendChild(iframe);
+            }
+            mountPlayer(featureMount, featured);
+            if (!videoMount) {
+                return;
+            }
+            videoMount.innerHTML = "";
+            rest.forEach(function (video) {
+                var card = document.createElement("article");
+                card.className = "ksl-video-card";
+                var wrap = document.createElement("div");
+                wrap.className = "ratio ratio-16x9";
+                mountPlayer(wrap, video);
+                card.appendChild(wrap);
+                if (video.title) {
+                    var h = document.createElement("h3");
+                    h.textContent = video.title;
+                    card.appendChild(h);
+                }
+                if (video.caption) {
+                    var p = document.createElement("p");
+                    p.className = "ksl-video-caption";
+                    p.textContent = video.caption;
+                    card.appendChild(p);
+                }
+                videoMount.appendChild(card);
+            });
         };
 
         document.querySelectorAll(".ksl-gallery-filters [data-ksl-gallery-filter]").forEach(function (btn) {
@@ -612,6 +694,7 @@
             .then(function (data) {
                 galleryPhotos = data.photos || [];
                 renderGallery();
+                renderVideos(data.videos || []);
             })
             .catch(function () {
                 galleryRoot.innerHTML = '<p class="ksl-gallery-loading mb-0">Could not load gallery. Please try again later.</p>';
@@ -769,7 +852,7 @@
     })();
 
     // Testimonials carousel
-    if ($(".testimonial-carousel").length) {
+    if ($(".testimonial-carousel").length && $.fn.owlCarousel) {
         $(".testimonial-carousel").owlCarousel({
             autoplay: true,
             smartSpeed: 1000,

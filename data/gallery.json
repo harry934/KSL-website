@@ -404,19 +404,23 @@
     {
       "youtubeId": "VhBl3dHT5SY",
       "title": "Kenya Shipyards Limited",
+      "caption": "Overview of yard capabilities and national shipbuilding mandate.",
       "featured": true
     },
     {
       "youtubeId": "Aowd3WX2m0k",
-      "title": "GRP boats — Lake Turkana"
+      "title": "GRP boats — Lake Turkana",
+      "caption": "Glass-reinforced plastic craft for lake operations."
     },
     {
       "youtubeId": "FqQTXezVnhk",
-      "title": "Usenge Pier project"
+      "title": "Usenge Pier project",
+      "caption": "Maritime civil works along the lakeshore."
     },
     {
       "youtubeId": "ufi2NRJR1Ww",
-      "title": "MV Ikraam I"
+      "title": "MV Ikraam I",
+      "caption": "Vessel launch and handover highlights."
     }
   ]
 }

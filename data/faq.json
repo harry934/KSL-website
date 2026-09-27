@@ -1,0 +1,96 @@
+{
+  "groups": [
+    {
+      "id": "general",
+      "title": "About KSL",
+      "items": [
+        {
+          "q": "Who owns KSL?",
+          "a": "Kenya Shipyards Limited was established by the Kenyan Government. The National Treasury has 100% shareholding."
+        },
+        {
+          "q": "When was KSL established?",
+          "a": "The National Security Council approved establishment on 14 August 2020. The company was incorporated on 29 September 2020."
+        },
+        {
+          "q": "Which materials are used in shipbuilding?",
+          "a": "Marine-grade steel is the bulk material. Hulls may also use aluminium, fibreglass, wood, or other materials depending on the vessel. Structural steel must satisfy classification societies."
+        },
+        {
+          "q": "How many ships has Kenya Shipyards built?",
+          "a": "After 15 months of work, including shifts, KSL built a 100 metre wagon ferry floated on 2 August 2022 at Kisumu Shipyard."
+        }
+      ]
+    },
+    {
+      "id": "procurement",
+      "title": "Procurement and tenders",
+      "items": [
+        {
+          "q": "How do suppliers register for KSL tenders?",
+          "a": "Follow tender notices published by Kenya Shipyards Limited and the Government of Kenya procurement portals. Prepare company registration, tax compliance, and relevant maritime or engineering credentials."
+        },
+        {
+          "q": "Can MDAs order vessels through KSL?",
+          "a": "Executive direction encourages ministries, departments, and agencies to source maritime products and services from KSL where applicable. Contact commercial services for specifications and lead times."
+        }
+      ]
+    },
+    {
+      "id": "vessels",
+      "title": "Vessel orders and services",
+      "items": [
+        {
+          "q": "What services are available at Mombasa and Kisumu?",
+          "a": "Both yards support new build, refit, repair, dry docking, GRP craft, and shore-side civil works. Mombasa focuses on coastal and naval workloads; Kisumu serves Lake Victoria and inland fleets."
+        },
+        {
+          "q": "How do I request a quote for a new vessel?",
+          "a": "Contact KSL through the enquiry form on the Contact page or email publicaffairs@kenyashipyards.co.ke with vessel type, intended use, and delivery timeline."
+        }
+      ]
+    },
+    {
+      "id": "complaints",
+      "title": "Complaints and service standards",
+      "items": [
+        {
+          "q": "How do I lodge a complaint?",
+          "a": "Use the Customer Complaint Form available on the Downloads page and submit it per the instructions in the Citizen Service Delivery Charter."
+        },
+        {
+          "q": "What service standards does KSL commit to?",
+          "a": "The Citizen Service Delivery Charter sets out response times, courtesy standards, and escalation paths. English and Kiswahili versions are published on Downloads."
+        }
+      ]
+    },
+    {
+      "id": "visiting",
+      "title": "Visiting our yards",
+      "items": [
+        {
+          "q": "Can the public visit Mombasa or Kisumu shipyards?",
+          "a": "Yards are secure defence and industrial sites. Visits require prior coordination with KSL public affairs or the relevant host agency. Do not enter operational areas without escort."
+        },
+        {
+          "q": "Where are KSL offices located?",
+          "a": "Head office: Herufi House, Treasury Buildings, Nairobi. Shipyards: Mtongwe (Mombasa) and Marine Drive, Kisumu."
+        }
+      ]
+    },
+    {
+      "id": "careers",
+      "title": "Careers",
+      "items": [
+        {
+          "q": "How can you join KSL?",
+          "a": "Vacancies are advertised on the Careers page when open. You may also send a general application to careers@kenyashipyards.co.ke for future consideration."
+        },
+        {
+          "q": "What safety regulations do shipbuilders need to follow?",
+          "a": "KSL applies work safety and quality policies and Occupational Safety, Health and Environment regulations, together with classification society rules."
+        }
+      ]
+    }
+  ]
+}

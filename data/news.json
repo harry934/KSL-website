@@ -1,0 +1,41 @@
+{
+  "items": [
+    {
+      "slug": "future-shipbuilding-kenya",
+      "title": "The Future of Shipbuilding in Kenya: Unlocking Maritime Potential",
+      "excerpt": "Kenya’s maritime industry is experiencing a renaissance, with shipbuilding emerging as a critical pillar in the country’s economic growth.",
+      "category": "News",
+      "date": "2025-03-27",
+      "image": "img/ksl/ferry.jpg",
+      "author": "KSL Communications",
+      "body": "<p>Kenya’s maritime industry is experiencing a renaissance, with shipbuilding emerging as a critical pillar in the country’s economic growth. With a coastline along the Indian Ocean and inland waters such as Lake Victoria, Kenya has a strategic advantage in developing a robust shipbuilding industry.</p><h3>The rise of shipbuilding in Kenya</h3><p>Shipbuilding in Kenya has traditionally been underdeveloped, with most vessels imported or built in foreign yards. With Kenya Shipyards Limited, the nation is moving toward self-sufficiency in shipbuilding, repair, and maintenance. KSL operates yards in Mombasa and Kisumu with dry docks, slipways, workshops, and modern infrastructure.</p><h3>Key developments</h3><p>Mombasa Shipyard and Kisumu Shipyard can handle large-scale construction and repair. Government policy and partnerships, including with the Kenya Navy, support local work. The industry also serves Uganda, Tanzania, and South Sudan.</p><h3>Challenges facing the industry</h3><ul><li>High initial capital investment</li><li>A limited skilled workforce</li><li>Regulatory frameworks that still need to support local manufacturers</li></ul><h3>The future of shipbuilding in Kenya</h3><p>With continued investment, collaboration, and policy development, Kenya’s shipbuilding industry is set to grow. Local manufacturing, regional demand, and new technology can solidify Kenya’s position as a maritime hub in Africa.</p>"
+    },
+    {
+      "slug": "mv-uhuru-ii-commissioning",
+      "title": "MV Uhuru II commissioning highlights Kisumu Shipyard capacity",
+      "excerpt": "The 100-metre wagon ferry floated at Kisumu Shipyard demonstrates large-vessel construction capability on Lake Victoria.",
+      "category": "News",
+      "date": "2022-08-02",
+      "image": "img/ksl/gallery/mv-uhuru-ii-scaled-2.jpg",
+      "author": "KSL Communications"
+    },
+    {
+      "slug": "grp-kisumu-production",
+      "title": "GRP boat production expands at Kisumu Shipyard",
+      "excerpt": "Fibreglass reinforced plastic craft for patrol, fisheries, and county transport are now manufactured in-house at Kisumu.",
+      "category": "News",
+      "date": "2024-06-15",
+      "image": "img/ksl/kisumu.webp",
+      "author": "KSL Communications"
+    },
+    {
+      "slug": "kns-shupavu-rededication",
+      "title": "KNS Shupavu rededication at Mombasa Shipyard",
+      "excerpt": "Naval vessel rededication ceremony underscored KSL’s role in fleet readiness and regional maritime security.",
+      "category": "News",
+      "date": "2023-11-10",
+      "image": "img/ksl/mombasa.webp",
+      "author": "KSL Communications"
+    }
+  ]
+}

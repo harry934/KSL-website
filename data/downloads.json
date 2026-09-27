@@ -1,0 +1,127 @@
+{
+  "baseUrl": "https://kenyashipyards.co.ke/wp-content/uploads",
+  "items": [
+    {
+      "id": "strategic-plan",
+      "title": "Strategic Plan",
+      "category": "plans",
+      "categoryLabel": "Plans and publications",
+      "language": "English",
+      "date": "2025-02-26",
+      "type": "PDF",
+      "file": "/2025/08/KSL-Strategic-Business-Plan-2024-v21-26022025-wo.pdf",
+      "filename": "KSL-Strategic-Business-Plan-2024-v21-26022025-wo.pdf",
+      "anchor": "dl-strategic"
+    },
+    {
+      "id": "brochure",
+      "title": "KSL Brochure",
+      "category": "plans",
+      "categoryLabel": "Plans and publications",
+      "language": "English",
+      "date": "2024-11-28",
+      "type": "PDF",
+      "file": "/2025/04/KSL-Brochure-version-28-NOV-2024.pdf",
+      "filename": "KSL-Brochure-version-28-NOV-2024.pdf",
+      "anchor": "dl-strategic"
+    },
+    {
+      "id": "product-catalogue",
+      "title": "Product Catalogue",
+      "subtitle": "Product overview (KSL brochure until dedicated catalogue is published)",
+      "category": "plans",
+      "categoryLabel": "Plans and publications",
+      "language": "English",
+      "date": "2024-11-28",
+      "type": "PDF",
+      "file": "/2025/04/KSL-Brochure-version-28-NOV-2024.pdf",
+      "filename": "KSL-Brochure-version-28-NOV-2024.pdf",
+      "anchor": "dl-strategic",
+      "aliasOf": "brochure"
+    },
+    {
+      "id": "charter-en",
+      "title": "Citizen Service Delivery Charter (English)",
+      "category": "charter",
+      "categoryLabel": "Citizen Service Delivery Charter",
+      "language": "English",
+      "date": "2025-04",
+      "type": "PDF",
+      "file": "/2025/04/Service-Delivery-Charter-2.pdf",
+      "filename": "Service-Delivery-Charter-2.pdf",
+      "anchor": "dl-charter"
+    },
+    {
+      "id": "charter-sw",
+      "title": "Citizen Service Delivery Charter (Kiswahili)",
+      "category": "charter",
+      "categoryLabel": "Citizen Service Delivery Charter",
+      "language": "Kiswahili",
+      "date": "2025-04",
+      "type": "PDF",
+      "file": "/2025/04/Huduma-2.pdf",
+      "filename": "Huduma-2.pdf",
+      "anchor": "dl-charter"
+    },
+    {
+      "id": "complaints",
+      "title": "Customer Complaint Form",
+      "category": "complaints",
+      "categoryLabel": "Customer complaints",
+      "language": "English",
+      "date": "2025-04",
+      "type": "DOCX",
+      "file": "/2025/04/Complaints-lodging-form.docx",
+      "filename": "Complaints-lodging-form.docx",
+      "anchor": "dl-complaints"
+    },
+    {
+      "id": "ati-request",
+      "title": "Request For Information",
+      "category": "ati",
+      "categoryLabel": "Access to Information",
+      "language": "English",
+      "date": "2025-04",
+      "type": "PDF",
+      "file": "/2025/04/REQUEST-FOR-INFORM-ATION.pdf",
+      "filename": "REQUEST-FOR-INFORM-ATION.pdf",
+      "anchor": "dl-access"
+    },
+    {
+      "id": "ati-records",
+      "title": "Records Containing Personal Information",
+      "category": "ati",
+      "categoryLabel": "Access to Information",
+      "language": "English",
+      "date": "2025-04",
+      "type": "PDF",
+      "file": "/2025/04/RECORDS-CONTAINING-PERSONAL-INFORMATION.pdf",
+      "filename": "RECORDS-CONTAINING-PERSONAL-INFORMATION.pdf",
+      "anchor": "dl-access"
+    },
+    {
+      "id": "ati-withdrawal",
+      "title": "Withdrawal of request for Information",
+      "category": "ati",
+      "categoryLabel": "Access to Information",
+      "language": "English",
+      "date": "2025-04",
+      "type": "PDF",
+      "file": "/2025/04/WITHDRAWAL-OF-REQUEST-FOR-INFORM-ATION.pdf",
+      "filename": "WITHDRAWAL-OF-REQUEST-FOR-INFORM-ATION.pdf",
+      "anchor": "dl-access"
+    },
+    {
+      "id": "ati-review",
+      "title": "Request for review by the Commission",
+      "category": "ati",
+      "categoryLabel": "Access to Information",
+      "language": "English",
+      "date": "2025-04",
+      "type": "PDF",
+      "file": "/2025/04/REQUEST-FOR-REVIEW-BY-THE-COMMISSION.pdf",
+      "filename": "REQUEST-FOR-REVIEW-BY-THE-COMMISSION.pdf",
+      "anchor": "dl-access"
+    }
+  ]
+}

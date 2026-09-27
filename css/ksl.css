@@ -2965,7 +2965,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     height: auto;
     min-height: clamp(720px, 96vh, 1040px);
     overflow: hidden;
-    background: #09296C;
+    background: #09296C url("../img/ksl/mombasa.webp") center 42% / cover no-repeat;
 }
 
 .ksl-hero-shade {
@@ -2998,10 +2998,10 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     align-items: center;
     justify-content: flex-end;
     gap: 12px;
-    width: 100%;
-    max-width: 720px;
+    width: min(100%, 680px);
+    align-self: center;
     margin: auto auto 0;
-    padding: 0 clamp(20px, 5vw, 48px) clamp(6px, 1.2vh, 16px);
+    padding: 0 clamp(16px, 4vw, 32px) clamp(6px, 1.2vh, 16px);
     box-sizing: border-box;
     text-align: center;
 }
@@ -3009,14 +3009,24 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
 .ksl-hero-intro h1,
 .ksl-hero-copy h1 {
     width: 100%;
-    max-width: 18ch;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
     text-align: center;
+    text-wrap: balance;
     color: #fff;
     font-size: clamp(1.35rem, 3.4vw, 3.1rem);
     line-height: 1.15;
-    white-space: nowrap;
-    text-shadow: 0 8px 24px rgba(6, 16, 42, .35);
+    white-space: normal;
+    text-shadow:
+        0 2px 20px rgba(0, 0, 0, .45),
+        0 0 1px rgba(0, 0, 0, .85);
+}
+
+.ksl-hero-intro .ksl-hero-accent {
+    color: #C9A95C;
+    text-shadow:
+        0 2px 18px rgba(0, 0, 0, .5),
+        0 0 1px rgba(0, 0, 0, .75);
 }
 
 .ksl-hero-scroll {
@@ -3109,13 +3119,16 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
 .ksl-hero-intro p,
 .ksl-hero-copy p {
     width: 100%;
-    max-width: 640px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
     text-align: center;
+    text-wrap: pretty;
     color: #fff;
     font-size: 16px;
     line-height: 1.5;
-    text-shadow: 0 4px 16px rgba(6, 16, 42, .35);
+    text-shadow:
+        0 2px 20px rgba(0, 0, 0, .45),
+        0 0 1px rgba(0, 0, 0, .85);
 }
 
 .ksl-hero::after {
@@ -3142,11 +3155,16 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     height: 116%;
     object-fit: cover;
     object-position: center 42%;
-    opacity: 1;
-    filter: contrast(1.02) saturate(1.02);
+    opacity: 0;
+    filter: brightness(0.95) saturate(0.92) contrast(1.02);
     transform: translate3d(0, 0, 0);
     transform-origin: center center;
-    will-change: transform;
+    will-change: transform, opacity;
+    transition: opacity 0.55s ease;
+}
+
+.ksl-hero-video.is-ready {
+    opacity: 1;
 }
 
 .ksl-values {
@@ -3404,20 +3422,9 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     }
 }
 
-@media (min-width: 992px) {
-    .ksl-hero-intro h1,
-    .ksl-hero-copy h1 {
-        max-width: none;
-        white-space: nowrap;
-        text-align: center;
-    }
-}
-
 @media (max-width: 991.98px) {
     .ksl-hero-intro h1,
     .ksl-hero-copy h1 {
-        white-space: normal;
-        max-width: 16ch;
         font-size: clamp(1.55rem, 5.8vw, 2.35rem);
     }
 }
@@ -3608,29 +3615,36 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
 }
 
 .ksl-hero-copy .btn-primary {
-    --ksl-frame: rgba(255, 255, 255, .55);
+    --ksl-frame: rgba(255, 255, 255, .45);
     color: #fff !important;
-    border-color: rgba(255, 255, 255, .72) !important;
+    background: rgba(255, 255, 255, .08) !important;
+    border: 1px solid rgba(255, 255, 255, .72) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     padding: 11px 28px;
     text-shadow: none;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, .2);
+    transition: color 220ms ease, border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
 }
 
 .ksl-hero-copy .btn-primary::after {
-    background: rgba(255, 255, 255, .1);
-    opacity: 1;
+    background: transparent;
+    opacity: 0;
 }
 
 .ksl-hero-copy .btn-primary:hover,
 .ksl-hero-copy .btn-primary:focus-visible {
     color: #0A3E95 !important;
     border-color: #fff !important;
+    background: #fff !important;
     --ksl-frame: #fff;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .18);
 }
 
 .ksl-hero-copy .btn-primary:hover::after,
 .ksl-hero-copy .btn-primary:focus-visible::after {
-    opacity: 1;
-    background: #fff;
+    opacity: 0;
+    background: transparent;
 }
 
 .ksl-library {
@@ -5205,4 +5219,93 @@ html.ksl-intro-pending body {
         animation-iteration-count: 1 !important;
         transition-duration: .3s !important;
     }
+}
+
+.ksl-downloads-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.ksl-downloads-toolbar input[type="search"] {
+    flex: 1 1 220px;
+    max-width: 420px;
+    border: 1px solid #DDE5F0;
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+
+.ksl-downloads-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.ksl-downloads-filters button {
+    border: 1px solid #DDE5F0;
+    background: #fff;
+    color: #273272;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.ksl-downloads-filters button.is-active {
+    background: #0A3E95;
+    border-color: #0A3E95;
+    color: #fff;
+}
+
+.ksl-downloads-meta {
+    font-size: 12px;
+    color: #6B7280;
+    margin-bottom: 0;
+}
+
+.ksl-downloads-empty {
+    color: #6B7280;
+    padding: 16px 0;
+}
+
+.ksl-gallery-empty {
+    color: #4A4A4A;
+    padding: 24px 0;
+}
+
+.ksl-gallery-empty a {
+    color: #0165FC;
+}
+
+.ksl-video-caption {
+    font-size: 13px;
+    color: #6B7280;
+    margin-top: 8px;
+}
+
+.ksl-faq-search {
+    max-width: 420px;
+    margin-bottom: 24px;
+}
+
+.ksl-faq-group {
+    margin-bottom: 32px;
+}
+
+.ksl-press-list {
+    padding-left: 1.2rem;
+}
+
+.ksl-impact-footnote {
+    font-size: 13px;
+    color: #6B7280;
+    margin-top: 12px;
+}
+
+#ksl-video-feature iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
 }
