@@ -2812,8 +2812,28 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     color: #fff;
 }
 
+.top-more {
+    position: relative;
+}
+
 .top-more .dropdown-menu {
     min-width: 178px !important;
+}
+
+@media (max-width: 1099.98px) {
+    .topbar-util {
+        overflow: visible;
+    }
+
+    .top-more .dropdown-menu {
+        z-index: 1200;
+        margin-top: 4px !important;
+        box-shadow: 0 12px 28px rgba(6, 16, 42, .35) !important;
+    }
+
+    .top-more .dropdown-menu.show {
+        display: block;
+    }
 }
 
 .navbar .ksl-search {
@@ -2963,31 +2983,35 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     display: flex;
     flex: 1;
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     justify-content: flex-end;
-    gap: clamp(190px, 34vh, 420px);
+    gap: clamp(100px, 20vh, 280px);
     min-height: inherit;
     padding: 0;
     text-align: center;
 }
 
 .ksl-hero-intro {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
     gap: 12px;
     width: 100%;
-    margin: 0 auto;
-    padding: clamp(64px, 14vh, 128px) clamp(20px, 5vw, 48px) 0;
+    max-width: 720px;
+    margin: auto auto 0;
+    padding: 0 clamp(20px, 5vw, 48px) clamp(6px, 1.2vh, 16px);
     box-sizing: border-box;
+    text-align: center;
 }
 
 .ksl-hero-intro h1,
 .ksl-hero-copy h1 {
+    width: 100%;
     max-width: 18ch;
     margin: 0 auto;
+    text-align: center;
     color: #fff;
     font-size: clamp(1.35rem, 3.4vw, 3.1rem);
     line-height: 1.15;
@@ -3078,10 +3102,16 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     }
 }
 
+.ksl-hero-intro .btn-primary {
+    align-self: center;
+}
+
 .ksl-hero-intro p,
 .ksl-hero-copy p {
+    width: 100%;
     max-width: 640px;
     margin: 0 auto;
+    text-align: center;
     color: #fff;
     font-size: 16px;
     line-height: 1.5;
@@ -3358,11 +3388,11 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     }
 
     .ksl-hero-copy {
-        gap: clamp(140px, 26vh, 280px);
+        gap: clamp(72px, 14vh, 180px);
     }
 
     .ksl-hero-intro {
-        padding-top: clamp(48px, 12vh, 96px);
+        padding-bottom: clamp(4px, 1vh, 12px);
     }
 
     .ksl-hero-values {
@@ -3379,6 +3409,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     .ksl-hero-copy h1 {
         max-width: none;
         white-space: nowrap;
+        text-align: center;
     }
 }
 
@@ -3813,10 +3844,186 @@ html[lang="sw"] .ksl-library .download-button .download::after {
     fill: currentColor;
 }
 
+/* ── Mobile bottom navigation ── */
+@media (max-width: 991.98px) {
+    body {
+        padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .navbar-toggler {
+        display: none !important;
+    }
+
+    .navbar .navbar-collapse {
+        display: none !important;
+    }
+
+    .ksl-bottom-nav {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1045;
+        display: flex;
+        align-items: stretch;
+        justify-content: space-around;
+        gap: 2px;
+        padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+        background: #fff;
+        border-top: 1px solid #DDE5F0;
+        box-shadow: 0 -8px 24px rgba(39, 50, 114, .12);
+    }
+
+    .ksl-bottom-nav a,
+    .ksl-bottom-nav button {
+        flex: 1 1 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        min-width: 0;
+        padding: 6px 4px;
+        border: 0;
+        background: transparent;
+        color: #5a6478;
+        font: 600 10px/1.2 Manrope, sans-serif;
+        text-decoration: none;
+        cursor: pointer;
+        border-radius: 8px;
+    }
+
+    .ksl-bottom-nav svg {
+        width: 22px;
+        height: 22px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.75;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .ksl-bottom-nav a.is-active,
+    .ksl-bottom-nav button.is-active {
+        color: #0A3E95;
+        background: #F7FAFF;
+    }
+
+    .ksl-mobile-sheet {
+        position: fixed;
+        inset: 0;
+        z-index: 1060;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: 0;
+        background: rgba(9, 41, 108, .45);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 220ms ease, visibility 220ms ease;
+    }
+
+    .ksl-mobile-sheet.is-open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    .ksl-mobile-sheet-panel {
+        width: 100%;
+        max-height: min(82vh, 640px);
+        overflow: auto;
+        background: #fff;
+        border-radius: 16px 16px 0 0;
+        padding: 16px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+        transform: translateY(100%);
+        transition: transform 280ms cubic-bezier(.2, .7, .2, 1);
+    }
+
+    .ksl-mobile-sheet.is-open .ksl-mobile-sheet-panel {
+        transform: translateY(0);
+    }
+
+    .ksl-mobile-sheet-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #E8EEF6;
+    }
+
+    .ksl-mobile-sheet-head h2 {
+        margin: 0;
+        font-size: 1.05rem;
+        color: #273272;
+    }
+
+    .ksl-mobile-sheet-close {
+        width: 36px;
+        height: 36px;
+        border: 1px solid #DDE5F0;
+        border-radius: 50%;
+        background: #fff;
+        color: #273272;
+        font-size: 1.25rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .ksl-mobile-sheet section {
+        margin-bottom: 14px;
+    }
+
+    .ksl-mobile-sheet h3 {
+        margin: 0 0 8px;
+        font-size: 11px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: #99792c;
+    }
+
+    .ksl-mobile-sheet a {
+        display: block;
+        padding: 11px 10px;
+        border-radius: 6px;
+        color: #273272;
+        font: 600 14px/1.35 Manrope, sans-serif;
+        text-decoration: none;
+    }
+
+    .ksl-mobile-sheet a:hover,
+    .ksl-mobile-sheet a:focus-visible {
+        background: #F7FAFF;
+        color: #0165FC;
+        outline: none;
+    }
+
+    .ksl-mobile-sheet a.is-active {
+        background: #EEF4FF;
+        color: #0165FC;
+    }
+
+    .whatsapp-fab {
+        bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    body.ksl-sheet-open {
+        overflow: hidden;
+    }
+}
+
+@media (min-width: 992px) {
+    .ksl-bottom-nav,
+    .ksl-mobile-sheet {
+        display: none !important;
+    }
+}
+
 @media (max-width: 575.98px) {
     .whatsapp-fab {
         right: 16px !important;
-        bottom: 20px !important;
         width: 42px !important;
         height: 42px !important;
     }
@@ -4592,13 +4799,13 @@ html[lang="sw"] .ksl-library .download-button .download::after {
 }
 
 .ksl-impact-more {
-    font: 600 13px/1.4 Manrope, sans-serif;
-    color: #0165FC;
+    font: 500 12px/1.4 Manrope, sans-serif;
+    color: #6b7280;
     text-decoration: none;
 }
 
 .ksl-impact-more:hover {
-    text-decoration: underline;
+    color: #0165FC;
 }
 
 .ksl-impact-crosslinks {
