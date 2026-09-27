@@ -1,0 +1,153 @@
+(function () {
+    var KEY = "ksl-a11y";
+    var fontStep = 0;
+    var flags = {};
+
+    var style = document.createElement("style");
+    style.id = "ksl-a11y-style";
+    style.textContent = [
+        ".ksl-a11y{font-family:Arial,Helvetica,sans-serif}",
+        ".ksl-a11y-toggle{position:fixed;right:24px;bottom:84px;z-index:999991;display:grid;place-items:center;width:46px;height:46px;padding:0;border:1.5px solid #111;border-radius:50%;background:#C9A95C;color:#111;cursor:pointer;box-shadow:none;transition:filter .18s ease,right .25s ease}",
+        ".ksl-a11y-toggle:hover{filter:brightness(.93)}",
+        ".ksl-a11y-toggle:focus-visible{outline:2px solid #111;outline-offset:3px}",
+        ".ksl-a11y-toggle svg{width:24px;height:24px;display:block;fill:currentColor}",
+        ".ksl-a11y.is-open .ksl-a11y-toggle{right:244px}",
+        ".ksl-a11y-panel{position:fixed;top:0;right:0;z-index:999990;width:220px;height:100%;transform:translateX(100%);transition:transform .25s ease;background:#232323;color:#fff;display:flex;flex-direction:column;box-shadow:-8px 0 24px rgba(0,0,0,.25)}",
+        ".ksl-a11y.is-open .ksl-a11y-panel{transform:none}",
+        "@media (max-width:575.98px){.ksl-a11y-toggle{right:16px;bottom:72px;width:42px;height:42px}.ksl-a11y-toggle svg{width:22px;height:22px}}",
+        ".ksl-a11y-close{display:block;width:92%;margin:10px auto 0;height:34px;border:0;background:#216073;color:#fff;font:bold 15px/34px Arial,Helvetica,sans-serif;cursor:pointer}",
+        ".ksl-a11y-close:hover,.ksl-a11y-close:focus{background:#fff;color:#000}",
+        ".ksl-a11y-scroll{overflow:auto;padding:8px 10px 16px;flex:1}",
+        ".ksl-a11y-mod{padding-bottom:.6rem;margin-bottom:.6rem;border-bottom:1px solid #444}",
+        ".ksl-a11y-mod h2{margin:0 0 .4rem;font:600 16px/1.3 Arial,Helvetica,sans-serif;color:#fff}",
+        ".ksl-a11y-row{display:flex;gap:8%}",
+        ".ksl-a11y-act{display:block;width:100%;margin:0;padding:5px 0;border:1px solid #fff;background:#232323;color:#fff;font:bold 15px/1.3 Arial,Helvetica,sans-serif;text-align:center;cursor:pointer}",
+        ".ksl-a11y-row .ksl-a11y-act{width:46%}",
+        ".ksl-a11y-act.is-on,.ksl-a11y-act[aria-pressed='true']{background:#f5c518;color:#111}",
+        "html.ksl-keys :focus{outline:3px solid #111 !important;background:#f3f57c !important;color:#000 !important}",
+        "html.ksl-readable body,html.ksl-readable button,html.ksl-readable input,html.ksl-readable select,html.ksl-readable textarea{font-family:Verdana,Arial,sans-serif !important;letter-spacing:.02em;line-height:1.6}",
+        "html.ksl-underline a,html.ksl-underline a:hover{text-decoration:underline !important;text-underline-offset:2px}",
+        "html.ksl-highlight a,html.ksl-highlight a:hover,html.ksl-highlight a:focus,html.ksl-highlight a:visited{background-color:#fff34d !important;background-image:none !important;color:#111 !important;box-shadow:inset 0 -2px 0 #111 !important}",
+        "html.ksl-grey img,html.ksl-grey video{filter:grayscale(1) !important}",
+        "html.ksl-invert body{filter:invert(1) hue-rotate(180deg)}",
+        "html.ksl-invert .ksl-a11y{filter:invert(1) hue-rotate(180deg)}",
+        "html.ksl-no-anim *,html.ksl-no-anim *::before,html.ksl-no-anim *::after{animation:none !important;transition:none !important;scroll-behavior:auto !important}",
+        "html.ksl-lights::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:999980;pointer-events:none}",
+        "html.ksl-lights :is(p,li,h1,h2,h3,h4,h5,td,figcaption,blockquote):hover{position:relative;z-index:999985;background:#fff;color:#111;box-shadow:0 0 0 8px #fff}"
+    ].join("");
+    document.head.appendChild(style);
+
+    var root = document.createElement("div");
+    root.className = "ksl-a11y";
+    root.innerHTML = [
+        '<button type="button" class="ksl-a11y-toggle" aria-expanded="false" aria-controls="ksl-a11y-panel" title="Accessibility" aria-label="Accessibility">',
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.4" r="2.1"/><path d="M20.3 7.6a.9.9 0 0 1-.64 1.1c-1.9.52-3.8.84-5.66.97v3.02l1.9 7.35a1 1 0 0 1-1.94.5L12.3 15h-.6l-1.66 5.54a1 1 0 0 1-1.94-.5L10 12.7V9.67c-1.86-.13-3.76-.45-5.66-.97a.9.9 0 1 1 .48-1.74c2.4.66 4.8.99 7.18.99s4.78-.33 7.18-.99a.9.9 0 0 1 1.12.64z"/></svg>',
+        "</button>",
+        '<div id="ksl-a11y-panel" class="ksl-a11y-panel">',
+        '<button type="button" class="ksl-a11y-close" data-close>Close</button>',
+        '<div class="ksl-a11y-scroll">',
+        '<div class="ksl-a11y-mod"><h2>Font Resize</h2><div class="ksl-a11y-row">',
+        '<button type="button" class="ksl-a11y-act" data-act="font-down" title="smaller font size" aria-label="smaller font size">A-</button>',
+        '<button type="button" class="ksl-a11y-act" data-act="font-up" title="larger font size" aria-label="larger font size">A+</button>',
+        "</div></div>",
+        btn("keys", "Keyboard navigation"),
+        btn("readable", "Readable Font"),
+        btn("underline", "Underline links"),
+        btn("highlight", "Highlight Links"),
+        btn("clear", "Clear cookies"),
+        btn("grey", "Images Greyscale"),
+        btn("invert", "Invert Colors"),
+        btn("motion", "Remove Animations"),
+        btn("styles", "Remove styles"),
+        btn("lights", "Lights Off"),
+        '<button type="button" class="ksl-a11y-close" data-close>Close</button>',
+        "</div></div>"
+    ].join("");
+    document.body.appendChild(root);
+
+    function btn(act, label) {
+        return '<div class="ksl-a11y-mod"><button type="button" class="ksl-a11y-act" data-act="' + act + '" aria-pressed="false">' + label + "</button></div>";
+    }
+
+    var toggle = root.querySelector(".ksl-a11y-toggle");
+    var CLASS = {
+        keys: "ksl-keys",
+        readable: "ksl-readable",
+        underline: "ksl-underline",
+        highlight: "ksl-highlight",
+        grey: "ksl-grey",
+        invert: "ksl-invert",
+        motion: "ksl-no-anim",
+        lights: "ksl-lights"
+    };
+
+    function setOpen(open) {
+        root.classList.toggle("is-open", open);
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    function paintFont() {
+        if (!fontStep) document.documentElement.style.zoom = "";
+        else document.documentElement.style.zoom = String(1 + fontStep * 0.1);
+    }
+
+    function setFlag(name, on) {
+        flags[name] = on;
+        var button = root.querySelector('[data-act="' + name + '"]');
+        if (button) button.setAttribute("aria-pressed", on ? "true" : "false");
+        if (CLASS[name]) document.documentElement.classList.toggle(CLASS[name], on);
+        if (name === "styles") setStyles(on);
+    }
+
+    function setStyles(off) {
+        document.querySelectorAll('link[rel="stylesheet"], style').forEach(function (node) {
+            if (node.id === "ksl-a11y-style") return;
+            node.disabled = off;
+        });
+    }
+
+    function save() {
+        try {
+            localStorage.setItem(KEY, JSON.stringify({ fontStep: fontStep, flags: flags }));
+        } catch (e) {}
+    }
+
+    function clearAll() {
+        fontStep = 0;
+        paintFont();
+        Object.keys(CLASS).concat(["styles"]).forEach(function (name) { setFlag(name, false); });
+        document.cookie.split(";").forEach(function (part) {
+            var name = part.split("=")[0].trim();
+            if (name) document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+        });
+        try { localStorage.removeItem(KEY); } catch (e) {}
+        var note = root.querySelector("[data-act='clear']");
+        if (note) {
+            var previous = note.textContent;
+            note.textContent = "Accessibility settings cleared";
+            setTimeout(function () { note.textContent = previous; }, 1600);
+        }
+    }
+
+    toggle.addEventListener("click", function () { setOpen(!root.classList.contains("is-open")); });
+    root.querySelectorAll("[data-close]").forEach(function (button) {
+        button.addEventListener("click", function () { setOpen(false); toggle.focus(); });
+    });
+    root.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-act]");
+        if (!button) return;
+        var act = button.getAttribute("data-act");
+        if (act === "font-down") { fontStep = Math.max(-2, fontStep - 1); paintFont(); save(); return; }
+        if (act === "font-up") { fontStep = Math.min(4, fontStep + 1); paintFont(); save(); return; }
+        if (act === "clear") { clearAll(); return; }
+        setFlag(act, button.getAttribute("aria-pressed") !== "true");
+        save();
+    });
+
+    try {
+        var saved = JSON.parse(localStorage.getItem(KEY) || "{}");
+        fontStep = saved.fontStep || 0;
+        paintFont();
+        if (saved.flags) Object.keys(saved.flags).forEach(function (name) { if (saved.flags[name]) setFlag(name, true); });
+    } catch (e) {}
+})();
