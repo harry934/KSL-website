@@ -1,23 +1,66 @@
 (function () {
     "use strict";
 
-    var KEY = "ksl-intro-seen";
+    /**
+     * Logo intro rules:
+     * 1. Once per browser session the first time you land on index.html (Home).
+     * 2. Any time you click the header logo (navbar brand).
+     * Not triggered by the "Home" nav link or other links to index.html.
+     */
+
+    var SESSION_KEY = "ksl-intro-seen";
     var root = document.documentElement;
 
-    try {
-        if (sessionStorage.getItem(KEY)) return;
-        sessionStorage.setItem(KEY, "1");
-    } catch (e) {
-        return;
+    function currentPage() {
+        var path = window.location.pathname || "";
+        var file = path.split("/").pop();
+        return file || "index.html";
     }
 
-    var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    var HOLD = reduceMotion ? 900 : 3200;
-    var EXIT = reduceMotion ? 300 : 900;
+    function isHomePage() {
+        var page = currentPage();
+        return page === "index.html" || page === "";
+    }
 
-    root.classList.add("ksl-intro-pending");
+    function markSessionSeen() {
+        try {
+            sessionStorage.setItem(SESSION_KEY, "1");
+        } catch (e) {
+            /* ignore */
+        }
+    }
 
-    function build() {
+    function hasSeenThisSession() {
+        try {
+            return sessionStorage.getItem(SESSION_KEY) === "1";
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function wantsLogoIntro() {
+        return /[?&]ksl-intro=1(?:&|$)/.test(window.location.search || "");
+    }
+
+    function clearLogoIntroQuery() {
+        if (!window.history || !window.history.replaceState) {
+            return;
+        }
+        var path = window.location.pathname || "index.html";
+        window.history.replaceState(null, "", path);
+    }
+
+    function playKslIntro() {
+        if (document.querySelector(".ksl-intro")) {
+            return;
+        }
+
+        var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var HOLD = reduceMotion ? 900 : 3200;
+        var EXIT = reduceMotion ? 300 : 900;
+
+        root.classList.add("ksl-intro-pending");
+
         var intro = document.createElement("div");
         intro.className = "ksl-intro";
         intro.setAttribute("role", "presentation");
@@ -30,7 +73,7 @@
                         '<circle class="ksl-intro-ring ksl-intro-ring-inner" cx="100" cy="100" r="88"></circle>' +
                     '</svg>' +
                     '<div class="ksl-intro-logo">' +
-                        '<img src="img/ksl/logo.png" alt="">' +
+                        '<img src="img/ksl/logo.png" alt="Kenya Shipyards Limited">' +
                         '<span class="ksl-intro-shine"></span>' +
                     '</div>' +
                 '</div>' +
@@ -47,12 +90,16 @@
 
         var done = false;
         function finish() {
-            if (done) return;
+            if (done) {
+                return;
+            }
             done = true;
             intro.classList.add("is-leaving");
             root.classList.remove("ksl-intro-pending");
-            setTimeout(function () {
-                if (intro.parentNode) intro.parentNode.removeChild(intro);
+            window.setTimeout(function () {
+                if (intro.parentNode) {
+                    intro.parentNode.removeChild(intro);
+                }
             }, EXIT);
         }
 
@@ -63,12 +110,55 @@
                 finish();
             }
         });
-        setTimeout(finish, HOLD);
+        window.setTimeout(finish, HOLD);
+    }
+
+    window.playKslIntro = playKslIntro;
+
+    function bindLogoBrand() {
+        document.addEventListener("click", function (event) {
+            var brand = event.target.closest("a.navbar-brand");
+            if (!brand || brand.getAttribute("target") === "_blank") {
+                return;
+            }
+
+            if (isHomePage()) {
+                event.preventDefault();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                playKslIntro();
+                return;
+            }
+
+            event.preventDefault();
+            window.location.href = "index.html?ksl-intro=1";
+        });
+    }
+
+    function maybeAutoIntroOnHome() {
+        if (!isHomePage()) {
+            return;
+        }
+
+        var fromLogo = wantsLogoIntro();
+        var firstHomeThisSession = !hasSeenThisSession();
+
+        if (fromLogo || firstHomeThisSession) {
+            playKslIntro();
+            markSessionSeen();
+            if (fromLogo) {
+                clearLogoIntroQuery();
+            }
+        }
+    }
+
+    function boot() {
+        bindLogoBrand();
+        maybeAutoIntroOnHome();
     }
 
     if (document.body) {
-        build();
+        boot();
     } else {
-        document.addEventListener("DOMContentLoaded", build);
+        document.addEventListener("DOMContentLoaded", boot);
     }
 })();

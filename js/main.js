@@ -772,6 +772,14 @@
 
             var sections = [
                 {
+                    title: "About KSL",
+                    links: [
+                        { href: "about.html", label: "Who We Are" },
+                        { href: "board.html", label: "KSL Board" },
+                        { href: "organization.html", label: "Organization structure" }
+                    ]
+                },
+                {
                     title: "Company",
                     links: [
                         { href: "products.html", label: "Products" },

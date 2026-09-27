@@ -24,25 +24,20 @@
         );
     }
 
-    var list = document.getElementById("newsList");
-    if (list) {
+    var grid = document.getElementById("ksl-news-grid");
+    if (grid) {
         fetch("data/news.json")
             .then(function (res) { return res.json(); })
             .then(function (data) {
                 var items = data.items || [];
-                var note = document.getElementById("searchNote");
-                var grid = document.createElement("div");
-                grid.className = "ksl-news-grid";
+                if (!items.length) {
+                    grid.innerHTML = "<p class=\"mb-0\">No news articles yet.</p>";
+                    return;
+                }
                 grid.innerHTML = items.map(card).join("");
-                if (note && note.nextSibling) {
-                    list.insertBefore(grid, note.nextSibling);
-                } else {
-                    list.appendChild(grid);
-                }
-                var old = list.querySelector(".news-hit");
-                if (old) {
-                    old.remove();
-                }
+            })
+            .catch(function () {
+                grid.innerHTML = "<p class=\"mb-0\">Could not load news. Please refresh the page.</p>";
             });
     }
 
