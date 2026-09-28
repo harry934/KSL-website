@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20260421";
+    var ASSET_V = "20260422";
 
     var BUNDLES = {
         wow: [

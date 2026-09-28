@@ -7,13 +7,15 @@
     style.id = "ksl-a11y-style";
     style.textContent = [
         ".ksl-a11y{font-family:Arial,Helvetica,sans-serif}",
-        ".ksl-a11y-toggle{position:fixed;right:0;bottom:212px;z-index:999991;display:inline-flex;align-items:center;justify-content:center;width:auto;height:auto;margin:0;padding:16px 8px;border:0;border-radius:0;background:#C9A95C;color:#111;cursor:pointer;box-shadow:none;font:700 13px/1.2 Arial,Helvetica,sans-serif;letter-spacing:.04em;white-space:nowrap;writing-mode:vertical-rl;text-orientation:mixed}",
+        ".ksl-a11y-toggle{position:fixed;right:24px;bottom:84px;z-index:999991;display:grid;place-items:center;width:46px;height:46px;margin:0;padding:0;border:1.5px solid #111;border-radius:50%;background:#C9A95C;color:#111;cursor:pointer;box-shadow:none;overflow:visible}",
         ".ksl-a11y-toggle:hover{filter:brightness(.93)}",
         ".ksl-a11y-toggle:focus-visible{outline:2px solid #111;outline-offset:3px}",
-        ".ksl-a11y-toggle svg{display:none}",
+        ".ksl-a11y-toggle svg{width:24px;height:24px;display:block;fill:currentColor}",
+        ".ksl-a11y-label{display:none}",
         ".ksl-a11y-panel{position:fixed;top:0;right:0;left:auto;z-index:999990;width:min(280px,88vw);height:100%;visibility:hidden;pointer-events:none;transform:translateX(110%);transition:transform .25s ease,visibility .25s ease;background:#232323;color:#fff;display:flex;flex-direction:column;box-shadow:-8px 0 24px rgba(0,0,0,.25)}",
         ".ksl-a11y.is-open .ksl-a11y-panel{visibility:visible;pointer-events:auto;transform:translateX(0)}",
-        "@media (max-width:991.98px){.ksl-a11y-toggle{right:0 !important;bottom:calc(248px + env(safe-area-inset-bottom,0px)) !important;width:auto !important;height:auto !important;border-radius:0 !important;writing-mode:vertical-rl !important}}",
+        "@media (min-width:992px){.ksl-a11y.is-open .ksl-a11y-toggle{right:calc(min(280px,88vw) + 16px)}}",
+        "@media (max-width:991.98px){.ksl-a11y-toggle{right:0 !important;bottom:calc(200px + env(safe-area-inset-bottom,0px)) !important;width:36px !important;height:202px !important;padding:8px 0 !important;border:0 !important;border-radius:0 !important;overflow:visible !important}.ksl-a11y-toggle svg{display:none !important}.ksl-a11y-label{display:flex;align-items:center;justify-content:center;width:36px;height:202px;writing-mode:vertical-rl;text-orientation:mixed;font:700 12px/1 Arial,Helvetica,sans-serif;letter-spacing:.04em;color:#111}}",
         ".ksl-a11y-close{display:block;width:92%;margin:10px auto 0;height:34px;border:0;background:#216073;color:#fff;font:bold 15px/34px Arial,Helvetica,sans-serif;cursor:pointer}",
         ".ksl-a11y-close:hover,.ksl-a11y-close:focus{background:#fff;color:#000}",
         ".ksl-a11y-scroll{overflow:auto;padding:8px 10px 16px;flex:1}",
@@ -38,14 +40,17 @@
         ".ksl-wa-pop p{margin:0 0 12px;font:600 14px/1.45 Arial,Helvetica,sans-serif;color:#273272}",
         ".ksl-wa-pop a{display:block;margin:0 0 8px;padding:10px 12px;background:#25D366;color:#fff;text-align:center;text-decoration:none;font:700 14px/1 Arial,Helvetica,sans-serif;border-radius:4px}",
         ".ksl-wa-pop button{display:block;width:100%;border:0;background:#216073;color:#fff;padding:8px 10px;cursor:pointer;font:700 14px/1 Arial,Helvetica,sans-serif}",
-        "@media (max-width:991.98px){.ksl-wa-pop{bottom:calc(184px + env(safe-area-inset-bottom,0px))}}"
+        "@media (max-width:991.98px){.ksl-wa-pop{right:36px;bottom:calc(72px + env(safe-area-inset-bottom,0px));border-radius:0}}"
     ].join("");
     document.head.appendChild(style);
 
     var root = document.createElement("div");
     root.className = "ksl-a11y";
     root.innerHTML = [
-        '<button type="button" class="ksl-a11y-toggle" aria-expanded="false" aria-controls="ksl-a11y-panel" title="Accessibility" aria-label="Accessibility">Accessibility</button>',
+        '<button type="button" class="ksl-a11y-toggle" aria-expanded="false" aria-controls="ksl-a11y-panel" title="Accessibility" aria-label="Accessibility">',
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.4" r="2.1"/><path d="M20.3 7.6a.9.9 0 0 1-.64 1.1c-1.9.52-3.8.84-5.66.97v3.02l1.9 7.35a1 1 0 0 1-1.94.5L12.3 15h-.6l-1.66 5.54a1 1 0 0 1-1.94-.5L10 12.7V9.67c-1.86-.13-3.76-.45-5.66-.97a.9.9 0 1 1 .48-1.74c2.4.66 4.8.99 7.18.99s4.78-.33 7.18-.99a.9.9 0 0 1 1.12.64z"/></svg>',
+        '<span class="ksl-a11y-label">Accessibility</span>',
+        "</button>",
         '<div id="ksl-a11y-panel" class="ksl-a11y-panel">',
         '<button type="button" class="ksl-a11y-close" data-close>Close</button>',
         '<div class="ksl-a11y-scroll">',
