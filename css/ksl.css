@@ -701,25 +701,37 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
 }
 
 @media (max-width: 991.98px) {
+    #kslServiceModal.modal {
+        --bs-modal-margin: 0;
+    }
+
+    #kslServiceModal.modal.show {
+        display: flex !important;
+        align-items: flex-end;
+        padding: 0;
+    }
+
     #kslServiceModal .ksl-service-modal-dialog {
         display: flex;
         flex-direction: column;
-        width: calc(100% - 1rem);
-        max-width: calc(100% - 1rem);
-        margin: max(0.5rem, env(safe-area-inset-top, 0px)) auto max(0.5rem, env(safe-area-inset-bottom, 0px));
-        max-height: calc(100dvh - 1rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px)));
         height: auto;
+        transform: none !important;
     }
 
     #kslServiceModal .ksl-service-modal-dialog .ksl-service-modal {
         flex: 1 1 auto;
-        min-height: 0;
+        min-height: min(72dvh, 520px);
         width: 100%;
-        max-height: 100%;
+        max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px)));
+        border-radius: 14px 14px 0 0;
     }
 
     .ksl-service-modal {
-        max-height: calc(100dvh - 1rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px)));
     }
 
     .ksl-service-modal-layout {
@@ -727,7 +739,9 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
         flex-direction: column;
         flex: 1 1 auto;
         min-height: 0;
-        max-height: 100%;
+        max-height: none;
+        height: 100%;
+        margin: 0;
     }
 
     .ksl-service-modal-layout > [class*="col-"] {
@@ -1563,10 +1577,15 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
 .top-links a, .topbar-util > a, .top-more > a { color: #fff; text-decoration: none; white-space: nowrap; }
 .top-phone { font-variant-numeric: tabular-nums; }
 .top-more { display: none; }
-@media (max-width: 1099.98px) {
+@media (min-width: 992px) and (max-width: 1099.98px) {
     .top-links { display: none; }
     .top-more { display: inline-block; }
     .topbar-rail { flex-wrap: wrap; }
+}
+@media (max-width: 991.98px) {
+    .top-more {
+        display: none !important;
+    }
 }
 .navbar.sticky-top { border-bottom: 1px solid #99792c; box-shadow: none !important; }
 @media (max-width: 1199.98px) { .ksl-wordmark { display: none; } }
@@ -3165,7 +3184,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     min-width: 178px !important;
 }
 
-@media (max-width: 1099.98px) {
+@media (min-width: 992px) and (max-width: 1099.98px) {
     .topbar-util {
         overflow: visible;
     }
@@ -4366,7 +4385,101 @@ html[lang="sw"] .ksl-library .download-button .download::after {
     }
 
     .whatsapp-fab {
-        bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+        right: 16px !important;
+        bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important;
+        width: 48px !important;
+        height: 48px !important;
+        border-radius: 50% !important;
+        z-index: 1045;
+    }
+
+    .ksl-a11y-toggle {
+        right: 16px !important;
+        bottom: calc(140px + env(safe-area-inset-bottom, 0px)) !important;
+        width: 48px !important;
+        height: 48px !important;
+        z-index: 1046;
+    }
+
+    .ksl-a11y.is-open .ksl-a11y-toggle {
+        right: 16px !important;
+    }
+
+    .ksl-a11y-panel {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: min(78dvh, 520px);
+        max-height: 78dvh;
+        transform: translateY(100%);
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -12px 40px rgba(0, 0, 0, .28);
+    }
+
+    .ksl-a11y.is-open .ksl-a11y-panel {
+        transform: translateY(0);
+    }
+
+    .navbar {
+        justify-content: center;
+        min-height: 52px;
+        box-shadow: 0 1px 0 rgba(9, 41, 108, .06);
+    }
+
+    .navbar .navbar-brand {
+        margin: 0 auto;
+        padding: 8px 16px !important;
+    }
+
+    .navbar .ksl-logo {
+        height: 36px;
+        width: auto;
+    }
+
+    .topbar-inner {
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+
+    .topbar-rail {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        padding: 6px 10px !important;
+    }
+
+    .topbar-rail a {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .topbar-rail .top-sep {
+        display: none;
+    }
+
+    .topbar-rail a[href^="mailto:"] {
+        display: none;
+    }
+
+    .topbar-util {
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 8px !important;
+        padding: 6px 10px !important;
+    }
+
+    .top-lang {
+        margin-left: 0 !important;
+    }
+
+    .top-socials {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
 
     body.ksl-sheet-open {
@@ -4383,9 +4496,16 @@ html[lang="sw"] .ksl-library .download-button .download::after {
 
 @media (max-width: 575.98px) {
     .whatsapp-fab {
-        right: 16px !important;
-        width: 42px !important;
-        height: 42px !important;
+        right: 14px !important;
+        width: 46px !important;
+        height: 46px !important;
+    }
+
+    .ksl-a11y-toggle {
+        right: 14px !important;
+        bottom: calc(132px + env(safe-area-inset-bottom, 0px)) !important;
+        width: 46px !important;
+        height: 46px !important;
     }
 }
 
