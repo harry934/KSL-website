@@ -166,6 +166,14 @@
         window.addEventListener("ksl-intro-ended", enableHeroVideo);
         window.addEventListener("ksl-intro-started", disableHeroVideoForIntro);
 
+        function syncHeroVideoWithIntroState() {
+            if (!introIsBlockingHero()) {
+                enableHeroVideo();
+            }
+        }
+        syncHeroVideoWithIntroState();
+        window.addEventListener("load", syncHeroVideoWithIntroState);
+
         var seekHeroVideoToStart = function () {
             if (heroVideo.duration > heroVideoStart + 0.5) {
                 heroVideo.currentTime = heroVideoStart;
@@ -183,17 +191,26 @@
             heroVideo.addEventListener("timeupdate", keepHeroVideoInRange);
         }
 
-        heroVideo.addEventListener("canplay", function () {
+        var markHeroVideoReady = function () {
             heroVideo.classList.add("is-ready");
-        }, { once: true });
+        };
+        heroVideo.addEventListener("canplay", markHeroVideoReady, { once: true });
+        heroVideo.addEventListener("loadeddata", markHeroVideoReady, { once: true });
+        heroVideo.addEventListener("error", function () {
+            heroVideo.removeAttribute("src");
+            heroVideoAttached = false;
+        });
 
         var attachHeroVideo = function () {
             if (!heroVideoEnabled || heroVideoAttached) {
                 return;
             }
             heroVideoAttached = true;
-            var src = heroVideo.getAttribute("data-src");
+            var src = heroVideo.getAttribute("data-src") || heroVideo.getAttribute("src");
             if (src && !heroVideo.getAttribute("src")) {
+                if (src.charAt(0) !== "/" && src.indexOf("://") === -1) {
+                    src = "/" + src.replace(/^\.\//, "");
+                }
                 heroVideo.src = src;
                 heroVideo.load();
             }
@@ -570,6 +587,23 @@
         card.addEventListener("focusin", hold);
     });
 
+    function kslDecodeHtml(text) {
+        if (!text) {
+            return "";
+        }
+        var el = document.createElement("textarea");
+        el.innerHTML = text;
+        return el.value.replace(/\u00a0/g, " ").trim();
+    }
+
+    function kslNormalizeServiceText(text) {
+        return (text || "")
+            .replace(/\u00a0/g, " ")
+            .replace(/[ \t]+\n/g, "\n")
+            .replace(/\n{3,}/g, "\n\n")
+            .trim();
+    }
+
     var serviceModalEl = document.getElementById("kslServiceModal");
     var showKslServiceModal = function (trigger, cardOverride) {
         if (!serviceModalEl || !trigger) {
@@ -607,27 +641,35 @@
         }
 
         if (serviceModalTitle) {
-            serviceModalTitle.textContent = title;
+            serviceModalTitle.textContent = kslDecodeHtml(title);
         }
+        var summaryText = item && item.excerpt
+            ? item.excerpt
+            : (summaryNode ? summaryNode.textContent.trim() : "");
+        summaryText = kslNormalizeServiceText(kslDecodeHtml(summaryText));
         if (serviceModalSummary) {
-            serviceModalSummary.textContent = item && item.excerpt
-                ? item.excerpt
-                : (summaryNode ? summaryNode.textContent.trim() : "");
+            if (summaryText) {
+                serviceModalSummary.textContent = summaryText;
+                serviceModalSummary.classList.remove("d-none");
+            } else {
+                serviceModalSummary.textContent = "";
+                serviceModalSummary.classList.add("d-none");
+            }
         }
         if (serviceModalBody) {
-            var parts = (detail || "").split(/\n\n+/).filter(Boolean);
-            if (parts.length > 1) {
-                serviceModalBody.innerHTML = parts.map(function (p) {
-                    var safe = p.replace(/</g, "&lt;").replace(/&/g, "&amp;");
-                    safe = safe.replace(/&amp;#(\d+);/g, function (_, n) {
-                        return String.fromCharCode(parseInt(n, 10));
-                    });
-                    safe = safe.replace(/&amp;amp;/g, "&amp;");
-                    return "<p>" + safe + "</p>";
-                }).join("");
-            } else {
-                serviceModalBody.textContent = detail;
-            }
+            detail = kslNormalizeServiceText(kslDecodeHtml(detail));
+            var parts = detail.split(/\n\n+/).filter(function (p) {
+                return p && p.length > 1 && !/^our .+ services include:?\s*$/i.test(p);
+            });
+            serviceModalBody.innerHTML = parts.map(function (p) {
+                var para = document.createElement("p");
+                para.textContent = p;
+                return para.outerHTML;
+            }).join("");
+        }
+        var scrollRegion = serviceModalEl && serviceModalEl.querySelector(".ksl-service-modal-scroll");
+        if (scrollRegion) {
+            scrollRegion.scrollTop = 0;
         }
         if (serviceModalLink) {
             serviceModalLink.href = trigger.getAttribute("data-ksl-link") || "contact.html";

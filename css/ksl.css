@@ -503,77 +503,307 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     z-index: 1060;
 }
 
+#kslServiceModal.modal {
+    --bs-modal-margin: 0.5rem;
+}
+
+.ksl-service-modal-dialog {
+    max-width: min(1120px, 96vw);
+    margin: 1.25rem auto;
+}
+
 .ksl-service-modal {
     position: relative;
-    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 6px;
+    overflow: hidden;
+    max-height: min(92vh, 920px);
 }
 
 .ksl-service-modal-close {
     position: absolute;
-    top: 14px;
-    right: 14px;
-    z-index: 3;
+    top: 12px;
+    right: 12px;
+    z-index: 5;
     background-color: #fff;
     border-radius: 4px;
     padding: 10px;
     box-shadow: 0 4px 16px rgba(9, 41, 108, .12);
 }
 
-.ksl-service-modal-media {
-    min-height: 220px;
-    max-height: 520px;
-    background: #09296C;
+.ksl-service-modal-layout {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: min(92vh, 920px);
 }
 
-.ksl-service-modal-media img {
+.ksl-service-modal-media {
+    background: #09296C;
+    min-height: 200px;
+}
+
+.ksl-service-modal-img {
     display: block;
-    min-height: 220px;
-    max-height: 520px;
+    width: 100%;
+    height: 100%;
+    min-height: 200px;
+    max-height: min(92vh, 920px);
     object-fit: cover;
 }
 
-.ksl-service-modal-panel {
+.ksl-service-modal-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: min(92vh, 920px);
     background: #fff;
+}
+
+.ksl-service-modal-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1.5rem 1.5rem 1rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+.ksl-service-modal-kicker {
+    margin: 0 0 0.35rem;
+    font-family: Manrope, sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #0165FC;
+}
+
+.ksl-service-modal-title {
+    margin: 0 0 0.75rem;
+    font-family: Poppins, sans-serif;
+    font-size: clamp(1.2rem, 2.2vw, 1.55rem);
+    font-weight: 700;
+    line-height: 1.3;
+    color: #09296C;
+    padding-right: 2rem;
+}
+
+.ksl-service-modal-summary {
+    margin: 0 0 1.25rem;
+    padding: 0.85rem 1rem;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: #273272;
+    background: #F4F7FB;
+    border-radius: 4px;
+}
+
+.ksl-service-modal-section-label {
+    margin: 0 0 0.65rem;
+    font-family: Manrope, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #99792c;
 }
 
 .ksl-service-modal-detail {
     color: #273272;
-    font-size: 1rem;
-    line-height: 1.65;
+    font-size: 0.98rem;
+    line-height: 1.7;
 }
 
 .ksl-service-modal-detail p {
-    margin-bottom: 1rem;
+    margin: 0 0 1rem;
 }
 
 .ksl-service-modal-detail p:last-child {
     margin-bottom: 0;
 }
 
+.ksl-service-modal-downloads {
+    margin-top: 1.5rem;
+    padding: 1rem 1.1rem;
+    background: #FAFBFD;
+    border: 1px solid rgba(9, 41, 108, .08);
+    border-radius: 4px;
+}
+
 .ksl-service-modal-downloads-list li {
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.4rem;
+}
+
+.ksl-service-modal-downloads-list li:last-child {
+    margin-bottom: 0;
 }
 
 .ksl-service-modal-downloads-list a {
     font-weight: 600;
     text-decoration: none;
+    color: #0165FC;
 }
 
 .ksl-service-modal-downloads-list a:hover {
     text-decoration: underline;
 }
 
+.ksl-service-modal-actions {
+    flex: 0 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    align-items: center;
+    padding: 1rem 1.5rem 1.25rem;
+    background: #fff;
+    border-top: 1px solid rgba(9, 41, 108, .1);
+    box-shadow: 0 -8px 24px rgba(9, 41, 108, .06);
+}
+
+.ksl-service-modal-actions .btn-link {
+    padding-left: 0;
+    padding-right: 0;
+    font-weight: 600;
+}
+
 .ksl-services-page-grid .service-item .ksl-service-more {
     cursor: pointer;
 }
 
-@media (max-width: 991.98px) {
-    .ksl-service-modal-media {
-        max-height: 240px;
+@media (min-width: 992px) {
+    #kslServiceModal .ksl-service-modal-dialog {
+        display: flex;
+        align-items: center;
+        min-height: calc(100% - 2.5rem);
     }
 
-    .ksl-service-modal-media img {
-        max-height: 240px;
+    .ksl-service-modal-layout {
+        flex-wrap: nowrap;
+        min-height: min(72vh, 640px);
+    }
+
+    .ksl-service-modal-media {
+        position: sticky;
+        top: 0;
+        align-self: stretch;
+        max-height: min(92vh, 920px);
+    }
+
+    .ksl-service-modal-scroll {
+        padding: 1.75rem 2rem 1.25rem;
+    }
+
+    .ksl-service-modal-actions {
+        padding: 1rem 2rem 1.5rem;
+    }
+}
+
+@media (max-width: 991.98px) {
+    #kslServiceModal .ksl-service-modal-dialog {
+        display: flex;
+        flex-direction: column;
+        width: calc(100% - 1rem);
+        max-width: calc(100% - 1rem);
+        margin: max(0.5rem, env(safe-area-inset-top, 0px)) auto max(0.5rem, env(safe-area-inset-bottom, 0px));
+        max-height: calc(100dvh - 1rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        height: auto;
+    }
+
+    #kslServiceModal .ksl-service-modal-dialog .ksl-service-modal {
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+        max-height: 100%;
+    }
+
+    .ksl-service-modal {
+        max-height: calc(100dvh - 1rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    }
+
+    .ksl-service-modal-layout {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: 100%;
+    }
+
+    .ksl-service-modal-layout > [class*="col-"] {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .ksl-service-modal-media {
+        flex: 0 0 auto;
+    }
+
+    .ksl-service-modal-main {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+        width: 100%;
+    }
+
+    .ksl-service-modal-img {
+        width: 100%;
+        max-height: min(32vh, 200px);
+        min-height: 140px;
+        height: auto;
+    }
+
+    .ksl-service-modal-scroll {
+        padding: 1rem 1rem 0.75rem;
+    }
+
+    .ksl-service-modal-title {
+        font-size: 1.125rem;
+        padding-right: 2.75rem;
+    }
+
+    .ksl-service-modal-summary {
+        font-size: 0.9rem;
+        padding: 0.75rem 0.85rem;
+    }
+
+    .ksl-service-modal-detail {
+        font-size: 0.92rem;
+        line-height: 1.65;
+    }
+
+    .ksl-service-modal-close {
+        top: max(8px, env(safe-area-inset-top, 0px));
+        right: 8px;
+    }
+
+    .ksl-service-modal-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem max(0.85rem, env(safe-area-inset-bottom, 0px));
+    }
+
+    .ksl-service-modal-actions .btn {
+        width: 100%;
+        margin: 0;
+    }
+
+    .ksl-service-modal-actions .btn-link {
+        width: 100%;
+        text-align: center;
+        padding: 0.35rem 0;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .ksl-service-modal-img {
+        max-height: 160px;
+        min-height: 120px;
+    }
+
+    .ksl-service-modal-kicker {
+        font-size: 0.72rem;
     }
 }
 
@@ -3078,7 +3308,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     display: flex;
     flex-direction: column;
     height: auto;
-    min-height: clamp(720px, 96vh, 1040px);
+    min-height: clamp(820px, 100vh, 1180px);
     overflow: hidden;
     background: #09296C url("../img/ksl/mombasa.webp") center 42% / cover no-repeat;
 }
@@ -3115,7 +3345,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     gap: 12px;
     width: min(100%, 680px);
     align-self: center;
-    margin: auto auto 0;
+    margin: clamp(-88px, -7vh, -52px) auto 0;
     padding: 0 clamp(16px, 4vw, 32px) clamp(6px, 1.2vh, 16px);
     box-sizing: border-box;
     text-align: center;
@@ -3265,11 +3495,12 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
 .ksl-hero-video {
     position: absolute;
     left: 0;
-    top: -8%;
+    top: -14%;
     width: 100%;
-    height: 116%;
+    height: 128%;
+    min-height: 100%;
     object-fit: cover;
-    object-position: center 42%;
+    object-position: center 38%;
     opacity: 0;
     filter: brightness(0.95) saturate(0.92) contrast(1.02);
     transform: translate3d(0, 0, 0);
@@ -3517,7 +3748,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
 
 @media (max-width: 991.98px) {
     .ksl-hero {
-        min-height: clamp(640px, 88vh, 900px);
+        min-height: clamp(720px, 92vh, 1000px);
     }
 
     .ksl-hero-copy {
