@@ -19,8 +19,8 @@
     <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
-    <link href="css/ksl.css?v=20260405" rel="stylesheet">
-    <script src="js/intro.js?v=20260405"></script>
+    <link href="css/ksl.css?v=20260407" rel="stylesheet">
+    <script src="js/intro.js?v=20260406"></script>
 </head>
 
 <body data-ksl-scripts="core wow parallax counter lightbox" data-ksl-page="home">
@@ -148,7 +148,7 @@
     </div>
 
     <div class="ksl-hero">
-        <video class="ksl-hero-video" poster="img/ksl/mombasa.webp" muted loop playsinline preload="none" title="Kenya Shipyards Limited" data-src="img/ksl/Kenya Shipyards Limited.mp4" data-start="5" aria-hidden="true"></video>
+        <video class="ksl-hero-video" poster="img/ksl/mombasa.webp" muted loop playsinline preload="none" title="Kenya Shipyards Limited" data-src="img/ksl/hero.mp4" data-start="5" aria-hidden="true"></video>
         <div class="ksl-hero-shade" aria-hidden="true"></div>
         <div class="ksl-hero-copy">
             <div class="ksl-hero-intro">
@@ -506,11 +506,11 @@
         </div>
     </div>
 
-    <div class="container-xxl py-5 bg-light">
-        <div class="container" data-ksl-parallax="0.1" data-ksl-parallax-max="58">
-            <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
+    <div class="container-xxl py-5 bg-light ksl-home-news-section">
+        <div class="container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 ksl-section-head mb-4">
                 <h2 class="mb-0">News Room</h2>
-                <a class="btn btn-outline-primary" href="news.html">View all news</a>
+                <a class="btn btn-outline-primary flex-shrink-0" href="news.html">View all news</a>
             </div>
             <div id="ksl-home-news-grid"></div>
         </div>
@@ -572,9 +572,14 @@
                             <h3 class="h4 mb-3" id="kslServiceModalTitle"></h3>
                             <p class="fw-semibold text-secondary mb-3" id="kslServiceModalSummary"></p>
                             <div class="ksl-service-modal-detail mb-4" id="kslServiceModalBody"></div>
+                            <div class="ksl-service-modal-downloads mb-4 d-none" id="kslServiceModalDownloads">
+                                <p class="fw-bold text-primary mb-2">Related downloads</p>
+                                <ul class="list-unstyled mb-0 ksl-service-modal-downloads-list" id="kslServiceModalDownloadsList"></ul>
+                            </div>
                             <div class="d-flex flex-wrap gap-2 align-items-center">
                                 <a class="btn btn-primary" id="kslServiceModalLink" href="service.html">View all services</a>
                                 <a class="btn btn-outline-primary" href="contact.html">Request a quote</a>
+                                <a class="btn btn-link px-0" href="downloads.html">All corporate documents</a>
                             </div>
                         </div>
                     </div>

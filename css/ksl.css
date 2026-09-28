@@ -379,9 +379,48 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     margin-right: 0;
 }
 
-.service-item:hover .service-text .btn,
-.service-item.is-held .service-text .btn {
-    width: 148px;
+/* Service cards: icon-only pill by default; label on hover / is-held */
+.service-item.rounded.d-flex.h-100 {
+    flex-direction: column;
+}
+
+.service-item .service-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    width: 100%;
+}
+
+.service-item .service-text > p:not(.ksl-service-excerpt),
+.service-item .service-text .ksl-service-excerpt {
+    flex: 1 1 auto;
+}
+
+.service-item .service-text .ksl-service-foot,
+.service-item .service-text > .btn,
+.service-item .service-text > a.btn {
+    flex: 0 0 auto;
+    margin-top: auto;
+    padding-top: 16px;
+    align-self: center;
+}
+
+.service-item .service-text .btn.px-3 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+.service-item .service-text .btn {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    height: 40px;
+    padding: 0 !important;
+    justify-content: center;
+    gap: 0;
+    font-size: 0;
+    line-height: 0;
+    overflow: hidden;
 }
 
 .service-item .service-text .btn .ksl-ico {
@@ -392,22 +431,62 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     display: block;
 }
 
-.service-item:hover .service-text .btn .ksl-ico,
-.service-item.is-held .service-text .btn .ksl-ico {
-    margin-right: 6px !important;
-}
-
 .service-item .service-text .btn .ksl-service-more-text {
+    display: inline-block;
     max-width: 0;
     opacity: 0;
     overflow: hidden;
-    transition: max-width .45s ease, opacity .35s ease;
+    font-size: 0;
+    line-height: 0;
+    vertical-align: middle;
+    transition: max-width .4s ease, opacity .3s ease, margin .4s ease;
+}
+
+.service-item:hover .service-text .btn,
+.service-item.is-held .service-text .btn {
+    width: 148px;
+    min-width: 148px;
+    max-width: 148px;
+    height: 40px;
+    justify-content: flex-start;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.service-item:hover .service-text .btn .ksl-ico,
+.service-item.is-held .service-text .btn .ksl-ico {
+    margin-right: 6px !important;
 }
 
 .service-item:hover .service-text .btn .ksl-service-more-text,
 .service-item.is-held .service-text .btn .ksl-service-more-text {
     max-width: 7em;
     opacity: 1;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+/* Home grid: keep icon-only on card hover; expand label when Read More is active */
+.ksl-services-grid .service-item:hover:not(.is-held) .service-text .btn {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    justify-content: center;
+    font-size: 0;
+    line-height: 0;
+}
+
+.ksl-services-grid .service-item:hover:not(.is-held) .service-text .btn .ksl-ico {
+    margin-right: 0 !important;
+}
+
+.ksl-services-grid .service-item:hover:not(.is-held) .service-text .btn .ksl-service-more-text {
+    max-width: 0;
+    opacity: 0;
 }
 
 .service-item .service-text .btn.ksl-service-more {
@@ -463,6 +542,31 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     line-height: 1.65;
 }
 
+.ksl-service-modal-detail p {
+    margin-bottom: 1rem;
+}
+
+.ksl-service-modal-detail p:last-child {
+    margin-bottom: 0;
+}
+
+.ksl-service-modal-downloads-list li {
+    margin-bottom: 0.35rem;
+}
+
+.ksl-service-modal-downloads-list a {
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.ksl-service-modal-downloads-list a:hover {
+    text-decoration: underline;
+}
+
+.ksl-services-page-grid .service-item .ksl-service-more {
+    cursor: pointer;
+}
+
 @media (max-width: 991.98px) {
     .ksl-service-modal-media {
         max-height: 240px;
@@ -502,6 +606,8 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     width: 100%;
     display: flex;
     justify-content: center;
+    align-items: center;
+    min-height: 56px;
 }
 
 /* Home services: card hover → Read More; Read More hover → photo morph */
@@ -585,20 +691,29 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     border-color: rgba(255, 255, 255, .9) !important;
 }
 
-.ksl-services-grid .service-item:focus-within .service-text .btn {
+.ksl-services-grid .service-item.is-held .service-text .btn,
+.ksl-services-grid .service-item:focus-within .service-text .btn.ksl-service-more:focus {
     width: 148px;
+    min-width: 148px;
+    max-width: 148px;
     justify-content: flex-start;
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    font-size: 1rem;
+    line-height: 1.5;
 }
 
-.ksl-services-grid .service-item:focus-within .service-text .btn .ksl-ico {
+.ksl-services-grid .service-item.is-held .service-text .btn .ksl-ico,
+.ksl-services-grid .service-item:focus-within .service-text .btn.ksl-service-more:focus .ksl-ico {
     margin-right: 6px !important;
 }
 
-.ksl-services-grid .service-item:focus-within .service-text .btn .ksl-service-more-text {
+.ksl-services-grid .service-item.is-held .service-text .btn .ksl-service-more-text,
+.ksl-services-grid .service-item:focus-within .service-text .btn.ksl-service-more:focus .ksl-service-more-text {
     max-width: 7em;
     opacity: 1;
+    font-size: 1rem;
+    line-height: 1.5;
 }
 
 .value-line {
@@ -4043,6 +4158,19 @@ html[lang="sw"] .ksl-library .download-button .download::after {
     }
 }
 
+.ksl-home-news-section {
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.ksl-home-news-section .ksl-section-head {
+    position: relative;
+    z-index: 1;
+    padding-top: 8px;
+}
+
 .ksl-logo-head {
     margin-bottom: 18px;
 }
@@ -5010,12 +5138,15 @@ html.ksl-intro-pending body {
     visibility: visible;
     cursor: pointer;
     background: radial-gradient(ellipse at 50% 40%, #0A3E95 0%, #09296C 55%, #061a45 100%);
-    transition: transform .9s cubic-bezier(.77, 0, .18, 1), opacity .9s ease;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    transition: transform .7s cubic-bezier(.22, 1, .36, 1), opacity .7s ease;
+    contain: layout style paint;
 }
 
 .ksl-intro.is-leaving {
-    transform: translateY(-100%);
-    opacity: .6;
+    transform: translate3d(0, -12vh, 0);
+    opacity: 0;
     pointer-events: none;
 }
 
@@ -5027,9 +5158,10 @@ html.ksl-intro-pending body {
     height: 520px;
     border-radius: 50%;
     background: radial-gradient(circle, rgba(201, 169, 92, .28) 0%, rgba(153, 121, 44, 0) 70%);
-    transform: translate(-50%, -50%) scale(.4);
+    transform: translate3d(-50%, -50%, 0) scale(.4);
     opacity: 0;
-    animation: kslIntroGlow 2.4s ease-out .2s forwards;
+    will-change: transform, opacity;
+    animation: kslIntroGlow 2.4s cubic-bezier(.22, 1, .36, 1) .2s forwards;
 }
 
 .ksl-intro-stage {
@@ -5040,6 +5172,7 @@ html.ksl-intro-pending body {
     padding: 0 20px;
     margin-top: -40px;
     text-align: center;
+    transform: translate3d(0, 0, 0);
 }
 
 .ksl-intro-badge {
@@ -5084,11 +5217,21 @@ html.ksl-intro-pending body {
     overflow: hidden;
     border-radius: 50%;
     opacity: 0;
-    transform: scale(.4);
-    box-shadow: 0 0 0 0 rgba(201, 169, 92, .5);
-    animation:
-        kslIntroPop .9s cubic-bezier(.34, 1.56, .64, 1) .7s forwards,
-        kslIntroPulse 1.6s ease-out 1.5s;
+    transform: scale(.88) translate3d(0, 0, 0);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .22);
+    animation: kslIntroPop .75s cubic-bezier(.22, 1, .36, 1) .55s forwards;
+}
+
+.ksl-intro-logo::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid rgba(201, 169, 92, .45);
+    opacity: 0;
+    transform: scale(.92);
+    pointer-events: none;
+    animation: kslIntroPulseRing 1.35s cubic-bezier(.22, 1, .36, 1) 1.35s forwards;
 }
 
 .ksl-intro-logo img {
@@ -5101,12 +5244,12 @@ html.ksl-intro-pending body {
 .ksl-intro-shine {
     position: absolute;
     top: -20%;
-    left: -80%;
+    left: 0;
     width: 50%;
     height: 140%;
-    background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, .55) 50%, rgba(255, 255, 255, 0) 100%);
-    transform: skewX(-20deg);
-    animation: kslIntroShine 1s ease-in-out 1.6s forwards;
+    background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, .45) 50%, rgba(255, 255, 255, 0) 100%);
+    transform: skewX(-20deg) translate3d(-160%, 0, 0);
+    animation: kslIntroShine 0.9s cubic-bezier(.22, 1, .36, 1) 1.45s forwards;
 }
 
 .ksl-intro-name {
@@ -5122,11 +5265,13 @@ html.ksl-intro-pending body {
 }
 
 .ksl-intro-line {
-    width: 0;
+    width: min(320px, 70vw);
     height: 2px;
     margin: 16px auto 14px;
     background: linear-gradient(90deg, transparent, var(--ksl-intro-gold-light), var(--ksl-intro-gold), var(--ksl-intro-gold-light), transparent);
-    animation: kslIntroLine .8s ease-out 1.8s forwards;
+    transform: scaleX(0);
+    transform-origin: center;
+    animation: kslIntroLine .75s cubic-bezier(.22, 1, .36, 1) 1.65s forwards;
 }
 
 .ksl-intro-tag {
@@ -5147,16 +5292,20 @@ html.ksl-intro-pending body {
     bottom: 0;
     width: 200%;
     height: 110px;
+    transform: translate3d(0, 0, 0);
+    pointer-events: none;
 }
 
 .ksl-intro-wave-back {
     fill: rgba(153, 121, 44, .22);
-    animation: kslIntroWave 7s linear infinite;
+    animation: kslIntroWave 9s linear infinite;
+    will-change: transform;
 }
 
 .ksl-intro-wave-front {
     fill: rgba(10, 62, 149, .85);
-    animation: kslIntroWave 4.5s linear infinite reverse;
+    animation: kslIntroWave 6s linear infinite reverse;
+    will-change: transform;
 }
 
 @keyframes kslIntroDraw {
@@ -5164,29 +5313,29 @@ html.ksl-intro-pending body {
 }
 
 @keyframes kslIntroPop {
-    to { opacity: 1; transform: scale(1); }
+    to { opacity: 1; transform: scale(1) translate3d(0, 0, 0); }
 }
 
-@keyframes kslIntroPulse {
-    0% { box-shadow: 0 0 0 0 rgba(201, 169, 92, .55); }
-    100% { box-shadow: 0 0 0 38px rgba(201, 169, 92, 0); }
+@keyframes kslIntroPulseRing {
+    0% { opacity: .55; transform: scale(.92); }
+    100% { opacity: 0; transform: scale(1.28); }
 }
 
 @keyframes kslIntroShine {
-    to { left: 130%; }
+    to { transform: skewX(-20deg) translate3d(280%, 0, 0); }
 }
 
 @keyframes kslIntroGlow {
-    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    to { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1); }
 }
 
 @keyframes kslIntroName {
-    from { opacity: 0; letter-spacing: .6em; filter: blur(6px); }
-    to { opacity: 1; letter-spacing: .14em; filter: blur(0); }
+    from { opacity: 0; letter-spacing: .32em; }
+    to { opacity: 1; letter-spacing: .14em; }
 }
 
 @keyframes kslIntroLine {
-    to { width: min(320px, 70vw); }
+    to { transform: scaleX(1); }
 }
 
 @keyframes kslIntroFadeUp {
@@ -5194,8 +5343,12 @@ html.ksl-intro-pending body {
 }
 
 @keyframes kslIntroWave {
-    from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(-50%, 0, 0); }
+}
+
+html.ksl-intro-active .ksl-hero-video {
+    opacity: 0 !important;
 }
 
 @media (max-width: 575.98px) {

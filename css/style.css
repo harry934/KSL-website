@@ -302,26 +302,12 @@ h6,
 }
 
 .service-item .service-text .btn {
-    width: 31px;
-    height: 31px;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
     color: var(--dark);
     background: var(--light);
     white-space: nowrap;
-    overflow: hidden;
-    padding-left: 0;
-    padding-right: 0;
-    transition: .3s;
-}
-
-.service-item:hover .service-text .btn,
-.service-item.is-held .service-text .btn {
-    width: 112px;
-    justify-content: flex-start;
-    padding-left: 12px;
-    padding-right: 12px;
+    transition: width .4s ease, padding .4s ease, background .3s, color .3s;
 }
 
 

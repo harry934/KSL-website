@@ -60,6 +60,12 @@
         var EXIT = reduceMotion ? 300 : 900;
 
         root.classList.add("ksl-intro-pending");
+        root.classList.add("ksl-intro-active");
+        try {
+            window.dispatchEvent(new CustomEvent("ksl-intro-started"));
+        } catch (e) {
+            /* ignore */
+        }
 
         var intro = document.createElement("div");
         intro.className = "ksl-intro";
@@ -96,6 +102,12 @@
             done = true;
             intro.classList.add("is-leaving");
             root.classList.remove("ksl-intro-pending");
+            root.classList.remove("ksl-intro-active");
+            try {
+                window.dispatchEvent(new CustomEvent("ksl-intro-ended"));
+            } catch (e) {
+                /* ignore */
+            }
             window.setTimeout(function () {
                 if (intro.parentNode) {
                     intro.parentNode.removeChild(intro);

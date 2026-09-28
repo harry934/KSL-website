@@ -117,6 +117,54 @@
             heroVideoStart = 0;
         }
         var heroVideoAttached = false;
+        var heroVideoEnabled = true;
+
+        function homeWillShowIntro() {
+            var path = (window.location.pathname || "").split("/").pop() || "index.html";
+            var isHome = path === "index.html" || path === "";
+            if (!isHome) {
+                return false;
+            }
+            if (/[?&]ksl-intro=1(?:&|$)/.test(window.location.search || "")) {
+                return true;
+            }
+            try {
+                return sessionStorage.getItem("ksl-intro-seen") !== "1";
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function introIsBlockingHero() {
+            var root = document.documentElement;
+            return root.classList.contains("ksl-intro-active") ||
+                root.classList.contains("ksl-intro-pending") ||
+                homeWillShowIntro();
+        }
+
+        if (introIsBlockingHero()) {
+            heroVideoEnabled = false;
+        }
+
+        function enableHeroVideo() {
+            if (heroVideoEnabled) {
+                return;
+            }
+            heroVideoEnabled = true;
+            if (heroMediaObserver && hero) {
+                heroMediaObserver.observe(hero);
+            } else {
+                playHeroVideo();
+            }
+        }
+
+        function disableHeroVideoForIntro() {
+            heroVideoEnabled = false;
+            pauseHeroVideo();
+        }
+
+        window.addEventListener("ksl-intro-ended", enableHeroVideo);
+        window.addEventListener("ksl-intro-started", disableHeroVideoForIntro);
 
         var seekHeroVideoToStart = function () {
             if (heroVideo.duration > heroVideoStart + 0.5) {
@@ -140,13 +188,13 @@
         }, { once: true });
 
         var attachHeroVideo = function () {
-            if (heroVideoAttached) {
+            if (!heroVideoEnabled || heroVideoAttached) {
                 return;
             }
             heroVideoAttached = true;
             var src = heroVideo.getAttribute("data-src");
             if (src && !heroVideo.getAttribute("src")) {
-                heroVideo.setAttribute("src", src);
+                heroVideo.src = src;
                 heroVideo.load();
             }
             if (heroVideo.readyState >= 1 && heroVideoStart > 0) {
@@ -155,6 +203,9 @@
         };
 
         var playHeroVideo = function () {
+            if (!heroVideoEnabled) {
+                return;
+            }
             attachHeroVideo();
             var playPromise = heroVideo.play();
             if (playPromise && typeof playPromise.catch === "function") {
@@ -166,10 +217,11 @@
             heroVideo.pause();
         };
 
+        var heroMediaObserver = null;
         if (reduceMotion.matches) {
             heroVideo.removeAttribute("data-src");
         } else if ("IntersectionObserver" in window) {
-            var heroMediaObserver = new IntersectionObserver(function (entries) {
+            heroMediaObserver = new IntersectionObserver(function (entries) {
                 entries.forEach(function (entry) {
                     if (entry.isIntersecting) {
                         playHeroVideo();
@@ -178,8 +230,10 @@
                     }
                 });
             }, { threshold: 0.15 });
-            heroMediaObserver.observe(hero);
-        } else {
+            if (heroVideoEnabled) {
+                heroMediaObserver.observe(hero);
+            }
+        } else if (heroVideoEnabled) {
             playHeroVideo();
         }
 
@@ -506,6 +560,9 @@
             readMore.addEventListener("click", latchPhotoReveal);
             return;
         }
+        if (card.closest(".ksl-services-page-grid")) {
+            return;
+        }
         var hold = function () {
             card.classList.add("is-held");
         };
@@ -514,12 +571,12 @@
     });
 
     var serviceModalEl = document.getElementById("kslServiceModal");
-    var showKslServiceModal = function (trigger) {
+    var showKslServiceModal = function (trigger, cardOverride) {
         if (!serviceModalEl || !trigger) {
             return;
         }
-        var card = trigger.closest(".service-item");
-        if (card && card.closest(".ksl-services-grid")) {
+        var card = cardOverride || trigger.closest(".service-item");
+        if (card) {
             card.classList.add("is-held");
         }
         var serviceModalTitle = document.getElementById("kslServiceModalTitle");
@@ -527,27 +584,83 @@
         var serviceModalBody = document.getElementById("kslServiceModalBody");
         var serviceModalLink = document.getElementById("kslServiceModalLink");
         var serviceModalImg = document.getElementById("kslServiceModalImg");
+        var serviceModalDownloads = document.getElementById("kslServiceModalDownloads");
+        var serviceModalDownloadsList = document.getElementById("kslServiceModalDownloadsList");
         var title = trigger.getAttribute("data-ksl-title") || "";
         var detail = trigger.getAttribute("data-ksl-detail") || "";
         var summaryNode = card && (card.querySelector(".ksl-service-excerpt") || card.querySelector(".service-text > p"));
         var imgNode = card && card.querySelector(".service-img img");
+        var slug = trigger.getAttribute("data-ksl-slug");
+        var catalog = window.kslServicesCatalog;
+        var item = slug && window.kslServicesBySlug ? window.kslServicesBySlug[slug] : null;
+
+        if (item) {
+            title = item.title || title;
+            detail = item.detail || detail;
+            if (item.excerpt) {
+                summaryNode = null;
+            }
+            if (item.image && serviceModalImg) {
+                serviceModalImg.src = item.image;
+                serviceModalImg.alt = item.title || "";
+            }
+        }
 
         if (serviceModalTitle) {
             serviceModalTitle.textContent = title;
         }
         if (serviceModalSummary) {
-            serviceModalSummary.textContent = summaryNode ? summaryNode.textContent.trim() : "";
+            serviceModalSummary.textContent = item && item.excerpt
+                ? item.excerpt
+                : (summaryNode ? summaryNode.textContent.trim() : "");
         }
         if (serviceModalBody) {
-            serviceModalBody.textContent = detail;
+            var parts = (detail || "").split(/\n\n+/).filter(Boolean);
+            if (parts.length > 1) {
+                serviceModalBody.innerHTML = parts.map(function (p) {
+                    var safe = p.replace(/</g, "&lt;").replace(/&/g, "&amp;");
+                    safe = safe.replace(/&amp;#(\d+);/g, function (_, n) {
+                        return String.fromCharCode(parseInt(n, 10));
+                    });
+                    safe = safe.replace(/&amp;amp;/g, "&amp;");
+                    return "<p>" + safe + "</p>";
+                }).join("");
+            } else {
+                serviceModalBody.textContent = detail;
+            }
         }
         if (serviceModalLink) {
-            serviceModalLink.href = trigger.getAttribute("data-ksl-link") || "service.html";
-            serviceModalLink.textContent = trigger.getAttribute("data-ksl-link-label") || "Learn more";
+            serviceModalLink.href = trigger.getAttribute("data-ksl-link") || "contact.html";
+            serviceModalLink.textContent = trigger.getAttribute("data-ksl-link-label") || "Request a quote";
         }
-        if (serviceModalImg && imgNode) {
+        if (serviceModalImg && imgNode && !(item && item.image)) {
             serviceModalImg.src = imgNode.getAttribute("src") || "";
             serviceModalImg.alt = imgNode.getAttribute("alt") || title;
+        }
+
+        if (serviceModalDownloads && serviceModalDownloadsList) {
+            serviceModalDownloadsList.innerHTML = "";
+            var downloadIds = item && item.downloads ? item.downloads : [];
+            var downloadCatalog = catalog && catalog.downloadCatalog ? catalog.downloadCatalog : {};
+            if (downloadIds.length) {
+                downloadIds.forEach(function (id) {
+                    var file = downloadCatalog[id];
+                    if (!file) {
+                        return;
+                    }
+                    var li = document.createElement("li");
+                    var a = document.createElement("a");
+                    a.href = file.href;
+                    a.target = "_blank";
+                    a.rel = "noopener";
+                    a.textContent = file.title;
+                    li.appendChild(a);
+                    serviceModalDownloadsList.appendChild(li);
+                });
+                serviceModalDownloads.classList.remove("d-none");
+            } else {
+                serviceModalDownloads.classList.add("d-none");
+            }
         }
 
         var ModalApi = window.bootstrap && window.bootstrap.Modal;
@@ -571,6 +684,8 @@
             document.body.appendChild(backdrop);
         }
     };
+
+    window.showKslServiceModal = showKslServiceModal;
 
     document.addEventListener("click", function (event) {
         var trigger = event.target.closest(".ksl-service-more");
