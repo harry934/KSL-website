@@ -40,7 +40,7 @@
         ".ksl-wa-pop p{margin:0 0 12px;font:600 14px/1.45 Arial,Helvetica,sans-serif;color:#273272}",
         ".ksl-wa-pop a{display:block;margin:0 0 8px;padding:10px 12px;background:#25D366;color:#fff;text-align:center;text-decoration:none;font:700 14px/1 Arial,Helvetica,sans-serif;border-radius:4px}",
         ".ksl-wa-pop button{display:block;width:100%;border:0;background:#216073;color:#fff;padding:8px 10px;cursor:pointer;font:700 14px/1 Arial,Helvetica,sans-serif}",
-        "@media (max-width:991.98px){.ksl-wa-pop{right:36px;bottom:calc(72px + env(safe-area-inset-bottom,0px));border-radius:0}}"
+        "@media (max-width:991.98px){.ksl-wa-pop{right:36px;bottom:calc(72px + env(safe-area-inset-bottom,0px));border-radius:0}.ksl-a11y-toggle,.whatsapp-fab{transition:opacity .28s ease,transform .28s ease,visibility .28s ease !important}html.ksl-tabs-hidden .ksl-a11y-toggle,html.ksl-tabs-hidden .whatsapp-fab{opacity:0 !important;visibility:hidden !important;pointer-events:none !important;transform:translateX(120%) !important}}"
     ].join("");
     document.head.appendChild(style);
 
@@ -199,4 +199,30 @@
         paintFont();
         if (saved.flags) Object.keys(saved.flags).forEach(function (name) { if (saved.flags[name]) setFlag(name, true); });
     } catch (e) {}
+
+    (function bindMobileTabIdle() {
+        var mq = window.matchMedia("(max-width: 991.98px)");
+        var html = document.documentElement;
+        var idleTimer = 0;
+        var IDLE_MS = 700;
+
+        function showTabs() {
+            html.classList.remove("ksl-tabs-hidden");
+        }
+
+        function hideWhileActive() {
+            if (!mq.matches) {
+                showTabs();
+                return;
+            }
+            html.classList.add("ksl-tabs-hidden");
+            window.clearTimeout(idleTimer);
+            idleTimer = window.setTimeout(showTabs, IDLE_MS);
+        }
+
+        window.addEventListener("scroll", hideWhileActive, { passive: true });
+        if (mq.addEventListener) {
+            mq.addEventListener("change", showTabs);
+        }
+    })();
 })();
