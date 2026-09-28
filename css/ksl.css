@@ -4215,18 +4215,29 @@ html[lang="sw"] .ksl-library .download-button .download::after {
 
 .whatsapp-fab {
     position: fixed !important;
-    right: 24px !important;
-    bottom: 24px !important;
-    display: grid !important;
-    place-items: center;
-    width: 46px !important;
-    height: 46px !important;
-    border: 1.5px solid #111 !important;
-    border-radius: 50% !important;
+    right: 0 !important;
+    bottom: 120px !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: auto !important;
+    height: auto !important;
+    padding: 10px 16px !important;
+    border: 0 !important;
+    border-radius: 8px 0 0 8px !important;
     background: #25D366 !important;
     color: #fff !important;
     box-shadow: none !important;
+    font: 700 13px/1 Manrope, Arial, sans-serif !important;
+    letter-spacing: .02em;
+    text-decoration: none !important;
+    white-space: nowrap;
+    z-index: 1045;
     transition: filter 180ms ease !important;
+}
+
+.whatsapp-fab::after {
+    content: "WhatsApp";
 }
 
 .whatsapp-fab:hover {
@@ -4238,10 +4249,7 @@ html[lang="sw"] .ksl-library .download-button .download::after {
 }
 
 .whatsapp-fab .ksl-wa {
-    width: 24px;
-    height: 24px;
-    display: block;
-    fill: currentColor;
+    display: none !important;
 }
 
 /* ── Mobile bottom navigation ── */
@@ -4406,11 +4414,11 @@ html[lang="sw"] .ksl-library .download-button .download::after {
     }
 
     .whatsapp-fab {
-        right: 16px !important;
-        bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important;
-        width: 48px !important;
-        height: 48px !important;
-        border-radius: 50% !important;
+        right: 0 !important;
+        bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+        width: auto !important;
+        height: auto !important;
+        border-radius: 8px 0 0 8px !important;
         z-index: 1045;
     }
 
@@ -4488,10 +4496,11 @@ html[lang="sw"] .ksl-library .download-button .download::after {
 
 @media (max-width: 575.98px) {
     .whatsapp-fab {
-        right: 14px !important;
-        bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important;
-        width: 46px !important;
-        height: 46px !important;
+        right: 0 !important;
+        bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+        width: auto !important;
+        height: auto !important;
+        border-radius: 8px 0 0 8px !important;
     }
 }
 
