@@ -17,6 +17,10 @@
         return data.baseUrl + item.file;
     }
 
+    function displayFilename(name) {
+        return String(name || "").replace(/-/g, " ");
+    }
+
     function matches(item) {
         if (activeCategory !== "all" && item.category !== activeCategory) {
             return false;
@@ -54,7 +58,7 @@
             group.rows.forEach(function (item) {
                 var url = fileUrl(item, data);
                 var sub = item.subtitle ? '<p class="text-muted small mb-1">' + item.subtitle + "</p>" : "";
-                html += "<li><div><h3>" + item.title + "</h3>" + sub + "<p>" + item.filename + "</p>";
+                html += "<li><div><h3>" + item.title + "</h3>" + sub + "<p>" + displayFilename(item.filename) + "</p>";
                 html += '<p class="ksl-downloads-meta"><span>' + item.type + "</span> · <span>" + item.language + "</span> · <span>" + item.date + "</span></p></div>";
                 html += '<a class="download-button" href="' + url + '" target="_blank" rel="noopener"><span class="docs">Download</span><span class="download" aria-hidden="true">↓</span></a></li>';
             });

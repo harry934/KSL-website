@@ -1,10 +1,22 @@
 {
   "boilerplate": "Kenya Shipyards Limited (KSL) is a state corporation under the Ministry of Defence, catalyzing shipbuilding, repair, and heavy engineering from yards in Mombasa and Kisumu.",
   "contactEmail": "publicaffairs@kenyashipyards.co.ke",
-  "contactPhone": "+254-726-277-377",
+  "contactPhone": "+254 726 277 377",
   "assets": [
-    { "title": "KSL logo (PNG)", "href": "img/ksl/logo.png", "type": "Image" },
-    { "title": "Photo gallery", "href": "videos.html#photos", "type": "Gallery" },
-    { "title": "KSL Brochure", "downloadId": "brochure", "type": "PDF" }
+    {
+      "title": "KSL logo (PNG)",
+      "href": "img/ksl/logo.png",
+      "type": "Image"
+    },
+    {
+      "title": "Photo gallery",
+      "href": "videos.html#photos",
+      "type": "Gallery"
+    },
+    {
+      "title": "KSL Brochure",
+      "downloadId": "brochure",
+      "type": "PDF"
+    }
   ]
 }
