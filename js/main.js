@@ -318,6 +318,33 @@
         updateParallax();
     }
 
+    var factsBg = document.querySelector(".facts-bg");
+    if (factsBg && !reduceMotion.matches) {
+        var factsSection = factsBg.parentElement;
+        var factsTicking = false;
+        var updateFacts = function () {
+            var rect = factsSection.getBoundingClientRect();
+            var viewport = window.innerHeight || document.documentElement.clientHeight;
+            if (rect.bottom < 0 || rect.top > viewport) {
+                factsTicking = false;
+                return;
+            }
+            var progress = (viewport - rect.top) / (viewport + rect.height);
+            var shift = (0.5 - progress) * 40;
+            factsBg.style.transform = "translate3d(0, " + shift.toFixed(2) + "px, 0)";
+            factsTicking = false;
+        };
+        var requestFacts = function () {
+            if (!factsTicking) {
+                window.requestAnimationFrame(updateFacts);
+                factsTicking = true;
+            }
+        };
+        window.addEventListener("scroll", requestFacts, { passive: true });
+        window.addEventListener("resize", requestFacts);
+        updateFacts();
+    }
+
     document.querySelectorAll(".ksl-search").forEach(function (form) {
         var input = form.querySelector('input[type="search"]');
         if (!input) return;

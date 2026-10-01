@@ -50,6 +50,25 @@
         window.history.replaceState(null, "", path);
     }
 
+    function taglineMarkup() {
+        var text = "Catalyzing Shipbuilding Industry";
+        var gold = "Shipbuilding";
+        var goldStart = text.indexOf(gold);
+        var html = "";
+        var i;
+
+        for (i = 0; i < text.length; i++) {
+            var ch = text.charAt(i);
+            var cls = "ksl-intro-letter";
+            if (i >= goldStart && i < goldStart + gold.length) {
+                cls += " is-gold";
+            }
+            html += '<span class="' + cls + '" style="--i:' + i + '">' + (ch === " " ? "&nbsp;" : ch) + "</span>";
+        }
+
+        return '<div class="ksl-intro-tagline" aria-hidden="true">' + html + "</div>";
+    }
+
     function playKslIntro() {
         if (document.querySelector(".ksl-intro")) {
             return;
@@ -72,8 +91,8 @@
         intro.setAttribute("role", "presentation");
         intro.innerHTML =
             '<video class="ksl-intro-video" muted playsinline preload="auto" aria-hidden="true">' +
-                '<source src="img/ksl/logo-intro-mobile.mp4" media="(max-width: 575.98px)" type="video/mp4">' +
-                '<source src="img/ksl/logo-intro.mp4" type="video/mp4">' +
+                '<source src="img/ksl/logo-intro-mobile.mp4?v=20261001-18" media="(max-width: 575.98px)" type="video/mp4">' +
+                '<source src="img/ksl/logo-intro.mp4?v=20261001-18" type="video/mp4">' +
             '</video>' +
             '<div class="ksl-intro-ship-silhouette" aria-hidden="true">' +
                 '<svg viewBox="0 0 640 180" focusable="false">' +
@@ -84,7 +103,7 @@
             '<div class="ksl-intro-logo-shadow" aria-hidden="true"></div>' +
             '<div class="ksl-intro-ripples" aria-hidden="true"><span></span><span></span></div>' +
             '<div class="ksl-intro-reflection" aria-hidden="true"><img src="img/ksl/logo.png" alt=""></div>' +
-            '<div class="ksl-intro-tagline" aria-hidden="true">Catalyzing Shipbuilding Industry</div>';
+            taglineMarkup();
 
         document.body.appendChild(intro);
         window.requestAnimationFrame(function () {
@@ -234,7 +253,7 @@
                 intro.classList.toggle("show-ship", remaining <= 2.5);
                 intro.classList.toggle("show-logo-depth", remaining <= 2.1);
                 intro.classList.toggle("show-ripples", remaining <= 1.85);
-                intro.classList.toggle("show-tagline", remaining <= 1.2);
+                intro.classList.toggle("show-tagline", remaining <= 1.45);
             });
             video.addEventListener("ended", function () {
                 finish(true);

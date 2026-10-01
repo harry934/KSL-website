@@ -3796,6 +3796,36 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     background: #fff;
 }
 
+.facts {
+    position: relative;
+    overflow: hidden;
+    background: #1b2a52;
+}
+
+.facts-bg {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -22%;
+    height: 144%;
+    background-position: center;
+    background-size: cover;
+    transform: translate3d(0, 0, 0);
+    z-index: 0;
+}
+
+.facts-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(39, 50, 114, .55);
+}
+
+.facts > .container {
+    position: relative;
+    z-index: 1;
+}
+
 [data-ksl-parallax] {
     transform: translate3d(0, var(--ksl-parallax-y, 0), 0);
     will-change: transform;
@@ -4147,6 +4177,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
 
 @media (prefers-reduced-motion: reduce) {
     [data-ksl-parallax],
+    .facts-bg,
     .about-frame-main img,
     .about-gallery-support .about-frame img,
     .ksl-lift-card,
@@ -6123,22 +6154,43 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     top: calc(50% + clamp(92px, 11vw, 136px));
     left: 50%;
     z-index: 3;
-    width: min(88vw, 640px);
+    width: min(88vw, 720px);
     color: #09296C;
     font: 700 clamp(.82rem, 1.6vw, 1.12rem)/1.4 Poppins, sans-serif;
-    letter-spacing: .26em;
+    letter-spacing: .08em;
     text-align: center;
     text-transform: uppercase;
     opacity: 0;
     pointer-events: none;
     transform: translate3d(-50%, 14px, 0);
-    transition: letter-spacing .72s cubic-bezier(.22, 1, .36, 1), opacity .45s ease, transform .55s cubic-bezier(.22, 1, .36, 1);
+    transition: opacity .01s linear, transform .55s cubic-bezier(.22, 1, .36, 1);
 }
 
 .ksl-intro.show-tagline .ksl-intro-tagline {
-    letter-spacing: .08em;
     opacity: 1;
     transform: translate3d(-50%, 0, 0);
+}
+
+.ksl-intro-letter {
+    display: inline-block;
+    opacity: 0;
+    transform: translate3d(0, .35em, 0);
+}
+
+.ksl-intro.show-tagline .ksl-intro-letter {
+    animation: kslIntroLetter .36s cubic-bezier(.22, 1, .36, 1) forwards;
+    animation-delay: calc(var(--i) * 26ms);
+}
+
+.ksl-intro-letter.is-gold {
+    color: #C9A95C;
+}
+
+@keyframes kslIntroLetter {
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
 }
 
 .ksl-intro-flight-logo {
@@ -6406,13 +6458,9 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
 
     .ksl-intro-tagline {
         top: calc(50% + 142px);
-        width: min(84vw, 360px);
-        font-size: .78rem;
-        letter-spacing: .18em;
-    }
-
-    .ksl-intro.show-tagline .ksl-intro-tagline {
-        letter-spacing: .06em;
+        width: min(92vw, 420px);
+        font-size: .72rem;
+        letter-spacing: .04em;
     }
 
     .ksl-intro-flight-logo {
