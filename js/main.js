@@ -656,12 +656,16 @@
     document.querySelectorAll(".service-item").forEach(function (card) {
         var readMore = card.querySelector(".ksl-service-more");
         if (card.closest(".ksl-services-grid") && readMore) {
-            var latchPhotoReveal = function () {
+            var showPhoto = function () {
                 card.classList.add("is-held");
             };
-            readMore.addEventListener("mouseenter", latchPhotoReveal);
-            readMore.addEventListener("focus", latchPhotoReveal);
-            readMore.addEventListener("click", latchPhotoReveal);
+            var hidePhoto = function () {
+                card.classList.remove("is-held");
+            };
+            readMore.addEventListener("mouseenter", showPhoto);
+            readMore.addEventListener("mouseleave", hidePhoto);
+            readMore.addEventListener("focus", showPhoto);
+            readMore.addEventListener("blur", hidePhoto);
             return;
         }
         if (card.closest(".ksl-services-page-grid")) {
@@ -673,6 +677,72 @@
         card.addEventListener("mouseenter", hold);
         card.addEventListener("focusin", hold);
     });
+
+    (function kslServiceScrollReveal() {
+        var grid = document.querySelector(".ksl-services-grid");
+        if (!grid) {
+            return;
+        }
+        var cards = Array.prototype.slice.call(grid.querySelectorAll(".service-item"));
+        if (!cards.length) {
+            return;
+        }
+        var timers = [];
+        var pause = 900;
+        var step = 380;
+
+        function clearTimers() {
+            timers.forEach(function (id) {
+                window.clearTimeout(id);
+            });
+            timers = [];
+        }
+
+        function resetCards() {
+            clearTimers();
+            cards.forEach(function (card) {
+                card.classList.remove("is-revealed");
+            });
+        }
+
+        function revealCards() {
+            resetCards();
+            if (reduceMotion.matches) {
+                cards.forEach(function (card) {
+                    card.classList.add("is-revealed");
+                });
+                return;
+            }
+            timers.push(window.setTimeout(function () {
+                cards.forEach(function (card, index) {
+                    timers.push(window.setTimeout(function () {
+                        card.classList.add("is-revealed");
+                    }, index * step));
+                });
+            }, pause));
+        }
+
+        if (!("IntersectionObserver" in window)) {
+            revealCards();
+            return;
+        }
+
+        var playing = false;
+        var revealObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                var visible = entry.isIntersecting && entry.intersectionRatio >= 0.2;
+                if (visible && !playing) {
+                    playing = true;
+                    revealCards();
+                } else if (!visible && playing) {
+                    playing = false;
+                    resetCards();
+                }
+            });
+        }, { threshold: [0, 0.2, 0.5] });
+
+        revealObserver.observe(grid);
+    })();
 
     function kslDecodeHtml(text) {
         if (!text) {
