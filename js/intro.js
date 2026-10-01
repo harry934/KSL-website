@@ -75,12 +75,15 @@
                 '<source src="img/ksl/logo-intro-mobile.mp4" media="(max-width: 575.98px)" type="video/mp4">' +
                 '<source src="img/ksl/logo-intro.mp4" type="video/mp4">' +
             '</video>' +
-            '<div class="ksl-intro-home-tone" aria-hidden="true"></div>' +
-            '<div class="ksl-intro-sparks" aria-hidden="true">' +
-                '<span></span><span></span><span></span><span></span>' +
-                '<span></span><span></span><span></span><span></span>' +
+            '<div class="ksl-intro-ship-silhouette" aria-hidden="true">' +
+                '<svg viewBox="0 0 640 180" focusable="false">' +
+                    '<path d="M48 112h116l28-30h54V48h126v34h42l42 30h136l-38 40H106z"></path>' +
+                    '<path d="M278 48V22h14v26m42 0V10h10v38M238 66h146" fill="none"></path>' +
+                '</svg>' +
             '</div>' +
+            '<div class="ksl-intro-logo-shadow" aria-hidden="true"></div>' +
             '<div class="ksl-intro-ripples" aria-hidden="true"><span></span><span></span></div>' +
+            '<div class="ksl-intro-reflection" aria-hidden="true"><img src="img/ksl/logo.png" alt=""></div>' +
             '<div class="ksl-intro-tagline" aria-hidden="true">Catalyzing Shipbuilding Industry</div>';
 
         document.body.appendChild(intro);
@@ -99,8 +102,9 @@
 
             if (reduceMotion) {
                 video.pause();
+                intro.classList.add("show-ship");
+                intro.classList.add("show-logo-depth");
                 intro.classList.add("show-tagline");
-                intro.classList.add("match-home");
                 window.setTimeout(finish, 900);
                 return;
             }
@@ -211,10 +215,10 @@
                     return;
                 }
                 var remaining = video.duration - video.currentTime;
-                intro.classList.toggle("show-sparks", video.currentTime >= 0.65 && remaining >= 1.45);
+                intro.classList.toggle("show-ship", remaining <= 2.5);
+                intro.classList.toggle("show-logo-depth", remaining <= 2.1);
                 intro.classList.toggle("show-ripples", remaining <= 1.85);
                 intro.classList.toggle("show-tagline", remaining <= 1.2);
-                intro.classList.toggle("match-home", remaining <= 0.65);
             });
             video.addEventListener("ended", function () {
                 finish(true);

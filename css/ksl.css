@@ -5527,66 +5527,91 @@ html.ksl-intro-pending body {
     animation: kslIntroVideoEase 4s cubic-bezier(.45, 0, .2, 1) both;
 }
 
-.ksl-intro-home-tone {
+.ksl-intro-ship-silhouette {
     position: absolute;
-    inset: 0;
+    top: calc(50% - 42px);
+    left: 50%;
     z-index: 1;
-    background: radial-gradient(circle at 50% 49%, rgba(6, 26, 69, .12) 0%, rgba(9, 41, 108, .68) 48%, #061a45 100%);
+    width: min(78vw, 620px);
+    color: #09296C;
     opacity: 0;
     pointer-events: none;
-    transition: opacity .72s cubic-bezier(.45, 0, .2, 1);
+    transform: translate3d(-50%, 18px, 0) scale(.96);
+    transition: opacity .8s ease, transform .95s cubic-bezier(.22, 1, .36, 1);
+    -webkit-mask-image: radial-gradient(circle at 50% 46%, transparent 0 72px, #000 110px);
+    mask-image: radial-gradient(circle at 50% 46%, transparent 0 72px, #000 110px);
 }
 
-.ksl-intro.match-home .ksl-intro-home-tone {
-    opacity: 1;
+.ksl-intro-ship-silhouette svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    fill: currentColor;
+    stroke: currentColor;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
-.ksl-intro-sparks {
+.ksl-intro-ship-silhouette path[fill="none"] {
+    fill: none;
+}
+
+.ksl-intro.show-ship .ksl-intro-ship-silhouette {
+    opacity: .13;
+    transform: translate3d(-50%, 0, 0) scale(1);
+}
+
+.ksl-intro-logo-shadow {
     position: absolute;
-    top: 50%;
+    top: calc(50% + 62px);
+    left: 50%;
+    z-index: 1;
+    width: 190px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(4, 20, 52, .34);
+    filter: blur(13px);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(-50%, 8px, 0) scale(.68);
+    transition: opacity .65s ease, transform .75s cubic-bezier(.22, 1, .36, 1);
+}
+
+.ksl-intro.show-logo-depth .ksl-intro-logo-shadow {
+    opacity: .22;
+    transform: translate3d(-50%, 0, 0) scale(1);
+}
+
+.ksl-intro-reflection {
+    position: absolute;
+    top: calc(50% + 72px);
     left: 50%;
     z-index: 2;
-    width: 190px;
-    height: 190px;
+    width: clamp(108px, 11vw, 148px);
+    height: 72px;
+    overflow: hidden;
     opacity: 0;
     pointer-events: none;
-    transform: translate3d(-50%, -50%, 0);
-    transition: opacity .3s ease;
+    transform: translate3d(-50%, 10px, 0) scale(.92);
+    transition: opacity .7s ease, transform .8s cubic-bezier(.22, 1, .36, 1);
+    -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, .7), transparent 88%);
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, .7), transparent 88%);
 }
 
-.ksl-intro.show-sparks .ksl-intro-sparks {
-    opacity: .68;
+.ksl-intro-reflection img {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: blur(1.2px) saturate(.72);
+    transform: translate3d(0, -42%, 0) scaleY(-1);
+    transform-origin: center;
 }
 
-.ksl-intro-sparks span {
-    --spark-angle: 0deg;
-    --spark-travel: 26px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 2px;
-    height: 16px;
-    border-radius: 2px;
-    background: linear-gradient(180deg, #FFF6C8 0%, #D8AF49 45%, rgba(201, 169, 92, 0) 100%);
-    box-shadow: 0 0 6px rgba(216, 175, 73, .7);
-    opacity: 0;
-    transform-origin: 50% 0;
-    animation: kslIntroSpark .78s cubic-bezier(.18, .72, .22, 1) infinite;
-    animation-play-state: paused;
+.ksl-intro.show-logo-depth .ksl-intro-reflection {
+    opacity: .14;
+    transform: translate3d(-50%, 0, 0) scale(1);
 }
-
-.ksl-intro.show-sparks .ksl-intro-sparks span {
-    animation-play-state: running;
-}
-
-.ksl-intro-sparks span:nth-child(1) { --spark-angle: 8deg; --spark-travel: 24px; animation-delay: -.08s; }
-.ksl-intro-sparks span:nth-child(2) { --spark-angle: 49deg; --spark-travel: 32px; animation-delay: -.46s; }
-.ksl-intro-sparks span:nth-child(3) { --spark-angle: 94deg; --spark-travel: 22px; animation-delay: -.22s; }
-.ksl-intro-sparks span:nth-child(4) { --spark-angle: 141deg; --spark-travel: 35px; animation-delay: -.61s; }
-.ksl-intro-sparks span:nth-child(5) { --spark-angle: 187deg; --spark-travel: 27px; animation-delay: -.34s; }
-.ksl-intro-sparks span:nth-child(6) { --spark-angle: 231deg; --spark-travel: 31px; animation-delay: -.7s; }
-.ksl-intro-sparks span:nth-child(7) { --spark-angle: 278deg; --spark-travel: 23px; animation-delay: -.15s; }
-.ksl-intro-sparks span:nth-child(8) { --spark-angle: 326deg; --spark-travel: 34px; animation-delay: -.53s; }
 
 .ksl-intro-ripples {
     position: absolute;
@@ -5632,23 +5657,19 @@ html.ksl-intro-pending body {
     width: min(88vw, 640px);
     color: #09296C;
     font: 700 clamp(.82rem, 1.6vw, 1.12rem)/1.4 Poppins, sans-serif;
-    letter-spacing: .08em;
+    letter-spacing: .26em;
     text-align: center;
     text-transform: uppercase;
     opacity: 0;
     pointer-events: none;
     transform: translate3d(-50%, 14px, 0);
-    transition: color .45s ease, opacity .45s ease, transform .55s cubic-bezier(.22, 1, .36, 1);
+    transition: letter-spacing .72s cubic-bezier(.22, 1, .36, 1), opacity .45s ease, transform .55s cubic-bezier(.22, 1, .36, 1);
 }
 
 .ksl-intro.show-tagline .ksl-intro-tagline {
+    letter-spacing: .08em;
     opacity: 1;
     transform: translate3d(-50%, 0, 0);
-}
-
-.ksl-intro.match-home .ksl-intro-tagline {
-    color: #fff;
-    text-shadow: 0 2px 14px rgba(0, 0, 0, .32);
 }
 
 .ksl-intro-flight-logo {
@@ -5670,18 +5691,6 @@ html.ksl-intro-pending body {
     0% { transform: scale(1.018) translate3d(0, 0, 0); }
     48% { transform: scale(1.009) translate3d(0, 0, 0); }
     100% { transform: scale(1) translate3d(0, 0, 0); }
-}
-
-@keyframes kslIntroSpark {
-    0% {
-        opacity: 0;
-        transform: rotate(var(--spark-angle)) translate3d(0, -52px, 0) scaleY(.25);
-    }
-    18% { opacity: .95; }
-    100% {
-        opacity: 0;
-        transform: rotate(var(--spark-angle)) translate3d(0, calc(-52px - var(--spark-travel)), 0) scaleY(.08);
-    }
 }
 
 @keyframes kslIntroRipple {
@@ -5895,9 +5904,24 @@ html.ksl-intro-active .ksl-hero-video {
         object-position: center center;
     }
 
-    .ksl-intro-sparks {
-        width: 224px;
-        height: 224px;
+    .ksl-intro-ship-silhouette {
+        top: calc(50% - 58px);
+        width: min(118vw, 460px);
+        -webkit-mask-image: radial-gradient(circle at 50% 46%, transparent 0 94px, #000 132px);
+        mask-image: radial-gradient(circle at 50% 46%, transparent 0 94px, #000 132px);
+    }
+
+    .ksl-intro-logo-shadow {
+        top: calc(50% + 88px);
+        width: 228px;
+        height: 40px;
+        filter: blur(15px);
+    }
+
+    .ksl-intro-reflection {
+        top: calc(50% + 104px);
+        width: 172px;
+        height: 88px;
     }
 
     .ksl-intro-ripples {
@@ -5910,6 +5934,10 @@ html.ksl-intro-active .ksl-hero-video {
         top: calc(50% + 142px);
         width: min(84vw, 360px);
         font-size: .78rem;
+        letter-spacing: .18em;
+    }
+
+    .ksl-intro.show-tagline .ksl-intro-tagline {
         letter-spacing: .06em;
     }
 
