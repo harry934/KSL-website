@@ -13,8 +13,89 @@
     var activeCategory = "all";
     var query = "";
 
-    function fileUrl(item, data) {
-        return data.baseUrl + item.file;
+    var SOURCE = "http://10.104.4.139/corporate-documents/";
+    var FILE_RE = /\.(pdf|docx?|xlsx?|pptx?|csv|zip)(?:$|[?#])/i;
+
+    function fileUrl(item) {
+        return item.href || item.file;
+    }
+
+    function escapeHtml(value) {
+        return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    }
+
+    function absoluteUrl(href) {
+        try {
+            return new URL(href, SOURCE).href;
+        } catch (e) {
+            return "";
+        }
+    }
+
+    function slugify(value) {
+        return String(value || "documents").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "documents";
+    }
+
+    function headingFor(link) {
+        var node = link;
+        while (node && node.parentElement) {
+            var prev = node.previousElementSibling;
+            while (prev) {
+                if (/^H[1-3]$/.test(prev.tagName)) {
+                    return prev.textContent.replace(/\s+/g, " ").trim();
+                }
+                var inner = prev.querySelector && prev.querySelector("h1, h2, h3");
+                if (inner) {
+                    return inner.textContent.replace(/\s+/g, " ").trim();
+                }
+                prev = prev.previousElementSibling;
+            }
+            node = node.parentElement;
+        }
+        return "Corporate documents";
+    }
+
+    function documentsFromHtml(html) {
+        var doc = new DOMParser().parseFromString(html, "text/html");
+        var seen = {};
+        var items = [];
+        Array.prototype.forEach.call(doc.querySelectorAll("a[href]"), function (link) {
+            if (link.closest("nav, header, footer")) {
+                return;
+            }
+            var href = absoluteUrl(link.getAttribute("href"));
+            if (!href || seen[href] || !FILE_RE.test(href)) {
+                return;
+            }
+            seen[href] = true;
+            var filename = href.split("/").pop().split("?")[0].split("#")[0];
+            try {
+                filename = decodeURIComponent(filename);
+            } catch (e) {
+                /* keep raw name */
+            }
+            var label = (link.textContent || "").replace(/\s+/g, " ").trim();
+            if (!label || label.length > 140 || /^https?:/i.test(label)) {
+                label = filename.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ");
+            }
+            var group = headingFor(link) || "Corporate documents";
+            items.push({
+                title: label,
+                category: slugify(group),
+                categoryLabel: group,
+                language: "",
+                date: "",
+                type: (filename.split(".").pop() || "file").toUpperCase(),
+                href: href,
+                filename: filename,
+                anchor: slugify(group)
+            });
+        });
+        return items;
     }
 
     function displayFilename(name) {
@@ -71,15 +152,16 @@
         var html = "";
         Object.keys(byAnchor).forEach(function (key) {
             var group = byAnchor[key];
-            html += '<section class="ksl-library-group" id="' + key + '">';
-            html += "<h2>" + group.label + "</h2>";
+            html += '<section class="ksl-library-group" id="' + escapeHtml(key) + '">';
+            html += "<h2>" + escapeHtml(group.label) + "</h2>";
             html += '<ul class="ksl-library-list">';
             group.rows.forEach(function (item) {
-                var url = fileUrl(item, data);
-                var sub = item.subtitle ? '<p class="text-muted small mb-1">' + item.subtitle + "</p>" : "";
-                html += "<li><div><h3>" + item.title + "</h3>" + sub + "<p>" + displayFilename(item.filename) + "</p>";
-                html += '<p class="ksl-downloads-meta"><span>' + item.type + "</span> · <span>" + item.language + "</span> · <span>" + item.date + "</span></p></div>";
-                html += '<a class="download-button" href="' + url + '" target="_blank" rel="noopener"><span class="docs">Download</span><span class="download" aria-hidden="true">↓</span></a></li>';
+                var url = fileUrl(item);
+                var sub = item.subtitle ? '<p class="text-muted small mb-1">' + escapeHtml(item.subtitle) + "</p>" : "";
+                var meta = [item.type, item.language, item.date].filter(Boolean).map(escapeHtml).join(" · ");
+                html += "<li><div><h3>" + escapeHtml(item.title) + "</h3>" + sub + "<p>" + escapeHtml(displayFilename(item.filename)) + "</p>";
+                html += '<p class="ksl-downloads-meta">' + meta + "</p></div>";
+                html += '<a class="download-button" href="' + escapeHtml(url) + '" target="_blank" rel="noopener"><span class="docs">Download</span><span class="download" aria-hidden="true">↓</span></a></li>';
             });
             html += "</ul></section>";
         });
@@ -135,23 +217,45 @@
         });
     }
 
-    fetch("data/downloads.json")
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-            window.__kslDownloadsData = data;
-            items = data.items || [];
-            var cats = [];
-            var seen = {};
-            items.forEach(function (item) {
-                if (!seen[item.category]) {
-                    seen[item.category] = true;
-                    cats.push({ id: item.category, label: item.categoryLabel });
-                }
-            });
-            bindFilters(cats);
-            render(data);
-        })
-        .catch(function () {
-            listRoot.innerHTML = '<section class="ksl-empty-state" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg><h3>Documents are unavailable</h3><p>Check your connection, then refresh the page.</p><div class="ksl-empty-state-actions"><button class="btn btn-primary" type="button" onclick="window.location.reload()">Try again</button></div></section>';
+    function showLoadError() {
+        if (!listRoot) {
+            return;
+        }
+        listRoot.innerHTML = '<iframe class="ksl-documents-frame" title="Corporate documents" src="' + SOURCE + '"></iframe>';
+    }
+
+    function publish(found) {
+        items = found;
+        window.__kslDownloadsData = { source: SOURCE, items: found };
+        var cats = [];
+        var seen = {};
+        found.forEach(function (item) {
+            if (!seen[item.category]) {
+                seen[item.category] = true;
+                cats.push({ id: item.category, label: item.categoryLabel });
+            }
         });
+        bindFilters(cats);
+        render(window.__kslDownloadsData);
+    }
+
+    if (listRoot) {
+        listRoot.innerHTML = '<p class="ksl-downloads-meta">Loading documents…</p>';
+    }
+
+    fetch(SOURCE, { credentials: "omit" })
+        .then(function (res) {
+            if (!res.ok) {
+                throw new Error("status");
+            }
+            return res.text();
+        })
+        .then(function (html) {
+            var found = documentsFromHtml(html);
+            if (!found.length) {
+                throw new Error("empty");
+            }
+            publish(found);
+        })
+        .catch(showLoadError);
 })();
