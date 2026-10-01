@@ -36,9 +36,28 @@
         if (!listRoot) {
             return;
         }
+        function emptyState(title, message, actionHtml) {
+            return (
+                '<section class="ksl-empty-state" role="status">' +
+                '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg>' +
+                "<h3>" + title + "</h3>" +
+                "<p>" + message + "</p>" +
+                '<div class="ksl-empty-state-actions">' + actionHtml + "</div>" +
+                "</section>"
+            );
+        }
+
         var visible = items.filter(matches);
         if (!visible.length) {
-            listRoot.innerHTML = '<p class="ksl-downloads-empty mb-0">No documents match your search.</p>';
+            var hasQuery = !!query;
+            var title = hasQuery ? "No matching documents" : "No documents found";
+            var message = hasQuery
+                ? "No files match “" + query + "”. Try another keyword or view the full library."
+                : "There are no documents in this category yet.";
+            var actions = hasQuery
+                ? '<button class="btn btn-primary" type="button" data-downloads-clear>Clear search</button><a class="btn btn-outline-primary" href="downloads.html">View all documents</a>'
+                : '<a class="btn btn-outline-primary" href="contact.html">Contact us</a>';
+            listRoot.innerHTML = emptyState(title, message, actions);
             return;
         }
         var byAnchor = {};
@@ -104,6 +123,18 @@
         });
     }
 
+    if (listRoot) {
+        listRoot.addEventListener("click", function (event) {
+            if (!event.target.closest("[data-downloads-clear]") || !searchInput) {
+                return;
+            }
+            searchInput.value = "";
+            query = "";
+            render(window.__kslDownloadsData);
+            searchInput.focus();
+        });
+    }
+
     fetch("data/downloads.json")
         .then(function (res) { return res.json(); })
         .then(function (data) {
@@ -121,6 +152,6 @@
             render(data);
         })
         .catch(function () {
-            listRoot.innerHTML = '<p class="ksl-downloads-empty mb-0">Could not load documents. Please refresh the page.</p>';
+            listRoot.innerHTML = '<section class="ksl-empty-state" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg><h3>Documents are unavailable</h3><p>Check your connection, then refresh the page.</p><div class="ksl-empty-state-actions"><button class="btn btn-primary" type="button" onclick="window.location.reload()">Try again</button></div></section>';
         });
 })();

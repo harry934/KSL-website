@@ -56,7 +56,7 @@
         }
 
         var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        var EXIT = reduceMotion ? 250 : 650;
+        var EXIT = reduceMotion ? 250 : 1200;
         var MAX_WAIT = reduceMotion ? 2200 : 10000;
 
         root.classList.add("ksl-intro-pending");
@@ -87,6 +87,19 @@
             '<div class="ksl-intro-tagline" aria-hidden="true">Catalyzing Shipbuilding Industry</div>';
 
         document.body.appendChild(intro);
+        window.requestAnimationFrame(function () {
+            window.requestAnimationFrame(function () {
+                if (done) {
+                    return;
+                }
+                root.classList.remove("ksl-intro-pending");
+                try {
+                    window.dispatchEvent(new CustomEvent("ksl-intro-underlay"));
+                } catch (e) {
+                    /* ignore */
+                }
+            });
+        });
 
         var video = intro.querySelector(".ksl-intro-video");
         var done = false;
@@ -99,6 +112,7 @@
             }
             clipStarted = true;
             intro.classList.add("is-ready");
+            root.classList.remove("ksl-intro-pending");
 
             if (reduceMotion) {
                 video.pause();
@@ -184,18 +198,20 @@
             if (video) {
                 video.pause();
             }
+            root.classList.remove("ksl-intro-pending");
+            root.classList.add("ksl-intro-handoff");
             if (moveLogoHome === true && !reduceMotion) {
                 animateLogoHome();
             }
             intro.classList.add("is-leaving");
-            root.classList.remove("ksl-intro-pending");
-            root.classList.remove("ksl-intro-active");
             try {
                 window.dispatchEvent(new CustomEvent("ksl-intro-ended"));
             } catch (e) {
                 /* ignore */
             }
             window.setTimeout(function () {
+                root.classList.remove("ksl-intro-active");
+                root.classList.remove("ksl-intro-handoff");
                 if (intro.parentNode) {
                     intro.parentNode.removeChild(intro);
                 }

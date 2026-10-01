@@ -40,7 +40,14 @@
             });
             html += "</div></section>";
         });
-        root.innerHTML = html || '<p class="mb-0">No questions match your search.</p>';
+        root.innerHTML = html || (
+            '<section class="ksl-empty-state" role="status">' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg>' +
+            "<h3>No matching questions</h3>" +
+            "<p>Try another keyword or browse the full FAQ.</p>" +
+            '<div class="ksl-empty-state-actions"><button class="btn btn-primary" type="button" data-faq-clear>Clear search</button></div>' +
+            "</section>"
+        );
     }
 
     fetch("data/faq.json")
@@ -53,5 +60,22 @@
                     render(groups, search.value.trim());
                 });
             }
+            root.addEventListener("click", function (event) {
+                if (!event.target.closest("[data-faq-clear]") || !search) {
+                    return;
+                }
+                search.value = "";
+                render(groups, "");
+                search.focus();
+            });
+        })
+        .catch(function () {
+            root.innerHTML =
+                '<section class="ksl-empty-state" role="status">' +
+                '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg>' +
+                "<h3>Questions are unavailable</h3>" +
+                "<p>Check your connection, then try again.</p>" +
+                '<div class="ksl-empty-state-actions"><button class="btn btn-primary" type="button" onclick="window.location.reload()">Try again</button></div>' +
+                "</section>";
         });
 })();

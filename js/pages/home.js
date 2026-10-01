@@ -18,6 +18,10 @@
         .then(function (res) { return res.json(); })
         .then(function (data) {
             var items = (data.items || []).slice(0, 4);
+            if (!items.length) {
+                mount.innerHTML = '<section class="ksl-empty-state" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg><h3>News is coming soon</h3><p>There are no published news articles yet.</p><div class="ksl-empty-state-actions"><a class="btn btn-outline-primary" href="contact.html">Contact us</a></div></section>';
+                return;
+            }
             mount.innerHTML = items.map(function (item) {
                 var href = "article.html?slug=" + encodeURIComponent(item.slug);
                 return (
@@ -31,5 +35,8 @@
                     "</div></article>"
                 );
             }).join("");
+        })
+        .catch(function () {
+            mount.innerHTML = '<section class="ksl-empty-state" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg><h3>News is unavailable</h3><p>Check your connection, then try again.</p><div class="ksl-empty-state-actions"><a class="btn btn-primary" href="news.html">Open newsroom</a></div></section>';
         });
 })();

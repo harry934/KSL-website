@@ -11,11 +11,13 @@
         "Who We Are": "Sisi ni nani",
         "KSL Board": "Bodi ya KSL",
         "Organization structure": "Muundo wa shirika",
+        "Organization Structure": "Muundo wa shirika",
         "Services": "Huduma",
         "Products": "Bidhaa",
         "Projects": "Miradi",
         "Media Center": "Kituo cha Habari",
         "News & Events": "Habari na Matukio",
+        "News and Events": "Habari na Matukio",
         "Gallery": "Ghala la Picha",
         "Video Gallery": "Ghala la Picha",
         "Photos": "Picha",
@@ -210,12 +212,14 @@
         });
     }
 
-    document.querySelectorAll(".top-lang button").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-            var lang = btn.getAttribute("data-lang") === "sw" ? "sw" : "en";
-            localStorage.setItem(KEY, lang);
-            apply(lang);
-        });
+    document.addEventListener("click", function (event) {
+        var btn = event.target.closest(".top-lang button[data-lang]");
+        if (!btn) {
+            return;
+        }
+        var lang = btn.getAttribute("data-lang") === "sw" ? "sw" : "en";
+        localStorage.setItem(KEY, lang);
+        apply(lang);
     });
 
     apply(current());

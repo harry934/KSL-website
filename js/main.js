@@ -16,14 +16,7 @@
     new WOW().init();
 
 
-    // Sticky Navbar
-    $(window).scroll(function () {
-        if ($(this).scrollTop() > 300) {
-            $('.sticky-top').addClass('shadow-sm').css('top', '0px');
-        } else {
-            $('.sticky-top').removeClass('shadow-sm').css('top', '-100px');
-        }
-    });
+    $(".sticky-top").css("top", "0px");
     
     
     // Facts counter
@@ -137,8 +130,10 @@
 
         function introIsBlockingHero() {
             var root = document.documentElement;
-            return root.classList.contains("ksl-intro-active") ||
-                root.classList.contains("ksl-intro-pending") ||
+            if (root.classList.contains("ksl-intro-handoff")) {
+                return false;
+            }
+            return root.classList.contains("ksl-intro-pending") ||
                 homeWillShowIntro();
         }
 
@@ -163,6 +158,7 @@
             pauseHeroVideo();
         }
 
+        window.addEventListener("ksl-intro-underlay", enableHeroVideo);
         window.addEventListener("ksl-intro-ended", enableHeroVideo);
         window.addEventListener("ksl-intro-started", disableHeroVideoForIntro);
 
@@ -339,49 +335,140 @@
         });
     });
 
-
     var searchQuery = new URLSearchParams(window.location.search).get("s");
-    if (searchQuery && document.getElementById("newsList")) {
-        var needle = searchQuery.trim().toLowerCase();
-        var cards = document.querySelectorAll("#newsList .news-hit");
-        var shown = 0;
-        cards.forEach(function (card) {
-            var hit = card.textContent.toLowerCase().indexOf(needle) !== -1;
-            card.style.display = hit ? "" : "none";
-            if (hit) shown += 1;
+    if (searchQuery && searchQuery.trim()) {
+        document.querySelectorAll('.ksl-search input[name="s"]').forEach(function (input) {
+            if (!input.value) {
+                input.value = searchQuery.trim();
+            }
         });
-        var note = document.getElementById("searchNote");
-        if (note) {
-            note.textContent = shown ? "Results for “" + searchQuery.trim() + "”" : "No results for “" + searchQuery.trim() + "”";
-        }
     }
 
     var currentPage = window.location.pathname.split("/").pop() || "index.html";
     var currentHash = window.location.hash || "";
-    document.querySelectorAll(".dropdown-item").forEach(function (link) {
-        var href = link.getAttribute("href") || "";
-        var parts = href.split("#");
-        var targetPage = parts[0];
+
+    function linkMatchesLocation(link) {
+        var rawHref = link.getAttribute("href") || "";
+        if (!rawHref || rawHref === "#" || /^(?:https?:|mailto:|tel:)/i.test(rawHref)) {
+            return false;
+        }
+        var parts = rawHref.split("#");
+        var targetPage = parts[0] || currentPage;
         var targetHash = parts[1] ? "#" + parts[1] : "";
-        var isActive = false;
-        if (targetPage === currentPage) {
-            if (targetHash) {
-                isActive = targetHash === currentHash;
-            } else {
-                isActive = true;
+        return targetPage === currentPage && (!targetHash || targetHash === currentHash);
+    }
+
+    var navbarNav = document.querySelector(".navbar .navbar-nav");
+    if (navbarNav) {
+        var navLinks = Array.prototype.slice.call(navbarNav.querySelectorAll(".nav-link, .dropdown-item"));
+        navLinks.forEach(function (link) {
+            link.classList.remove("active");
+            link.removeAttribute("aria-current");
+        });
+
+        var currentNavLink = navLinks.filter(function (link) {
+            return link.classList.contains("dropdown-item") && linkMatchesLocation(link);
+        })[0];
+        if (!currentNavLink) {
+            currentNavLink = navLinks.filter(function (link) {
+                return link.classList.contains("nav-link") && !link.classList.contains("dropdown-toggle") && linkMatchesLocation(link);
+            })[0];
+        }
+        if (!currentNavLink) {
+            currentNavLink = navLinks.filter(function (link) {
+                return link.classList.contains("nav-link") && linkMatchesLocation(link);
+            })[0];
+        }
+        if (currentNavLink) {
+            currentNavLink.classList.add("active");
+            currentNavLink.setAttribute("aria-current", "page");
+            var currentDropdown = currentNavLink.closest(".nav-item.dropdown");
+            if (currentDropdown) {
+                var currentToggle = currentDropdown.querySelector(".nav-link.dropdown-toggle");
+                if (currentToggle) {
+                    currentToggle.classList.add("active");
+                }
             }
         }
-        if (isActive) {
+
+        var sectionByPage = {
+            "about.html": "About KSL",
+            "board.html": "About KSL",
+            "organization.html": "About KSL",
+            "news.html": "Media Center",
+            "article.html": "Media Center",
+            "event.html": "Media Center",
+            "videos.html": "Media Center",
+            "downloads.html": "Downloads"
+        };
+        var activeSection = sectionByPage[currentPage];
+        if (activeSection) {
+            navbarNav.querySelectorAll(".nav-link.dropdown-toggle").forEach(function (toggle) {
+                if (toggle.textContent.trim() === activeSection) {
+                    toggle.classList.add("active");
+                    if (linkMatchesLocation(toggle) && !currentNavLink) {
+                        toggle.setAttribute("aria-current", "page");
+                    }
+                }
+            });
+        }
+    }
+
+    document.querySelectorAll(".navbar .nav-item.dropdown").forEach(function (item) {
+        var toggle = item.querySelector(":scope > .nav-link.dropdown-toggle");
+        if (!toggle) {
+            return;
+        }
+        toggle.setAttribute("aria-expanded", "false");
+        item.addEventListener("mouseenter", function () {
+            if (window.matchMedia("(max-width: 991.98px)").matches) {
+                return;
+            }
+            toggle.setAttribute("aria-expanded", "true");
+        });
+        item.addEventListener("mouseleave", function () {
+            toggle.setAttribute("aria-expanded", "false");
+        });
+        item.addEventListener("focusin", function () {
+            if (window.matchMedia("(max-width: 991.98px)").matches) {
+                return;
+            }
+            toggle.setAttribute("aria-expanded", "true");
+        });
+        item.addEventListener("focusout", function (event) {
+            if (item.contains(event.relatedTarget)) {
+                return;
+            }
+            toggle.setAttribute("aria-expanded", "false");
+        });
+    });
+
+    document.querySelectorAll(".top-links a").forEach(function (link) {
+        link.classList.remove("active");
+        link.removeAttribute("aria-current");
+        if (linkMatchesLocation(link)) {
             link.classList.add("active");
             link.setAttribute("aria-current", "page");
         }
     });
-    document.querySelectorAll(".nav-item.dropdown").forEach(function (item) {
-        var toggle = item.querySelector(".nav-link.dropdown-toggle");
-        if (!toggle) return;
-        if (item.querySelector(".dropdown-item.active")) {
-            toggle.classList.add("active");
+
+    document.querySelectorAll(".top-more").forEach(function (moreMenu) {
+        var toggle = moreMenu.querySelector(".dropdown-toggle");
+        var links = Array.prototype.slice.call(moreMenu.querySelectorAll(".dropdown-item"));
+        if (toggle) {
+            toggle.classList.remove("active");
         }
+        links.forEach(function (link) {
+            link.classList.remove("active");
+            link.removeAttribute("aria-current");
+            if (linkMatchesLocation(link)) {
+                link.classList.add("active");
+                link.setAttribute("aria-current", "page");
+                if (toggle) {
+                    toggle.classList.add("active");
+                }
+            }
+        });
     });
 
     document.querySelectorAll(".product-filters button").forEach(function (btn) {
@@ -741,9 +828,25 @@
 
     var heroReveal = document.querySelector(".ksl-hero");
     if (heroReveal) {
-        window.requestAnimationFrame(function () {
-            heroReveal.classList.add("is-revealed");
-        });
+        var revealHero = function (fromIntro) {
+            if (heroReveal.classList.contains("is-revealed")) {
+                return;
+            }
+            if (fromIntro) {
+                heroReveal.classList.add("is-intro-crossfade");
+            }
+            window.requestAnimationFrame(function () {
+                heroReveal.classList.add("is-revealed");
+            });
+        };
+        var introRoot = document.documentElement;
+        if (introRoot.classList.contains("ksl-intro-active") || introRoot.classList.contains("ksl-intro-pending")) {
+            window.addEventListener("ksl-intro-ended", function () {
+                revealHero(true);
+            }, { once: true });
+        } else {
+            revealHero(false);
+        }
     }
 
     // Gallery page: load photos + category filter
@@ -783,9 +886,20 @@
                 galleryRoot.appendChild(fig);
             });
             if (!visible) {
-                galleryRoot.innerHTML = '<p class="ksl-gallery-empty mb-0">No photos in this category yet. Try another filter or view <a href="videos.html#photos">all photos</a>.</p>';
+                galleryRoot.innerHTML = '<section class="ksl-empty-state" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.5"></circle><path d="m21 16-5.2-5.2a1.2 1.2 0 0 0-1.7 0L8 17"></path></svg><h3>No photos in this category</h3><p>Try another filter or view the full gallery.</p><div class="ksl-empty-state-actions"><button class="btn btn-primary" type="button" data-gallery-all>View all photos</button></div></section>';
             }
         };
+
+        galleryRoot.addEventListener("click", function (event) {
+            if (!event.target.closest("[data-gallery-all]")) {
+                return;
+            }
+            galleryFilter = "all";
+            document.querySelectorAll(".ksl-gallery-filters [data-ksl-gallery-filter]").forEach(function (btn) {
+                btn.classList.toggle("is-active", (btn.getAttribute("data-ksl-gallery-filter") || "all") === "all");
+            });
+            renderGallery();
+        });
 
         var videoMount = document.getElementById("ksl-gallery-videos");
         var featureMount = document.getElementById("ksl-video-feature");
@@ -854,7 +968,7 @@
                 renderVideos(data.videos || []);
             })
             .catch(function () {
-                galleryRoot.innerHTML = '<p class="ksl-gallery-loading mb-0">Could not load gallery. Please try again later.</p>';
+                galleryRoot.innerHTML = '<section class="ksl-empty-state" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.5"></circle><path d="m21 16-5.2-5.2a1.2 1.2 0 0 0-1.7 0L8 17"></path></svg><h3>Gallery is unavailable</h3><p>Check your connection, then refresh the page.</p><div class="ksl-empty-state-actions"><button class="btn btn-primary" type="button" onclick="window.location.reload()">Try again</button></div></section>';
             });
     }
 
@@ -863,158 +977,13 @@
             toggle.addEventListener("click", function (event) {
                 event.preventDefault();
             });
-            window.bootstrap.Dropdown.getOrCreateInstance(toggle);
+            if (typeof window.bootstrap.Dropdown.getOrCreateInstance === "function") {
+                window.bootstrap.Dropdown.getOrCreateInstance(toggle);
+            } else if (!window.bootstrap.Dropdown.getInstance(toggle)) {
+                new window.bootstrap.Dropdown(toggle);
+            }
         });
     }
-
-    (function initKslMobileNav() {
-        var mq = window.matchMedia("(max-width: 991.98px)");
-
-        function currentPage() {
-            var path = window.location.pathname || "";
-            var file = path.split("/").pop();
-            return file || "index.html";
-        }
-
-        function build() {
-            if (!mq.matches) {
-                return;
-            }
-            if (document.querySelector(".ksl-bottom-nav")) {
-                return;
-            }
-
-            var page = currentPage();
-            var iconHome = '<path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/>';
-            var iconService = '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>';
-            var iconAbout = '<path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4z"/><path d="M20 21a8 8 0 1 0-16 0"/>';
-            var iconGallery = '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="m21 17-5-5L5 21"/>';
-            var iconMenu = '<line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>';
-
-            var nav = document.createElement("nav");
-            nav.className = "ksl-bottom-nav";
-            nav.setAttribute("aria-label", "Primary");
-
-            var tabs = [
-                { href: "index.html", label: "Home", match: ["index.html", ""], icon: iconHome },
-                { href: "service.html", label: "Services", match: ["service.html"], icon: iconService },
-                { href: "about.html", label: "About", match: ["about.html", "board.html", "organization.html"], icon: iconAbout },
-                { href: "videos.html", label: "Gallery", match: ["videos.html"], icon: iconGallery }
-            ];
-
-            tabs.forEach(function (tab) {
-                var link = document.createElement("a");
-                link.href = tab.href;
-                if (tab.match.indexOf(page) !== -1) {
-                    link.classList.add("is-active");
-                }
-                link.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + tab.icon + "</svg><span>" + tab.label + "</span>";
-                nav.appendChild(link);
-            });
-
-            var menuBtn = document.createElement("button");
-            menuBtn.type = "button";
-            menuBtn.id = "kslOpenMobileSheet";
-            menuBtn.setAttribute("aria-label", "Open menu");
-            menuBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + iconMenu + "</svg><span>Menu</span>";
-            nav.appendChild(menuBtn);
-            document.body.appendChild(nav);
-
-            var sheet = document.createElement("div");
-            sheet.className = "ksl-mobile-sheet";
-            sheet.id = "kslMobileSheet";
-            sheet.setAttribute("role", "dialog");
-            sheet.setAttribute("aria-modal", "true");
-            sheet.setAttribute("aria-label", "Site menu");
-
-            var sections = [
-                {
-                    title: "About KSL",
-                    links: [
-                        { href: "about.html", label: "Who We Are" },
-                        { href: "board.html", label: "KSL Board" },
-                        { href: "organization.html", label: "Organization structure" }
-                    ]
-                },
-                {
-                    title: "Company",
-                    links: [
-                        { href: "products.html", label: "Products" },
-                        { href: "project.html", label: "Projects" },
-                        { href: "downloads.html", label: "Downloads" },
-                        { href: "contact.html", label: "Contact Us" }
-                    ]
-                },
-                {
-                    title: "Media",
-                    links: [
-                        { href: "news.html", label: "News & Events" },
-                        { href: "videos.html", label: "Gallery" }
-                    ]
-                },
-                {
-                    title: "More",
-                    links: [
-                        { href: "sustainability.html", label: "Sustainability" },
-                        { href: "csr.html", label: "CSR" },
-                        { href: "faq.html", label: "FAQ" },
-                        { href: "careers.html", label: "Careers" }
-                    ]
-                }
-            ];
-
-            var panelHtml = '<div class="ksl-mobile-sheet-panel"><div class="ksl-mobile-sheet-head"><h2>Menu</h2><button type="button" class="ksl-mobile-sheet-close" aria-label="Close menu">&times;</button></div>';
-            sections.forEach(function (section) {
-                panelHtml += "<section><h3>" + section.title + "</h3>";
-                section.links.forEach(function (link) {
-                    var active = link.href === page ? " is-active" : "";
-                    panelHtml += '<a class="' + active + '" href="' + link.href + '">' + link.label + "</a>";
-                });
-                panelHtml += "</section>";
-            });
-            panelHtml += "</div>";
-            sheet.innerHTML = panelHtml;
-            document.body.appendChild(sheet);
-
-            var extraPages = ["products.html", "project.html", "downloads.html", "contact.html", "news.html", "sustainability.html", "csr.html", "faq.html", "careers.html"];
-            if (extraPages.indexOf(page) !== -1) {
-                menuBtn.classList.add("is-active");
-            }
-
-            function openSheet() {
-                sheet.classList.add("is-open");
-                document.body.classList.add("ksl-sheet-open");
-            }
-
-            function closeSheet() {
-                sheet.classList.remove("is-open");
-                document.body.classList.remove("ksl-sheet-open");
-            }
-
-            menuBtn.addEventListener("click", openSheet);
-            sheet.querySelector(".ksl-mobile-sheet-close").addEventListener("click", closeSheet);
-            sheet.addEventListener("click", function (event) {
-                if (event.target === sheet) {
-                    closeSheet();
-                }
-            });
-            sheet.querySelectorAll("a").forEach(function (link) {
-                link.addEventListener("click", closeSheet);
-            });
-            document.addEventListener("keydown", function (event) {
-                if (event.key === "Escape") {
-                    closeSheet();
-                }
-            });
-        }
-
-        build();
-        if (mq.addEventListener) {
-            mq.addEventListener("change", build);
-        } else if (mq.addListener) {
-            mq.addListener(build);
-        }
-    })();
 
     // Testimonials carousel
     if ($(".testimonial-carousel").length && $.fn.owlCarousel) {
