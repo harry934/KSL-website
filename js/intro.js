@@ -2,7 +2,7 @@
     "use strict";
 
     /**
-     * Logo intro rules:
+     * Video intro rules:
      * 1. Once per browser session the first time you land on index.html (Home).
      * 2. Any time you click the header logo (navbar brand).
      * Not triggered by the "Home" nav link or other links to index.html.
@@ -56,8 +56,8 @@
         }
 
         var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        var HOLD = reduceMotion ? 900 : 3200;
-        var EXIT = reduceMotion ? 300 : 900;
+        var EXIT = reduceMotion ? 250 : 650;
+        var MAX_WAIT = reduceMotion ? 2200 : 10000;
 
         root.classList.add("ksl-intro-pending");
         root.classList.add("ksl-intro-active");
@@ -71,35 +71,118 @@
         intro.className = "ksl-intro";
         intro.setAttribute("role", "presentation");
         intro.innerHTML =
-            '<div class="ksl-intro-glow"></div>' +
-            '<div class="ksl-intro-stage">' +
-                '<div class="ksl-intro-badge">' +
-                    '<svg class="ksl-intro-rings" viewBox="0 0 200 200" aria-hidden="true">' +
-                        '<circle class="ksl-intro-ring ksl-intro-ring-outer" cx="100" cy="100" r="96"></circle>' +
-                        '<circle class="ksl-intro-ring ksl-intro-ring-inner" cx="100" cy="100" r="88"></circle>' +
-                    '</svg>' +
-                    '<div class="ksl-intro-logo">' +
-                        '<img src="img/ksl/logo.png" alt="Kenya Shipyards Limited">' +
-                        '<span class="ksl-intro-shine"></span>' +
-                    '</div>' +
-                '</div>' +
-                '<div class="ksl-intro-name">Kenya Shipyards Limited</div>' +
-                '<div class="ksl-intro-line"></div>' +
-                '<div class="ksl-intro-tag">Catalyzing Shipbuilding Industry</div>' +
+            '<video class="ksl-intro-video" muted playsinline preload="auto" aria-hidden="true">' +
+                '<source src="img/ksl/logo-intro-mobile.mp4" media="(max-width: 575.98px)" type="video/mp4">' +
+                '<source src="img/ksl/logo-intro.mp4" type="video/mp4">' +
+            '</video>' +
+            '<div class="ksl-intro-home-tone" aria-hidden="true"></div>' +
+            '<div class="ksl-intro-sparks" aria-hidden="true">' +
+                '<span></span><span></span><span></span><span></span>' +
+                '<span></span><span></span><span></span><span></span>' +
             '</div>' +
-            '<svg class="ksl-intro-waves" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">' +
-                '<path class="ksl-intro-wave ksl-intro-wave-back" d="M0,60 C240,110 480,10 720,60 C960,110 1200,10 1440,60 C1680,110 1920,10 2160,60 C2400,110 2640,10 2880,60 L2880,120 L0,120 Z"></path>' +
-                '<path class="ksl-intro-wave ksl-intro-wave-front" d="M0,80 C240,40 480,120 720,80 C960,40 1200,120 1440,80 C1680,40 1920,120 2160,80 C2400,40 2640,120 2880,80 L2880,120 L0,120 Z"></path>' +
-            '</svg>';
+            '<div class="ksl-intro-ripples" aria-hidden="true"><span></span><span></span></div>' +
+            '<div class="ksl-intro-tagline" aria-hidden="true">Catalyzing Shipbuilding Industry</div>';
 
         document.body.appendChild(intro);
 
+        var video = intro.querySelector(".ksl-intro-video");
         var done = false;
-        function finish() {
+        var clipStarted = false;
+        var fallbackTimer;
+
+        function playClip() {
+            if (done || clipStarted || !video) {
+                return;
+            }
+            clipStarted = true;
+            intro.classList.add("is-ready");
+
+            if (reduceMotion) {
+                video.pause();
+                intro.classList.add("show-tagline");
+                intro.classList.add("match-home");
+                window.setTimeout(finish, 900);
+                return;
+            }
+
+            var playPromise = video.play();
+            if (playPromise && typeof playPromise.catch === "function") {
+                playPromise.catch(function () {
+                    finish();
+                });
+            }
+        }
+
+        function animateLogoHome() {
+            var target = document.querySelector("a.navbar-brand .ksl-logo");
+            if (!target || !target.getBoundingClientRect) {
+                return;
+            }
+
+            var targetRect = target.getBoundingClientRect();
+            if (!targetRect.width || !targetRect.height) {
+                return;
+            }
+
+            var flightLogo = document.createElement("img");
+            flightLogo.className = "ksl-intro-flight-logo";
+            flightLogo.src = "img/ksl/logo.png";
+            flightLogo.alt = "";
+            flightLogo.setAttribute("aria-hidden", "true");
+            document.body.appendChild(flightLogo);
+
+            var startRect = flightLogo.getBoundingClientRect();
+            flightLogo.style.left = startRect.left + "px";
+            flightLogo.style.top = startRect.top + "px";
+            flightLogo.style.width = startRect.width + "px";
+            flightLogo.style.transform = "none";
+
+            var moveX = targetRect.left - startRect.left;
+            var moveY = targetRect.top - startRect.top;
+            var scale = targetRect.width / startRect.width;
+            var removed = false;
+
+            function removeFlightLogo() {
+                if (removed) {
+                    return;
+                }
+                removed = true;
+                if (flightLogo.parentNode) {
+                    flightLogo.parentNode.removeChild(flightLogo);
+                }
+            }
+
+            if (flightLogo.animate) {
+                var animation = flightLogo.animate([
+                    { opacity: 0, transform: "translate3d(0, 0, 0) scale(1)" },
+                    { opacity: 1, offset: 0.14 },
+                    { opacity: 1, transform: "translate3d(" + moveX + "px, " + moveY + "px, 0) scale(" + scale + ")" }
+                ], {
+                    duration: 700,
+                    easing: "cubic-bezier(.22, 1, .36, 1)",
+                    fill: "forwards"
+                });
+                animation.finished.then(removeFlightLogo, removeFlightLogo);
+            } else {
+                removeFlightLogo();
+            }
+
+            window.setTimeout(removeFlightLogo, 950);
+        }
+
+        function finish(moveLogoHome) {
             if (done) {
                 return;
             }
             done = true;
+            window.clearTimeout(fallbackTimer);
+            document.removeEventListener("keydown", onKey);
+            if (video) {
+                video.pause();
+            }
+            if (moveLogoHome === true && !reduceMotion) {
+                animateLogoHome();
+            }
             intro.classList.add("is-leaving");
             root.classList.remove("ksl-intro-pending");
             root.classList.remove("ksl-intro-active");
@@ -115,14 +198,41 @@
             }, EXIT);
         }
 
-        intro.addEventListener("click", finish);
-        document.addEventListener("keydown", function onKey(e) {
+        function onKey(e) {
             if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
-                document.removeEventListener("keydown", onKey);
                 finish();
             }
-        });
-        window.setTimeout(finish, HOLD);
+        }
+
+        if (video) {
+            video.addEventListener("canplay", playClip, { once: true });
+            video.addEventListener("timeupdate", function () {
+                if (!Number.isFinite(video.duration)) {
+                    return;
+                }
+                var remaining = video.duration - video.currentTime;
+                intro.classList.toggle("show-sparks", video.currentTime >= 0.65 && remaining >= 1.45);
+                intro.classList.toggle("show-ripples", remaining <= 1.85);
+                intro.classList.toggle("show-tagline", remaining <= 1.2);
+                intro.classList.toggle("match-home", remaining <= 0.65);
+            });
+            video.addEventListener("ended", function () {
+                finish(true);
+            }, { once: true });
+            video.addEventListener("error", finish, { once: true });
+
+            if (video.readyState >= 3) {
+                playClip();
+            } else {
+                video.load();
+            }
+        } else {
+            finish();
+        }
+
+        intro.addEventListener("click", finish);
+        document.addEventListener("keydown", onKey);
+        fallbackTimer = window.setTimeout(finish, MAX_WAIT);
     }
 
     window.playKslIntro = playKslIntro;

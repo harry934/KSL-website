@@ -5489,28 +5489,204 @@ html.ksl-intro-pending body {
 }
 
 .ksl-intro {
-    --ksl-intro-gold: #99792c;
-    --ksl-intro-gold-light: #C9A95C;
     position: fixed;
     inset: 0;
     z-index: 2147483000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     overflow: hidden;
     visibility: visible;
     cursor: pointer;
-    background: radial-gradient(ellipse at 50% 40%, #0A3E95 0%, #09296C 55%, #061a45 100%);
+    background: #061a45;
     transform: translate3d(0, 0, 0);
     backface-visibility: hidden;
-    transition: transform .7s cubic-bezier(.22, 1, .36, 1), opacity .7s ease;
+    transition: opacity .65s ease;
     contain: layout style paint;
 }
 
 .ksl-intro.is-leaving {
-    transform: translate3d(0, -12vh, 0);
     opacity: 0;
     pointer-events: none;
+}
+
+.ksl-intro-video {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    opacity: 0;
+    transform: scale(1.01) translate3d(0, 0, 0);
+    transition: opacity .45s ease;
+    background: #061a45;
+    will-change: transform, opacity;
+}
+
+.ksl-intro.is-ready .ksl-intro-video {
+    opacity: 1;
+    animation: kslIntroVideoEase 4s cubic-bezier(.45, 0, .2, 1) both;
+}
+
+.ksl-intro-home-tone {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: radial-gradient(circle at 50% 49%, rgba(6, 26, 69, .12) 0%, rgba(9, 41, 108, .68) 48%, #061a45 100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .72s cubic-bezier(.45, 0, .2, 1);
+}
+
+.ksl-intro.match-home .ksl-intro-home-tone {
+    opacity: 1;
+}
+
+.ksl-intro-sparks {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 2;
+    width: 190px;
+    height: 190px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(-50%, -50%, 0);
+    transition: opacity .3s ease;
+}
+
+.ksl-intro.show-sparks .ksl-intro-sparks {
+    opacity: .68;
+}
+
+.ksl-intro-sparks span {
+    --spark-angle: 0deg;
+    --spark-travel: 26px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 16px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #FFF6C8 0%, #D8AF49 45%, rgba(201, 169, 92, 0) 100%);
+    box-shadow: 0 0 6px rgba(216, 175, 73, .7);
+    opacity: 0;
+    transform-origin: 50% 0;
+    animation: kslIntroSpark .78s cubic-bezier(.18, .72, .22, 1) infinite;
+    animation-play-state: paused;
+}
+
+.ksl-intro.show-sparks .ksl-intro-sparks span {
+    animation-play-state: running;
+}
+
+.ksl-intro-sparks span:nth-child(1) { --spark-angle: 8deg; --spark-travel: 24px; animation-delay: -.08s; }
+.ksl-intro-sparks span:nth-child(2) { --spark-angle: 49deg; --spark-travel: 32px; animation-delay: -.46s; }
+.ksl-intro-sparks span:nth-child(3) { --spark-angle: 94deg; --spark-travel: 22px; animation-delay: -.22s; }
+.ksl-intro-sparks span:nth-child(4) { --spark-angle: 141deg; --spark-travel: 35px; animation-delay: -.61s; }
+.ksl-intro-sparks span:nth-child(5) { --spark-angle: 187deg; --spark-travel: 27px; animation-delay: -.34s; }
+.ksl-intro-sparks span:nth-child(6) { --spark-angle: 231deg; --spark-travel: 31px; animation-delay: -.7s; }
+.ksl-intro-sparks span:nth-child(7) { --spark-angle: 278deg; --spark-travel: 23px; animation-delay: -.15s; }
+.ksl-intro-sparks span:nth-child(8) { --spark-angle: 326deg; --spark-travel: 34px; animation-delay: -.53s; }
+
+.ksl-intro-ripples {
+    position: absolute;
+    top: calc(50% + 76px);
+    left: 50%;
+    z-index: 2;
+    width: 230px;
+    height: 54px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(-50%, 0, 0);
+    transition: opacity .4s ease;
+}
+
+.ksl-intro.show-ripples .ksl-intro-ripples {
+    opacity: .58;
+}
+
+.ksl-intro-ripples span {
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(216, 175, 73, .76);
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(.48);
+    animation: kslIntroRipple 1.45s cubic-bezier(.2, .65, .3, 1) infinite;
+    animation-play-state: paused;
+}
+
+.ksl-intro-ripples span:nth-child(2) {
+    animation-delay: .58s;
+}
+
+.ksl-intro.show-ripples .ksl-intro-ripples span {
+    animation-play-state: running;
+}
+
+.ksl-intro-tagline {
+    position: absolute;
+    top: calc(50% + clamp(92px, 11vw, 136px));
+    left: 50%;
+    z-index: 3;
+    width: min(88vw, 640px);
+    color: #09296C;
+    font: 700 clamp(.82rem, 1.6vw, 1.12rem)/1.4 Poppins, sans-serif;
+    letter-spacing: .08em;
+    text-align: center;
+    text-transform: uppercase;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(-50%, 14px, 0);
+    transition: color .45s ease, opacity .45s ease, transform .55s cubic-bezier(.22, 1, .36, 1);
+}
+
+.ksl-intro.show-tagline .ksl-intro-tagline {
+    opacity: 1;
+    transform: translate3d(-50%, 0, 0);
+}
+
+.ksl-intro.match-home .ksl-intro-tagline {
+    color: #fff;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, .32);
+}
+
+.ksl-intro-flight-logo {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 2147483001;
+    display: block;
+    width: clamp(112px, 12vw, 160px);
+    height: auto;
+    visibility: visible;
+    pointer-events: none;
+    transform: translate3d(-50%, -50%, 0);
+    transform-origin: top left;
+    will-change: transform, opacity;
+}
+
+@keyframes kslIntroVideoEase {
+    0% { transform: scale(1.018) translate3d(0, 0, 0); }
+    48% { transform: scale(1.009) translate3d(0, 0, 0); }
+    100% { transform: scale(1) translate3d(0, 0, 0); }
+}
+
+@keyframes kslIntroSpark {
+    0% {
+        opacity: 0;
+        transform: rotate(var(--spark-angle)) translate3d(0, -52px, 0) scaleY(.25);
+    }
+    18% { opacity: .95; }
+    100% {
+        opacity: 0;
+        transform: rotate(var(--spark-angle)) translate3d(0, calc(-52px - var(--spark-travel)), 0) scaleY(.08);
+    }
+}
+
+@keyframes kslIntroRipple {
+    0% { opacity: .7; transform: scale(.48); }
+    100% { opacity: 0; transform: scale(1.16); }
 }
 
 .ksl-intro-glow {
@@ -5715,6 +5891,32 @@ html.ksl-intro-active .ksl-hero-video {
 }
 
 @media (max-width: 575.98px) {
+    .ksl-intro-video {
+        object-position: center center;
+    }
+
+    .ksl-intro-sparks {
+        width: 224px;
+        height: 224px;
+    }
+
+    .ksl-intro-ripples {
+        top: calc(50% + 108px);
+        width: 278px;
+        height: 66px;
+    }
+
+    .ksl-intro-tagline {
+        top: calc(50% + 142px);
+        width: min(84vw, 360px);
+        font-size: .78rem;
+        letter-spacing: .06em;
+    }
+
+    .ksl-intro-flight-logo {
+        width: clamp(136px, 42vw, 176px);
+    }
+
     .ksl-intro-badge {
         width: 140px;
         height: 140px;
