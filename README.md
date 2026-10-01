@@ -4,4 +4,8 @@ A public company website with a homepage, services, products, projects, news, do
 
 ## Preview
 
-Replace this line with the GIF link.
+![Company website](https://media.giphy.com/media/7je14VenQp5xnG233F/giphy.gif)
+
+Live site: https://ksl-website.vercel.app/
+
+The repository is private.
