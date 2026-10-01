@@ -88,7 +88,7 @@
                 links: [
                     { href: "news.html", label: "News and Events", match: ["news.html", "article.html", "event.html"] },
                     { href: "videos.html", label: "Gallery" },
-                    { href: "downloads.html", label: "Downloads" }
+                    { href: "http://10.104.4.139/corporate-documents/", label: "Downloads", external: true }
                 ]
             },
             {
@@ -112,7 +112,8 @@
                 var matches = link.match || [link.href];
                 var active = matches.indexOf(page) !== -1 ? " is-active" : "";
                 var current = active ? ' aria-current="page"' : "";
-                panelHtml += '<a class="' + active + '" href="' + link.href + '"' + current + ">" + link.label + "</a>";
+                var external = link.external ? ' target="_blank" rel="noopener"' : "";
+                panelHtml += '<a class="' + active + '" href="' + link.href + '"' + external + current + ">" + link.label + "</a>";
             });
             panelHtml += "</section>";
         });

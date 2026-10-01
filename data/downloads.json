@@ -1,5 +1,5 @@
 {
-  "baseUrl": "https://kenyashipyards.co.ke/wp-content/uploads",
+  "baseUrl": "http://10.104.4.139/corporate-documents/",
   "items": [
     {
       "id": "strategic-plan",
@@ -9,7 +9,7 @@
       "language": "English",
       "date": "2025-02-26",
       "type": "PDF",
-      "file": "/2025/08/KSL-Strategic-Business-Plan-2024-v21-26022025-wo.pdf",
+      "file": "KSL-Strategic-Business-Plan-2024-v21-26022025-wo.pdf",
       "filename": "KSL-Strategic-Business-Plan-2024-v21-26022025-wo.pdf",
       "anchor": "dl-strategic"
     },
@@ -21,7 +21,7 @@
       "language": "English",
       "date": "2024-11-28",
       "type": "PDF",
-      "file": "/2025/04/KSL-Brochure-version-28-NOV-2024.pdf",
+      "file": "KSL-Brochure-version-28-NOV-2024.pdf",
       "filename": "KSL-Brochure-version-28-NOV-2024.pdf",
       "anchor": "dl-strategic"
     },
@@ -34,7 +34,7 @@
       "language": "English",
       "date": "2024-11-28",
       "type": "PDF",
-      "file": "/2025/04/KSL-Brochure-version-28-NOV-2024.pdf",
+      "file": "KSL-Brochure-version-28-NOV-2024.pdf",
       "filename": "KSL-Brochure-version-28-NOV-2024.pdf",
       "anchor": "dl-strategic",
       "aliasOf": "brochure"
@@ -47,7 +47,7 @@
       "language": "English",
       "date": "2025-04",
       "type": "PDF",
-      "file": "/2025/04/Service-Delivery-Charter-2.pdf",
+      "file": "Service-Delivery-Charter-2.pdf",
       "filename": "Service-Delivery-Charter-2.pdf",
       "anchor": "dl-charter"
     },
@@ -59,7 +59,7 @@
       "language": "Kiswahili",
       "date": "2025-04",
       "type": "PDF",
-      "file": "/2025/04/Huduma-2.pdf",
+      "file": "Huduma-2.pdf",
       "filename": "Huduma-2.pdf",
       "anchor": "dl-charter"
     },
@@ -71,7 +71,7 @@
       "language": "English",
       "date": "2025-04",
       "type": "DOCX",
-      "file": "/2025/04/Complaints-lodging-form.docx",
+      "file": "Complaints-lodging-form.docx",
       "filename": "Complaints-lodging-form.docx",
       "anchor": "dl-complaints"
     },
@@ -83,7 +83,7 @@
       "language": "English",
       "date": "2025-04",
       "type": "PDF",
-      "file": "/2025/04/REQUEST-FOR-INFORM-ATION.pdf",
+      "file": "REQUEST-FOR-INFORM-ATION.pdf",
       "filename": "REQUEST-FOR-INFORM-ATION.pdf",
       "anchor": "dl-access"
     },
@@ -95,7 +95,7 @@
       "language": "English",
       "date": "2025-04",
       "type": "PDF",
-      "file": "/2025/04/RECORDS-CONTAINING-PERSONAL-INFORMATION.pdf",
+      "file": "RECORDS-CONTAINING-PERSONAL-INFORMATION.pdf",
       "filename": "RECORDS-CONTAINING-PERSONAL-INFORMATION.pdf",
       "anchor": "dl-access"
     },
@@ -107,7 +107,7 @@
       "language": "English",
       "date": "2025-04",
       "type": "PDF",
-      "file": "/2025/04/WITHDRAWAL-OF-REQUEST-FOR-INFORM-ATION.pdf",
+      "file": "WITHDRAWAL-OF-REQUEST-FOR-INFORM-ATION.pdf",
       "filename": "WITHDRAWAL-OF-REQUEST-FOR-INFORM-ATION.pdf",
       "anchor": "dl-access"
     },
@@ -119,7 +119,7 @@
       "language": "English",
       "date": "2025-04",
       "type": "PDF",
-      "file": "/2025/04/REQUEST-FOR-REVIEW-BY-THE-COMMISSION.pdf",
+      "file": "REQUEST-FOR-REVIEW-BY-THE-COMMISSION.pdf",
       "filename": "REQUEST-FOR-REVIEW-BY-THE-COMMISSION.pdf",
       "anchor": "dl-access"
     }

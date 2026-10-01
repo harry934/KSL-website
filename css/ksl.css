@@ -5988,6 +5988,10 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
 }
 
 .ksl-intro {
+    --ksl-logo-bottom: max(14.5vh, 8.2vw);
+    --ksl-ship-width: min(84vw, 720px);
+    --ksl-ship-top: calc(50% + var(--ksl-logo-bottom) + 18px - var(--ksl-ship-width) * 0.175);
+    --ksl-mask-y: calc(var(--ksl-ship-width) * 0.175 - var(--ksl-logo-bottom) - 18px);
     position: fixed;
     inset: 0;
     z-index: 2147483000;
@@ -6029,17 +6033,17 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
 
 .ksl-intro-ship-silhouette {
     position: absolute;
-    top: calc(50% - 8px);
+    top: var(--ksl-ship-top);
     left: 50%;
     z-index: 1;
-    width: min(78vw, 620px);
+    width: var(--ksl-ship-width);
     color: #09296C;
     opacity: 0;
     pointer-events: none;
     transform: translate3d(-50%, 18px, 0) scale(.96);
     transition: opacity .8s ease, transform .95s cubic-bezier(.22, 1, .36, 1);
-    -webkit-mask-image: radial-gradient(circle at 50% calc(46% - 34px), transparent 0 72px, #000 110px);
-    mask-image: radial-gradient(circle at 50% calc(46% - 34px), transparent 0 72px, #000 110px);
+    -webkit-mask-image: radial-gradient(circle at 50% var(--ksl-mask-y), transparent calc(var(--ksl-logo-bottom) + 2px), #000 calc(var(--ksl-logo-bottom) + 28px));
+    mask-image: radial-gradient(circle at 50% var(--ksl-mask-y), transparent calc(var(--ksl-logo-bottom) + 2px), #000 calc(var(--ksl-logo-bottom) + 28px));
 }
 
 .ksl-intro-ship-silhouette svg {
@@ -6058,7 +6062,7 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
 }
 
 .ksl-intro.show-ship .ksl-intro-ship-silhouette {
-    opacity: .13;
+    opacity: .22;
     transform: translate3d(-50%, 0, 0) scale(1);
 }
 
@@ -6151,24 +6155,25 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
 
 .ksl-intro-tagline {
     position: absolute;
-    top: calc(50% + max(14.6vh, 8.2vw) + 36px);
+    top: calc(var(--ksl-ship-top) + var(--ksl-ship-width) * 0.20625);
     left: 50%;
     z-index: 3;
-    width: min(88vw, 720px);
+    width: calc(var(--ksl-ship-width) * 0.64);
     color: #09296C;
-    font: 700 clamp(.82rem, 1.6vw, 1.12rem)/1.4 Poppins, sans-serif;
-    letter-spacing: .08em;
+    font: 700 clamp(.82rem, 1.35vw, 1.12rem)/1 Poppins, sans-serif;
+    letter-spacing: .1em;
+    white-space: nowrap;
     text-align: center;
     text-transform: uppercase;
     opacity: 0;
     pointer-events: none;
-    transform: translate3d(-50%, 14px, 0);
+    transform: translate3d(-50%, calc(-50% + 12px), 0);
     transition: opacity .01s linear, transform .55s cubic-bezier(.22, 1, .36, 1);
 }
 
 .ksl-intro.show-tagline .ksl-intro-tagline {
     opacity: 1;
-    transform: translate3d(-50%, 0, 0);
+    transform: translate3d(-50%, -50%, 0);
 }
 
 .ksl-intro-letter {
@@ -6430,11 +6435,13 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
         object-position: center center;
     }
 
+    .ksl-intro {
+        --ksl-ship-width: min(118vw, 460px);
+    }
+
     .ksl-intro-ship-silhouette {
-        top: calc(50% - 28px);
-        width: min(118vw, 460px);
-        -webkit-mask-image: radial-gradient(circle at 50% calc(46% - 30px), transparent 0 94px, #000 132px);
-        mask-image: radial-gradient(circle at 50% calc(46% - 30px), transparent 0 94px, #000 132px);
+        top: var(--ksl-ship-top);
+        width: var(--ksl-ship-width);
     }
 
     .ksl-intro-logo-shadow {
@@ -6457,10 +6464,10 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     }
 
     .ksl-intro-tagline {
-        top: calc(50% + 142px);
-        width: min(92vw, 420px);
-        font-size: .72rem;
-        letter-spacing: .04em;
+        width: min(92vw, calc(var(--ksl-ship-width) * 0.7));
+        font-size: .76rem;
+        letter-spacing: .06em;
+        white-space: normal;
     }
 
     .ksl-intro-flight-logo {
