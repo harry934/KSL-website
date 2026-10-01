@@ -6029,7 +6029,7 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
 
 .ksl-intro-ship-silhouette {
     position: absolute;
-    top: calc(50% - 42px);
+    top: calc(50% - 8px);
     left: 50%;
     z-index: 1;
     width: min(78vw, 620px);
@@ -6038,8 +6038,8 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     pointer-events: none;
     transform: translate3d(-50%, 18px, 0) scale(.96);
     transition: opacity .8s ease, transform .95s cubic-bezier(.22, 1, .36, 1);
-    -webkit-mask-image: radial-gradient(circle at 50% 46%, transparent 0 72px, #000 110px);
-    mask-image: radial-gradient(circle at 50% 46%, transparent 0 72px, #000 110px);
+    -webkit-mask-image: radial-gradient(circle at 50% calc(46% - 34px), transparent 0 72px, #000 110px);
+    mask-image: radial-gradient(circle at 50% calc(46% - 34px), transparent 0 72px, #000 110px);
 }
 
 .ksl-intro-ship-silhouette svg {
@@ -6151,7 +6151,7 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
 
 .ksl-intro-tagline {
     position: absolute;
-    top: calc(50% + clamp(92px, 11vw, 136px));
+    top: calc(50% + max(14.6vh, 8.2vw) + 36px);
     left: 50%;
     z-index: 3;
     width: min(88vw, 720px);
@@ -6431,10 +6431,10 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     }
 
     .ksl-intro-ship-silhouette {
-        top: calc(50% - 58px);
+        top: calc(50% - 28px);
         width: min(118vw, 460px);
-        -webkit-mask-image: radial-gradient(circle at 50% 46%, transparent 0 94px, #000 132px);
-        mask-image: radial-gradient(circle at 50% 46%, transparent 0 94px, #000 132px);
+        -webkit-mask-image: radial-gradient(circle at 50% calc(46% - 30px), transparent 0 94px, #000 132px);
+        mask-image: radial-gradient(circle at 50% calc(46% - 30px), transparent 0 94px, #000 132px);
     }
 
     .ksl-intro-logo-shadow {
