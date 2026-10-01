@@ -91,7 +91,7 @@
         intro.setAttribute("role", "presentation");
         intro.innerHTML =
             '<video class="ksl-intro-video" muted playsinline preload="auto" aria-hidden="true">' +
-                '<source src="img/ksl/logo-intro-mobile.mp4?v=20261001-18" media="(max-width: 575.98px)" type="video/mp4">' +
+                '<source src="img/ksl/logo-intro-mobile.mp4?v=20261001-23" media="(max-width: 575.98px)" type="video/mp4">' +
                 '<source src="img/ksl/logo-intro.mp4?v=20261001-18" type="video/mp4">' +
             '</video>' +
             '<div class="ksl-intro-ship-silhouette" aria-hidden="true">' +

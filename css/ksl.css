@@ -6066,6 +6066,11 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     transform: translate3d(-50%, 0, 0) scale(1);
 }
 
+.ksl-intro-logo-shadow,
+.ksl-intro-reflection {
+    display: none;
+}
+
 .ksl-intro-logo-shadow {
     position: absolute;
     top: calc(50% + 62px);
