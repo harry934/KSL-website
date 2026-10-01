@@ -329,8 +329,9 @@
                 factsTicking = false;
                 return;
             }
-            var progress = (viewport - rect.top) / (viewport + rect.height);
-            var shift = (0.5 - progress) * 40;
+            var fromCenter = viewport / 2 - (rect.top + rect.height / 2);
+            var slack = rect.height * 0.32;
+            var shift = Math.max(-slack, Math.min(slack, fromCenter * 0.42));
             factsBg.style.transform = "translate3d(0, " + shift.toFixed(2) + "px, 0)";
             factsTicking = false;
         };
