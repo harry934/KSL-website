@@ -12,7 +12,7 @@
         ".ksl-a11y-toggle:focus-visible{outline:2px solid #111;outline-offset:3px}",
         ".ksl-a11y-toggle svg{width:24px;height:24px;display:block;fill:currentColor}",
         ".ksl-a11y-label{display:none}",
-        ".ksl-a11y-panel{position:fixed;top:0;right:0;left:auto;z-index:999990;width:min(280px,88vw);height:100%;visibility:hidden;pointer-events:none;transform:translateX(110%);transition:transform .25s ease,visibility .25s ease;background:#232323;color:#fff;display:flex;flex-direction:column;box-shadow:-8px 0 24px rgba(0,0,0,.25)}",
+        ".ksl-a11y-panel{position:fixed;top:0;right:0;bottom:0;left:auto;z-index:999992;width:min(280px,88vw);height:auto;visibility:hidden;pointer-events:none;transform:translateX(110%);transition:transform .25s ease;background:#232323;color:#fff;display:flex;flex-direction:column;box-shadow:-8px 0 24px rgba(0,0,0,.25)}",
         ".ksl-a11y.is-open .ksl-a11y-panel{visibility:visible;pointer-events:auto;transform:translateX(0)}",
         "@media (min-width:992px){.ksl-a11y.is-open .ksl-a11y-toggle{right:calc(min(280px,88vw) + 16px)}}",
         "@media (max-width:991.98px){.ksl-a11y-toggle{right:0 !important;bottom:calc(200px + env(safe-area-inset-bottom,0px)) !important;width:36px !important;height:202px !important;padding:8px 0 !important;border:0 !important;border-radius:0 !important;overflow:visible !important}.ksl-a11y-toggle svg{display:none !important}.ksl-a11y-label{display:flex;align-items:center;justify-content:center;width:36px;height:202px;writing-mode:vertical-rl;text-orientation:mixed;font:700 12px/1 Arial,Helvetica,sans-serif;letter-spacing:.04em;color:#111}}",
@@ -21,20 +21,21 @@
         ".ksl-a11y-scroll{overflow:auto;padding:8px 10px 16px;flex:1}",
         ".ksl-a11y-mod{padding-bottom:.6rem;margin-bottom:.6rem;border-bottom:1px solid #444}",
         ".ksl-a11y-mod h2{margin:0 0 .4rem;font:600 16px/1.3 Arial,Helvetica,sans-serif;color:#fff}",
+        ".ksl-a11y-note{margin:0 0 .45rem;color:#f5c518;font:600 13px/1.3 Arial,Helvetica,sans-serif}",
         ".ksl-a11y-row{display:flex;gap:8%}",
         ".ksl-a11y-act{display:block;width:100%;margin:0;padding:5px 0;border:1px solid #fff;background:#232323;color:#fff;font:bold 15px/1.3 Arial,Helvetica,sans-serif;text-align:center;cursor:pointer}",
         ".ksl-a11y-row .ksl-a11y-act{width:46%}",
         ".ksl-a11y-act.is-on,.ksl-a11y-act[aria-pressed='true']{background:#f5c518;color:#111}",
-        "html.ksl-keys :focus{outline:3px solid #111 !important;background:#f3f57c !important;color:#000 !important}",
-        "html.ksl-readable body,html.ksl-readable button,html.ksl-readable input,html.ksl-readable select,html.ksl-readable textarea{font-family:Verdana,Arial,sans-serif !important;letter-spacing:.02em;line-height:1.6}",
-        "html.ksl-underline a,html.ksl-underline a:hover{text-decoration:underline !important;text-underline-offset:2px}",
-        "html.ksl-highlight a,html.ksl-highlight a:hover,html.ksl-highlight a:focus,html.ksl-highlight a:visited{background-color:#fff34d !important;background-image:none !important;color:#111 !important;box-shadow:inset 0 -2px 0 #111 !important}",
-        "html.ksl-grey img,html.ksl-grey video{filter:grayscale(1) !important}",
-        "html.ksl-invert body{filter:invert(1) hue-rotate(180deg)}",
-        "html.ksl-invert .ksl-a11y{filter:invert(1) hue-rotate(180deg)}",
-        "html.ksl-no-anim *,html.ksl-no-anim *::before,html.ksl-no-anim *::after{animation:none !important;transition:none !important;scroll-behavior:auto !important}",
-        "html.ksl-lights::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:999980;pointer-events:none}",
-        "html.ksl-lights :is(p,li,h1,h2,h3,h4,h5,td,figcaption,blockquote):hover{position:relative;z-index:999985;background:#fff;color:#111;box-shadow:0 0 0 8px #fff}",
+        "html.ksl-keys #ksl-page :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid #111 !important;outline-offset:3px !important;background-color:#f3f57c !important;color:#111 !important}",
+        "html.ksl-readable #ksl-page :is(h1,h2,h3,h4,h5,h6,p,a,li,label,button,input,textarea,select,td,th,figcaption,blockquote,span){font-family:Verdana,Geneva,sans-serif !important;letter-spacing:.02em;line-height:1.6}",
+        "html.ksl-underline #ksl-page a,html.ksl-underline #ksl-page a:hover{text-decoration:underline !important;text-underline-offset:2px}",
+        "html.ksl-highlight #ksl-page a,html.ksl-highlight #ksl-page a:hover,html.ksl-highlight #ksl-page a:focus,html.ksl-highlight #ksl-page a:visited{background-color:#fff34d !important;background-image:none !important;color:#111 !important;box-shadow:inset 0 -2px 0 #111 !important}",
+        "html.ksl-grey #ksl-page img,html.ksl-grey #ksl-page video,html.ksl-grey #ksl-page canvas,html.ksl-grey #ksl-page .facts-bg,html.ksl-grey #ksl-page .page-header,html.ksl-grey #ksl-page .ksl-hero,html.ksl-grey #ksl-page [style*='background-image']{filter:grayscale(1) !important}",
+        "html.ksl-invert{background:#fff}",
+        "html.ksl-invert #ksl-page{filter:invert(1) hue-rotate(180deg)}",
+        "html.ksl-no-anim #ksl-page,html.ksl-no-anim #ksl-page *,html.ksl-no-anim #ksl-page *::before,html.ksl-no-anim #ksl-page *::after{animation:none !important;transition:none !important;scroll-behavior:auto !important}",
+        ".ksl-lights-spot{display:none;position:fixed;z-index:999980;width:280px;height:180px;margin:-90px 0 0 -140px;border-radius:16px;pointer-events:none;background:transparent;box-shadow:0 0 0 100vmax rgba(0,0,0,.84)}",
+        "html.ksl-lights .ksl-lights-spot{display:block}",
         ".ksl-wa-pop{position:fixed;right:0;bottom:214px;z-index:999989;width:min(260px,82vw);padding:16px 16px 14px;background:#fff;color:#273272;border-radius:10px 0 0 10px;box-shadow:-8px 8px 28px rgba(9,41,108,.22);visibility:hidden;pointer-events:none;transform:translateX(110%);transition:transform .25s ease,visibility .25s ease}",
         ".ksl-wa-pop.is-open{visibility:visible;pointer-events:auto;transform:translateX(0)}",
         ".ksl-wa-pop p{margin:0 0 12px;font:600 14px/1.45 Arial,Helvetica,sans-serif;color:#273272}",
@@ -54,7 +55,7 @@
         '<div id="ksl-a11y-panel" class="ksl-a11y-panel">',
         '<button type="button" class="ksl-a11y-close" data-close>Close</button>',
         '<div class="ksl-a11y-scroll">',
-        '<div class="ksl-a11y-mod"><h2>Font Resize</h2><div class="ksl-a11y-row">',
+        '<div class="ksl-a11y-mod"><h2>Font Resize</h2><p class="ksl-a11y-note" id="ksl-font-note">Text size 100%</p><div class="ksl-a11y-row">',
         '<button type="button" class="ksl-a11y-act" data-act="font-down" title="smaller font size" aria-label="smaller font size">A-</button>',
         '<button type="button" class="ksl-a11y-act" data-act="font-up" title="larger font size" aria-label="larger font size">A+</button>',
         "</div></div>",
@@ -135,17 +136,93 @@
 
     bindWhatsappBar();
 
+    var spot = document.createElement("div");
+    spot.className = "ksl-lights-spot";
+    spot.setAttribute("aria-hidden", "true");
+    document.body.appendChild(spot);
+
+    function pageRoot() {
+        var page = document.getElementById("ksl-page");
+        if (page) {
+            return page;
+        }
+        page = document.createElement("div");
+        page.id = "ksl-page";
+        Array.prototype.slice.call(document.body.childNodes).forEach(function (node) {
+            if (node.nodeType === 1 && (
+                node.id === "ksl-page" ||
+                node.classList.contains("ksl-a11y") ||
+                node.classList.contains("whatsapp-fab") ||
+                node.classList.contains("ksl-wa-pop") ||
+                node.classList.contains("ksl-lights-spot")
+            )) {
+                return;
+            }
+            page.appendChild(node);
+        });
+        document.body.insertBefore(page, document.body.firstChild);
+        return page;
+    }
+
+    pageRoot();
+
+    function placeSpot(x, y) {
+        spot.style.left = x + "px";
+        spot.style.top = y + "px";
+    }
+
+    document.addEventListener("pointermove", function (event) {
+        if (!flags.lights) {
+            return;
+        }
+        placeSpot(event.clientX, event.clientY);
+    });
+
     function paintFont() {
-        if (!fontStep) document.documentElement.style.zoom = "";
-        else document.documentElement.style.zoom = String(1 + fontStep * 0.1);
+        var scale = 1 + fontStep * 0.1;
+        var zoom = fontStep ? String(scale) : "";
+        var inverse = fontStep ? String(1 / scale) : "";
+        document.documentElement.style.zoom = zoom;
+        pageRoot().style.zoom = "";
+        [root, document.querySelector(".whatsapp-fab"), waPop, spot].forEach(function (node) {
+            if (node) node.style.zoom = inverse;
+        });
+        var note = document.getElementById("ksl-font-note");
+        if (note) {
+            note.textContent = "Text size " + Math.round(scale * 100) + "%";
+        }
+    }
+
+    function setMotion(on) {
+        document.querySelectorAll("#ksl-page video").forEach(function (video) {
+            if (on) {
+                if (!video.paused) {
+                    video.pause();
+                    video.setAttribute("data-ksl-motion", "1");
+                }
+            } else if (video.getAttribute("data-ksl-motion") === "1") {
+                video.removeAttribute("data-ksl-motion");
+                var play = video.play();
+                if (play && play.catch) {
+                    play.catch(function () {});
+                }
+            }
+        });
     }
 
     function setFlag(name, on) {
         flags[name] = on;
         var button = root.querySelector('[data-act="' + name + '"]');
-        if (button) button.setAttribute("aria-pressed", on ? "true" : "false");
+        if (button) {
+            button.setAttribute("aria-pressed", on ? "true" : "false");
+            button.classList.toggle("is-on", on);
+        }
         if (CLASS[name]) document.documentElement.classList.toggle(CLASS[name], on);
         if (name === "styles") setStyles(on);
+        if (name === "motion") setMotion(on);
+        if (name === "lights") {
+            if (on) placeSpot(window.innerWidth / 2, window.innerHeight / 2);
+        }
     }
 
     function setStyles(off) {
