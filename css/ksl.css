@@ -6849,7 +6849,8 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     border-bottom-color: #0A3E95;
 }
 
-#ksl-news-grid.ksl-feed-grid {
+#ksl-news-grid.ksl-feed-grid,
+#ksl-home-news-grid.ksl-feed-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 22px;
@@ -7016,13 +7017,15 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
 }
 
 @media (max-width: 991.98px) {
-    #ksl-news-grid.ksl-feed-grid {
+    #ksl-news-grid.ksl-feed-grid,
+    #ksl-home-news-grid.ksl-feed-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 639.98px) {
     #ksl-news-grid.ksl-feed-grid,
+    #ksl-home-news-grid.ksl-feed-grid,
     .ksl-feed-promos {
         grid-template-columns: 1fr;
     }
