@@ -707,69 +707,74 @@
     });
 
     (function kslServiceScrollReveal() {
-        var grid = document.querySelector(".ksl-services-grid");
-        if (!grid) {
+        var grids = document.querySelectorAll(".ksl-services-grid");
+        if (!grids.length) {
             return;
         }
-        var cards = Array.prototype.slice.call(grid.querySelectorAll(".service-item"));
-        if (!cards.length) {
-            return;
-        }
-        var timers = [];
         var pause = 900;
         var step = 380;
 
-        function clearTimers() {
-            timers.forEach(function (id) {
-                window.clearTimeout(id);
-            });
-            timers = [];
-        }
-
-        function resetCards() {
-            clearTimers();
-            cards.forEach(function (card) {
-                card.classList.remove("is-revealed");
-            });
-        }
-
-        function revealCards() {
-            resetCards();
-            if (reduceMotion.matches) {
-                cards.forEach(function (card) {
-                    card.classList.add("is-revealed");
-                });
+        function bindGrid(grid) {
+            var cards = Array.prototype.slice.call(grid.querySelectorAll(".service-item"));
+            if (!cards.length) {
                 return;
             }
-            timers.push(window.setTimeout(function () {
-                cards.forEach(function (card, index) {
-                    timers.push(window.setTimeout(function () {
-                        card.classList.add("is-revealed");
-                    }, index * step));
+            var timers = [];
+            var playing = false;
+
+            function clearTimers() {
+                timers.forEach(function (id) {
+                    window.clearTimeout(id);
                 });
-            }, pause));
-        }
+                timers = [];
+            }
 
-        if (!("IntersectionObserver" in window)) {
-            revealCards();
-            return;
-        }
+            function resetCards() {
+                clearTimers();
+                cards.forEach(function (card) {
+                    card.classList.remove("is-revealed");
+                });
+            }
 
-        var playing = false;
-        var revealObserver = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-                var visible = entry.isIntersecting && entry.intersectionRatio >= 0.2;
-                if (visible && !playing) {
-                    playing = true;
-                    revealCards();
-                } else if (!visible && playing) {
-                    playing = false;
-                    resetCards();
+            function revealCards() {
+                resetCards();
+                if (reduceMotion.matches) {
+                    cards.forEach(function (card) {
+                        card.classList.add("is-revealed");
+                    });
+                    return;
                 }
-            });
-        }, { threshold: [0, 0.2, 0.5] });
+                timers.push(window.setTimeout(function () {
+                    cards.forEach(function (card, index) {
+                        timers.push(window.setTimeout(function () {
+                            card.classList.add("is-revealed");
+                        }, index * step));
+                    });
+                }, pause));
+            }
 
-        revealObserver.observe(grid);
+            if (!("IntersectionObserver" in window)) {
+                revealCards();
+                return;
+            }
+
+            var revealObserver = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    var visible = entry.isIntersecting && entry.intersectionRatio >= 0.2;
+                    if (visible && !playing) {
+                        playing = true;
+                        revealCards();
+                    } else if (!visible && playing) {
+                        playing = false;
+                        resetCards();
+                    }
+                });
+            }, { threshold: [0, 0.2, 0.5] });
+
+            revealObserver.observe(grid);
+        }
+
+        Array.prototype.forEach.call(grids, bindGrid);
     })();
 
     function kslDecodeHtml(text) {
