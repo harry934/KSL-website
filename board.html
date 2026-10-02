@@ -15,7 +15,7 @@
     <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
-    <link href="css/ksl.css?v=20261001-14" rel="stylesheet">
+    <link href="css/ksl.css?v=20261002-10" rel="stylesheet">
     <script src="js/intro.js?v=20261001-14"></script>
 </head>
 <body data-ksl-scripts="core wow">
@@ -150,15 +150,17 @@
       <h2>Board of Directors</h2>
       <p>Kenya Shipyards Limited is guided by experienced leaders who provide oversight of governance, risk management, compliance, and the organization’s strategic direction.</p>
     </div>
-    <div class="row g-3 board-highlights mb-4">
-      <div class="col-md-4 ksl-reveal"><div class="board-highlight"><strong>12</strong><span>Directors and executive representatives</span></div></div>
-      <div class="col-md-4 ksl-reveal"><div class="board-highlight"><strong>3</strong><span>Core oversight pillars: governance, risk, compliance</span></div></div>
-      <div class="col-md-4 ksl-reveal"><div class="board-highlight"><strong>2</strong><span>Shipyards aligned to national maritime strategy</span></div></div>
+    <div class="board-filters" role="group" aria-label="Filter the board">
+      <button type="button" class="board-filter" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" class="board-filter" data-filter="defence" aria-pressed="false">Defence</button>
+      <button type="button" class="board-filter" data-filter="ps" aria-pressed="false">Principal Secretaries</button>
+      <button type="button" class="board-filter" data-filter="independent" aria-pressed="false">Independent members</button>
     </div>
+    <p id="boardEmpty" class="board-empty" hidden>No directors match that filter.</p>
 
-    <div class="row g-4 board-grid">
-      <div class="col-lg-6 ksl-reveal">
-        <article class="board-card">
+    <section class="board-featured" aria-label="Board leadership">
+      <div class="board-slot">
+        <article class="board-card board-card-featured" tabindex="0" data-board-group="defence">
           <div class="board-portrait"><img src="img/ksl/board/gen-kahariri.jpg" alt="Gen C M Kahariri" loading="lazy" decoding="async"></div>
           <div class="board-card-body">
             <p class="board-role">Chief of the Defence Forces</p>
@@ -167,119 +169,8 @@
           </div>
         </article>
       </div>
-
-      <div class="col-lg-6 ksl-reveal">
-        <article class="board-card">
-          <div class="board-portrait"><img src="img/ksl/board/dr-patrick-mariru.jpg" alt="Dr Patrick Mariru" loading="lazy" decoding="async"></div>
-          <div class="board-card-body">
-            <p class="board-role">Board member</p>
-            <h3>Dr. Patrick Mariru, PhD, CBS</h3>
-            <p>An Advocate of the High Court of Kenya with qualifications in law, public policy and management, and divinity.</p>
-          </div>
-        </article>
-      </div>
-
-      <div class="col-lg-6 ksl-reveal">
-        <article class="board-card">
-          <div class="board-portrait"><img src="img/ksl/board/lt-gen-omenda.png" alt="Lt Gen J M Omenda" loading="lazy" decoding="async"></div>
-          <div class="board-card-body">
-            <p class="board-role">Vice Chief of the Defence Forces</p>
-            <h3>Lt Gen J M Omenda EBS SS OGW ‘rcds’ (UK) ‘psc’ (K)</h3>
-            <p>A graduate of the Defence Staff College of Kenya and the Royal College of Defence Studies, United Kingdom.</p>
-          </div>
-        </article>
-      </div>
-
-      <div class="col-lg-6 ksl-reveal">
-        <article class="board-card">
-          <div class="board-portrait"><img src="img/ksl/board/lt-gen-ketter.jpeg" alt="Lt Gen D K Ketter" loading="lazy" decoding="async"></div>
-          <div class="board-card-body">
-            <p class="board-role">Commander of the Kenya Army</p>
-            <h3>Lt Gen D K Ketter MGH CBS ‘ndc’ (TZ) ‘psc’ (K)</h3>
-            <p>Holds a Master of Military Science, a Bachelor of Military Science, and a Diploma in Strategic Studies.</p>
-          </div>
-        </article>
-      </div>
-
-      <div class="col-lg-6 ksl-reveal">
-        <article class="board-card">
-          <div class="board-portrait"><img src="img/ksl/board/maj-gen-waliaula.jpeg" alt="Maj Gen B Waliaula" loading="lazy" decoding="async"></div>
-          <div class="board-card-body">
-            <p class="board-role">Board member</p>
-            <h3>Maj Gen B Waliaula MGH CBS ‘ndu’ (China) ‘psc’ (K) ‘acsc’ (USA)</h3>
-            <p>Brings nearly four decades of distinguished service, leadership, professionalism, and commitment to duty.</p>
-          </div>
-        </article>
-      </div>
-
-      <div class="col-lg-6 ksl-reveal">
-        <article class="board-card">
-          <div class="board-portrait"><img src="img/ksl/board/maj-gen-otieno.jpg" alt="Maj Gen Paul O Otieno" loading="lazy" decoding="async"></div>
-          <div class="board-card-body">
-            <p class="board-role">Commander of the Kenya Navy</p>
-            <h3>Maj Gen Paul O Otieno EBS ‘ndc’ (K) ‘psc’ (K)</h3>
-            <p>Holds a master’s degree in physics, specializing in electronics, from Kenyatta University.</p>
-          </div>
-        </article>
-      </div>
-
-      <div class="col-lg-6 ksl-reveal">
-        <article class="board-card">
-          <div class="board-portrait"><img src="img/ksl/board/dr-chris-kiptoo.jpeg" alt="Dr Chris Kiptoo" loading="lazy" decoding="async"></div>
-          <div class="board-card-body">
-            <p class="board-role">Principal Secretary, National Treasury</p>
-            <h3>Dr Chris Kiptoo CBS</h3>
-            <p>Holds a PhD in international macroeconomics with a specialization in finance.</p>
-          </div>
-        </article>
-      </div>
-
-      <div class="col-lg-6 ksl-reveal">
-        <article class="board-card">
-          <div class="board-portrait"><img src="img/ksl/board/dr-juma-mukhwana.jpeg" alt="Dr Juma Mukhwana" loading="lazy" decoding="async"></div>
-          <div class="board-card-body">
-            <p class="board-role">Principal Secretary, State Department of Industry</p>
-            <h3>Dr Juma Mukhwana HSC</h3>
-            <p>Holds qualifications in soil science, pharmacology and toxicology, and veterinary medicine.</p>
-          </div>
-        </article>
-      </div>
-
-      <div class="col-lg-6 ksl-reveal">
-        <article class="board-card">
-          <div class="board-portrait"><img src="img/ksl/board/maj-gen-faustino-lobaly.jpeg" alt="Major General Faustino Lobaly" loading="lazy" decoding="async"></div>
-          <div class="board-card-body">
-            <p class="board-role">Director General, National Security Industries</p>
-            <h3>Major General Faustino Lobaly</h3>
-            <p>Leads the Directorate of National Security Industries and its strategic national development mandate.</p>
-          </div>
-        </article>
-      </div>
-
-      <div class="col-lg-6 ksl-reveal">
-        <article class="board-card">
-          <div class="board-portrait"><img src="img/ksl/board/simon-mwachia.jpg" alt="Mr Simon Mwachia" loading="lazy" decoding="async"></div>
-          <div class="board-card-body">
-            <p class="board-role">Board member</p>
-            <h3>Mr. Simon Mwachia</h3>
-            <p>Holds a Bachelor of Education in Economics and Business Studies and training in strategic leadership development.</p>
-          </div>
-        </article>
-      </div>
-
-      <div class="col-lg-6 ksl-reveal">
-        <article class="board-card">
-          <div class="board-portrait"><img src="img/ksl/board/maryanne-karanja.jpg" alt="Ms Maryanne Karanja" loading="lazy" decoding="async"></div>
-          <div class="board-card-body">
-            <p class="board-role">Board member</p>
-            <h3>Ms Maryanne Karanja</h3>
-            <p>A business leader with more than 20 years of experience in supply chain and business strategy across Africa.</p>
-          </div>
-        </article>
-      </div>
-
-      <div class="col-lg-6 ksl-reveal">
-        <article class="board-card">
+      <div class="board-slot">
+        <article class="board-card board-card-featured" tabindex="0" data-board-group="defence">
           <div class="board-portrait"><img src="img/ksl/board/maj-gen-farah.png" alt="Maj Gen S M Farah" loading="lazy" decoding="async"></div>
           <div class="board-card-body">
             <p class="board-role">Managing Director, KSL</p>
@@ -288,7 +179,128 @@
           </div>
         </article>
       </div>
-    </div>
+    </section>
+
+    <section class="board-committee" aria-labelledby="board-audit">
+      <h2 id="board-audit">Audit</h2>
+      <p>Finance, controls, and public accountability.</p>
+      <div class="row g-4 board-grid justify-content-center">
+        <div class="col-xl-3 col-md-4 col-6 board-slot">
+          <article class="board-card" tabindex="0" data-board-group="independent">
+            <div class="board-portrait"><img src="img/ksl/board/dr-patrick-mariru.jpg" alt="Dr Patrick Mariru" loading="lazy" decoding="async"></div>
+            <div class="board-card-body">
+              <p class="board-role">Board member</p>
+              <h3>Dr. Patrick Mariru, PhD, CBS</h3>
+              <p>An Advocate of the High Court of Kenya with qualifications in law, public policy and management, and divinity.</p>
+            </div>
+          </article>
+        </div>
+        <div class="col-xl-3 col-md-4 col-6 board-slot">
+          <article class="board-card" tabindex="0" data-board-group="ps">
+            <div class="board-portrait"><img src="img/ksl/board/dr-chris-kiptoo.jpeg" alt="Dr Chris Kiptoo" loading="lazy" decoding="async"></div>
+            <div class="board-card-body">
+              <p class="board-role">Principal Secretary, National Treasury</p>
+              <h3>Dr Chris Kiptoo CBS</h3>
+              <p>Holds a PhD in international macroeconomics with a specialization in finance.</p>
+            </div>
+          </article>
+        </div>
+        <div class="col-xl-3 col-md-4 col-6 board-slot">
+          <article class="board-card" tabindex="0" data-board-group="independent">
+            <div class="board-portrait"><img src="img/ksl/board/simon-mwachia.jpg" alt="Mr Simon Mwachia" loading="lazy" decoding="async"></div>
+            <div class="board-card-body">
+              <p class="board-role">Board member</p>
+              <h3>Mr. Simon Mwachia</h3>
+              <p>Holds a Bachelor of Education in Economics and Business Studies and training in strategic leadership development.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="board-committee" aria-labelledby="board-risk">
+      <h2 id="board-risk">Risk</h2>
+      <p>Operational readiness and security.</p>
+      <div class="row g-4 board-grid justify-content-center">
+        <div class="col-xl-3 col-md-4 col-6 board-slot">
+          <article class="board-card" tabindex="0" data-board-group="defence">
+            <div class="board-portrait"><img src="img/ksl/board/lt-gen-omenda.png" alt="Lt Gen J M Omenda" loading="lazy" decoding="async"></div>
+            <div class="board-card-body">
+              <p class="board-role">Vice Chief of the Defence Forces</p>
+              <h3>Lt Gen J M Omenda EBS SS OGW ‘rcds’ (UK) ‘psc’ (K)</h3>
+              <p>A graduate of the Defence Staff College of Kenya and the Royal College of Defence Studies, United Kingdom.</p>
+            </div>
+          </article>
+        </div>
+        <div class="col-xl-3 col-md-4 col-6 board-slot">
+          <article class="board-card" tabindex="0" data-board-group="defence">
+            <div class="board-portrait"><img src="img/ksl/board/lt-gen-ketter.jpeg" alt="Lt Gen D K Ketter" loading="lazy" decoding="async"></div>
+            <div class="board-card-body">
+              <p class="board-role">Commander of the Kenya Army</p>
+              <h3>Lt Gen D K Ketter MGH CBS ‘ndc’ (TZ) ‘psc’ (K)</h3>
+              <p>Holds a Master of Military Science, a Bachelor of Military Science, and a Diploma in Strategic Studies.</p>
+            </div>
+          </article>
+        </div>
+        <div class="col-xl-3 col-md-4 col-6 board-slot">
+          <article class="board-card" tabindex="0" data-board-group="defence">
+            <div class="board-portrait"><img src="img/ksl/board/maj-gen-waliaula.jpeg" alt="Maj Gen B Waliaula" loading="lazy" decoding="async"></div>
+            <div class="board-card-body">
+              <p class="board-role">Board member</p>
+              <h3>Maj Gen B Waliaula MGH CBS ‘ndu’ (China) ‘psc’ (K) ‘acsc’ (USA)</h3>
+              <p>Brings nearly four decades of distinguished service, leadership, professionalism, and commitment to duty.</p>
+            </div>
+          </article>
+        </div>
+        <div class="col-xl-3 col-md-4 col-6 board-slot">
+          <article class="board-card" tabindex="0" data-board-group="defence">
+            <div class="board-portrait"><img src="img/ksl/board/maj-gen-otieno.jpg" alt="Maj Gen Paul O Otieno" loading="lazy" decoding="async"></div>
+            <div class="board-card-body">
+              <p class="board-role">Commander of the Kenya Navy</p>
+              <h3>Maj Gen Paul O Otieno EBS ‘ndc’ (K) ‘psc’ (K)</h3>
+              <p>Holds a master’s degree in physics, specializing in electronics, from Kenyatta University.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="board-committee" aria-labelledby="board-strategy">
+      <h2 id="board-strategy">Strategy</h2>
+      <p>Industrial growth and long term direction.</p>
+      <div class="row g-4 board-grid justify-content-center">
+        <div class="col-xl-3 col-md-4 col-6 board-slot">
+          <article class="board-card" tabindex="0" data-board-group="ps">
+            <div class="board-portrait"><img src="img/ksl/board/dr-juma-mukhwana.jpeg" alt="Dr Juma Mukhwana" loading="lazy" decoding="async"></div>
+            <div class="board-card-body">
+              <p class="board-role">Principal Secretary, State Department of Industry</p>
+              <h3>Dr Juma Mukhwana HSC</h3>
+              <p>Holds qualifications in soil science, pharmacology and toxicology, and veterinary medicine.</p>
+            </div>
+          </article>
+        </div>
+        <div class="col-xl-3 col-md-4 col-6 board-slot">
+          <article class="board-card" tabindex="0" data-board-group="defence">
+            <div class="board-portrait"><img src="img/ksl/board/maj-gen-faustino-lobaly.jpeg" alt="Major General Faustino Lobaly" loading="lazy" decoding="async"></div>
+            <div class="board-card-body">
+              <p class="board-role">Director General, National Security Industries</p>
+              <h3>Major General Faustino Lobaly</h3>
+              <p>Leads the Directorate of National Security Industries and its strategic national development mandate.</p>
+            </div>
+          </article>
+        </div>
+        <div class="col-xl-3 col-md-4 col-6 board-slot">
+          <article class="board-card" tabindex="0" data-board-group="independent">
+            <div class="board-portrait"><img src="img/ksl/board/maryanne-karanja.jpg" alt="Ms Maryanne Karanja" loading="lazy" decoding="async"></div>
+            <div class="board-card-body">
+              <p class="board-role">Board member</p>
+              <h3>Ms Maryanne Karanja</h3>
+              <p>A business leader with more than 20 years of experience in supply chain and business strategy across Africa.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
   </div>
 </main>
     <div class="container-fluid bg-dark text-light footer footer-zones mt-5 py-5">
@@ -336,5 +348,6 @@
     </div>
     <a href="https://wa.me/254726277377" class="whatsapp-fab" aria-label="WhatsApp us" target="_blank" rel="noopener"><svg class="ksl-wa" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2C6.58 2 2.15 6.4 2.15 11.83c0 1.74.46 3.44 1.34 4.94L2 22l5.39-1.41a10 10 0 0 0 4.65 1.18h.01c5.46 0 9.89-4.4 9.89-9.83C21.94 6.4 17.5 2 12.04 2zm5.76 13.86c-.24.68-1.4 1.3-1.94 1.38-.5.08-1.12.11-1.81-.11-.41-.14-.95-.31-1.63-.61-2.87-1.24-4.74-4.13-4.88-4.32-.14-.19-1.16-1.54-1.16-2.94s.73-2.08 1-2.37c.24-.27.64-.39 1.02-.39.12 0 .23 0 .33.01.3.01.45.03.65.5.24.58.82 2 .89 2.15.07.15.12.32.02.51-.09.19-.14.31-.28.48-.14.17-.29.37-.42.5-.14.14-.28.28-.12.55.16.27.71 1.17 1.52 1.9 1.05.93 1.93 1.22 2.2 1.36.27.14.43.12.59-.07.16-.19.68-.79.86-1.06.18-.27.36-.22.6-.13.24.09 1.54.73 1.8.86.27.14.44.2.51.31.06.12.06.67-.18 1.35z"/></svg></a>
         <script src="js/scripts.js?v=20261002-3"></script>
+        <script src="js/pages/board.js?v=20261002-10"></script>
 </body>
 </html>
