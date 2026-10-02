@@ -5255,7 +5255,7 @@ html[lang="sw"] .ksl-library .download-button .download::after {
 .ksl-home-news-section {
     position: relative;
     z-index: 2;
-    overflow: hidden;
+    overflow: visible;
     isolation: isolate;
 }
 
@@ -7154,4 +7154,34 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     .ksl-feed-modal-dialog {
         transition: none;
     }
+}
+
+.container-xxl {
+    width: 100%;
+    max-width: none;
+}
+
+.ksl-service-modal-scroll,
+.ksl-service-modal,
+.ksl-feed-modal-dialog,
+.board-modal-dialog,
+.modal,
+.modal-dialog,
+.modal-content,
+.modal-body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.ksl-service-modal-scroll::-webkit-scrollbar,
+.ksl-service-modal::-webkit-scrollbar,
+.ksl-feed-modal-dialog::-webkit-scrollbar,
+.board-modal-dialog::-webkit-scrollbar,
+.modal::-webkit-scrollbar,
+.modal-dialog::-webkit-scrollbar,
+.modal-content::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
 }
