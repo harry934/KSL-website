@@ -4152,12 +4152,85 @@ html.board-motion .board-card.is-in .board-card-body {
     width: 100%;
     margin-top: 0;
     flex: 0 0 auto;
-    padding: 20px clamp(12px, 3vw, 28px) calc(14px + env(safe-area-inset-bottom, 0px));
+    position: relative;
+    isolation: isolate;
+    padding: 54px clamp(12px, 3vw, 28px) calc(14px + env(safe-area-inset-bottom, 0px));
+    background: transparent;
+    --ksl-wave-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 720 32' preserveAspectRatio='none'%3E%3Cpath d='M0 12.4 L8 10.7 L16 9.2 L24 8.0 L32 7.2 L40 6.7 L48 6.6 L56 6.8 L64 7.2 L72 7.8 L80 8.4 L88 9.1 L96 9.7 L104 10.4 L112 11.1 L120 11.8 L128 12.7 L136 13.6 L144 14.7 L152 15.9 L160 17.0 L168 18.2 L176 19.1 L184 19.8 L192 20.1 L200 20.0 L208 19.6 L216 18.7 L224 17.6 L232 16.3 L240 14.9 L248 13.7 L256 12.6 L264 11.8 L272 11.4 L280 11.3 L288 11.6 L296 12.1 L304 12.8 L312 13.6 L320 14.5 L328 15.4 L336 16.2 L344 17.0 L352 17.8 L360 18.7 L368 19.6 L376 20.6 L384 21.6 L392 22.7 L400 23.8 L408 24.8 L416 25.6 L424 26.1 L432 26.3 L440 26.0 L448 25.2 L456 24.1 L464 22.6 L472 21.0 L480 19.3 L488 17.6 L496 16.1 L504 14.9 L512 14.0 L520 13.5 L528 13.3 L536 13.4 L544 13.6 L552 13.9 L560 14.3 L568 14.7 L576 15.1 L584 15.4 L592 15.7 L600 16.1 L608 16.6 L616 17.1 L624 17.8 L632 18.5 L640 19.2 L648 19.9 L656 20.4 L664 20.6 L672 20.4 L680 19.9 L688 18.9 L696 17.6 L704 16.0 L712 14.2 L720 12.4 V32 H0Z'/%3E%3C/svg%3E");
+}
+
+.ksl-hero-wave-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
     background: rgba(8, 32, 82, .45);
-    border-top: 1px solid rgba(255, 255, 255, .12);
-    border-radius: 50% 50% 0 0 / 22px 22px 0 0;
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
+    -webkit-mask: var(--ksl-wave-shape) 0 10px / 720px 32px repeat-x, linear-gradient(#000, #000) 0 41px / 100% calc(100% - 41px) no-repeat;
+    mask: var(--ksl-wave-shape) 0 10px / 720px 32px repeat-x, linear-gradient(#000, #000) 0 41px / 100% calc(100% - 41px) no-repeat;
+}
+
+.ksl-hero-values.is-wave-live .ksl-hero-wave-bg {
+    -webkit-mask: none;
+    mask: none;
+}
+
+.ksl-hero-wave {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 48px;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.ksl-hero-wave-back {
+    z-index: 0;
+}
+
+.ksl-hero-wave-front {
+    z-index: 2;
+}
+
+.ksl-hero-values > .ksl-values-kicker,
+.ksl-hero-values > .ksl-values-swipe-hint,
+.ksl-hero-values > .ksl-values-grid {
+    position: relative;
+    z-index: 3;
+}
+
+.ksl-wave-swell {
+    fill: rgba(74, 122, 196, .42);
+}
+
+.ksl-wave-line {
+    fill: none;
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.ksl-wave-foam circle {
+    fill: #fff;
+}
+
+.ksl-wave-draft {
+    fill: rgba(201, 169, 92, .8);
+    font: 700 7px/1 Manrope, sans-serif;
+    letter-spacing: .04em;
+}
+
+.ksl-wave-draft path {
+    fill: none;
+    stroke: rgba(201, 169, 92, .8);
+    stroke-width: 1;
+}
+
+@media (max-width: 767.98px) {
+    .ksl-wave-draft {
+        display: none;
+    }
 }
 
 .ksl-hero-values .ksl-values-kicker {
@@ -4251,7 +4324,7 @@ html.board-motion .board-card.is-in .board-card-body {
     background-image: linear-gradient(#C9A95C, #C9A95C);
     background-repeat: no-repeat;
     background-position: left bottom;
-    background-size: 0 2px;
+    background-size: 0 1px;
     transition: background-size .2s ease, color .2s ease;
 }
 
@@ -4259,7 +4332,7 @@ html.board-motion .board-card.is-in .board-card-body {
 .ksl-hero-values .ksl-values-grid article:focus-within .ksl-values-keyword,
 .ksl-hero-values .ksl-values-grid article:active .ksl-values-keyword {
     color: #E3C987;
-    background-size: 100% 2px;
+    background-size: 100% 1px;
 }
 
 .ksl-hero-values article {
@@ -4488,6 +4561,7 @@ html.board-motion .board-card.is-in .board-card-body {
         animation: none !important;
         opacity: 1 !important;
     }
+
 }
 
 @property --ksl-frame {

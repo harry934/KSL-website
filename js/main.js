@@ -967,6 +967,199 @@
         } else {
             heroValues.classList.add("is-inview");
         }
+        initHeroWave(heroValues);
+    }
+
+    function initHeroWave(band) {
+        var bg = band.querySelector(".ksl-hero-wave-bg");
+        var swellPath = band.querySelector(".ksl-wave-swell");
+        var linePath = band.querySelector(".ksl-wave-line");
+        var glint = band.querySelector("#kslWaveGlint");
+        var foamGroup = band.querySelector(".ksl-wave-foam");
+        var draft = band.querySelector(".ksl-wave-draft");
+        if (!bg || !swellPath || !linePath) {
+            return;
+        }
+        var NS = "http://www.w3.org/2000/svg";
+        var STEP = 6;
+        var BASE = 28;
+        var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+        var mobileQuery = window.matchMedia("(max-width: 767.98px)");
+        var width = 0;
+        var height = 0;
+        var mobile = false;
+        var amp = 1;
+        var foam = [];
+        var ripples = [];
+        var lastRipple = { x: -999, t: 0 };
+        var start = performance.now();
+        var visible = true;
+        var frame = 0;
+
+        function clamp(v, lo, hi) {
+            return Math.max(lo, Math.min(hi, v));
+        }
+
+        function frontY(x, t) {
+            var k = mobile ? 1.7 : 1;
+            var y = Math.sin(x / (38 * k) + t * 0.55) * 5.5 +
+                Math.sin(x / (115 * k) + 0.9 + t * 0.21) * 4 +
+                Math.sin(x / (19 * k) + 0.4 + t * 1.1) * 1.2;
+            y *= amp * (mobile ? 0.6 : 1);
+            for (var i = 0; i < ripples.length; i++) {
+                var r = ripples[i];
+                var dt = t - r.t;
+                var d = x - r.x;
+                var spread = 30 + dt * 140;
+                y -= 6 * Math.exp(-dt * 1.4) * Math.cos(d / 14 - dt * 9) * Math.exp(-(d * d) / (2 * spread * spread));
+            }
+            return BASE + y;
+        }
+
+        function swellY(x, t) {
+            var k = mobile ? 1.7 : 1;
+            var y = Math.sin(x / (70 * k) - t * 0.3) * 7 + Math.sin(x / (160 * k) + 2 - t * 0.12) * 4;
+            return BASE - 11 + y * amp * (mobile ? 0.6 : 1);
+        }
+
+        function buildFoam() {
+            while (foamGroup.firstChild) {
+                foamGroup.removeChild(foamGroup.firstChild);
+            }
+            foam = [];
+            var count = Math.floor(width / 55);
+            for (var i = 0; i < count; i++) {
+                var el = document.createElementNS(NS, "circle");
+                el.setAttribute("r", (0.8 + Math.random() * 0.9).toFixed(2));
+                foamGroup.appendChild(el);
+                foam.push({ x: i * 55 + Math.random() * 30, seed: Math.random() * 6.28, el: el });
+            }
+        }
+
+        function targetAmp() {
+            var rect = band.getBoundingClientRect();
+            var vh = window.innerHeight;
+            if (rect.bottom <= vh) {
+                return 1;
+            }
+            var progress = clamp((vh - rect.top) / rect.height, 0, 1);
+            return 1 + (1 - progress) * 0.8;
+        }
+
+        function draw(now) {
+            var t = (now - start) / 1000;
+            amp += (targetAmp() - amp) * 0.06;
+            ripples = ripples.filter(function (r) { return t - r.t < 2.5; });
+
+            var line = "";
+            var clip = "";
+            var swellTop = "";
+            var swellBottom = [];
+            var minY = Infinity;
+            var maxY = -Infinity;
+            for (var x = 0; x <= width + STEP; x += STEP) {
+                var px = Math.min(x, width);
+                var fy = frontY(px, t);
+                var sy = Math.min(swellY(px, t), fy);
+                minY = Math.min(minY, fy);
+                maxY = Math.max(maxY, fy);
+                var seg = (x === 0 ? "M" : "L") + px.toFixed(1) + " " + fy.toFixed(2);
+                line += seg;
+                clip += seg;
+                swellTop += (x === 0 ? "M" : "L") + px.toFixed(1) + " " + sy.toFixed(2);
+                swellBottom.unshift("L" + px.toFixed(1) + " " + fy.toFixed(2));
+                if (px === width) {
+                    break;
+                }
+            }
+            linePath.setAttribute("d", line);
+            swellPath.setAttribute("d", swellTop + swellBottom.join("") + "Z");
+            var shape = "path('" + clip + "L" + width + " " + height + "L0 " + height + "Z')";
+            bg.style.clipPath = shape;
+            bg.style.webkitClipPath = shape;
+            if (glint) {
+                glint.setAttribute("y1", minY.toFixed(1));
+                glint.setAttribute("y2", maxY.toFixed(1));
+            }
+
+            for (var i = 0; i < foam.length; i++) {
+                var f = foam[i];
+                var fx = ((f.x - t * 12) % width + width) % width;
+                var crestY = frontY(fx, t);
+                var crest = clamp((BASE - crestY) / (7 * amp), 0, 1);
+                var twinkle = 0.5 + 0.5 * Math.sin(t * 2 + f.seed);
+                f.el.setAttribute("cx", fx.toFixed(1));
+                f.el.setAttribute("cy", (crestY - 2).toFixed(1));
+                f.el.setAttribute("opacity", (crest * crest * twinkle * 0.85).toFixed(2));
+            }
+        }
+
+        function tick(now) {
+            frame = 0;
+            draw(now);
+            if (visible && !document.hidden && !reduceMotion.matches) {
+                frame = window.requestAnimationFrame(tick);
+            }
+        }
+
+        function play() {
+            if (!frame && !reduceMotion.matches) {
+                frame = window.requestAnimationFrame(tick);
+            }
+        }
+
+        function measure() {
+            width = bg.clientWidth;
+            height = bg.clientHeight;
+            mobile = mobileQuery.matches;
+            if (draft) {
+                draft.setAttribute("transform", "translate(" + (width - 30) + " 0)");
+            }
+            buildFoam();
+            draw(performance.now());
+        }
+
+        band.classList.add("is-wave-live");
+        measure();
+
+        if ("ResizeObserver" in window) {
+            new ResizeObserver(measure).observe(band);
+        } else {
+            window.addEventListener("resize", measure);
+        }
+
+        if ("IntersectionObserver" in window) {
+            new IntersectionObserver(function (entries) {
+                visible = entries[0].isIntersecting;
+                if (visible) {
+                    play();
+                }
+            }).observe(band);
+        }
+
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) {
+                play();
+            }
+        });
+
+        band.addEventListener("pointermove", function (event) {
+            if (event.pointerType !== "mouse" || reduceMotion.matches) {
+                return;
+            }
+            var x = event.clientX - band.getBoundingClientRect().left;
+            var t = (performance.now() - start) / 1000;
+            if (Math.abs(x - lastRipple.x) < 50 && t - lastRipple.t < 0.18) {
+                return;
+            }
+            lastRipple = { x: x, t: t };
+            ripples.push(lastRipple);
+            if (ripples.length > 6) {
+                ripples.shift();
+            }
+        });
+
+        play();
     }
 
     // Gallery page: load photos + category filter
