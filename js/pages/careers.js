@@ -7,6 +7,111 @@
         return;
     }
 
+    function placesOf(location) {
+        return String(location || "")
+            .split(/\s*(?:,|\/|\||\bor\b|\band\b|&)\s*/i)
+            .map(function (s) { return s.trim(); })
+            .filter(Boolean);
+    }
+
+    function calm() {
+        return document.documentElement.classList.contains("ksl-no-anim") ||
+            window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+
+    function buildFilters(vacancies) {
+        var places = [];
+        vacancies.forEach(function (job) {
+            placesOf(job.location).forEach(function (p) {
+                if (places.indexOf(p) < 0) places.push(p);
+            });
+        });
+        if (vacancies.length < 2 || places.length < 2) return;
+
+        var bar = document.createElement("div");
+        bar.className = "ksl-career-filters";
+        bar.setAttribute("role", "group");
+        bar.setAttribute("aria-label", "Filter roles by location");
+        var pill = document.createElement("span");
+        pill.className = "ksl-career-filter-pill";
+        pill.setAttribute("aria-hidden", "true");
+        bar.appendChild(pill);
+
+        var status = document.createElement("p");
+        status.className = "visually-hidden";
+        status.setAttribute("aria-live", "polite");
+
+        ["All"].concat(places).forEach(function (place, i) {
+            var chip = document.createElement("button");
+            chip.type = "button";
+            chip.className = "ksl-career-filter";
+            chip.textContent = place;
+            chip.setAttribute("data-place", i ? place : "");
+            chip.setAttribute("aria-pressed", i ? "false" : "true");
+            bar.appendChild(chip);
+        });
+
+        list.parentNode.insertBefore(bar, list);
+        list.parentNode.insertBefore(status, list);
+
+        function movePill(chip) {
+            pill.style.width = chip.offsetWidth + "px";
+            pill.style.height = chip.offsetHeight + "px";
+            pill.style.transform = "translate(" + chip.offsetLeft + "px," + chip.offsetTop + "px)";
+        }
+
+        function filter(place) {
+            var cards = Array.prototype.slice.call(list.querySelectorAll(".ksl-career-card"));
+            var first = new Map();
+            cards.forEach(function (card) {
+                if (!card.hidden) first.set(card, card.getBoundingClientRect());
+            });
+            var shown = 0;
+            cards.forEach(function (card) {
+                var match = !place || card.getAttribute("data-locations").split("|").indexOf(place) >= 0;
+                card.hidden = !match;
+                if (match) shown++;
+            });
+            status.textContent = shown + (shown === 1 ? " role" : " roles");
+            if (calm() || !Element.prototype.animate) return;
+            cards.forEach(function (card, i) {
+                if (card.hidden) return;
+                var before = first.get(card);
+                if (!before) {
+                    card.animate([
+                        { opacity: 0, transform: "translateY(14px) scale(.98)" },
+                        { opacity: 1, transform: "none" }
+                    ], { duration: 380, delay: i * 40, easing: "cubic-bezier(.22,1,.36,1)", fill: "backwards" });
+                    return;
+                }
+                var dy = before.top - card.getBoundingClientRect().top;
+                if (!dy) return;
+                card.animate([
+                    { transform: "translateY(" + dy + "px)" },
+                    { transform: "none" }
+                ], { duration: 420, easing: "cubic-bezier(.22,1,.36,1)" });
+            });
+        }
+
+        bar.addEventListener("click", function (event) {
+            var chip = event.target.closest(".ksl-career-filter");
+            if (!chip || chip.getAttribute("aria-pressed") === "true") return;
+            bar.querySelectorAll(".ksl-career-filter").forEach(function (c) {
+                c.setAttribute("aria-pressed", c === chip ? "true" : "false");
+            });
+            movePill(chip);
+            filter(chip.getAttribute("data-place"));
+        });
+
+        requestAnimationFrame(function () {
+            movePill(bar.querySelector(".ksl-career-filter"));
+            bar.classList.add("is-ready");
+        });
+        window.addEventListener("resize", function () {
+            movePill(bar.querySelector('.ksl-career-filter[aria-pressed="true"]'));
+        });
+    }
+
     fetch("data/careers.json")
         .then(function (res) { return res.json(); })
         .then(function (data) {
@@ -24,6 +129,7 @@
             vacancies.forEach(function (job) {
                 var article = document.createElement("article");
                 article.className = "ksl-career-card mb-4 p-4 bg-white shadow-sm";
+                article.setAttribute("data-locations", placesOf(job.location).join("|"));
                 article.innerHTML =
                     "<h3 class=\"h5\">" + job.title + "</h3>" +
                     "<p class=\"text-muted mb-2\">" + job.location + " · Closes " + job.closingDate + "</p>" +
@@ -31,6 +137,7 @@
                     '<a class="btn btn-primary" href="' + (job.applyUrl || ("mailto:" + data.applyEmail)) + '">Apply</a>';
                 list.appendChild(article);
             });
+            buildFilters(vacancies);
             var intern = document.getElementById("ksl-careers-internships");
             if (intern && data.internships && data.internships.length) {
                 intern.innerHTML = data.internships.map(function (row) {

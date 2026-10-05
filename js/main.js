@@ -977,6 +977,8 @@
         var glint = band.querySelector("#kslWaveGlint");
         var foamGroup = band.querySelector(".ksl-wave-foam");
         var draft = band.querySelector(".ksl-wave-draft");
+        var bubbleLayer = band.querySelector(".ksl-hero-bubbles");
+        var shorePath = band.querySelector(".ksl-shore-fill");
         if (!bg || !swellPath || !linePath) {
             return;
         }
@@ -990,6 +992,8 @@
         var mobile = false;
         var amp = 1;
         var foam = [];
+        var bubbles = [];
+        var lastNow = 0;
         var ripples = [];
         var lastRipple = { x: -999, t: 0 };
         var lift = { x: 0, goal: 0, amp: 0, target: 0 };
@@ -1041,6 +1045,40 @@
             }
         }
 
+        function spawnBubble(b, anywhere) {
+            b.x = Math.random() * width;
+            b.y = anywhere ? BASE + Math.random() * (height - BASE) : height - 14 - Math.random() * 10;
+            b.speed = 12 + Math.random() * 16;
+            b.phase = Math.random() * 6.28;
+            b.el.setAttribute("r", (1.2 + Math.random() * 1.8).toFixed(2));
+        }
+
+        function buildBubbles() {
+            if (!bubbleLayer) {
+                return;
+            }
+            while (bubbleLayer.firstChild) {
+                bubbleLayer.removeChild(bubbleLayer.firstChild);
+            }
+            bubbles = [];
+            if (reduceMotion.matches) {
+                return;
+            }
+            var count = Math.max(3, Math.floor(width / 220));
+            for (var i = 0; i < count; i++) {
+                var el = document.createElementNS(NS, "circle");
+                bubbleLayer.appendChild(el);
+                var b = { el: el };
+                spawnBubble(b, true);
+                bubbles.push(b);
+            }
+        }
+
+        function shoreY(x, t) {
+            var k = mobile ? 1.6 : 1;
+            return 12 + Math.sin(x / (90 * k) - t * 0.4) * 3.5 + Math.sin(x / (37 * k) + t * 0.7) * 1.2;
+        }
+
         function targetAmp() {
             var rect = band.getBoundingClientRect();
             var vh = window.innerHeight;
@@ -1053,6 +1091,8 @@
 
         function draw(now) {
             var t = (now - start) / 1000;
+            var dt = lastNow ? Math.min((now - lastNow) / 1000, 0.1) : 0;
+            lastNow = now;
             amp += (targetAmp() - amp) * 0.06;
             lift.amp += (lift.target - lift.amp) * 0.08;
             lift.x += (lift.goal - lift.x) * 0.12;
@@ -1099,6 +1139,33 @@
                 f.el.setAttribute("cy", (crestY - 2).toFixed(1));
                 f.el.setAttribute("opacity", (crest * crest * twinkle * 0.85).toFixed(2));
             }
+
+            if (shorePath) {
+                var shore = "";
+                for (var sx = 0; sx <= width + STEP * 2; sx += STEP * 2) {
+                    var spx = Math.min(sx, width);
+                    shore += (sx === 0 ? "M" : "L") + spx.toFixed(1) + " " + shoreY(spx, t).toFixed(2);
+                    if (spx === width) {
+                        break;
+                    }
+                }
+                shorePath.setAttribute("d", shore + "L" + width + " 25L0 25Z");
+            }
+
+            for (var j = 0; j < bubbles.length; j++) {
+                var b = bubbles[j];
+                b.y -= b.speed * dt;
+                b.x += Math.sin(t * 1.6 + b.phase) * 0.25;
+                var surface = frontY(b.x, t) + 4;
+                if (b.y <= surface) {
+                    spawnBubble(b, false);
+                }
+                var fadeTop = clamp((b.y - surface) / 30, 0, 1);
+                var fadeBottom = clamp((height - 12 - b.y) / 20, 0, 1);
+                b.el.setAttribute("cx", b.x.toFixed(1));
+                b.el.setAttribute("cy", b.y.toFixed(1));
+                b.el.setAttribute("opacity", (fadeTop * fadeBottom * 0.6).toFixed(2));
+            }
         }
 
         function tick(now) {
@@ -1123,6 +1190,7 @@
                 draft.setAttribute("transform", "translate(" + (width - 30) + " 0)");
             }
             buildFoam();
+            buildBubbles();
             draw(performance.now());
         }
 
@@ -1341,6 +1409,361 @@
         });
     }
 
-    
+    // Live search suggestions for every site search box
+    var searchIndex = null;
+    var searchIndexLoading = null;
+    var SEARCH_PAGES = [
+        { title: "Home", href: "index.html", type: "Page", keys: "kenya shipyards limited" },
+        { title: "Who We Are", href: "about.html", type: "Page", keys: "about ksl vision mission mandate history iso" },
+        { title: "KSL Board", href: "board.html", type: "Page", keys: "directors chairman leadership" },
+        { title: "Organization Structure", href: "organization.html", type: "Page", keys: "management departments" },
+        { title: "Services", href: "service.html", type: "Page", keys: "shipbuilding repair refit engineering" },
+        { title: "Products", href: "products.html", type: "Page", keys: "boats vessels grp patrol ferry" },
+        { title: "Projects", href: "project.html", type: "Page", keys: "vessels delivered builds" },
+        { title: "News and Events", href: "news.html", type: "Page", keys: "media press updates" },
+        { title: "Gallery", href: "videos.html", type: "Page", keys: "photos videos media" },
+        { title: "Downloads", href: "downloads.html", type: "Page", keys: "documents forms charter tender" },
+        { title: "Careers", href: "careers.html", type: "Page", keys: "jobs vacancies internship attachment" },
+        { title: "FAQ", href: "faq.html", type: "Page", keys: "questions help" },
+        { title: "CSR", href: "csr.html", type: "Page", keys: "community social responsibility" },
+        { title: "Sustainability", href: "sustainability.html", type: "Page", keys: "environment green" },
+        { title: "Contact Us", href: "contact.html", type: "Page", keys: "email phone address quote mombasa kisumu nairobi herufi house head office" },
+        { title: "Our yards", href: "index.html#yards", type: "Page", keys: "map location directions mombasa mtongwe kisumu nairobi herufi house headquarters" },
+        { title: "Shipyard Specifications", href: "about.html#yards", type: "Page", keys: "slipway dry dock graving dock cranes quay capacity tonnes" },
+        { title: "7.05 m Ambulance Boat", href: "products.html", type: "Product", keys: "medical ambulance boat 13 m" },
+        { title: "15 Ton Medium Scale Fishing Vessel", href: "products.html", type: "Product", keys: "fishing artisanal boat 30 ton" },
+        { title: "16 m Passenger Boat", href: "products.html", type: "Product", keys: "passenger ferry 29.05 m vip admiral barge" },
+        { title: "Patrol, pilot, and landing craft", href: "products.html", type: "Product", keys: "utility rhib dredger pier linkspan" }
+    ];
+
+    function escapeHtml(text) {
+        return String(text).replace(/[&<>"']/g, function (ch) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[ch];
+        });
+    }
+
+    function loadSearchIndex() {
+        if (searchIndexLoading) {
+            return searchIndexLoading;
+        }
+        function grab(url) {
+            return fetch(url).then(function (res) { return res.json(); }).catch(function () { return null; });
+        }
+        searchIndexLoading = Promise.all([
+            grab("data/news.json"),
+            grab("data/services.json"),
+            grab("data/faq.json"),
+            grab("data/events.json"),
+            grab("data/downloads.json"),
+            grab("data/careers.json"),
+            grab("data/organization.json"),
+            grab("data/gallery.json")
+        ]).then(function (results) {
+            var list = SEARCH_PAGES.slice();
+            var news = results[0];
+            var services = results[1];
+            var faq = results[2];
+            var events = results[3];
+            var downloads = results[4];
+            var careers = results[5];
+            var org = results[6];
+            var gallery = results[7];
+            ((downloads && downloads.items) || []).forEach(function (item) {
+                list.push({ title: item.title, href: "downloads.html", type: "Document", keys: (item.categoryLabel || "") + " " + (item.type || "") });
+            });
+            ((careers && careers.vacancies) || []).concat((careers && careers.internships) || []).forEach(function (item) {
+                list.push({ title: item.title, href: "careers.html", type: "Career", keys: (item.location || "") + " " + (item.summary || "") });
+            });
+            ((org && org.leadership) || []).forEach(function (item) {
+                list.push({ title: item.role, href: "organization.html", type: "People", keys: item.summary || "" });
+            });
+            ((gallery && gallery.videos) || []).forEach(function (item) {
+                list.push({ title: item.title, href: "videos.html", type: "Video", keys: item.caption || "" });
+            });
+            ((news && news.items) || []).forEach(function (item) {
+                list.push({ title: item.title, href: "article.html?slug=" + encodeURIComponent(item.slug), type: "News", keys: item.excerpt || "" });
+            });
+            ((services && services.items) || []).forEach(function (item) {
+                list.push({ title: item.title, href: "service.html", type: "Service", keys: (item.category || "") + " " + (item.excerpt || "") });
+            });
+            ((faq && faq.groups) || []).forEach(function (group) {
+                (group.items || []).forEach(function (item) {
+                    list.push({ title: item.q, href: "faq.html", type: "FAQ", keys: group.title || "" });
+                });
+            });
+            ((events && events.upcoming) || []).concat((events && events.past) || []).forEach(function (item) {
+                list.push({ title: item.title, href: item.href || "event.html", type: "Event", keys: (item.venue || "") + " " + (item.theme || "") });
+            });
+            searchIndex = list;
+            return list;
+        });
+        return searchIndexLoading;
+    }
+
+    function searchMatches(query) {
+        var words = query.toLowerCase().split(/\s+/).filter(Boolean);
+        if (!words.length || !searchIndex) {
+            return [];
+        }
+        return searchIndex.map(function (item) {
+            var title = item.title.toLowerCase();
+            var hay = title + " " + item.keys.toLowerCase();
+            if (!words.every(function (w) { return hay.indexOf(w) !== -1; })) {
+                return null;
+            }
+            var score = title.indexOf(words[0]) === 0 ? 3 : title.indexOf(words[0]) !== -1 ? 2 : 1;
+            if (item.type === "Page") {
+                score += 0.5;
+            }
+            return { item: item, score: score };
+        }).filter(Boolean).sort(function (a, b) {
+            return b.score - a.score;
+        }).slice(0, 6).map(function (match) {
+            return match.item;
+        });
+    }
+
+    function highlight(title, query) {
+        var safe = escapeHtml(title);
+        var first = query.trim().split(/\s+/)[0];
+        if (!first) {
+            return safe;
+        }
+        var pattern = new RegExp("(" + first.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig");
+        return safe.replace(pattern, "<mark>$1</mark>");
+    }
+
+    var suggestCount = 0;
+
+    function suggestBoxFor(input) {
+        var host = input.parentElement;
+        var box = host.querySelector(".ksl-suggest");
+        if (!box) {
+            suggestCount += 1;
+            box = document.createElement("div");
+            box.className = "ksl-suggest";
+            box.id = "ksl-suggest-" + suggestCount;
+            box.setAttribute("role", "listbox");
+            box.hidden = true;
+            host.classList.add("ksl-suggest-host");
+            host.appendChild(box);
+            input.setAttribute("role", "combobox");
+            input.setAttribute("aria-autocomplete", "list");
+            input.setAttribute("aria-controls", box.id);
+            input.setAttribute("aria-expanded", "false");
+            input.setAttribute("autocomplete", "off");
+            box.addEventListener("mousedown", function (event) {
+                event.preventDefault();
+            });
+        }
+        return box;
+    }
+
+    function closeSuggest(input) {
+        var box = suggestBoxFor(input);
+        box.hidden = true;
+        box.classList.remove("is-open");
+        box.parentElement.classList.remove("is-suggesting");
+        input.setAttribute("aria-expanded", "false");
+        input.removeAttribute("aria-activedescendant");
+    }
+
+    function renderSuggest(input) {
+        var box = suggestBoxFor(input);
+        var query = input.value.trim();
+        if (query.length < 2) {
+            closeSuggest(input);
+            return;
+        }
+        var results = searchMatches(query);
+        if (!results.length) {
+            box.innerHTML = '<p class="ksl-suggest-empty">No quick matches. Press Enter to search news.</p>';
+        } else {
+            box.innerHTML = results.map(function (item, i) {
+                return '<a class="ksl-suggest-item" role="option" id="' + box.id + '-' + i + '" href="' + escapeHtml(item.href) + '">' +
+                    '<span class="ksl-suggest-type">' + item.type + '</span>' +
+                    '<span class="ksl-suggest-title">' + highlight(item.title, query) + '</span></a>';
+            }).join("");
+        }
+        box.hidden = false;
+        box.parentElement.classList.add("is-suggesting");
+        window.requestAnimationFrame(function () {
+            box.classList.add("is-open");
+        });
+        input.setAttribute("aria-expanded", "true");
+    }
+
+    function isSiteSearch(el) {
+        return el && el.matches && el.matches('input[name="s"], #kslMobileSearch');
+    }
+
+    document.addEventListener("input", function (event) {
+        var input = event.target;
+        if (!isSiteSearch(input)) {
+            return;
+        }
+        loadSearchIndex().then(function () {
+            renderSuggest(input);
+        });
+    });
+
+    document.addEventListener("focusin", function (event) {
+        if (isSiteSearch(event.target)) {
+            loadSearchIndex();
+        }
+    });
+
+    document.addEventListener("submit", function (event) {
+        var input = event.target.querySelector('input[name="s"], #kslMobileSearch');
+        if (!input || !input.parentElement.querySelector(".ksl-suggest")) {
+            return;
+        }
+        var first = suggestBoxFor(input).querySelector(".ksl-suggest-item.is-active, .ksl-suggest-item");
+        if (first) {
+            event.preventDefault();
+            window.location.href = first.getAttribute("href");
+        }
+    });
+
+    document.addEventListener("focusout", function (event) {
+        if (isSiteSearch(event.target)) {
+            closeSuggest(event.target);
+        }
+    });
+
+    document.addEventListener("keydown", function (event) {
+        var input = event.target;
+        if (!isSiteSearch(input)) {
+            return;
+        }
+        var box = suggestBoxFor(input);
+        var items = box.hidden ? [] : Array.prototype.slice.call(box.querySelectorAll(".ksl-suggest-item"));
+        var current = box.querySelector(".ksl-suggest-item.is-active");
+        var index = items.indexOf(current);
+        if (event.key === "Escape") {
+            closeSuggest(input);
+            return;
+        }
+        if ((event.key === "ArrowDown" || event.key === "ArrowUp") && items.length) {
+            event.preventDefault();
+            index = event.key === "ArrowDown" ? (index + 1) % items.length : (index - 1 + items.length) % items.length;
+            items.forEach(function (el) { el.classList.remove("is-active"); });
+            items[index].classList.add("is-active");
+            input.setAttribute("aria-activedescendant", items[index].id);
+            return;
+        }
+        if (event.key === "Enter" && (current || items.length)) {
+            event.preventDefault();
+            window.location.href = (current || items[0]).getAttribute("href");
+        }
+    });
+
+    // Photo viewer: wrap-around, quicker fades, swipe on touch screens
+    if (window.lightbox && typeof window.lightbox.option === "function") {
+        window.lightbox.option({
+            wrapAround: true,
+            fadeDuration: 300,
+            imageFadeDuration: 300,
+            resizeDuration: 380,
+            albumLabel: "%1 / %2"
+        });
+    }
+
+    var swipeStart = null;
+    document.addEventListener("touchstart", function (event) {
+        if (!event.target.closest("#lightbox") || event.touches.length !== 1) {
+            swipeStart = null;
+            return;
+        }
+        swipeStart = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    }, { passive: true });
+
+    document.addEventListener("touchend", function (event) {
+        if (!swipeStart) {
+            return;
+        }
+        var dx = event.changedTouches[0].clientX - swipeStart.x;
+        var dy = event.changedTouches[0].clientY - swipeStart.y;
+        swipeStart = null;
+        if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) {
+            return;
+        }
+        var target = document.querySelector(dx < 0 ? "#lightbox .lb-next" : "#lightbox .lb-prev");
+        if (target && target.offsetParent !== null) {
+            target.click();
+        }
+    }, { passive: true });
+
+    // Contact form: live ticks, then a ship sails off and the email app opens
+    var contactForm = document.querySelector(".ksl-contact-form");
+    if (contactForm) {
+        var contactFields = contactForm.querySelectorAll(".form-control");
+        var contactError = contactForm.querySelector(".ksl-send-error");
+        var contactOk = contactForm.querySelector(".ksl-send-ok");
+        var contactBtn = contactForm.querySelector(".ksl-send-btn");
+
+        var markField = function (field) {
+            var filled = field.value.trim() !== "";
+            var valid = field.checkValidity() && (filled || !field.required);
+            field.classList.toggle("is-valid", valid && filled);
+            field.classList.toggle("is-invalid", !valid);
+        };
+
+        contactFields.forEach(function (field) {
+            field.addEventListener("blur", function () {
+                field.setAttribute("data-touched", "");
+                markField(field);
+            });
+            field.addEventListener("input", function () {
+                if (field.hasAttribute("data-touched")) {
+                    markField(field);
+                }
+            });
+        });
+
+        contactForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+            var firstBad = null;
+            contactFields.forEach(function (field) {
+                field.setAttribute("data-touched", "");
+                markField(field);
+                if (!firstBad && field.classList.contains("is-invalid")) {
+                    firstBad = field;
+                }
+            });
+            contactError.hidden = !firstBad;
+            if (firstBad) {
+                contactOk.hidden = true;
+                firstBad.focus();
+                return;
+            }
+
+            var val = function (name) {
+                return contactForm.elements[name].value.trim();
+            };
+            var pref = contactForm.querySelector('input[name="pref"]:checked');
+            var name = [val("first_name"), val("other_name"), val("surname")].filter(Boolean).join(" ");
+            var body = "Name: " + name + "\nEmail: " + val("email") +
+                (pref ? "\nPreferred contact: " + pref.value : "") +
+                "\n\n" + val("message");
+            var href = "mailto:publicaffairs@kenyashipyards.co.ke?subject=" +
+                encodeURIComponent(val("subject")) + "&body=" + encodeURIComponent(body);
+
+            var calm = document.documentElement.classList.contains("ksl-no-anim") ||
+                window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            contactBtn.disabled = true;
+            contactForm.classList.remove("is-sailing");
+            void contactForm.offsetWidth;
+            contactForm.classList.add("is-sailing");
+            window.setTimeout(function () {
+                window.location.href = href;
+                contactOk.hidden = false;
+            }, calm ? 0 : 1400);
+            window.setTimeout(function () {
+                contactBtn.disabled = false;
+                contactForm.classList.remove("is-sailing");
+            }, calm ? 600 : 2600);
+        });
+    }
 })(jQuery);
 

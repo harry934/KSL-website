@@ -119,3 +119,90 @@
             mount.innerHTML = '<section class="ksl-empty-state" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg><h3>News is unavailable</h3><p>Check your connection, then try again.</p><div class="ksl-empty-state-actions"><a class="btn btn-primary" href="news.html">Open newsroom</a></div></section>';
         });
 })();
+
+(function () {
+    var explorer = document.querySelector(".ksl-yard-explorer");
+    if (!explorer) return;
+    var pins = explorer.querySelectorAll(".ksl-map-pin");
+    var details = explorer.querySelectorAll(".ksl-yard-detail");
+    var toggles = explorer.querySelectorAll(".ksl-yard-sat-toggle");
+    var sat = document.querySelector(".ksl-yard-sat");
+    var satFrame = sat && sat.querySelector("iframe");
+    var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    var current = "mombasa";
+
+    function bySite(list, site) {
+        return Array.prototype.filter.call(list, function (el) {
+            return el.getAttribute("data-site") === site;
+        })[0];
+    }
+
+    function satOpen() {
+        return sat && sat.classList.contains("is-open");
+    }
+
+    function syncSat() {
+        var toggle = bySite(details, current).querySelector(".ksl-yard-sat-toggle");
+        if (satOpen() && satFrame.getAttribute("src") !== toggle.getAttribute("data-embed")) {
+            satFrame.setAttribute("src", toggle.getAttribute("data-embed"));
+        }
+        toggles.forEach(function (btn) {
+            btn.setAttribute("aria-expanded", satOpen() ? "true" : "false");
+        });
+    }
+
+    function showSat(open) {
+        if (!sat) return;
+        sat.classList.toggle("is-open", open);
+        syncSat();
+        if (open) {
+            setTimeout(function () {
+                var box = sat.getBoundingClientRect();
+                if (box.bottom > window.innerHeight) {
+                    sat.scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "end" });
+                }
+            }, 350);
+        }
+    }
+
+    function select(site) {
+        current = site;
+        pins.forEach(function (pin) {
+            var on = pin.getAttribute("data-site") === site;
+            pin.classList.toggle("is-active", on);
+            pin.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        details.forEach(function (detail) {
+            detail.hidden = detail.getAttribute("data-site") !== site;
+        });
+        syncSat();
+    }
+
+    pins.forEach(function (pin, i) {
+        pin.addEventListener("click", function () {
+            select(pin.getAttribute("data-site"));
+        });
+        pin.addEventListener("keydown", function (event) {
+            var step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+            if (!step) return;
+            event.preventDefault();
+            var next = pins[(i + step + pins.length) % pins.length];
+            next.focus();
+            select(next.getAttribute("data-site"));
+        });
+    });
+
+    toggles.forEach(function (btn) {
+        btn.addEventListener("click", function () { showSat(!satOpen()); });
+    });
+
+    if (sat) {
+        sat.querySelector(".ksl-yard-sat-close").addEventListener("click", function () {
+            showSat(false);
+            var btn = bySite(details, current).querySelector(".ksl-yard-sat-toggle");
+            if (btn) btn.focus();
+        });
+    }
+
+    select(current);
+})();
