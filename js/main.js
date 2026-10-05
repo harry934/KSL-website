@@ -16,7 +16,28 @@
     new WOW().init();
 
 
-    $(".sticky-top").css("top", "0px");
+    var topbar = document.querySelector(".topbar-ksl");
+    var lastScrollY = window.scrollY;
+    var dockNavbar = function () {
+        var h = topbar ? topbar.offsetHeight : 0;
+        if (!h) {
+            $(".sticky-top").css("top", "0px");
+            return;
+        }
+        var y = window.scrollY;
+        var delta = y - lastScrollY;
+        if (y <= h || delta < -4) {
+            topbar.classList.remove("is-tucked");
+        } else if (delta > 4) {
+            topbar.classList.add("is-tucked");
+        }
+        if (y <= h || Math.abs(delta) > 4) lastScrollY = y;
+        $(".sticky-top").css("top", topbar.classList.contains("is-tucked") ? "0px" : h + "px");
+    };
+    dockNavbar();
+    window.addEventListener("scroll", dockNavbar, { passive: true });
+    window.addEventListener("resize", dockNavbar);
+    window.addEventListener("load", dockNavbar);
     
     
     // Facts counter

@@ -124,6 +124,7 @@
     var explorer = document.querySelector(".ksl-yard-explorer");
     if (!explorer) return;
     var pins = explorer.querySelectorAll(".ksl-map-pin");
+    var counties = explorer.querySelectorAll(".ksl-map-county");
     var details = explorer.querySelectorAll(".ksl-yard-detail");
     var toggles = explorer.querySelectorAll(".ksl-yard-sat-toggle");
     var sat = document.querySelector(".ksl-yard-sat");
@@ -172,11 +173,20 @@
             pin.classList.toggle("is-active", on);
             pin.setAttribute("aria-pressed", on ? "true" : "false");
         });
+        counties.forEach(function (county) {
+            county.classList.toggle("is-active", county.getAttribute("data-site") === site);
+        });
         details.forEach(function (detail) {
             detail.hidden = detail.getAttribute("data-site") !== site;
         });
         syncSat();
     }
+
+    counties.forEach(function (county) {
+        county.addEventListener("click", function () {
+            select(county.getAttribute("data-site"));
+        });
+    });
 
     pins.forEach(function (pin, i) {
         pin.addEventListener("click", function () {

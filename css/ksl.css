@@ -5422,6 +5422,28 @@ html[lang="sw"] .ksl-library .download-button .download::after {
     .ksl-mobile-sheet {
         display: none !important;
     }
+
+    .topbar-ksl {
+        position: sticky;
+        top: 0;
+        z-index: 1030;
+        transition: transform .3s ease;
+    }
+
+    .topbar-ksl.is-tucked {
+        transform: translateY(-100%);
+    }
+
+    .navbar.sticky-top {
+        transition: top .3s ease;
+    }
+}
+
+@media (min-width: 992px) and (prefers-reduced-motion: reduce) {
+    .topbar-ksl,
+    .navbar.sticky-top {
+        transition: none;
+    }
 }
 
 
@@ -7604,7 +7626,6 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     width: 100%;
     height: auto;
     overflow: visible;
-    filter: drop-shadow(0 12px 18px rgba(9, 41, 108, .12));
 }
 
 .ksl-map-land {
@@ -7614,9 +7635,44 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     stroke-linejoin: round;
 }
 
+.ksl-map-sea,
 .ksl-map-water {
-    fill: url(#kslSeaTone);
-    stroke: rgba(9, 41, 108, .5);
+    fill: #C9DAEE;
+}
+
+.ksl-map-water {
+    stroke: rgba(9, 41, 108, .35);
+    stroke-width: 1;
+}
+
+.ksl-map-neighbour {
+    fill: #E2E6EC;
+    stroke: #A3AEC2;
+    stroke-width: 1.2;
+    stroke-linejoin: round;
+}
+
+.ksl-map-counties path,
+.ksl-map-county {
+    fill: none;
+    stroke: rgba(255, 255, 255, .55);
+    stroke-width: 1;
+    stroke-linejoin: round;
+}
+
+.ksl-map-county {
+    fill: transparent;
+    cursor: pointer;
+    transition: fill .25s ease;
+}
+
+.ksl-map-county:hover {
+    fill: rgba(9, 41, 108, .12);
+}
+
+.ksl-map-county.is-active {
+    fill: rgba(9, 41, 108, .28);
+    stroke: #09296C;
     stroke-width: 1.5;
 }
 
@@ -7628,28 +7684,11 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
 
 .ksl-map-route {
     fill: none;
-    stroke: rgba(153, 121, 44, .8);
-    stroke-width: 2.5;
-    stroke-dasharray: 1 7;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.ksl-map-water-waves {
-    fill: url(#kslLakeWaves);
-    pointer-events: none;
-}
-
-.ksl-map-coast-waves path {
-    fill: none;
-    stroke: #5B7BB5;
-    stroke-opacity: .55;
+    stroke: rgba(39, 50, 114, .7);
     stroke-width: 2;
     stroke-linecap: round;
-}
-
-.ksl-map-coast-waves path.is-far {
-    stroke-opacity: .3;
+    stroke-linejoin: round;
+    pointer-events: none;
 }
 
 .ksl-map-small {
@@ -7691,17 +7730,16 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     stroke-width: 2.5;
 }
 
-/* Round markers centred on the coordinate */
+/* Map markers: the tip sits on the coordinate, the name tag reads as a button */
 .ksl-map-pin {
     position: absolute;
     z-index: 2;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 32px;
     padding: 0;
     border: 0;
-    border-radius: 50%;
     background: none;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -100%);
     cursor: pointer;
 }
 
@@ -7709,26 +7747,19 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     display: block;
     width: 100%;
     height: 100%;
-    filter: drop-shadow(0 1px 2px rgba(9, 41, 108, .35));
+    overflow: visible;
+    filter: drop-shadow(0 2px 2px rgba(9, 41, 108, .35));
 }
 
 .ksl-pin-body {
-    fill: #fff;
-    stroke: #09296C;
-    stroke-width: 2;
+    fill: #5B6F99;
+    stroke: #fff;
+    stroke-width: 1.5;
     transition: fill .2s ease;
 }
 
-.ksl-pin-icon {
-    color: #09296C;
-    transition: color .2s ease;
-}
-
-.ksl-icon-sprite {
-    position: absolute;
-    width: 0;
-    height: 0;
-    overflow: hidden;
+.ksl-pin-dot {
+    fill: #fff;
 }
 
 .ksl-map-pin:hover .ksl-pin-body,
@@ -7736,39 +7767,51 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     fill: #09296C;
 }
 
-.ksl-map-pin:hover .ksl-pin-icon,
-.ksl-map-pin.is-active .ksl-pin-icon {
-    color: #fff;
+.ksl-map-pin:focus-visible {
+    outline: none;
 }
 
-.ksl-map-pin:focus-visible {
+.ksl-map-pin:focus-visible .ksl-map-pin-label {
     outline: 2px solid #0165FC;
     outline-offset: 2px;
 }
 
 .ksl-map-pin-label {
     position: absolute;
-    top: 50%;
-    left: calc(100% + 6px);
-    color: #4a5878;
-    font: 700 11px/1 Manrope, sans-serif;
-    letter-spacing: .1em;
-    text-transform: uppercase;
+    top: 0;
+    left: calc(100% + 4px);
+    padding: 5px 10px;
+    border: 1px solid #C9D6EE;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(9, 41, 108, .12);
+    color: #09296C;
+    font: 700 12px/1 Manrope, sans-serif;
     white-space: nowrap;
-    text-shadow: 0 0 3px #fff, 0 0 6px rgba(255, 255, 255, .9);
-    transform: translateY(-50%);
-    pointer-events: none;
+    transition: background-color .2s ease, border-color .2s ease, color .2s ease;
 }
 
 .ksl-map-pin[data-site="nairobi"] .ksl-map-pin-label,
 .ksl-map-pin[data-site="mombasa"] .ksl-map-pin-label {
     left: auto;
-    right: calc(100% + 6px);
+    right: calc(100% + 4px);
+}
+
+.ksl-map-pin:hover .ksl-map-pin-label {
+    border-color: #09296C;
 }
 
 .ksl-map-pin.is-active .ksl-map-pin-label {
-    color: #09296C;
-    font-weight: 800;
+    border-color: #09296C;
+    background: #09296C;
+    color: #fff;
+}
+
+.ksl-map-hint {
+    margin: 8px 0 0;
+    color: #6F7D99;
+    font-size: 13px;
+    text-align: center;
 }
 
 /* Details panel beside the map */
@@ -7968,19 +8011,6 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     .ksl-yard-detail:not([hidden]) {
         animation: kslDetailIn .45s cubic-bezier(.22, 1, .36, 1);
     }
-
-    .ksl-map-coast-waves path {
-        animation: kslCoastDrift 5s ease-in-out infinite alternate;
-    }
-
-    .ksl-map-coast-waves path:nth-child(2n) {
-        animation-delay: -2.5s;
-    }
-}
-
-@keyframes kslCoastDrift {
-    from { transform: translateX(0); }
-    to { transform: translateX(8px); }
 }
 
 @keyframes kslDetailIn {
