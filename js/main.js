@@ -26,6 +26,7 @@
         }
         var y = window.scrollY;
         var delta = y - lastScrollY;
+        $(".sticky-top").toggleClass("is-compact", y > h);
         if (y <= h || delta < -4) {
             topbar.classList.remove("is-tucked");
         } else if (delta > 4) {

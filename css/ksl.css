@@ -5435,13 +5435,39 @@ html[lang="sw"] .ksl-library .download-button .download::after {
     }
 
     .navbar.sticky-top {
-        transition: top .3s ease;
+        transition: top .3s ease, box-shadow .3s ease;
+    }
+
+    .navbar.sticky-top .navbar-nav .nav-link,
+    .navbar.sticky-top .navbar-brand,
+    .navbar.sticky-top .ksl-logo {
+        transition: padding .3s ease, height .3s ease;
+    }
+
+    .navbar.sticky-top.is-compact .navbar-brand {
+        height: 60px;
+    }
+
+    .navbar.sticky-top.is-compact {
+        box-shadow: 0 4px 16px rgba(9, 41, 108, .08) !important;
+    }
+
+    .navbar.sticky-top.is-compact .navbar-nav .nav-link {
+        padding-top: 14px;
+        padding-bottom: 14px;
+    }
+
+    .navbar.sticky-top.is-compact .ksl-logo {
+        height: 44px;
     }
 }
 
 @media (min-width: 992px) and (prefers-reduced-motion: reduce) {
     .topbar-ksl,
-    .navbar.sticky-top {
+    .navbar.sticky-top,
+    .navbar.sticky-top .navbar-nav .nav-link,
+    .navbar.sticky-top .navbar-brand,
+    .navbar.sticky-top .ksl-logo {
         transition: none;
     }
 }
