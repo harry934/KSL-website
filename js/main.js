@@ -17,28 +17,45 @@
 
 
     var topbar = document.querySelector(".topbar-ksl");
+    var stickyNav = document.querySelector(".sticky-top");
+    var topbarH = 0;
     var lastScrollY = window.scrollY;
+    var navTop = null;
+    var dockTicking = false;
     var dockNavbar = function () {
-        var h = topbar ? topbar.offsetHeight : 0;
-        if (!h) {
-            $(".sticky-top").css("top", "0px");
-            return;
-        }
+        dockTicking = false;
+        if (!stickyNav) return;
         var y = window.scrollY;
         var delta = y - lastScrollY;
-        $(".sticky-top").toggleClass("is-compact", y > h);
-        if (y <= h || delta < -4) {
-            topbar.classList.remove("is-tucked");
-        } else if (delta > 4) {
-            topbar.classList.add("is-tucked");
+        if (topbarH) {
+            stickyNav.classList.toggle("is-compact", y > topbarH);
+            if (y <= topbarH || delta < -4) {
+                topbar.classList.remove("is-tucked");
+            } else if (delta > 4) {
+                topbar.classList.add("is-tucked");
+            }
+            if (y <= topbarH || Math.abs(delta) > 4) lastScrollY = y;
         }
-        if (y <= h || Math.abs(delta) > 4) lastScrollY = y;
-        $(".sticky-top").css("top", topbar.classList.contains("is-tucked") ? "0px" : h + "px");
+        var top = topbarH && !topbar.classList.contains("is-tucked") ? topbarH + "px" : "0px";
+        if (top !== navTop) {
+            stickyNav.style.top = top;
+            navTop = top;
+        }
     };
-    dockNavbar();
-    window.addEventListener("scroll", dockNavbar, { passive: true });
-    window.addEventListener("resize", dockNavbar);
-    window.addEventListener("load", dockNavbar);
+    var measureTopbar = function () {
+        topbarH = topbar ? topbar.offsetHeight : 0;
+        if (!topbarH && stickyNav) stickyNav.classList.remove("is-compact");
+        dockNavbar();
+    };
+    measureTopbar();
+    window.addEventListener("scroll", function () {
+        if (!dockTicking) {
+            dockTicking = true;
+            window.requestAnimationFrame(dockNavbar);
+        }
+    }, { passive: true });
+    window.addEventListener("resize", measureTopbar);
+    window.addEventListener("load", measureTopbar);
     
     
     // Facts counter
@@ -316,7 +333,15 @@
             return { el: el, speed: speed, maxShift: maxShift };
         });
         var parallaxTicking = false;
+        var stackedLayout = window.matchMedia("(max-width: 991.98px)");
         var updateParallax = function () {
+            parallaxTicking = false;
+            if (stackedLayout.matches) {
+                parallaxState.forEach(function (item) {
+                    item.el.style.removeProperty("--ksl-parallax-y");
+                });
+                return;
+            }
             var viewport = window.innerHeight || document.documentElement.clientHeight;
             var scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
             var viewMid = scrollY + viewport * 0.5;
@@ -327,7 +352,6 @@
                 if (shift < -item.maxShift) shift = -item.maxShift;
                 item.el.style.setProperty("--ksl-parallax-y", shift.toFixed(2) + "px");
             });
-            parallaxTicking = false;
         };
         var requestParallax = function () {
             if (!parallaxTicking) {

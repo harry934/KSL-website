@@ -125,6 +125,10 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     background: #273272 !important;
 }
 
+.footer a[href^="mailto:"] {
+    overflow-wrap: anywhere;
+}
+
 .whatsapp-fab {
     position: fixed;
     right: 24px;
@@ -4090,6 +4094,13 @@ html.board-motion .board-card.is-in .board-card-body {
 [data-ksl-parallax] {
     transform: translate3d(0, var(--ksl-parallax-y, 0), 0);
     will-change: transform;
+}
+
+@media (max-width: 991.98px) {
+    [data-ksl-parallax] {
+        transform: none;
+        will-change: auto;
+    }
 }
 
 .ksl-hero-video {
