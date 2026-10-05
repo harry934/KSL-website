@@ -992,6 +992,7 @@
         var foam = [];
         var ripples = [];
         var lastRipple = { x: -999, t: 0 };
+        var lift = { x: 0, goal: 0, amp: 0, target: 0 };
         var start = performance.now();
         var visible = true;
         var frame = 0;
@@ -1012,6 +1013,10 @@
                 var d = x - r.x;
                 var spread = 30 + dt * 140;
                 y -= 6 * Math.exp(-dt * 1.4) * Math.cos(d / 14 - dt * 9) * Math.exp(-(d * d) / (2 * spread * spread));
+            }
+            if (lift.amp > 0.001) {
+                var dl = x - lift.x;
+                y -= lift.amp * 9 * Math.exp(-(dl * dl) / (2 * 70 * 70));
             }
             return BASE + y;
         }
@@ -1049,6 +1054,8 @@
         function draw(now) {
             var t = (now - start) / 1000;
             amp += (targetAmp() - amp) * 0.06;
+            lift.amp += (lift.target - lift.amp) * 0.08;
+            lift.x += (lift.goal - lift.x) * 0.12;
             ripples = ripples.filter(function (r) { return t - r.t < 2.5; });
 
             var line = "";
@@ -1157,6 +1164,26 @@
             if (ripples.length > 6) {
                 ripples.shift();
             }
+        });
+
+        function raiseOver(item) {
+            var itemRect = item.getBoundingClientRect();
+            lift.goal = itemRect.left + itemRect.width / 2 - band.getBoundingClientRect().left;
+            if (lift.amp < 0.05) {
+                lift.x = lift.goal;
+            }
+            lift.target = 1;
+        }
+
+        function lower() {
+            lift.target = 0;
+        }
+
+        band.querySelectorAll(".ksl-values-grid article").forEach(function (item) {
+            item.addEventListener("mouseenter", function () { raiseOver(item); });
+            item.addEventListener("mouseleave", lower);
+            item.addEventListener("focusin", function () { raiseOver(item); });
+            item.addEventListener("focusout", lower);
         });
 
         play();
