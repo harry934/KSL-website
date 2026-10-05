@@ -952,6 +952,23 @@
         }
     }
 
+    var heroValues = document.querySelector(".ksl-hero-values");
+    if (heroValues) {
+        if ("IntersectionObserver" in window) {
+            new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.intersectionRatio >= 0.35) {
+                        heroValues.classList.add("is-inview");
+                    } else if (!entry.isIntersecting) {
+                        heroValues.classList.remove("is-inview");
+                    }
+                });
+            }, { threshold: [0, 0.35] }).observe(heroValues);
+        } else {
+            heroValues.classList.add("is-inview");
+        }
+    }
+
     // Gallery page: load photos + category filter
     var galleryRoot = document.getElementById("ksl-gallery-grid");
     if (galleryRoot) {
