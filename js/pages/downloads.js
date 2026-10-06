@@ -13,9 +13,6 @@
     var activeCategory = "all";
     var query = "";
 
-    var SOURCE = "http://10.104.4.139/corporate-documents/";
-    var FILE_RE = /\.(pdf|docx?|xlsx?|pptx?|csv|zip)(?:$|[?#])/i;
-
     function fileUrl(item) {
         return item.href || item.file;
     }
@@ -28,74 +25,34 @@
             .replace(/"/g, "&quot;");
     }
 
-    function absoluteUrl(href) {
-        try {
-            return new URL(href, SOURCE).href;
-        } catch (e) {
-            return "";
-        }
+    function text(node) {
+        return node ? node.textContent.replace(/\s+/g, " ").trim() : "";
     }
 
-    function slugify(value) {
-        return String(value || "documents").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "documents";
-    }
-
-    function headingFor(link) {
-        var node = link;
-        while (node && node.parentElement) {
-            var prev = node.previousElementSibling;
-            while (prev) {
-                if (/^H[1-3]$/.test(prev.tagName)) {
-                    return prev.textContent.replace(/\s+/g, " ").trim();
-                }
-                var inner = prev.querySelector && prev.querySelector("h1, h2, h3");
-                if (inner) {
-                    return inner.textContent.replace(/\s+/g, " ").trim();
-                }
-                prev = prev.previousElementSibling;
-            }
-            node = node.parentElement;
-        }
-        return "Corporate documents";
-    }
-
-    function documentsFromHtml(html) {
-        var doc = new DOMParser().parseFromString(html, "text/html");
-        var seen = {};
-        var items = [];
-        Array.prototype.forEach.call(doc.querySelectorAll("a[href]"), function (link) {
-            if (link.closest("nav, header, footer")) {
-                return;
-            }
-            var href = absoluteUrl(link.getAttribute("href"));
-            if (!href || seen[href] || !FILE_RE.test(href)) {
-                return;
-            }
-            seen[href] = true;
-            var filename = href.split("/").pop().split("?")[0].split("#")[0];
-            try {
-                filename = decodeURIComponent(filename);
-            } catch (e) {
-                /* keep raw name */
-            }
-            var label = (link.textContent || "").replace(/\s+/g, " ").trim();
-            if (!label || label.length > 140 || /^https?:/i.test(label)) {
-                label = filename.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ");
-            }
-            var group = headingFor(link) || "Corporate documents";
-            items.push({
-                title: label,
-                category: slugify(group),
-                categoryLabel: group,
-                language: "",
-                date: "",
-                type: (filename.split(".").pop() || "file").toUpperCase(),
-                href: href,
-                filename: filename,
-                anchor: slugify(group)
+    function documentsFromPage() {
+        var found = [];
+        Array.prototype.forEach.call(listRoot.querySelectorAll(".ksl-library-group"), function (section) {
+            var group = text(section.querySelector("h2")) || "Corporate documents";
+            var anchor = section.id || group.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+            Array.prototype.forEach.call(section.querySelectorAll(".ksl-library-list > li"), function (row) {
+                var link = row.querySelector("a.download-button");
+                var href = link ? link.getAttribute("href") : "";
+                var filename = href ? href.split("/").pop() : "";
+                found.push({
+                    title: text(row.querySelector("h3")),
+                    category: anchor,
+                    categoryLabel: group,
+                    language: "",
+                    date: "",
+                    type: filename ? (filename.split(".").pop() || "file").toUpperCase() : "",
+                    href: href,
+                    filename: filename,
+                    note: link ? "" : text(row.querySelector("p")),
+                    anchor: anchor
+                });
             });
         });
-        return items;
+        return found;
     }
 
     function displayFilename(name) {
@@ -157,6 +114,11 @@
             html += '<ul class="ksl-library-list">';
             group.rows.forEach(function (item) {
                 var url = fileUrl(item);
+                if (!url) {
+                    html += "<li><div><h3>" + escapeHtml(item.title) + "</h3><p>" + escapeHtml(item.note) + "</p></div>";
+                    html += '<span class="ksl-library-note">Not available</span></li>';
+                    return;
+                }
                 var sub = item.subtitle ? '<p class="text-muted small mb-1">' + escapeHtml(item.subtitle) + "</p>" : "";
                 var meta = [item.type, item.language, item.date].filter(Boolean).map(escapeHtml).join(" · ");
                 html += "<li><div><h3>" + escapeHtml(item.title) + "</h3>" + sub + "<p>" + escapeHtml(displayFilename(item.filename)) + "</p>";
@@ -217,16 +179,9 @@
         });
     }
 
-    function showLoadError() {
-        if (!listRoot) {
-            return;
-        }
-        listRoot.innerHTML = '<iframe class="ksl-documents-frame" title="Corporate documents" src="' + SOURCE + '"></iframe>';
-    }
-
     function publish(found) {
         items = found;
-        window.__kslDownloadsData = { source: SOURCE, items: found };
+        window.__kslDownloadsData = { items: found };
         var cats = [];
         var seen = {};
         found.forEach(function (item) {
@@ -240,22 +195,6 @@
     }
 
     if (listRoot) {
-        listRoot.innerHTML = '<p class="ksl-downloads-meta">Loading documents…</p>';
+        publish(documentsFromPage());
     }
-
-    fetch(SOURCE, { credentials: "omit" })
-        .then(function (res) {
-            if (!res.ok) {
-                throw new Error("status");
-            }
-            return res.text();
-        })
-        .then(function (html) {
-            var found = documentsFromHtml(html);
-            if (!found.length) {
-                throw new Error("empty");
-            }
-            publish(found);
-        })
-        .catch(showLoadError);
 })();

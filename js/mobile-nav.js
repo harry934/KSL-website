@@ -88,7 +88,7 @@
                 links: [
                     { href: "news.html", label: "News and Events", match: ["news.html", "article.html", "event.html"] },
                     { href: "videos.html", label: "Gallery" },
-                    { href: "http://10.104.4.139/corporate-documents/", label: "Downloads", external: true }
+                    { href: "downloads.html", label: "Downloads" }
                 ]
             },
             {
