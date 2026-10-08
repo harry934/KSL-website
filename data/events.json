@@ -11,7 +11,7 @@
       "venue": "Jamhuri Park, Nairobi",
       "description": "KSL exhibits maritime engineering, vessel products, and yard capabilities alongside national trade and innovation showcases.",
       "image": "img/ksl/yard.jpg",
-      "href": "event.html"
+      "body": "<p>KSL exhibits maritime engineering, vessel products, and yard capabilities alongside national trade and innovation showcases.</p><h3>About the show</h3><p>The Nairobi International Trade Fair was established as the East African Agricultural and Horticultural Society in 1901.</p><p>The first show was held at the Jeevanjee gardens and market in 1902.</p>"
     }
   ],
   "past": [
@@ -19,7 +19,9 @@
       "slug": "kisumu-yard-operations-2025",
       "title": "Kisumu Shipyard open day for county partners",
       "date": "2025-05-20",
+      "timezone": "Africa/Nairobi",
       "venue": "Kisumu Shipyard",
+      "image": "img/ksl/kisumu.webp",
       "summary": "County and agency partners toured GRP production and ferry maintenance facilities."
     }
   ]

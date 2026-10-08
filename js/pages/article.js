@@ -147,6 +147,7 @@
                 ? '<aside class="ksl-article-note"><strong>Press brief.</strong> For the full statement, photographs or interviews, contact Public Affairs at <a href="mailto:publicaffairs@kenyashipyards.co.ke?subject=' + encodeURIComponent("Media enquiry: " + item.title) + '">publicaffairs@kenyashipyards.co.ke</a>.</aside>'
                 : "") +
             '<footer class="ksl-article-foot">' +
+            (item.updated ? '<p class="ksl-article-updated">Updated <time datetime="' + escapeHtml(item.updated) + '">' + escapeHtml(formatDate(item.updated)) + "</time></p>" : "") +
             '<p class="ksl-article-tags"><span>Filed under</span><a href="news.html">' + escapeHtml(item.category || "News") + "</a></p>" +
             '<nav class="ksl-article-steps" aria-label="Previous and next stories">' + storyLink(older, "Previous story", "prev") + storyLink(newer, "Next story", "next") + "</nav>" +
             "</footer>";

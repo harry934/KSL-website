@@ -23,13 +23,13 @@
 
     function feedCard(item) {
         return (
-            '<button type="button" class="ksl-feed-card" data-ksl-slug="' + escapeHtml(item.slug) + '">' +
+            '<a class="ksl-feed-card" href="' + escapeHtml(item.href) + '">' +
             '<span class="ksl-feed-photo"><img src="' + escapeHtml(item.image) + '" alt="" loading="lazy" decoding="async"></span>' +
             '<span class="ksl-feed-body">' +
             '<span class="ksl-feed-top"><span class="ksl-feed-pill">' + escapeHtml(item.label) + "</span>" + arrow + "</span>" +
             '<span class="ksl-feed-name">' + escapeHtml(item.title) + "</span>" +
             '<span class="ksl-feed-meta">' + escapeHtml(item.meta) + "</span>" +
-            "</span></button>"
+            "</span></a>"
         );
     }
 
@@ -82,37 +82,34 @@
 
         function newsItem(item) {
             return {
-                slug: item.slug,
                 href: "article.html?slug=" + encodeURIComponent(item.slug),
                 image: item.image || "img/ksl/yard.jpg",
                 label: item.category || "News",
                 title: item.title,
                 meta: formatDate(item.date),
                 sortDate: item.date || "",
-                excerpt: item.excerpt || "",
-                body: item.body || "",
-                moreLabel: "Read the full article",
-                facts: [item.author ? "By " + item.author : ""].filter(Boolean)
+                excerpt: item.excerpt || ""
             };
         }
 
-        function eventItem(item, upcoming) {
+        var today = new Date().toISOString().slice(0, 10);
+
+        function eventItem(item) {
             var when = item.date ? formatDate(item.date) : "";
-            var time = item.timeStart ? item.timeStart + (item.timeEnd ? " to " + item.timeEnd : "") : "";
-            if (time) when += (when ? " · " : "") + item.timeStart;
+            if (item.timeStart) {
+                var hm = item.timeStart.split(":");
+                var h = parseInt(hm[0], 10);
+                when += (when ? " · " : "") + ((h % 12) || 12) + ":" + (hm[1] || "00") + (h >= 12 ? " pm" : " am");
+            }
             if (item.venue) when += (when ? " · " : "") + item.venue;
             return {
-                slug: item.slug,
-                href: item.href || "event.html",
+                href: "event.html?slug=" + encodeURIComponent(item.slug),
                 image: item.image || "img/ksl/yard.jpg",
-                label: upcoming ? "Event" : "Past event",
+                label: String(item.date || "") >= today ? "Event" : "Past event",
                 title: item.title,
                 meta: when || item.summary || "",
                 sortDate: item.date || "",
-                excerpt: item.description || item.summary || item.theme || "",
-                body: "",
-                moreLabel: "View the event page",
-                facts: [item.theme ? "Theme: " + item.theme : "", time ? "Time: " + time : "", item.venue ? "Venue: " + item.venue : ""].filter(Boolean)
+                excerpt: item.description || item.summary || item.theme || ""
             };
         }
 
@@ -205,11 +202,7 @@
                 var news = pair[0];
                 var events = pair[1];
                 collections.news = sortByDate((Array.isArray(news.items) ? news.items : []).map(newsItem));
-                collections.events = sortByDate((events.upcoming || []).map(function (item) {
-                    return eventItem(item, true);
-                })).concat(sortByDate((events.past || []).map(function (item) {
-                    return eventItem(item, false);
-                })));
+                collections.events = sortByDate((events.upcoming || []).concat(events.past || []).map(eventItem));
                 renderActive();
             }).catch(function () {
                 if (summary) {
@@ -238,92 +231,8 @@
         if (tabNews) tabNews.addEventListener("click", function () { selectTab("news"); });
         if (tabEvents) tabEvents.addEventListener("click", function () { selectTab("events"); });
 
-        var modal = document.createElement("div");
-        modal.className = "ksl-feed-modal";
-        modal.id = "kslFeedModal";
-        modal.hidden = true;
-        modal.innerHTML =
-            '<div class="ksl-feed-modal-backdrop" data-feed-close></div>' +
-            '<div class="ksl-feed-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="kslFeedModalTitle">' +
-            '<button type="button" class="ksl-feed-modal-close" data-feed-close aria-label="Close">&times;</button>' +
-            '<div class="ksl-feed-modal-photo"><img alt=""></div>' +
-            '<div class="ksl-feed-modal-copy">' +
-            '<p class="ksl-feed-pill" id="kslFeedModalLabel"></p>' +
-            '<h2 id="kslFeedModalTitle"></h2>' +
-            '<p class="ksl-feed-modal-meta"></p>' +
-            '<div class="ksl-feed-modal-body"></div>' +
-            '<a class="btn btn-primary" id="kslFeedModalMore" href="#">Read more</a>' +
-            "</div></div>";
-        (document.getElementById("ksl-page") || document.body).appendChild(modal);
-
-        var lastCard = null;
-
-        function findItem(slug) {
-            var source = collections[activeTab] || [];
-            for (var i = 0; i < source.length; i += 1) {
-                if (source[i].slug === slug) return source[i];
-            }
-            return null;
-        }
-
-        function detailHtml(item) {
-            var html = "";
-            if (item.facts && item.facts.length) {
-                html += '<ul class="ksl-feed-modal-facts">' + item.facts.map(function (fact) {
-                    return "<li>" + escapeHtml(fact) + "</li>";
-                }).join("") + "</ul>";
-            }
-            if (item.body) {
-                html += '<div class="ksl-feed-modal-article">' + item.body + "</div>";
-            } else if (item.excerpt) {
-                html += "<p>" + escapeHtml(item.excerpt) + "</p>";
-            }
-            return html;
-        }
-
-        function closeFeed() {
-            if (modal.hidden) return;
-            modal.classList.remove("is-open");
-            modal.hidden = true;
-            document.documentElement.style.overflow = "";
-            if (lastCard && lastCard.focus) lastCard.focus();
-        }
-
-        function openFeed(item, card) {
-            if (!item) return;
-            lastCard = card || null;
-            modal.querySelector(".ksl-feed-modal-photo img").src = item.image;
-            modal.querySelector("#kslFeedModalLabel").textContent = item.label;
-            modal.querySelector("#kslFeedModalTitle").textContent = item.title;
-            modal.querySelector(".ksl-feed-modal-meta").textContent = item.meta;
-            modal.querySelector(".ksl-feed-modal-body").innerHTML = detailHtml(item);
-            var more = modal.querySelector("#kslFeedModalMore");
-            more.href = item.href;
-            more.textContent = item.moreLabel;
-            modal.hidden = false;
-            document.documentElement.style.overflow = "hidden";
-            window.requestAnimationFrame(function () {
-                modal.classList.add("is-open");
-            });
-            var closeBtn = modal.querySelector(".ksl-feed-modal-close");
-            if (closeBtn) closeBtn.focus();
-        }
-
-        modal.addEventListener("click", function (event) {
-            if (event.target.closest("[data-feed-close]")) closeFeed();
-        });
-        document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape") closeFeed();
-        });
-
         grid.addEventListener("click", function (event) {
-            if (event.target.closest("[data-news-retry]")) {
-                loadNews();
-                return;
-            }
-            var card = event.target.closest(".ksl-feed-card");
-            if (!card) return;
-            openFeed(findItem(card.getAttribute("data-ksl-slug")), card);
+            if (event.target.closest("[data-news-retry]")) loadNews();
         });
         loadNews();
     }
