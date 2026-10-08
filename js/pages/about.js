@@ -196,77 +196,35 @@
         return api;
     }
 
-    function initFan() {
-        var root = document.querySelector(".ksl-fan");
+    function initValues() {
+        var root = document.querySelector(".ksl-values-stack");
         if (!root) {
             return;
         }
-        var segs = Array.prototype.slice.call(root.querySelectorAll(".ksl-fan-seg"));
-        var rows = Array.prototype.slice.call(root.querySelectorAll(".ksl-fan-list li"));
-        var photos = Array.prototype.slice.call(root.querySelectorAll(".ksl-fan-photo"));
-        var current = 0;
-        var timer = null;
+        var rows = Array.prototype.slice.call(root.querySelectorAll(".ksl-values-list li"));
 
         function select(index) {
-            current = index;
-            [segs, rows, photos].forEach(function (group) {
-                group.forEach(function (el) {
-                    el.classList.toggle("is-on", Number(el.getAttribute("data-value")) === index);
-                });
+            rows.forEach(function (row) {
+                row.classList.toggle("is-on", Number(row.getAttribute("data-value")) === index);
             });
         }
 
-        function stop() {
-            if (timer) {
-                window.clearInterval(timer);
-                timer = null;
-            }
-        }
-
-        segs.concat(rows).forEach(function (el) {
-            var index = Number(el.getAttribute("data-value"));
-            el.addEventListener("mouseenter", function () { stop(); select(index); });
-            el.addEventListener("click", function () { stop(); select(index); });
-            el.addEventListener("focus", function () { stop(); select(index); });
-            el.addEventListener("keydown", function (event) {
+        rows.forEach(function (row) {
+            var index = Number(row.getAttribute("data-value"));
+            row.addEventListener("mouseenter", function () { select(index); });
+            row.addEventListener("click", function () { select(index); });
+            row.addEventListener("focus", function () { select(index); });
+            row.addEventListener("keydown", function (event) {
                 if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    stop();
                     select(index);
                 }
             });
         });
 
         select(0);
-
-        if (reduceMotion || !("IntersectionObserver" in window)) {
-            return;
-        }
-        root.classList.add("is-armed");
-        var entrance = new IntersectionObserver(function (entries) {
-            if (entries[0].isIntersecting) {
-                root.classList.add("is-in");
-                entrance.disconnect();
-            }
-        }, { threshold: 0.3 });
-        entrance.observe(root);
-
-        new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-                if (entry.isIntersecting && timer === null && !root.hasAttribute("data-fan-stopped")) {
-                    timer = window.setInterval(function () {
-                        select((current + 1) % segs.length);
-                    }, 3200);
-                } else if (!entry.isIntersecting) {
-                    stop();
-                }
-            });
-        }, { threshold: 0.4 }).observe(root);
-
-        root.addEventListener("pointerdown", function () { root.setAttribute("data-fan-stopped", ""); });
-        root.addEventListener("mouseenter", function () { root.setAttribute("data-fan-stopped", ""); });
     }
 
     initPath();
-    initFan();
+    initValues();
 })();
