@@ -6868,6 +6868,65 @@ html[lang="sw"] .ksl-library .download-button .download::after {
     }
 }
 
+.ksl-knot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin: 8px auto;
+    color: #C4A35A;
+}
+
+.ksl-knot::before,
+.ksl-knot::after {
+    content: "";
+    width: 88px;
+    height: 1px;
+    background: rgba(20, 33, 61, .16);
+}
+
+.ksl-knot svg {
+    width: 60px;
+    height: 30px;
+    overflow: visible;
+}
+
+.ksl-knot-rope {
+    stroke: currentColor;
+    stroke-width: 2.2;
+}
+
+.ksl-knot-gap {
+    stroke: #fff;
+    stroke-width: 5.2;
+}
+
+.ksl-values-block {
+    position: relative;
+    isolation: isolate;
+}
+
+.ksl-values-block::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: -1;
+    width: min(620px, 100%);
+    aspect-ratio: 1;
+    transform: translate(-50%, -46%);
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%2314213d'%3E%3Ccircle cx='50' cy='50' r='46' stroke-width='.35'/%3E%3Ccircle cx='50' cy='50' r='43' stroke-width='2.4' stroke-dasharray='.35 3.4' /%3E%3Ccircle cx='50' cy='50' r='39' stroke-width='.25'/%3E%3Ccircle cx='50' cy='50' r='14' stroke-width='.25'/%3E%3Cpolygon points='50,22 53,47 78,50 53,53 50,78 47,53 22,50 47,47' transform='rotate(45 50 50)' stroke-width='.35'/%3E%3Cpolygon points='50,2 55,45 98,50 55,55 50,98 45,55 2,50 45,45' stroke-width='.4'/%3E%3Cg fill='%2314213d' stroke='none'%3E%3Cpolygon points='50,2 50,50 55,45'/%3E%3Cpolygon points='98,50 50,50 55,55'/%3E%3Cpolygon points='50,98 50,50 45,55'/%3E%3Cpolygon points='2,50 50,50 45,45'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+    opacity: .06;
+    pointer-events: none;
+}
+
+@media (max-width: 767.98px) {
+    .ksl-knot::before,
+    .ksl-knot::after {
+        width: 56px;
+    }
+}
+
 .ksl-values-stack {
     max-width: 700px;
     margin: 26px auto 0;
