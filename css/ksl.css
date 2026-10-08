@@ -5910,6 +5910,19 @@ html[lang="sw"] .ksl-library .download-button .download::after {
     margin: 56px 0;
 }
 
+.about-copy > h2,
+.ksl-path > h2,
+.ksl-values-block > h2,
+.ksl-pillar-block > h2,
+.ksl-yard-block > h2,
+.ksl-path > .ksl-learn-lead,
+.ksl-pillar-block > .ksl-learn-lead,
+.ksl-yard-block > .ksl-learn-lead {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .ksl-purpose {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
