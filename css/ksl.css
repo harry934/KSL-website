@@ -1660,7 +1660,21 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
         display: none !important;
     }
 }
-.navbar.sticky-top { top: var(--ksl-topbar-h, 0px); border-bottom: 1px solid #99792c; box-shadow: none !important; }
+.navbar.sticky-top {
+    top: var(--ksl-topbar-h, 0px);
+    border-bottom: 0;
+    box-shadow: none !important;
+}
+.navbar.sticky-top::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 1px;
+    background: #99792c;
+    pointer-events: none;
+}
 @media (max-width: 1199.98px) { .ksl-wordmark { display: none; } }
 .navbar .nav-link { position: relative; }
 .navbar .nav-link.active::after {
@@ -5499,6 +5513,8 @@ html[lang="sw"] .ksl-library .download-button .download::after {
 
     .navbar.sticky-top {
         transition: transform .38s cubic-bezier(.22, .61, .36, 1), box-shadow .3s ease, margin-bottom .3s ease;
+        will-change: transform;
+        backface-visibility: hidden;
     }
 
     .navbar.sticky-top .navbar-nav .nav-link,
