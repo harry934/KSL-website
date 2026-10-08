@@ -20,31 +20,31 @@
     var stickyNav = document.querySelector(".sticky-top");
     var topbarH = 0;
     var lastScrollY = window.scrollY;
-    var navTop = null;
     var dockTicking = false;
+    var setTucked = function (tucked) {
+        topbar.classList.toggle("is-tucked", tucked);
+        stickyNav.classList.toggle("is-tucked", tucked);
+    };
     var dockNavbar = function () {
         dockTicking = false;
-        if (!stickyNav) return;
+        if (!stickyNav || !topbarH) return;
         var y = window.scrollY;
         var delta = y - lastScrollY;
-        if (topbarH) {
-            stickyNav.classList.toggle("is-compact", y > topbarH);
-            if (y <= topbarH || delta < -4) {
-                topbar.classList.remove("is-tucked");
-            } else if (delta > 4) {
-                topbar.classList.add("is-tucked");
-            }
-            if (y <= topbarH || Math.abs(delta) > 4) lastScrollY = y;
+        stickyNav.classList.toggle("is-compact", y > topbarH);
+        if (y <= topbarH || delta < -4) {
+            setTucked(false);
+        } else if (delta > 4) {
+            setTucked(true);
         }
-        var top = topbarH && !topbar.classList.contains("is-tucked") ? topbarH + "px" : "0px";
-        if (top !== navTop) {
-            stickyNav.style.top = top;
-            navTop = top;
-        }
+        if (y <= topbarH || Math.abs(delta) > 4) lastScrollY = y;
     };
     var measureTopbar = function () {
         topbarH = topbar ? topbar.offsetHeight : 0;
-        if (!topbarH && stickyNav) stickyNav.classList.remove("is-compact");
+        document.documentElement.style.setProperty("--ksl-topbar-h", topbarH + "px");
+        if (!topbarH && stickyNav) {
+            stickyNav.classList.remove("is-compact", "is-tucked");
+            if (topbar) topbar.classList.remove("is-tucked");
+        }
         dockNavbar();
     };
     measureTopbar();
@@ -120,7 +120,52 @@
 
     var aboutMainImage = document.querySelector(".about-frame-main img");
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (aboutMainImage && !reduceMotion.matches) {
+
+    // Where supported, parallax runs as CSS scroll-driven animations on the compositor so layers
+    // stay locked to the page during fast scrolling; the rAF handlers below are the fallback.
+    var scrollLinked = !reduceMotion.matches && !!(window.CSS && CSS.supports && CSS.supports("animation-timeline: scroll()"));
+    var scrollLinks = [];
+    var pageTop = function (el) {
+        var top = 0;
+        var node = el;
+        while (node) {
+            top += node.offsetTop || 0;
+            node = node.offsetParent;
+        }
+        return top;
+    };
+    // Maps value(y) = clamp(rate * (y - origin), lo, hi) onto a scroll() timeline range.
+    var setScrollRange = function (el, name, rate, origin, lo, hi, unit) {
+        var end = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+        var clampY = function (y) { return Math.max(0, Math.min(end, y)); };
+        var valueAt = function (y) { return Math.max(lo, Math.min(hi, rate * (y - origin))); };
+        var start = clampY(origin + lo / rate);
+        var stop = clampY(origin + hi / rate);
+        if (stop - start < 1) stop = start + 1;
+        el.style.setProperty("--ksl-" + name + "-start", start.toFixed(1) + "px");
+        el.style.setProperty("--ksl-" + name + "-end", stop.toFixed(1) + "px");
+        el.style.setProperty("--ksl-" + name + "-from", valueAt(start).toFixed(4) + unit);
+        el.style.setProperty("--ksl-" + name + "-to", valueAt(stop).toFixed(4) + unit);
+    };
+    var refreshScrollLinks = function () {
+        scrollLinks.forEach(function (link) { link(); });
+    };
+    if (scrollLinked) {
+        window.addEventListener("resize", refreshScrollLinks);
+        window.addEventListener("load", refreshScrollLinks);
+        if ("ResizeObserver" in window) {
+            new ResizeObserver(refreshScrollLinks).observe(document.body);
+        }
+    }
+
+    if (aboutMainImage && scrollLinked) {
+        aboutMainImage.classList.add("ksl-scroll-zoom");
+        scrollLinks.push(function () {
+            var frame = aboutMainImage.parentElement;
+            var viewport = window.innerHeight || document.documentElement.clientHeight;
+            setScrollRange(aboutMainImage, "zoom", 0.03 / (viewport + frame.offsetHeight), pageTop(frame) - viewport, 0, 0.03, "");
+        });
+    } else if (aboutMainImage && !reduceMotion.matches) {
         var aboutFrame = aboutMainImage.parentElement;
         var aboutTicking = false;
         var updateAboutZoom = function () {
@@ -296,7 +341,9 @@
             if (shift > 280) shift = 280;
             if (shift < -280) shift = -280;
             var focus = 18 + Math.max(0, Math.min(42, -top * 0.06));
-            heroVideo.style.transform = "translate3d(0, " + shift.toFixed(2) + "px, 0)";
+            if (!scrollLinked) {
+                heroVideo.style.transform = "translate3d(0, " + shift.toFixed(2) + "px, 0)";
+            }
             heroVideo.style.objectPosition = "center " + Math.min(48, focus).toFixed(1) + "%";
             heroTicking = false;
         };
@@ -309,20 +356,17 @@
         window.addEventListener("scroll", requestHeroParallax, { passive: true });
         window.addEventListener("resize", requestHeroParallax);
         updateHeroParallax();
+        if (scrollLinked) {
+            heroVideo.classList.add("ksl-scroll-linked");
+            scrollLinks.push(function () {
+                setScrollRange(heroVideo, "sd", 0.85, pageTop(hero), -280, 280, "px");
+            });
+        }
     }
 
     var parallaxTargets = document.querySelectorAll("[data-ksl-parallax]");
     if (parallaxTargets.length && !reduceMotion.matches) {
         var defaultParallaxMax = 120;
-        var pageTop = function (el) {
-            var top = 0;
-            var node = el;
-            while (node) {
-                top += node.offsetTop || 0;
-                node = node.offsetParent;
-            }
-            return top;
-        };
         var parallaxState = Array.prototype.map.call(parallaxTargets, function (el) {
             var speed = parseFloat(el.getAttribute("data-ksl-parallax"));
             if (!Number.isFinite(speed)) speed = 0;
@@ -334,6 +378,15 @@
         });
         var parallaxTicking = false;
         var stackedLayout = window.matchMedia("(max-width: 991.98px)");
+        var linkParallax = function () {
+            parallaxState.forEach(function (item) {
+                item.el.classList.toggle("ksl-scroll-linked", !stackedLayout.matches);
+                if (stackedLayout.matches) return;
+                var viewport = window.innerHeight || document.documentElement.clientHeight;
+                var origin = pageTop(item.el) + item.el.offsetHeight * 0.5 - viewport * 0.5;
+                setScrollRange(item.el, "sd", item.speed, origin, -item.maxShift, item.maxShift, "px");
+            });
+        };
         var updateParallax = function () {
             parallaxTicking = false;
             if (stackedLayout.matches) {
@@ -359,13 +412,27 @@
                 parallaxTicking = true;
             }
         };
-        window.addEventListener("scroll", requestParallax, { passive: true });
-        window.addEventListener("resize", requestParallax);
-        updateParallax();
+        if (scrollLinked) {
+            parallaxState = parallaxState.filter(function (item) { return item.speed > 0; });
+            scrollLinks.push(linkParallax);
+        } else {
+            window.addEventListener("scroll", requestParallax, { passive: true });
+            window.addEventListener("resize", requestParallax);
+            updateParallax();
+        }
     }
 
     var factsBg = document.querySelector(".facts-bg");
-    if (factsBg && !reduceMotion.matches) {
+    if (factsBg && scrollLinked) {
+        factsBg.classList.add("ksl-scroll-linked");
+        scrollLinks.push(function () {
+            var section = factsBg.parentElement;
+            var viewport = window.innerHeight || document.documentElement.clientHeight;
+            var slack = section.offsetHeight * 0.32;
+            var origin = pageTop(section) + section.offsetHeight / 2 - viewport / 2;
+            setScrollRange(factsBg, "sd", 0.42, origin, -slack, slack, "px");
+        });
+    } else if (factsBg && !reduceMotion.matches) {
         var factsSection = factsBg.parentElement;
         var factsTicking = false;
         var updateFacts = function () {
@@ -663,7 +730,16 @@
     });
 
     var pageHeaders = document.querySelectorAll(".page-header");
-    if (pageHeaders.length) {
+    if (pageHeaders.length && scrollLinked) {
+        pageHeaders.forEach(function (header) {
+            header.classList.add("ksl-scroll-linked-bg");
+        });
+        scrollLinks.push(function () {
+            pageHeaders.forEach(function (header) {
+                setScrollRange(header, "sd", 0.18, pageTop(header), -48, 48, "px");
+            });
+        });
+    } else if (pageHeaders.length) {
         var headerTicking = false;
         var updatePageHeaders = function () {
             pageHeaders.forEach(function (header) {
@@ -685,6 +761,8 @@
         window.addEventListener("resize", requestPageHeaders);
         updatePageHeaders();
     }
+
+    refreshScrollLinks();
 
     if (!reduceMotion.matches) {
         document.querySelectorAll("[data-ksl-cycle]").forEach(function (group) {

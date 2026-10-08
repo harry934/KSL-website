@@ -1660,7 +1660,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
         display: none !important;
     }
 }
-.navbar.sticky-top { border-bottom: 1px solid #99792c; box-shadow: none !important; }
+.navbar.sticky-top { top: var(--ksl-topbar-h, 0px); border-bottom: 1px solid #99792c; box-shadow: none !important; }
 @media (max-width: 1199.98px) { .ksl-wordmark { display: none; } }
 .navbar .nav-link { position: relative; }
 .navbar .nav-link.active::after {
@@ -4106,6 +4106,45 @@ html.board-motion .board-card.is-in .board-card-body {
     }
 }
 
+/* Scroll-linked parallax (see setScrollRange in main.js). Animates `translate`/`scale`
+   so it composes with any `transform` already on the element. */
+@keyframes ksl-scroll-shift {
+    from { translate: 0 var(--ksl-sd-from, 0px); }
+    to { translate: 0 var(--ksl-sd-to, 0px); }
+}
+
+@keyframes ksl-scroll-zoom {
+    from { scale: calc(1 + var(--ksl-zoom-from, 0)); }
+    to { scale: calc(1 + var(--ksl-zoom-to, 0)); }
+}
+
+@supports (animation-timeline: scroll()) {
+    .ksl-scroll-linked,
+    .ksl-scroll-linked-bg::before {
+        animation: ksl-scroll-shift linear both;
+        animation-timeline: scroll(root block);
+        animation-range: var(--ksl-sd-start) var(--ksl-sd-end);
+    }
+
+    .ksl-scroll-zoom {
+        animation: ksl-scroll-zoom linear both;
+        animation-timeline: scroll(root block);
+        animation-range: var(--ksl-zoom-start) var(--ksl-zoom-end);
+    }
+
+    .ksl-scroll-linked.ksl-scroll-zoom {
+        animation: ksl-scroll-shift linear both, ksl-scroll-zoom linear both;
+        animation-timeline: scroll(root block);
+        animation-range: var(--ksl-sd-start) var(--ksl-sd-end), var(--ksl-zoom-start) var(--ksl-zoom-end);
+    }
+
+    .ksl-hero.is-intro-crossfade .ksl-hero-video.is-ready.ksl-scroll-linked {
+        animation: kslHeroMediaIn .9s ease-out both, ksl-scroll-shift linear both;
+        animation-timeline: auto, scroll(root block);
+        animation-range: normal, var(--ksl-sd-start) var(--ksl-sd-end);
+    }
+}
+
 .ksl-hero-video {
     position: absolute;
     left: 0;
@@ -5449,15 +5488,18 @@ html[lang="sw"] .ksl-library .download-button .download::after {
         position: sticky;
         top: 0;
         z-index: 1030;
-        transition: transform .3s ease;
+        transition: transform .38s cubic-bezier(.22, .61, .36, 1);
+        will-change: transform;
     }
 
-    .topbar-ksl.is-tucked {
-        transform: translateY(-100%);
+    /* Topbar and navbar slide by the same distance on the same curve so no gap opens between them. */
+    .topbar-ksl.is-tucked,
+    .navbar.sticky-top.is-tucked {
+        transform: translate3d(0, calc(-1 * var(--ksl-topbar-h, 0px)), 0);
     }
 
     .navbar.sticky-top {
-        transition: top .3s ease, box-shadow .3s ease;
+        transition: transform .38s cubic-bezier(.22, .61, .36, 1), box-shadow .3s ease, margin-bottom .3s ease;
     }
 
     .navbar.sticky-top .navbar-nav .nav-link,
@@ -5470,7 +5512,9 @@ html[lang="sw"] .ksl-library .download-button .download::after {
         height: 60px;
     }
 
+    /* The brand shrinks 80px -> 60px; the margin keeps the page below from jumping. */
     .navbar.sticky-top.is-compact {
+        margin-bottom: 20px;
         box-shadow: 0 4px 16px rgba(9, 41, 108, .08) !important;
     }
 
