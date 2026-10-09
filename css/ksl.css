@@ -11129,25 +11129,44 @@ body[data-ksl-motif="wheel"] {
 .ksl-path {
     position: relative;
     isolation: isolate;
+    --ksl-draw-sextant: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='%2314213d' stroke-linecap='round' stroke-linejoin='round'><path d='M25.8 148.7A140 140 0 0 0 174.2 148.7' stroke-width='2.4'/><path d='M32.2 138.6A128 128 0 0 0 167.8 138.6' stroke-width='1'/><path d='M164.0 140.9L168.0 147.8M160.1 143.0L165.7 153.6M156.1 145.0L161.4 155.8M152.1 146.9L156.9 157.9M147.9 148.7L152.4 159.8M143.8 150.3L146.5 157.8M139.6 151.7L143.3 163.1M135.3 153.0L138.6 164.6M131.0 154.2L133.9 165.8M126.6 155.2L129.1 166.9M122.2 156.1L123.6 163.9M117.8 156.8L119.5 168.6M113.4 157.3L114.6 169.2M108.9 157.7L109.8 169.7M104.5 157.9L104.9 169.9M100.0 158.0L100.0 166.0M95.5 157.9L95.1 169.9M91.1 157.7L90.2 169.7M86.6 157.3L85.4 169.2M82.2 156.8L80.5 168.6M77.8 156.1L76.4 163.9M73.4 155.2L70.9 166.9M69.0 154.2L66.1 165.8M64.7 153.0L61.4 164.6M60.4 151.7L56.7 163.1M56.2 150.3L53.5 157.8M52.1 148.7L47.6 159.8M47.9 146.9L43.1 157.9M43.9 145.0L38.6 155.8M39.9 143.0L34.3 153.6M36.0 140.9L32.0 147.8' stroke-width='.7'/><path d='M100 30L25.8 148.7M100 30L174.2 148.7' stroke-width='2.2'/><circle cx='76' cy='102' r='16' stroke-width='1.4'/><circle cx='124' cy='102' r='16' stroke-width='1.4'/><circle cx='100' cy='134' r='11' stroke-width='1.2'/><path d='M60 102H140M100 30V145' stroke-width='.8'/><path d='M100 30L78.8 180.5' stroke-width='3'/><path d='M73.5 164.6h14v9h-14z' fill='%2314213d' stroke='none'/><circle cx='100' cy='30' r='6' stroke-width='1.6'/><circle cx='100' cy='30' r='2' fill='%2314213d' stroke='none'/><path d='M90 14h20v10h-20z' stroke-width='1.4'/><path d='M67 62h14v18h-14z' stroke-width='1.4'/><path d='M74 62v18' stroke-width='.7'/><path d='M116 52h58v12h-58zM174 54h10v8h-10z' stroke-width='1.4'/><path d='M126 52v12M164 52v12' stroke-width='.7'/></svg>");
+    --ksl-draw-anchor: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 230' fill='none' stroke='%2314213d' stroke-linecap='round' stroke-linejoin='round'><circle cx='80' cy='20' r='11' stroke-width='2.6'/><path d='M76 31h8v164h-8z' stroke-width='1.8'/><path d='M34 46h92' stroke-width='5'/><circle cx='31' cy='46' r='4' stroke-width='1.6'/><circle cx='129' cy='46' r='4' stroke-width='1.6'/><path d='M22 150Q26 204 80 206Q134 204 138 150' stroke-width='4'/><path d='M22 150l-10 14M22 150l16 6M138 150l10 14M138 150l-16 6' stroke-width='3.4'/><path d='M80 200l-6 14h12z' fill='%2314213d' stroke='none'/><path d='M86 14C126 26 124 58 84 66C40 74 40 102 80 110C122 118 122 146 84 154C52 160 50 178 72 186C92 192 110 186 118 200C126 212 118 224 104 224' stroke-width='5'/><path d='M86 14C126 26 124 58 84 66C40 74 40 102 80 110C122 118 122 146 84 154C52 160 50 178 72 186C92 192 110 186 118 200C126 212 118 224 104 224' stroke='%23fff' stroke-width='2.4' stroke-dasharray='3 4'/></svg>");
 }
 
+.ksl-path::before,
 .ksl-path::after {
     content: "";
     position: absolute;
     z-index: -1;
-    top: 0;
-    right: -40px;
-    width: 460px;
-    aspect-ratio: 240 / 150;
-    background: var(--ksl-draw-keel) center / contain no-repeat;
     opacity: .07;
     pointer-events: none;
+}
+
+.ksl-path::after {
+    top: -10px;
+    right: -50px;
+    width: 340px;
+    aspect-ratio: 1;
+    background: var(--ksl-draw-sextant) center / contain no-repeat;
+}
+
+.ksl-path::before {
+    top: 46%;
+    left: -70px;
+    width: 220px;
+    aspect-ratio: 160 / 230;
+    background: var(--ksl-draw-anchor) center / contain no-repeat;
 }
 
 @media (max-width: 767.98px) {
     .ksl-path::after {
         right: -20px;
-        width: 260px;
+        width: 200px;
+    }
+
+    .ksl-path::before {
+        left: -40px;
+        width: 140px;
     }
 }
 
@@ -11779,4 +11798,15 @@ body[data-ksl-motif="wheel"] {
     .ksl-svc-panel:not([hidden]) {
         animation: none;
     }
+}
+
+/*** Service cards: resting state ***/
+.ksl-services-grid .service-item {
+    border: 1px solid rgba(10, 62, 149, .14);
+    box-shadow: 0 18px 40px -26px rgba(20, 33, 61, .45);
+}
+
+.ksl-services-grid .service-item .service-text {
+    background: #f3f6fb;
+    box-shadow: none;
 }
