@@ -939,7 +939,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
 .ksl-services-grid .service-item:hover .service-text,
 .ksl-services-grid .service-item.is-held .service-text,
 .ksl-services-grid .service-item.is-revealed .service-text {
-    background: rgba(39, 50, 114, .55) !important;
+    background: rgba(10, 62, 149, .42) !important;
 }
 
 .ksl-services-grid .service-item:hover .service-text h4,
@@ -11809,4 +11809,13 @@ body[data-ksl-motif="wheel"] {
 .ksl-services-grid .service-item .service-text {
     background: #f3f6fb;
     box-shadow: none;
+}
+
+.ksl-services-grid .service-item:hover .service-text h4,
+.ksl-services-grid .service-item.is-held .service-text h4,
+.ksl-services-grid .service-item.is-revealed .service-text h4,
+.ksl-services-grid .service-item:hover .service-text .ksl-service-excerpt,
+.ksl-services-grid .service-item.is-held .service-text .ksl-service-excerpt,
+.ksl-services-grid .service-item.is-revealed .service-text .ksl-service-excerpt {
+    text-shadow: 0 1px 3px rgba(10, 25, 60, .55);
 }
