@@ -11059,7 +11059,8 @@ body[data-ksl-motif="waves"] main::after {
 }
 
 .service-item:hover .service-text::before,
-.service-item.is-held .service-text::before {
+.service-item.is-held .service-text::before,
+.ksl-services-grid .service-item.is-revealed .service-text::before {
     background-color: #fff;
     opacity: .95;
 }
@@ -11289,6 +11290,282 @@ body[data-ksl-motif="wheel"] {
     .ksl-more i {
         transition: none;
         animation: none !important;
+    }
+}
+
+/*** About: incorporation ***/
+.ksl-incorp {
+    display: grid;
+    grid-template-columns: 1.1fr .9fr;
+    gap: 56px;
+    align-items: center;
+    margin: 64px 0;
+}
+
+.ksl-incorp-kicker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 10px;
+    color: #8a6d2a;
+    font: 700 12px/1.4 Manrope, sans-serif;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+}
+
+.ksl-incorp-kicker::before {
+    content: "";
+    width: 28px;
+    height: 2px;
+    background: #C4A35A;
+}
+
+.ksl-incorp-text h2 {
+    margin-bottom: 18px;
+}
+
+.ksl-incorp-text p:not(.ksl-incorp-kicker) {
+    margin: 0;
+    color: #3d4a63;
+    font-size: 1.05rem;
+    line-height: 1.8;
+}
+
+.ksl-incorp-log {
+    position: relative;
+    margin: 0;
+    padding: 12px 32px;
+    list-style: none;
+    background: #fff;
+    border: 1px solid rgba(20, 33, 61, .12);
+    box-shadow: 0 18px 40px -28px rgba(20, 33, 61, .45);
+}
+
+.ksl-incorp-log::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    background-color: #C4A35A;
+    -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23000' stroke-width='1'><path d='M0 10H22V32'/><g fill='%23000' stroke='none'><circle cx='5' cy='5' r='1.6'/><circle cx='15' cy='5' r='1.6'/><circle cx='27' cy='5' r='1.6'/><circle cx='27' cy='17' r='1.6'/><circle cx='27' cy='27' r='1.6'/></g></svg>") center / contain no-repeat;
+    mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23000' stroke-width='1'><path d='M0 10H22V32'/><g fill='%23000' stroke='none'><circle cx='5' cy='5' r='1.6'/><circle cx='15' cy='5' r='1.6'/><circle cx='27' cy='5' r='1.6'/><circle cx='27' cy='17' r='1.6'/><circle cx='27' cy='27' r='1.6'/></g></svg>") center / contain no-repeat;
+    opacity: .7;
+}
+
+.ksl-incorp-log li {
+    display: grid;
+    grid-template-columns: 78px 1fr;
+    gap: 4px 22px;
+    padding: 22px 0;
+}
+
+.ksl-incorp-log li + li {
+    border-top: 1px dashed rgba(196, 163, 90, .7);
+}
+
+.ksl-incorp-log time {
+    grid-row: span 2;
+    padding-right: 20px;
+    border-right: 1px solid rgba(20, 33, 61, .12);
+    color: #8a6d2a;
+    font: 700 11px/1.2 Manrope, sans-serif;
+    letter-spacing: .1em;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.ksl-incorp-log time b {
+    display: block;
+    margin-bottom: 4px;
+    color: #14213d;
+    font-size: 34px;
+    line-height: 1;
+    letter-spacing: 0;
+}
+
+.ksl-incorp-log h3 {
+    margin: 0;
+    color: #14213d;
+    font-size: 1.1rem;
+}
+
+.ksl-incorp-log p {
+    margin: 0;
+    color: #3d4a63;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/*** About: shipyard specifications ***/
+.ksl-yard-sheets {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px;
+    margin-top: 32px;
+}
+
+.ksl-yard-sheet {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid rgba(20, 33, 61, .12);
+}
+
+.ksl-yard-sheet figure {
+    position: relative;
+    margin: 0;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+}
+
+.ksl-yard-sheet img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .8s ease;
+}
+
+.ksl-yard-sheet:hover img {
+    transform: scale(1.04);
+}
+
+.ksl-yard-sheet figcaption {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    padding: 14px 22px 12px;
+    background: #14213d;
+}
+
+.ksl-yard-sheet figcaption span {
+    display: block;
+    color: #E2C985;
+    font: 700 11px/1.4 Manrope, sans-serif;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.ksl-yard-sheet figcaption h3 {
+    margin: 2px 0 0;
+    color: #fff;
+    font-size: 1.3rem;
+}
+
+.ksl-yard-figs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-bottom: 1px solid rgba(20, 33, 61, .1);
+}
+
+.ksl-yard-figs li {
+    padding: 20px 12px 18px;
+    text-align: center;
+}
+
+.ksl-yard-figs li + li {
+    border-left: 1px dashed rgba(196, 163, 90, .7);
+}
+
+.ksl-yard-figs strong {
+    display: block;
+    color: #0A3E95;
+    font: 800 1.7rem/1 Manrope, sans-serif;
+}
+
+.ksl-yard-figs small {
+    margin-left: 3px;
+    color: #8a6d2a;
+    font-size: .55em;
+    font-weight: 700;
+}
+
+.ksl-yard-figs span {
+    display: block;
+    margin-top: 6px;
+    color: #3d4a63;
+    font: 600 11px/1.3 Manrope, sans-serif;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.ksl-yard-sheet > p {
+    margin: 20px 26px 4px;
+    color: #3d4a63;
+    line-height: 1.7;
+}
+
+.ksl-yard-specs {
+    margin: 0;
+    padding: 6px 26px 22px;
+}
+
+.ksl-yard-specs div {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(20, 33, 61, .08);
+}
+
+.ksl-yard-specs div:last-child {
+    border-bottom: 0;
+}
+
+.ksl-yard-specs dt {
+    flex: 0 0 auto;
+    color: #0A3E95;
+    font: 700 12px/1.4 Manrope, sans-serif;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.ksl-yard-specs div::before {
+    content: "";
+    order: 1;
+    flex: 1 1 auto;
+    min-width: 16px;
+    border-bottom: 1px dotted rgba(138, 109, 42, .6);
+    transform: translateY(-4px);
+}
+
+.ksl-yard-specs dd {
+    order: 2;
+    margin: 0;
+    color: #14213d;
+    font-weight: 600;
+    text-align: right;
+}
+
+@media (max-width: 991.98px) {
+    .ksl-incorp,
+    .ksl-yard-sheets {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .ksl-incorp-log {
+        padding: 8px 20px;
+    }
+
+    .ksl-yard-figs strong {
+        font-size: 1.35rem;
+    }
+
+    .ksl-yard-specs {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+    .ksl-yard-sheet > p {
+        margin-left: 18px;
+        margin-right: 18px;
     }
 }
 
