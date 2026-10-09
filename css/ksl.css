@@ -4416,24 +4416,8 @@ html.board-motion .board-card.is-in .board-card-body {
     background-image: linear-gradient(#C9A95C, #C9A95C);
     background-repeat: no-repeat;
     background-position: left bottom;
-    background-size: 0 1px;
-    transition: background-size .2s ease;
-}
-
-.ksl-hero-values .ksl-values-arrow {
-    display: inline-block;
-    width: 13px;
-    height: 13px;
-    margin-left: 6px;
-    vertical-align: -2px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.8;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    opacity: 0;
-    transform: translateX(-4px);
-    transition: opacity .2s ease, transform .2s ease;
+    background-size: 35% 2px;
+    transition: background-size .35s ease;
 }
 
 .ksl-hero-values .ksl-values-link:focus {
@@ -4486,14 +4470,7 @@ html.board-motion .board-card.is-in .board-card-body {
 .ksl-hero-values .ksl-values-grid article:hover .ksl-values-link,
 .ksl-hero-values .ksl-values-grid article:focus-within .ksl-values-link,
 .ksl-hero-values .ksl-values-grid article:active .ksl-values-link {
-    background-size: 100% 1px;
-}
-
-.ksl-hero-values .ksl-values-grid article:hover .ksl-values-arrow,
-.ksl-hero-values .ksl-values-grid article:focus-within .ksl-values-arrow,
-.ksl-hero-values .ksl-values-grid article:active .ksl-values-arrow {
-    opacity: 1;
-    transform: translateX(0);
+    background-size: 100% 2px;
 }
 
 .ksl-hero-values article {
@@ -8786,12 +8763,6 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     .carousel-control-next:hover .carousel-control-next-icon {
         animation: kslNudgeRight .9s ease-in-out infinite;
     }
-
-    .ksl-hero-values .ksl-values-grid article:hover .ksl-values-arrow,
-    .ksl-hero-values .ksl-values-grid article:focus-within .ksl-values-arrow {
-        animation: kslNudgeRight .9s ease-in-out .2s infinite;
-    }
-
     .owl-nav .owl-prev:hover i,
     .carousel-control-prev:hover .carousel-control-prev-icon {
         animation: kslNudgeLeft .9s ease-in-out infinite;
