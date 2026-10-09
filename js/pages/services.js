@@ -1,3 +1,58 @@
+(function kslServiceTabs() {
+    "use strict";
+
+    var list = document.querySelector(".ksl-svc-tabs");
+    if (!list) {
+        return;
+    }
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+
+    function select(tab, focus) {
+        tabs.forEach(function (t) {
+            var on = t === tab;
+            t.setAttribute("aria-selected", on ? "true" : "false");
+            t.tabIndex = on ? 0 : -1;
+            var panel = document.getElementById(t.getAttribute("aria-controls"));
+            if (panel) {
+                panel.hidden = !on;
+            }
+        });
+        if (focus) {
+            tab.focus();
+        }
+        window.dispatchEvent(new Event("scroll"));
+    }
+
+    tabs.forEach(function (tab, index) {
+        tab.addEventListener("click", function () {
+            select(tab);
+            history.replaceState(null, "", "#" + tab.getAttribute("aria-controls"));
+        });
+        tab.addEventListener("keydown", function (event) {
+            var next = null;
+            if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+                next = tabs[(index + 1) % tabs.length];
+            } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+                next = tabs[(index - 1 + tabs.length) % tabs.length];
+            } else if (event.key === "Home") {
+                next = tabs[0];
+            } else if (event.key === "End") {
+                next = tabs[tabs.length - 1];
+            }
+            if (next) {
+                event.preventDefault();
+                select(next, true);
+            }
+        });
+    });
+
+    var hash = location.hash.slice(1);
+    var fromHash = /^[\w-]+$/.test(hash) && list.querySelector('[aria-controls="' + hash + '"]');
+    if (fromHash) {
+        select(fromHash);
+    }
+})();
+
 (function () {
     "use strict";
 

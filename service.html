@@ -15,7 +15,7 @@
     <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
-    <link href="css/ksl.css?v=20261009-79" rel="stylesheet">
+    <link href="css/ksl.css?v=20261009-80" rel="stylesheet">
     <script src="js/intro.js?v=20261001-14"></script>
 </head>
 <body data-ksl-scripts="core wow" data-ksl-page="services" data-ksl-motif="wheel">
@@ -144,18 +144,36 @@
         </div>
     </div>
 <main class="container-xxl py-5"><div class="container">
-  <div class="mb-4">
-    <a class="btn btn-outline-primary me-2" href="contact.html">Contact US</a>
-    <a class="btn btn-outline-primary me-2" href="contact.html">Get A Quote</a>
-    <a class="btn btn-primary" href="project.html">Projects</a>
+  <div class="ksl-svc-tabs" role="tablist" aria-label="Service categories">
+    <button type="button" class="ksl-svc-tab" role="tab" id="tab-mro" aria-controls="mro" aria-selected="true">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="33" cy="15" r="6.5"/><circle cx="33" cy="15" r="2.2"/><path stroke-width="2.6" d="M39.5 15h2.6M37.6 19.6l1.9 1.9M33 21.5v2.6M28.4 19.6l-1.9 1.9M26.5 15h-2.6M28.4 10.4l-1.9-1.9M33 8.5V5.9M37.6 10.4l1.9-1.9"/><g transform="translate(5 43) rotate(-45)"><path d="M18.96-2.2A5.5 5.5 0 0 1 29.12-2H25.5v4h3.62A5.5 5.5 0 0 1 18.96 2.2H2.2a2.2 2.2 0 0 1 0-4.4z"/></g></svg>
+      <span class="ksl-svc-tab-name">Maintenance, Repair and Overhaul</span>
+      <span class="ksl-svc-tab-count">6 services</span>
+    </button>
+    <button type="button" class="ksl-svc-tab" role="tab" id="tab-civil" aria-controls="civil" aria-selected="false" tabindex="-1">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 36V16l8 6V16l8 6V14l14 8v14H6z"/><path d="M14 36v-6M22 36v-6M30 36v-6"/></svg>
+      <span class="ksl-svc-tab-name">Civil and Modular Works</span>
+      <span class="ksl-svc-tab-count">4 services</span>
+    </button>
+    <button type="button" class="ksl-svc-tab" role="tab" id="tab-heavy" aria-controls="heavy" aria-selected="false" tabindex="-1">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path d="m30 14 6-6 6 6-6 6"/><path d="M8 40 28 20"/><path d="m16 28 6 6"/></svg>
+      <span class="ksl-svc-tab-name">Heavy Engineering</span>
+      <span class="ksl-svc-tab-count">1 service</span>
+    </button>
+    <button type="button" class="ksl-svc-tab" role="tab" id="tab-leasing" aria-controls="leasing" aria-selected="false" tabindex="-1">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 18h32v18H8z"/><path d="M16 18v-4a8 8 0 0 1 16 0v4"/><path d="M24 26v6"/></svg>
+      <span class="ksl-svc-tab-name">Leasing</span>
+      <span class="ksl-svc-tab-count">1 service</span>
+    </button>
   </div>
-    <h2 class="ksl-service-category">Maintenance, Repair and Overhaul</h2>
+  <section class="ksl-svc-panel" id="mro" role="tabpanel" aria-labelledby="tab-mro">
+    <h2 class="ksl-service-category visually-hidden">Maintenance, Repair and Overhaul</h2>
   <div class="row g-4 ksl-services-grid">
     <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.1s">
       <div class="service-item rounded d-flex h-100">
         <div class="service-img rounded"><img class="img-fluid" src="img/ksl/yard.jpg" alt="Repair of offshore patrol boats"></div>
         <div class="service-text rounded p-5">
-          <svg class="ksl-svc" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 14a8 8 0 0 0-10 10L10 32l6 6 8-8a8 8 0 0 0 10-10l-6 6-4-4 4-8z"/></svg>
+          <svg class="ksl-svc" viewBox="0 0 48 48" aria-hidden="true"><circle cx="33" cy="15" r="6.5"/><circle cx="33" cy="15" r="2.2"/><path stroke-width="2.6" d="M39.5 15h2.6M37.6 19.6l1.9 1.9M33 21.5v2.6M28.4 19.6l-1.9 1.9M26.5 15h-2.6M28.4 10.4l-1.9-1.9M33 8.5V5.9M37.6 10.4l1.9-1.9"/><g transform="translate(5 43) rotate(-45)"><path d="M18.96-2.2A5.5 5.5 0 0 1 29.12-2H25.5v4h3.62A5.5 5.5 0 0 1 18.96 2.2H2.2a2.2 2.2 0 0 1 0-4.4z"/><circle cx="4.5" cy="0" r=".9"/></g></svg>
           <h4 class="mb-3">Repair of Offshore Patrol Boats</h4>
           <p class="mb-0 ksl-service-excerpt">Hull, corrosion control, mechanical overhauls, shaft alignment, diesel diagnostics, and navigation systems for Navy, Coast Guard, and regional authorities. Work follows IMO, class, and military specifications.</p>
           <div class="ksl-service-foot">
@@ -168,7 +186,7 @@
       <div class="service-item rounded d-flex h-100">
         <div class="service-img rounded"><img class="img-fluid" src="img/ksl/mombasa.webp" alt="Repair and maintenance of tug boats"></div>
         <div class="service-text rounded p-5">
-          <svg class="ksl-svc" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 14a8 8 0 0 0-10 10L10 32l6 6 8-8a8 8 0 0 0 10-10l-6 6-4-4 4-8z"/></svg>
+          <svg class="ksl-svc" viewBox="0 0 48 48" aria-hidden="true"><circle cx="33" cy="15" r="6.5"/><circle cx="33" cy="15" r="2.2"/><path stroke-width="2.6" d="M39.5 15h2.6M37.6 19.6l1.9 1.9M33 21.5v2.6M28.4 19.6l-1.9 1.9M26.5 15h-2.6M28.4 10.4l-1.9-1.9M33 8.5V5.9M37.6 10.4l1.9-1.9"/><g transform="translate(5 43) rotate(-45)"><path d="M18.96-2.2A5.5 5.5 0 0 1 29.12-2H25.5v4h3.62A5.5 5.5 0 0 1 18.96 2.2H2.2a2.2 2.2 0 0 1 0-4.4z"/><circle cx="4.5" cy="0" r=".9"/></g></svg>
           <h4 class="mb-3">Repair and maintenance of tug boats</h4>
           <p class="mb-0 ksl-service-excerpt">Inspections, diesel overhauls, propellers, azimuth and conventional propulsion, winch hydraulics, and dry dock. Standards referenced include Lloyd's Register, DNV, and ABS.</p>
           <div class="ksl-service-foot">
@@ -181,7 +199,7 @@
       <div class="service-item rounded d-flex h-100">
         <div class="service-img rounded"><img class="img-fluid" src="img/ksl/ferry.jpg" alt="Repair and maintenance of research vessels"></div>
         <div class="service-text rounded p-5">
-          <svg class="ksl-svc" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 14a8 8 0 0 0-10 10L10 32l6 6 8-8a8 8 0 0 0 10-10l-6 6-4-4 4-8z"/></svg>
+          <svg class="ksl-svc" viewBox="0 0 48 48" aria-hidden="true"><circle cx="33" cy="15" r="6.5"/><circle cx="33" cy="15" r="2.2"/><path stroke-width="2.6" d="M39.5 15h2.6M37.6 19.6l1.9 1.9M33 21.5v2.6M28.4 19.6l-1.9 1.9M26.5 15h-2.6M28.4 10.4l-1.9-1.9M33 8.5V5.9M37.6 10.4l1.9-1.9"/><g transform="translate(5 43) rotate(-45)"><path d="M18.96-2.2A5.5 5.5 0 0 1 29.12-2H25.5v4h3.62A5.5 5.5 0 0 1 18.96 2.2H2.2a2.2 2.2 0 0 1 0-4.4z"/><circle cx="4.5" cy="0" r=".9"/></g></svg>
           <h4 class="mb-3">Repair and Maintenance of Research Vessels</h4>
           <p class="mb-0 ksl-service-excerpt">Hull, propulsion, laboratories, sonar, sampling gear, and data networks for universities, institutes, and agencies.</p>
           <div class="ksl-service-foot">
@@ -194,7 +212,7 @@
       <div class="service-item rounded d-flex h-100">
         <div class="service-img rounded"><img class="img-fluid" src="img/ksl/ambulance.jpg" alt="Repair and maintenance of cargo vessels"></div>
         <div class="service-text rounded p-5">
-          <svg class="ksl-svc" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 14a8 8 0 0 0-10 10L10 32l6 6 8-8a8 8 0 0 0 10-10l-6 6-4-4 4-8z"/></svg>
+          <svg class="ksl-svc" viewBox="0 0 48 48" aria-hidden="true"><circle cx="33" cy="15" r="6.5"/><circle cx="33" cy="15" r="2.2"/><path stroke-width="2.6" d="M39.5 15h2.6M37.6 19.6l1.9 1.9M33 21.5v2.6M28.4 19.6l-1.9 1.9M26.5 15h-2.6M28.4 10.4l-1.9-1.9M33 8.5V5.9M37.6 10.4l1.9-1.9"/><g transform="translate(5 43) rotate(-45)"><path d="M18.96-2.2A5.5 5.5 0 0 1 29.12-2H25.5v4h3.62A5.5 5.5 0 0 1 18.96 2.2H2.2a2.2 2.2 0 0 1 0-4.4z"/><circle cx="4.5" cy="0" r=".9"/></g></svg>
           <h4 class="mb-3">Repair and Maintenance of Cargo Vessels</h4>
           <p class="mb-0 ksl-service-excerpt">General cargo, bulk, container vessels, and landing craft, including plate replacement, auxiliaries, cranes, and safety equipment.</p>
           <div class="ksl-service-foot">
@@ -207,7 +225,7 @@
       <div class="service-item rounded d-flex h-100">
         <div class="service-img rounded"><img class="img-fluid" src="img/ksl/kisumu.webp" alt="Repair and maintenance of passenger vessels"></div>
         <div class="service-text rounded p-5">
-          <svg class="ksl-svc" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 14a8 8 0 0 0-10 10L10 32l6 6 8-8a8 8 0 0 0 10-10l-6 6-4-4 4-8z"/></svg>
+          <svg class="ksl-svc" viewBox="0 0 48 48" aria-hidden="true"><circle cx="33" cy="15" r="6.5"/><circle cx="33" cy="15" r="2.2"/><path stroke-width="2.6" d="M39.5 15h2.6M37.6 19.6l1.9 1.9M33 21.5v2.6M28.4 19.6l-1.9 1.9M26.5 15h-2.6M28.4 10.4l-1.9-1.9M33 8.5V5.9M37.6 10.4l1.9-1.9"/><g transform="translate(5 43) rotate(-45)"><path d="M18.96-2.2A5.5 5.5 0 0 1 29.12-2H25.5v4h3.62A5.5 5.5 0 0 1 18.96 2.2H2.2a2.2 2.2 0 0 1 0-4.4z"/><circle cx="4.5" cy="0" r=".9"/></g></svg>
           <h4 class="mb-3">Repair and maintenance of passenger vessels</h4>
           <p class="mb-0 ksl-service-excerpt">Ferries, water buses, and commuter craft: hull, cabins, propulsion, and auxiliary power.</p>
           <div class="ksl-service-foot">
@@ -220,7 +238,7 @@
       <div class="service-item rounded d-flex h-100">
         <div class="service-img rounded"><img class="img-fluid" src="img/ksl/ferry.jpg" alt="Dry docking services"></div>
         <div class="service-text rounded p-5">
-          <svg class="ksl-svc" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 14a8 8 0 0 0-10 10L10 32l6 6 8-8a8 8 0 0 0 10-10l-6 6-4-4 4-8z"/></svg>
+          <svg class="ksl-svc" viewBox="0 0 48 48" aria-hidden="true"><circle cx="33" cy="15" r="6.5"/><circle cx="33" cy="15" r="2.2"/><path stroke-width="2.6" d="M39.5 15h2.6M37.6 19.6l1.9 1.9M33 21.5v2.6M28.4 19.6l-1.9 1.9M26.5 15h-2.6M28.4 10.4l-1.9-1.9M33 8.5V5.9M37.6 10.4l1.9-1.9"/><g transform="translate(5 43) rotate(-45)"><path d="M18.96-2.2A5.5 5.5 0 0 1 29.12-2H25.5v4h3.62A5.5 5.5 0 0 1 18.96 2.2H2.2a2.2 2.2 0 0 1 0-4.4z"/><circle cx="4.5" cy="0" r=".9"/></g></svg>
           <h4 class="mb-3">Dry Docking Services</h4>
           <p class="mb-0 ksl-service-excerpt">Kisumu dry dock and Mombasa slipway. Hull treatment, shafts, rudders, sea chests, and class surveys.</p>
           <div class="ksl-service-foot">
@@ -230,7 +248,9 @@
       </div>
     </div>
   </div>
-  <h2 class="ksl-service-category">Civil and Modular Works</h2>
+  </section>
+  <section class="ksl-svc-panel" id="civil" role="tabpanel" aria-labelledby="tab-civil" hidden>
+  <h2 class="ksl-service-category visually-hidden">Civil and Modular Works</h2>
   <div class="row g-4 ksl-services-grid">
     <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.1s">
       <div class="service-item rounded d-flex h-100">
@@ -285,7 +305,9 @@
       </div>
     </div>
   </div>
-  <h2 class="ksl-service-category">Heavy Engineering</h2>
+  </section>
+  <section class="ksl-svc-panel" id="heavy" role="tabpanel" aria-labelledby="tab-heavy" hidden>
+  <h2 class="ksl-service-category visually-hidden">Heavy Engineering</h2>
   <div class="row g-4 ksl-services-grid">
     <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.1s">
       <div class="service-item rounded d-flex h-100">
@@ -301,7 +323,9 @@
       </div>
     </div>
   </div>
-  <h2 class="ksl-service-category">Leasing</h2>
+  </section>
+  <section class="ksl-svc-panel" id="leasing" role="tabpanel" aria-labelledby="tab-leasing" hidden>
+  <h2 class="ksl-service-category visually-hidden">Leasing</h2>
   <div class="row g-4 ksl-services-grid">
     <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.1s">
       <div class="service-item rounded d-flex h-100">
@@ -317,6 +341,7 @@
       </div>
     </div>
   </div>
+  </section>
 </div></main>
     <div class="container-fluid bg-dark text-light footer footer-zones mt-5 py-5">
         <div class="container py-5">
