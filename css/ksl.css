@@ -11125,7 +11125,6 @@ main p a:not([class]):focus-visible {
 
 :root {
     --ksl-draw-launch: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 150' fill='none' stroke='%2314213d' stroke-linecap='round' stroke-linejoin='round'><g transform='rotate(-9.46 120 100)'><path d='M-20 122H260M-20 128H260' stroke-width='1'/><path d='M-20 125H260' stroke-width='8' stroke-dasharray='1.5 6' stroke-linecap='butt'/><path d='M80 112V122M100 112V122M120 112V122M140 112V122M160 112V122' stroke-width='1.2'/><path d='M74 118H172' stroke-width='1.6'/><g fill='%2314213d' stroke='none'><path d='M60 96H190L182 112H72Q64 112 60 96Z'/><path d='M100 96V82H150L156 96Z'/><path d='M112 82V72H140L144 82Z'/></g><g fill='%23fff' stroke='none'><path d='M116 75h6v3h-6zM125 75h6v3h-6zM134 75h5v3h-5zM104 87h44v3h-44z'/><circle cx='84' cy='104' r='1.5'/><circle cx='98' cy='104' r='1.5'/><circle cx='112' cy='104' r='1.5'/><circle cx='126' cy='104' r='1.5'/><circle cx='140' cy='104' r='1.5'/><circle cx='154' cy='104' r='1.5'/><circle cx='168' cy='104' r='1.5'/></g><path d='M128 72V54M121 59H135' stroke-width='1.3'/><path d='M128 54L188 94M128 54L66 94' stroke-width='.6' stroke-dasharray='1 2.5'/><path d='M66 94V86M188 94V86' stroke-width='.8'/></g><path d='M90 133L240 108V150H90Z' fill='%2314213d' stroke='none'/><path d='M0 138Q10 134 20 138T40 138T60 138T80 138M0 145Q10 141 20 145T40 145T60 145T80 145' stroke-width='.9'/></svg>");
-    --ksl-draw-crane: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='%2314213d' stroke-linecap='round' stroke-linejoin='round'><path d='M60 188L72 130H128L140 188' stroke-width='2.2'/><path d='M66 160H134M72 130L134 160M128 130L66 160' stroke-width='1'/><path d='M84 112L100 60L116 112M90 94H110' stroke-width='2'/><path d='M98 104L184 28M106 110L188 34' stroke-width='1.6'/><path d='M98 104L114.2 102.4L115.2 88.8L130.6 87.2L132.4 73.6L147 72L149.6 58.4L163.4 56.8L166.8 43.2L179.8 41.6L184 28' stroke-width='.7'/><path d='M100 60L60 102M100 60L184 28' stroke-width='.8'/><path d='M186 32V122' stroke-width='.8'/><g fill='%2314213d' stroke='none'><path d='M70 112h60v18h-60zM50 98h20v16h-20zM182 122h8v8h-8zM172 140h28v16h-28z'/><circle cx='100' cy='60' r='3'/><circle cx='62' cy='188' r='3.5'/><circle cx='138' cy='188' r='3.5'/></g><path d='M118 116h8v6h-8z' fill='%23fff' stroke='none'/><path d='M186 130v4M176 140L186 134L196 140' stroke-width='.8'/><path d='M177 142v12M182 142v12M187 142v12M192 142v12M197 142v12' stroke='%23fff' stroke-width='.8'/><path d='M8 192H192' stroke-width='1.6'/><path d='M8 198Q18 194 28 198T48 198T68 198T88 198T108 198T128 198T148 198T168 198T188 198' stroke-width='.8'/></svg>");
 }
 
 .ksl-yard-art {
@@ -11154,20 +11153,12 @@ main p a:not([class]):focus-visible {
 
 .ksl-yard-art[data-ksl-art="gear"] { --ksl-yard-art: var(--ksl-draw-wheel); }
 .ksl-yard-art[data-ksl-art="compass"] { --ksl-yard-art: var(--ksl-draw-compass); }
-.ksl-yard-art[data-ksl-art="plate"] { --ksl-yard-art: var(--ksl-draw-hull); --ksl-yard-art-ratio: 200 / 130; --ksl-yard-art-w: 280px; }
-.ksl-yard-art[data-ksl-art="crane"] { --ksl-yard-art: var(--ksl-draw-crane); --ksl-yard-art-w: 200px; }
+.ksl-yard-art[data-ksl-art="launch"] { --ksl-yard-art: var(--ksl-draw-launch); --ksl-yard-art-ratio: 240 / 150; --ksl-yard-art-w: 520px; }
 
 .ksl-yard-art[data-ksl-art="launch"]::before {
     top: auto;
     bottom: 10px;
 }
-
-.ksl-yard-art[data-ksl-art="plate"]::before,
-.ksl-yard-art[data-ksl-art="crane"]::before {
-    top: 50%;
-    transform: translateY(-50%);
-}
-.ksl-yard-art[data-ksl-art="launch"] { --ksl-yard-art: var(--ksl-draw-launch); --ksl-yard-art-ratio: 240 / 150; --ksl-yard-art-w: 520px; }
 
 @media (max-width: 767.98px) {
     .ksl-yard-art::before {
