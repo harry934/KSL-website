@@ -11172,13 +11172,11 @@ body[data-ksl-motif="wheel"] {
 }
 
 .ksl-hero-values .ksl-values-detail {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
+    text-align: center;
+}
+
+.ksl-hero-values .ksl-values-grid article + article {
+    border-left: 0;
 }
 
 .ksl-hero-values .ksl-wave-draft {
@@ -11238,22 +11236,20 @@ body[data-ksl-motif="wheel"] {
 }
 
 .ksl-more i {
-    display: grid;
-    place-items: center;
-    width: 42px;
-    height: 42px;
-    border: 1.5px solid #0A3E95;
-    border-radius: 50%;
-    color: #0A3E95;
-    transition: background-color .3s ease, color .3s ease, transform .3s ease;
+    display: block;
+    width: 30px;
+    height: 12px;
+    color: #C4A35A;
+    transition: color .3s ease, transform .3s ease;
 }
 
 .ksl-more svg {
-    width: 16px;
-    height: 16px;
+    display: block;
+    width: 100%;
+    height: 100%;
     fill: none;
     stroke: currentColor;
-    stroke-width: 1.8;
+    stroke-width: 1.6;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
@@ -11270,9 +11266,8 @@ body[data-ksl-motif="wheel"] {
 
 .ksl-more:hover i,
 .ksl-more:focus-visible i {
-    background-color: #0A3E95;
-    color: #fff;
-    transform: translateX(4px);
+    color: #0A3E95;
+    transform: translateX(6px);
 }
 
 .ksl-more:focus-visible {
