@@ -11154,9 +11154,22 @@ body[data-ksl-motif="wheel"] {
 }
 
 .ksl-hero-values .ksl-values-grid article {
-    grid-template-columns: auto auto;
-    justify-content: center;
+    grid-template-columns: 1fr auto auto 1fr;
+    align-items: center;
     padding: 10px 14px;
+}
+
+.ksl-hero-values .ksl-values-grid article .ksl-values-ico {
+    grid-column: 2;
+}
+
+.ksl-hero-values .ksl-values-grid article .ksl-values-keyword {
+    grid-column: 3;
+    margin: 0;
+}
+
+.ksl-hero-values .ksl-values-grid article .ksl-values-detail {
+    margin-top: 6px;
 }
 
 .ksl-hero-values .ksl-values-ico {
