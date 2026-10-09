@@ -11597,20 +11597,6 @@ body[data-ksl-motif="wheel"] {
     transition: background-color .35s ease, border-color .35s ease, color .35s ease, box-shadow .35s ease, transform .35s ease;
 }
 
-.ksl-svc-tab::before {
-    content: "";
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 24px;
-    height: 24px;
-    background-color: #C4A35A;
-    -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23000' stroke-width='1'><path d='M0 10H22V32'/><g fill='%23000' stroke='none'><circle cx='5' cy='5' r='1.6'/><circle cx='15' cy='5' r='1.6'/><circle cx='27' cy='5' r='1.6'/><circle cx='27' cy='17' r='1.6'/><circle cx='27' cy='27' r='1.6'/></g></svg>") center / contain no-repeat;
-    mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23000' stroke-width='1'><path d='M0 10H22V32'/><g fill='%23000' stroke='none'><circle cx='5' cy='5' r='1.6'/><circle cx='15' cy='5' r='1.6'/><circle cx='27' cy='5' r='1.6'/><circle cx='27' cy='17' r='1.6'/><circle cx='27' cy='27' r='1.6'/></g></svg>") center / contain no-repeat;
-    opacity: .75;
-    transition: background-color .35s ease;
-}
-
 .ksl-svc-tab::after {
     content: "";
     position: absolute;
@@ -11713,10 +11699,6 @@ body[data-ksl-motif="wheel"] {
     border-color: #0A3E95;
     color: #fff;
     transform: none;
-}
-
-.ksl-svc-tab[aria-selected="true"]::before {
-    background-color: #fff;
 }
 
 .ksl-svc-tab[aria-selected="true"]::after {
