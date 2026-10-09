@@ -7,6 +7,15 @@
     }
     var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
 
+    tabs.forEach(function (tab) {
+        var icon = tab.querySelector(".ksl-svc-tab-ico svg");
+        if (icon) {
+            var mark = icon.cloneNode(true);
+            mark.setAttribute("class", "ksl-svc-tab-mark");
+            tab.appendChild(mark);
+        }
+    });
+
     function select(tab, focus) {
         tabs.forEach(function (t) {
             var on = t === tab;
