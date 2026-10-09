@@ -629,13 +629,13 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     margin-bottom: 0;
 }
 
-.ksl-service-modal-downloads-list a {
+.ksl-service-modal-downloads-list a:not(.download-button) {
     font-weight: 600;
     text-decoration: none;
     color: #0165FC;
 }
 
-.ksl-service-modal-downloads-list a:hover {
+.ksl-service-modal-downloads-list a:not(.download-button):hover {
     text-decoration: underline;
 }
 
