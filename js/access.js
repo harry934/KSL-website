@@ -180,12 +180,9 @@
 
     function paintFont() {
         var scale = 1 + fontStep * 0.1;
+        var zoom = fontStep ? String(scale) : "";
         var inverse = fontStep ? String(1 / scale) : "";
-        if (window.kslSetTextScale) {
-            window.kslSetTextScale(scale);
-        } else {
-            document.documentElement.style.zoom = fontStep ? String(scale) : "";
-        }
+        document.documentElement.style.zoom = zoom;
         pageRoot().style.zoom = "";
         [root, document.querySelector(".whatsapp-fab"), waPop, spot].forEach(function (node) {
             if (node) node.style.zoom = inverse;
