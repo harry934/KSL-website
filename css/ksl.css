@@ -11091,7 +11091,7 @@ main p a:not([class]):focus-visible {
     position: absolute;
     z-index: -1;
     top: 30px;
-    right: -60px;
+    right: max(-60px, calc(50% - 720px));
     width: var(--ksl-yard-art-w, 400px);
     aspect-ratio: var(--ksl-yard-art-ratio, 1);
     background: var(--ksl-yard-art) center / contain no-repeat;
@@ -11101,7 +11101,7 @@ main p a:not([class]):focus-visible {
 
 .ksl-yard-art.is-left::before {
     right: auto;
-    left: -60px;
+    left: max(-60px, calc(50% - 720px));
 }
 
 .ksl-yard-art[data-ksl-art="gear"] { --ksl-yard-art: var(--ksl-draw-wheel); }
