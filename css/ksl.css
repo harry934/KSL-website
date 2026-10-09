@@ -11208,7 +11208,7 @@ body[data-ksl-motif="wheel"] {
 .ksl-more {
     display: inline-flex;
     align-items: center;
-    gap: 14px;
+    gap: 8px;
     margin-top: 8px;
     color: #14213d;
     font: 700 14px/1 Manrope, sans-serif;
@@ -11237,10 +11237,11 @@ body[data-ksl-motif="wheel"] {
 
 .ksl-more i {
     display: block;
-    width: 18px;
-    height: 18px;
+    width: 17px;
+    height: 17px;
     color: #C4A35A;
-    transition: color .3s ease, transform .6s cubic-bezier(.22, 1, .36, 1);
+    transform-origin: 50% 15%;
+    transition: color .3s ease;
 }
 
 .ksl-more svg {
@@ -11267,7 +11268,15 @@ body[data-ksl-motif="wheel"] {
 .ksl-more:hover i,
 .ksl-more:focus-visible i {
     color: #0A3E95;
-    transform: rotate(90deg);
+    animation: ksl-more-swing .9s ease-out;
+}
+
+@keyframes ksl-more-swing {
+    0% { transform: rotate(0); }
+    30% { transform: rotate(-14deg); }
+    60% { transform: rotate(9deg); }
+    80% { transform: rotate(-4deg); }
+    100% { transform: rotate(0); }
 }
 
 .ksl-more:focus-visible {
@@ -11279,10 +11288,7 @@ body[data-ksl-motif="wheel"] {
     .ksl-more span::after,
     .ksl-more i {
         transition: none;
+        animation: none !important;
     }
 }
 
-.ksl-more .ksl-more-hub {
-    fill: currentColor;
-    stroke: none;
-}
