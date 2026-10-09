@@ -5812,27 +5812,6 @@ html.board-motion .board-card.is-in .board-card-body {
     font-size: 17px;
 }
 
-.ksl-project-nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 36px;
-}
-
-.ksl-project-nav a {
-    padding: 8px 14px;
-    border: 1px solid #0A3E95;
-    color: #0A3E95;
-    text-decoration: none;
-    font: 600 14px/1.2 Manrope, sans-serif;
-}
-
-.ksl-project-nav a:hover,
-.ksl-project-nav a:focus {
-    background: #0A3E95;
-    color: #fff;
-}
-
 .ksl-project-group {
     margin-bottom: 48px;
     scroll-margin-top: 96px;

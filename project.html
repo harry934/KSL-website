@@ -15,7 +15,7 @@
     <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
-    <link href="css/ksl.css?v=20261009-83" rel="stylesheet">
+    <link href="css/ksl.css?v=20261009-84" rel="stylesheet">
     <script src="js/intro.js?v=20261001-14"></script>
 </head>
 <body data-ksl-scripts="core wow lightbox" data-ksl-motif="chart">
@@ -145,14 +145,30 @@
     </div>
 <main class="ksl-projects">
   <div class="container">
-    <p class="ksl-projects-lead">Projects are grouped by the kind of work. Choose a group, then read the name under each photograph.</p>
-    <nav class="ksl-project-nav" aria-label="Project groups">
-      <a href="#ship-construction">Ship construction</a>
-      <a href="#maintenance">Maintenance, repair and overhaul</a>
-      <a href="#civil-works">Civil and modular works</a>
-      <a href="#heavy-engineering">Heavy engineering</a>
-    </nav>
-    <section id="ship-construction" class="ksl-project-group" data-ksl-reveal="slant">
+    <p class="ksl-projects-lead">Projects are grouped by the kind of work. Choose a group to see its projects.</p>
+    <div class="ksl-svc-tabs" role="tablist" aria-label="Project groups">
+      <button type="button" class="ksl-svc-tab" role="tab" id="tab-ship-construction" aria-controls="ship-construction" aria-selected="true">
+        <span class="ksl-svc-tab-ico"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 30h32l-4 8H12z"/><path d="M16 30V18h8l8 8h4v4"/><path d="M20 18V12h6"/></svg></span>
+        <span class="ksl-svc-tab-name">Ship Construction</span>
+        <span class="ksl-svc-tab-foot"><span class="ksl-svc-tab-count">5 projects</span><span class="ksl-svc-tab-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></span></span>
+      </button>
+      <button type="button" class="ksl-svc-tab" role="tab" id="tab-maintenance" aria-controls="maintenance" aria-selected="false" tabindex="-1">
+        <span class="ksl-svc-tab-ico"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M5 29h38l-5 9H10z"/><path d="M13 29v-6h12v6"/><path d="M17 23v-4h5"/><path d="M11 42h8M29 42h8M14 38v4M34 38v4"/><g transform="translate(27 25) rotate(-45) scale(.6)"><path stroke-width="2.8" d="M28.5-2.4A6 6 0 0 1 39.58-2.2H34v4.4h5.58A6 6 0 0 1 28.5 2.4H2.4a2.4 2.4 0 0 1 0-4.8z"/></g></svg></span>
+        <span class="ksl-svc-tab-name">Maintenance, Repair and Overhaul</span>
+        <span class="ksl-svc-tab-foot"><span class="ksl-svc-tab-count">20 projects</span><span class="ksl-svc-tab-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></span></span>
+      </button>
+      <button type="button" class="ksl-svc-tab" role="tab" id="tab-civil-works" aria-controls="civil-works" aria-selected="false" tabindex="-1">
+        <span class="ksl-svc-tab-ico"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 36V16l8 6V16l8 6V14l14 8v14H6z"/><path d="M14 36v-6M22 36v-6M30 36v-6"/></svg></span>
+        <span class="ksl-svc-tab-name">Civil and Modular Works</span>
+        <span class="ksl-svc-tab-foot"><span class="ksl-svc-tab-count">9 projects</span><span class="ksl-svc-tab-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></span></span>
+      </button>
+      <button type="button" class="ksl-svc-tab" role="tab" id="tab-heavy-engineering" aria-controls="heavy-engineering" aria-selected="false" tabindex="-1">
+        <span class="ksl-svc-tab-ico"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m30 14 6-6 6 6-6 6"/><path d="M8 40 28 20"/><path d="m16 28 6 6"/></svg></span>
+        <span class="ksl-svc-tab-name">Heavy Engineering</span>
+        <span class="ksl-svc-tab-foot"><span class="ksl-svc-tab-count">3 projects</span><span class="ksl-svc-tab-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></span></span>
+      </button>
+    </div>
+    <section id="ship-construction" class="ksl-project-group ksl-svc-panel" role="tabpanel" aria-labelledby="tab-ship-construction" data-ksl-reveal="slant">
       <header>
         <h2>Ship construction</h2>
         <p>New vessels built for the Kenya Navy, counties, and other clients.</p>
@@ -200,7 +216,7 @@
         </article>
       </div>
     </section>
-    <section id="maintenance" class="ksl-project-group" data-ksl-reveal="corner">
+    <section id="maintenance" class="ksl-project-group ksl-svc-panel" role="tabpanel" aria-labelledby="tab-maintenance" hidden data-ksl-reveal="corner">
       <header>
         <h2>Maintenance, repair and overhaul</h2>
         <p>Vessels refitted, docked, or returned to service.</p>
@@ -368,7 +384,7 @@
         </article>
       </div>
     </section>
-    <section id="civil-works" class="ksl-project-group" data-ksl-reveal="split">
+    <section id="civil-works" class="ksl-project-group ksl-svc-panel" role="tabpanel" aria-labelledby="tab-civil-works" hidden data-ksl-reveal="split">
       <header>
         <h2>Civil and modular works</h2>
         <p>Piers, landing sites, linkspans, and yard works.</p>
@@ -448,7 +464,7 @@
         </article>
       </div>
     </section>
-    <section id="heavy-engineering" class="ksl-project-group" data-ksl-reveal="cut">
+    <section id="heavy-engineering" class="ksl-project-group ksl-svc-panel" role="tabpanel" aria-labelledby="tab-heavy-engineering" hidden data-ksl-reveal="cut">
       <header>
         <h2>Heavy engineering</h2>
         <p>Work beyond the waterline, including locomotives and heavy plant.</p>
