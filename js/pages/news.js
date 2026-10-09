@@ -253,6 +253,9 @@
                                     href = dl.baseUrl + item.file;
                                 }
                             }
+                            if (asset.downloadId && window.kslDocButton) {
+                                return '<li>' + window.kslDocButton(href, asset.title) + '</li>';
+                            }
                             return '<li><a href="' + href + '" target="_blank" rel="noopener">' + asset.title + '</a> <span class="text-muted">(' + asset.type + ')</span></li>';
                         }).join("");
                         press.innerHTML =

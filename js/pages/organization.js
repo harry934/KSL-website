@@ -24,7 +24,9 @@
                     (data.yards || []).forEach(function (yard) {
                         html += '<div class="col-md-6"><div class="pillar-card p-4 h-100"><h3 class="h6">' + yard.name + "</h3><p class=\"small text-muted mb-2\">" + yard.lead + "</p><p class=\"mb-0\">" + yard.summary + "</p></div></div>";
                     });
-                    html += '</div><p class="mt-4 mb-0"><a class="btn btn-outline-primary" href="' + chartHref + '" target="_blank" rel="noopener">Download organisation reference (Strategic Plan)</a></p>';
+                    html += '</div><p class="mt-4 mb-0">' + (window.kslDocButton
+                        ? window.kslDocButton(chartHref, "Strategic Plan")
+                        : '<a class="btn btn-outline-primary" href="' + chartHref + '" target="_blank" rel="noopener">Download organisation reference (Strategic Plan)</a>') + '</p>';
                     html += "</section>";
                     mount.innerHTML = html;
                 });

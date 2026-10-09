@@ -94,6 +94,11 @@
         if (!line.getTotalLength) {
             return null;
         }
+        var defs = document.createElementNS(ns, "defs");
+        var mask = document.createElementNS(ns, "mask");
+        var rope = document.createElementNS(ns, "g");
+        var ropeBase = document.createElementNS(ns, "path");
+        var ropeTwist = document.createElementNS(ns, "path");
         start.setAttribute("class", "ksl-path-start");
         start.setAttribute("r", "6.5");
         svg.setAttribute("class", "ksl-path-track");
@@ -103,7 +108,18 @@
         ping.setAttribute("r", "8");
         ship.appendChild(dot);
         ship.appendChild(ping);
-        svg.appendChild(line);
+        line.setAttribute("class", "ksl-path-reveal");
+        mask.setAttribute("id", "kslRopeMask");
+        mask.setAttribute("maskUnits", "userSpaceOnUse");
+        mask.appendChild(line);
+        defs.appendChild(mask);
+        ropeBase.setAttribute("class", "ksl-rope-base");
+        ropeTwist.setAttribute("class", "ksl-rope-twist");
+        rope.setAttribute("mask", "url(#kslRopeMask)");
+        rope.appendChild(ropeBase);
+        rope.appendChild(ropeTwist);
+        svg.appendChild(defs);
+        svg.appendChild(rope);
         svg.appendChild(start);
         svg.appendChild(ship);
         list.parentNode.insertBefore(svg, list.nextSibling);
@@ -141,7 +157,13 @@
             });
             svg.setAttribute("width", section.offsetWidth);
             svg.setAttribute("height", section.offsetHeight);
+            mask.setAttribute("x", 0);
+            mask.setAttribute("y", 0);
+            mask.setAttribute("width", section.offsetWidth);
+            mask.setAttribute("height", section.offsetHeight);
             line.setAttribute("d", d);
+            ropeBase.setAttribute("d", d);
+            ropeTwist.setAttribute("d", d);
             api.total = line.getTotalLength();
             var origin = line.getPointAtLength(0);
             start.setAttribute("cx", origin.x);

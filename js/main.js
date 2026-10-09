@@ -1,6 +1,18 @@
 (function ($) {
     "use strict";
 
+    window.kslDocButton = function (href, label) {
+        var esc = function (s) {
+            return String(s).replace(/[&<>"']/g, function (c) {
+                return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+            });
+        };
+        var svg = 'viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+        return '<a class="download-button" href="' + esc(href) + '" target="_blank" rel="noopener">' +
+            '<span class="docs"><svg ' + svg + ' width="20" height="20"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>' + esc(label) + '</span>' +
+            '<span class="download"><svg ' + svg + ' width="24" height="24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></span></a>';
+    };
+
     // Spinner
     var spinner = function () {
         setTimeout(function () {
@@ -1005,12 +1017,7 @@
                         return;
                     }
                     var li = document.createElement("li");
-                    var a = document.createElement("a");
-                    a.href = file.href;
-                    a.target = "_blank";
-                    a.rel = "noopener";
-                    a.textContent = file.title;
-                    li.appendChild(a);
+                    li.innerHTML = window.kslDocButton(file.href, file.title);
                     serviceModalDownloadsList.appendChild(li);
                 });
                 serviceModalDownloads.classList.remove("d-none");
@@ -1889,5 +1896,40 @@
             }, calm ? 600 : 2600);
         });
     }
+
+    var slipMotion = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (slipMotion && "IntersectionObserver" in window) {
+        var slipObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add("is-open");
+                slipObserver.unobserve(entry.target);
+            });
+        }, { threshold: 0.25 });
+        var slipCount = new Map();
+        document.querySelectorAll(".product-media, .ksl-project-photo").forEach(function (fig) {
+            if (!fig.querySelector("img") || fig.closest(".modal")) return;
+            if (getComputedStyle(fig).position === "static") fig.style.position = "relative";
+            var group = fig.closest("[data-ksl-reveal]");
+            var index = slipCount.get(group) || 0;
+            slipCount.set(group, index + 1);
+            var door = document.createElement("span");
+            door.className = "ksl-slip-door";
+            if (group) door.setAttribute("data-reveal", group.getAttribute("data-ksl-reveal"));
+            door.style.transitionDelay = (120 + (index % 3) * 110) + "ms";
+            door.setAttribute("aria-hidden", "true");
+            door.addEventListener("transitionend", function () { door.remove(); }, { once: true });
+            fig.appendChild(door);
+            slipObserver.observe(door);
+        });
+    }
+
+    document.querySelectorAll("[data-ksl-compare]").forEach(function (compare) {
+        var range = compare.querySelector("input[type=range]");
+        if (!range) return;
+        var sync = function () { compare.style.setProperty("--pos", range.value + "%"); };
+        range.addEventListener("input", sync);
+        sync();
+    });
 })(jQuery);
 
