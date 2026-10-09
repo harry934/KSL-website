@@ -11281,3 +11281,8 @@ body[data-ksl-motif="wheel"] {
         transition: none;
     }
 }
+
+.ksl-more .ksl-more-head {
+    fill: currentColor;
+    stroke: none;
+}
