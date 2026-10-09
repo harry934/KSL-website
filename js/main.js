@@ -855,6 +855,16 @@
             if (!cards.length) {
                 return;
             }
+            if (grid.hasAttribute("data-ksl-reveal-on-click")) {
+                grid.addEventListener("click", function (event) {
+                    var more = event.target.closest(".ksl-service-more");
+                    var card = more && more.closest(".service-item");
+                    if (card) {
+                        card.classList.add("is-revealed");
+                    }
+                });
+                return;
+            }
             var timers = [];
             var playing = false;
 
