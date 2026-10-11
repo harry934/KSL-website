@@ -5,10 +5,8 @@
     --bs-dark: #273272;
 }
 
-#spinner:not(.show) {
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
+#spinner {
+    display: none !important;
 }
 
 body {
@@ -9787,9 +9785,25 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     }
 }
 
+@keyframes kslPageFade {
+    from {
+        opacity: 0;
+    }
+}
+
+@supports not (view-transition-name: none) {
+    body {
+        animation: kslPageFade .3s ease;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     @view-transition {
         navigation: none;
+    }
+
+    body {
+        animation: none !important;
     }
 }
 
@@ -12419,15 +12433,6 @@ body[data-ksl-motif="wheel"] {
     transform: translateX(0);
 }
 
-.ksl-service-modal-downloads-list .download-button {
-    display: flex;
-    width: 100%;
-}
-
-.ksl-service-modal-downloads-list .download-button .docs {
-    min-width: 0;
-}
-
 @media (max-width: 767.98px) {
     .download-button {
         display: flex;
@@ -12437,5 +12442,14 @@ body[data-ksl-motif="wheel"] {
 
     .download-button .docs {
         min-width: 0;
+    }
+
+    .ksl-service-modal-downloads-list .download-button {
+        display: inline-flex;
+        width: auto;
+    }
+
+    .ksl-service-modal-downloads-list .download-button .docs {
+        min-width: 220px;
     }
 }

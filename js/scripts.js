@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261011-12";
+    var ASSET_V = "20261011-15";
 
     var BUNDLES = {
         wow: [
@@ -45,10 +45,36 @@
     }
 
     function loadSequential(list) {
-        return list.reduce(function (chain, src) {
-            return chain.then(function () { return loadScript(src); });
-        }, Promise.resolve());
+        return Promise.all(list.map(loadScript));
     }
+
+    function preloadPages() {
+        if (HTMLScriptElement.supports && HTMLScriptElement.supports("speculationrules")) {
+            var rules = document.createElement("script");
+            rules.type = "speculationrules";
+            rules.textContent = JSON.stringify({
+                prefetch: [{ where: { href_matches: "*.html*" }, eagerness: "moderate" }]
+            });
+            document.head.appendChild(rules);
+            return;
+        }
+        var done = {};
+        var prefetch = function (event) {
+            var link = event.target.closest && event.target.closest("a[href]");
+            if (!link || link.origin !== location.origin || link.target === "_blank") return;
+            var url = link.href.split("#")[0];
+            if (done[url] || url === location.href.split("#")[0] || !/\.html(\?|$)/.test(link.pathname + link.search)) return;
+            done[url] = true;
+            var hint = document.createElement("link");
+            hint.rel = "prefetch";
+            hint.href = url;
+            document.head.appendChild(hint);
+        };
+        document.addEventListener("mouseover", prefetch, { passive: true });
+        document.addEventListener("touchstart", prefetch, { passive: true });
+    }
+
+    preloadPages();
 
     function parseBundles() {
         var raw = document.body.getAttribute("data-ksl-scripts") || "core wow";
