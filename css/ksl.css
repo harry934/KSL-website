@@ -794,9 +794,26 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
         line-height: 1.65;
     }
 
+    #kslServiceModal .ksl-service-modal-dialog {
+        position: relative;
+    }
+
+    #kslServiceModal .ksl-service-modal-dialog .ksl-service-modal {
+        position: static;
+    }
+
     .ksl-service-modal-close {
-        top: max(8px, env(safe-area-inset-top, 0px));
-        right: 8px;
+        top: max(10px, env(safe-area-inset-top, 0px));
+        right: 10px;
+        z-index: 7;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, .94);
+        background-size: 12px;
+        box-shadow: 0 2px 10px rgba(9, 41, 108, .2);
+        opacity: 1;
     }
 
     .ksl-service-modal-actions {
@@ -3317,12 +3334,16 @@ html.board-motion .board-card.is-in .board-card-body {
 }
 
 .board-modal-close {
-    position: absolute;
-    top: 0.7rem;
-    right: 0.7rem;
+    position: sticky;
+    top: -1.3rem;
+    z-index: 3;
+    display: grid;
+    place-items: center;
     width: 2.2rem;
     height: 2.2rem;
+    margin: -1.3rem -0.8rem -0.9rem auto;
     border: 0;
+    box-shadow: 0 2px 10px rgba(9, 41, 108, .16);
     border-radius: 50%;
     background: #fff;
     color: #0A3E95;
@@ -4922,6 +4943,11 @@ body {
         scroll-padding-inline: 16px;
         padding: 0 16px 6px;
         -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .ksl-hero-values .ksl-hero-values-track::-webkit-scrollbar {
+        display: none;
     }
 
     .ksl-hero-values .ksl-hero-values-track article {
@@ -12265,5 +12291,151 @@ body[data-ksl-motif="wheel"] {
     .ksl-bottom-nav a span,
     .ksl-bottom-nav button span {
         font-size: 11px;
+    }
+}
+
+/*** Justified paragraphs inside pop-ups ***/
+.ksl-service-modal-summary,
+.ksl-service-modal-detail p,
+.board-modal-dialog p:not(.board-modal-meta, .board-role),
+.ksl-feed-modal-copy p:not(.ksl-feed-modal-meta),
+.product-details-drawer p {
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+}
+
+/*** Pop-up scrollbars: thin bar for mouse users, script-drawn indicator on touch screens ***/
+.ksl-service-modal-scroll,
+.ksl-service-modal,
+.board-modal-dialog,
+.ksl-feed-modal-dialog {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    @supports not selector(::-webkit-scrollbar) {
+        .ksl-service-modal-scroll,
+        .ksl-service-modal,
+        .board-modal-dialog,
+        .ksl-feed-modal-dialog {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(10, 62, 149, .45) transparent;
+        }
+    }
+
+    .ksl-service-modal-scroll::-webkit-scrollbar,
+    .ksl-service-modal::-webkit-scrollbar,
+    .board-modal-dialog::-webkit-scrollbar,
+    .ksl-feed-modal-dialog::-webkit-scrollbar {
+        display: block;
+        width: 6px;
+        height: 6px;
+    }
+
+    .ksl-service-modal-scroll::-webkit-scrollbar-track,
+    .ksl-service-modal::-webkit-scrollbar-track,
+    .board-modal-dialog::-webkit-scrollbar-track,
+    .ksl-feed-modal-dialog::-webkit-scrollbar-track {
+        margin: 10px 0;
+        background: transparent;
+    }
+
+    .ksl-service-modal-scroll::-webkit-scrollbar-thumb,
+    .ksl-service-modal::-webkit-scrollbar-thumb,
+    .board-modal-dialog::-webkit-scrollbar-thumb,
+    .ksl-feed-modal-dialog::-webkit-scrollbar-thumb {
+        background: rgba(10, 62, 149, .35);
+        border-radius: 6px;
+    }
+
+    .ksl-service-modal-scroll::-webkit-scrollbar-thumb:hover,
+    .ksl-service-modal::-webkit-scrollbar-thumb:hover,
+    .board-modal-dialog::-webkit-scrollbar-thumb:hover,
+    .ksl-feed-modal-dialog::-webkit-scrollbar-thumb:hover {
+        background: rgba(10, 62, 149, .6);
+    }
+}
+
+@media (hover: none), (pointer: coarse) {
+    .ksl-service-modal-scroll,
+    .ksl-service-modal,
+    .board-modal-dialog,
+    .ksl-feed-modal-dialog {
+        scrollbar-width: none;
+    }
+}
+
+.ksl-scroll-ind {
+    position: absolute;
+    z-index: 6;
+    width: 4px;
+    border-radius: 4px;
+    background: rgba(10, 62, 149, .12);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease;
+}
+
+.ksl-scroll-ind.is-on {
+    opacity: 1;
+}
+
+.ksl-scroll-ind span {
+    display: block;
+    width: 100%;
+    border-radius: inherit;
+    background: rgba(10, 62, 149, .55);
+}
+
+/*** Download buttons: "View document" slides over the button itself; full width in pop-ups and on phones ***/
+.download-button {
+    overflow: hidden;
+}
+
+.download-button .docs {
+    flex: 1 1 auto;
+    justify-content: flex-start;
+    gap: 12px;
+    padding-block: 8px;
+    overflow-wrap: anywhere;
+}
+
+.download-button .download,
+.ksl-library-list .download-button .download {
+    left: 0;
+    right: 0;
+    z-index: 1;
+    width: auto;
+    min-width: 0;
+    transform: translateX(-101%);
+}
+
+.download-button:hover .download,
+.download-button:focus-visible .download,
+.ksl-library-list .download-button:hover .download,
+.ksl-library-list .download-button:focus-visible .download {
+    transform: translateX(0);
+}
+
+.ksl-service-modal-downloads-list .download-button {
+    display: flex;
+    width: 100%;
+}
+
+.ksl-service-modal-downloads-list .download-button .docs {
+    min-width: 0;
+}
+
+@media (max-width: 767.98px) {
+    .download-button {
+        display: flex;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .download-button .docs {
+        min-width: 0;
     }
 }

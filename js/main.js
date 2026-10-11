@@ -2011,5 +2011,75 @@
         range.addEventListener("input", sync);
         sync();
     });
+
+    (function () {
+        var touch = window.matchMedia("(hover: none), (pointer: coarse)");
+        var selector = ".ksl-service-modal, .ksl-service-modal-scroll, .board-modal-dialog, .ksl-feed-modal-dialog";
+        var items = [];
+        var inset = 10;
+
+        function update(item) {
+            var el = item.el;
+            var bar = item.bar;
+            var overflowY = window.getComputedStyle(el).overflowY;
+            var max = el.scrollHeight - el.clientHeight;
+            if (!touch.matches || !el.clientHeight || max < 2 || (overflowY !== "auto" && overflowY !== "scroll")) {
+                bar.classList.remove("is-on");
+                return;
+            }
+            var box = el.getBoundingClientRect();
+            var host = bar.parentElement.getBoundingClientRect();
+            var track = el.clientHeight - inset * 2;
+            var thumb = Math.max(32, track * el.clientHeight / el.scrollHeight);
+            bar.style.top = (box.top - host.top + inset) + "px";
+            bar.style.left = (box.right - host.left - 7) + "px";
+            bar.style.height = track + "px";
+            bar.firstChild.style.height = thumb + "px";
+            bar.firstChild.style.transform = "translateY(" + ((track - thumb) * el.scrollTop / max) + "px)";
+            bar.classList.add("is-on");
+        }
+
+        function bind(el) {
+            var host = el.parentElement;
+            if (el.kslScrollInd || !host) return;
+            if (window.getComputedStyle(host).position === "static") host.style.position = "relative";
+            var bar = document.createElement("span");
+            bar.className = "ksl-scroll-ind";
+            bar.setAttribute("aria-hidden", "true");
+            bar.appendChild(document.createElement("span"));
+            host.appendChild(bar);
+            var item = { el: el, bar: bar };
+            el.kslScrollInd = item;
+            items.push(item);
+            var tick = function () { update(item); };
+            el.addEventListener("scroll", tick, { passive: true });
+            if ("ResizeObserver" in window) {
+                var observer = new ResizeObserver(tick);
+                observer.observe(el);
+                Array.prototype.forEach.call(el.children, function (child) { observer.observe(child); });
+            }
+            tick();
+        }
+
+        var queued = false;
+        function scan() {
+            queued = false;
+            document.querySelectorAll(selector).forEach(bind);
+            items.forEach(update);
+        }
+        function queueScan() {
+            if (queued) return;
+            queued = true;
+            window.requestAnimationFrame(scan);
+        }
+
+        scan();
+        window.addEventListener("load", queueScan);
+        window.addEventListener("resize", queueScan);
+        if (touch.addEventListener) touch.addEventListener("change", queueScan);
+        if ("MutationObserver" in window) {
+            new MutationObserver(queueScan).observe(document.body, { childList: true, subtree: true });
+        }
+    })();
 })(jQuery);
 

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Proposal: Redesign of the Kenya Shipyards Limited Corporate Website</title>
+<style>
+    @page {
+        size: A4;
+        margin: 20mm 20mm 22mm;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        color: #1f2a44;
+        font: 10.5pt/1.6 "Segoe UI", Arial, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    p,
+    li {
+        text-align: justify;
+        hyphens: auto;
+    }
+
+    /* Cover */
+    .cover {
+        display: flex;
+        flex-direction: column;
+        height: 253mm;
+        break-after: page;
+    }
+
+    .cover-top {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #0A3E95;
+    }
+
+    .cover-top img {
+        width: 84px;
+        height: 84px;
+    }
+
+    .org-name {
+        margin: 0;
+        color: #0A3E95;
+        font-size: 18pt;
+        font-weight: 700;
+        letter-spacing: .03em;
+        text-align: left;
+    }
+
+    .org-tag {
+        margin: 2px 0 0;
+        color: #5b6785;
+        font-size: 10pt;
+        text-align: left;
+    }
+
+    .cover-body {
+        margin-top: 70mm;
+    }
+
+    .doc-kind {
+        margin: 0 0 10px;
+        color: #5b6785;
+        font-size: 10pt;
+        font-weight: 600;
+        letter-spacing: .2em;
+        text-transform: uppercase;
+        text-align: left;
+    }
+
+    .cover h1 {
+        margin: 0 0 14px;
+        color: #0A3E95;
+        font-size: 28pt;
+        font-weight: 700;
+        line-height: 1.15;
+    }
+
+    .cover-sub {
+        max-width: 140mm;
+        margin: 0;
+        color: #3c4866;
+        font-size: 12pt;
+        line-height: 1.5;
+        text-align: left;
+    }
+
+    .cover-meta {
+        display: grid;
+        grid-template-columns: 38mm 1fr;
+        margin: auto 0 0;
+        border-top: 1px solid #d5e0f2;
+        font-size: 9.5pt;
+    }
+
+    .cover-meta dt,
+    .cover-meta dd {
+        margin: 0;
+        padding: 7px 0;
+        border-bottom: 1px solid #d5e0f2;
+    }
+
+    .cover-meta dt {
+        color: #5b6785;
+        font-weight: 600;
+    }
+
+    .cover-contact {
+        margin: 14px 0 0;
+        color: #5b6785;
+        font-size: 8.5pt;
+        text-align: left;
+    }
+
+    /* Running pages */
+    .page-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #d5e0f2;
+        color: #5b6785;
+        font-size: 8.5pt;
+    }
+
+    .page-head span:first-child {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #0A3E95;
+        font-weight: 700;
+        letter-spacing: .04em;
+    }
+
+    .page-head img {
+        width: 26px;
+        height: 26px;
+    }
+
+    .contents {
+        margin: 0 0 6px;
+        padding: 0;
+        list-style: none;
+        columns: 2;
+        column-gap: 12mm;
+        font-size: 9.5pt;
+    }
+
+    .contents li {
+        display: flex;
+        gap: 8px;
+        margin: 0;
+        padding: 4px 0;
+        border-bottom: 1px dotted #c7d3e8;
+        text-align: left;
+        break-inside: avoid;
+    }
+
+    .contents b {
+        width: 18px;
+        color: #0A3E95;
+    }
+
+    h2 {
+        display: flex;
+        gap: 10px;
+        margin: 24px 0 10px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #d5e0f2;
+        color: #0A3E95;
+        font-size: 13.5pt;
+        font-weight: 700;
+        break-after: avoid;
+    }
+
+    h2 span {
+        color: #8a97b3;
+        font-weight: 600;
+    }
+
+    h3 {
+        margin: 14px 0 4px;
+        color: #14213d;
+        font-size: 11pt;
+        break-after: avoid;
+    }
+
+    p {
+        margin: 0 0 9px;
+    }
+
+    ul,
+    ol {
+        margin: 0 0 9px;
+        padding-left: 20px;
+    }
+
+    li {
+        margin-bottom: 4px;
+    }
+
+    li::marker {
+        color: #0A3E95;
+    }
+
+    .feature {
+        break-inside: avoid;
+    }
+
+    table {
+        width: 100%;
+        margin: 6px 0 10px;
+        border-collapse: collapse;
+        font-size: 9.5pt;
+        break-inside: avoid;
+    }
+
+    th,
+    td {
+        padding: 7px 10px;
+        border: 1px solid #d5e0f2;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    th {
+        background: #0A3E95;
+        color: #fff;
+        font-weight: 600;
+    }
+
+    td:first-child {
+        width: 28%;
+        color: #14213d;
+        font-weight: 600;
+    }
+
+    tr:nth-child(even) td {
+        background: #f7f9fd;
+    }
+
+    .closing {
+        margin-top: 30px;
+        padding-top: 12px;
+        border-top: 1px solid #d5e0f2;
+        color: #5b6785;
+        font-size: 9.5pt;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+
+<section class="cover">
+    <div class="cover-top">
+        <img src="../img/ksl/logo.png" alt="Kenya Shipyards Limited logo">
+        <div>
+            <p class="org-name">KENYA SHIPYARDS LIMITED</p>
+            <p class="org-tag">A State Corporation under the Ministry of Defence</p>
+        </div>
+    </div>
+
+    <div class="cover-body">
+        <p class="doc-kind">Proposal</p>
+        <h1>Redesign of the Kenya Shipyards Limited Corporate Website</h1>
+        <p class="cover-sub">An overview of the improved website, its main features and the functionality it provides to the public, clients, partners and staff.</p>
+    </div>
+
+    <dl class="cover-meta">
+        <dt>Prepared for</dt><dd>Kenya Shipyards Limited (KSL)</dd>
+        <dt>Subject</dt><dd>Corporate website redesign</dd>
+        <dt>Document type</dt><dd>System proposal and functional overview</dd>
+        <dt>Date</dt><dd>October 2026</dd>
+    </dl>
+    <p class="cover-contact">Herufi House, Treasury Buildings &middot; P.O. Box 9706 - 00200, Nairobi &middot; +254 726 277 377 &middot; publicaffairs@kenyashipyards.co.ke</p>
+</section>
+
+<div class="page-head">
+    <span><img src="../img/ksl/logo.png" alt="">KENYA SHIPYARDS LIMITED</span>
+    <span>Corporate Website Redesign Proposal</span>
+</div>
+
+<h2>Contents</h2>
+<ol class="contents">
+    <li><b>1</b>Executive Summary</li>
+    <li><b>2</b>Background</li>
+    <li><b>3</b>Objectives of the Redesign</li>
+    <li><b>4</b>Key Improvements</li>
+    <li><b>5</b>Structure of the Website</li>
+    <li><b>6</b>Main Features and What They Do</li>
+    <li><b>7</b>Inclusivity and Accessibility</li>
+    <li><b>8</b>Mobile Experience</li>
+    <li><b>9</b>Content Management</li>
+    <li><b>10</b>Technical Overview</li>
+    <li><b>11</b>Benefits to KSL</li>
+    <li><b>12</b>Conclusion</li>
+</ol>
+
+<h2><span>1</span>Executive Summary</h2>
+<p>This proposal presents the redesigned corporate website of Kenya Shipyards Limited. The new website builds on the corporation's existing online presence and improves it in design, content, accessibility and ease of use. It explains who KSL is, what it builds and repairs, and how the public, clients, partners and job seekers can reach the corporation.</p>
+<p>The redesigned site is fast, works well on phones and is open to everyone. It includes accessibility tools for people with visual or motor difficulties, and it can be read in English, Kiswahili and many other languages.</p>
+
+<h2><span>2</span>Background</h2>
+<p>KSL's previous website served as the corporation's first point of contact online, giving the public basic information about its mandate, services and contacts. Since then, KSL's operations have grown across the Mombasa and Kisumu shipyards, the number of official publications, tenders and news updates has increased, and more visitors now reach the site from mobile phones.</p>
+<p>The redesign responds to this growth. Rather than replacing KSL's online identity, it retains the corporation's name, branding, colours and core information, and presents them in a modern, well-organised and more accessible form that reflects KSL's standing as a state corporation.</p>
+
+<h2><span>3</span>Objectives of the Redesign</h2>
+<ol>
+    <li>Present KSL's mandate, leadership and capabilities clearly and professionally.</li>
+    <li>Make services, products and projects easier to find and understand.</li>
+    <li>Give the public quick access to official documents, tenders, news and events.</li>
+    <li>Make it simple to contact KSL by phone, email, WhatsApp or the contact form.</li>
+    <li>Serve every visitor, whatever their device, language or ability.</li>
+</ol>
+
+<h2><span>4</span>Key Improvements</h2>
+<p>The table below summarises the main areas in which the redesigned website improves on the previous one.</p>
+<table>
+    <thead><tr><th>Area</th><th>Improvement delivered by the redesign</th></tr></thead>
+    <tbody>
+        <tr><td>Design and branding</td><td>A modern, consistent layout in KSL's official blue, with clear typography, justified text and high-quality imagery of the yards and vessels.</td></tr>
+        <tr><td>Navigation</td><td>A simplified main menu, breadcrumbs on inner pages, a site-wide search and, on phones, a bottom navigation bar.</td></tr>
+        <tr><td>Content</td><td>Expanded pages for the Board, organization structure, milestones, strategic pillars and shipyard specifications.</td></tr>
+        <tr><td>Public information</td><td>A single searchable library for corporate documents, tenders and forms.</td></tr>
+        <tr><td>Accessibility</td><td>A built-in accessibility panel and a language menu with English, Kiswahili and over 240 other languages.</td></tr>
+        <tr><td>Mobile use</td><td>Layouts, pop-up windows and images adapted for every screen size.</td></tr>
+        <tr><td>Maintenance</td><td>Content kept in simple data files so staff can publish updates without changing the design.</td></tr>
+    </tbody>
+</table>
+
+<h2><span>5</span>Structure of the Website</h2>
+<table>
+    <thead><tr><th>Area</th><th>Pages</th></tr></thead>
+    <tbody>
+        <tr><td>Corporate</td><td>Home, About KSL, KSL Board, Organization Structure</td></tr>
+        <tr><td>What we do</td><td>Services, Products, Projects, Sustainability, CSR</td></tr>
+        <tr><td>Media</td><td>News and Events, News article, Event page, Gallery</td></tr>
+        <tr><td>Public information</td><td>Downloads (corporate documents), FAQ, Careers</td></tr>
+        <tr><td>Engagement</td><td>Contact Us, and a "page not found" page that guides visitors back to the site</td></tr>
+    </tbody>
+</table>
+
+<h2><span>6</span>Main Features and What They Do</h2>
+
+<div class="feature">
+<h3>6.1 Home page</h3>
+<ul>
+    <li>A full-width opening banner carrying KSL's message, <em>Catalyzing Shipbuilding Industry</em>.</li>
+    <li>KSL's working values (Quality, Improvement, Customers, Partnerships and Pricing) presented as concise cards.</li>
+    <li>Highlights of services, key figures (projects delivered, years of operation and shipyards), clients, partners and the latest news.</li>
+    <li>An interactive map of the Mombasa and Kisumu shipyards with a satellite view of each location.</li>
+</ul>
+</div>
+
+<div class="feature">
+<h3>6.2 About KSL, Board and Organization</h3>
+<ul>
+    <li>KSL's story, incorporation dates, vision, mission and mandate.</li>
+    <li>A milestone timeline from the first yard works to the launch of MV Uhuru II.</li>
+    <li>Core values, strategic pillars and the specifications of both shipyards.</li>
+    <li>Board of Directors profiles, which can be filtered by group (Defence, Principal Secretaries and Independent members) and opened for full details.</li>
+    <li>The organization structure, from the Board down to each department.</li>
+</ul>
+</div>
+
+<div class="feature">
+<h3>6.3 Services, Products and Projects</h3>
+<ul>
+    <li>Services grouped into tabs: Maintenance, Repair and Overhaul; Civil and Modular Works; Heavy Engineering; and Leasing.</li>
+    <li>Each service opens a detail window with a photograph, a full description and related documents.</li>
+    <li>Product and project pages that showcase KSL's vessels and completed work.</li>
+</ul>
+</div>
+
+<div class="feature">
+<h3>6.4 News, Events and Gallery</h3>
+<ul>
+    <li>A news and events feed with search, so visitors can find stories by keyword.</li>
+    <li>Full article and event pages; event pages show the date, time and venue, with directions.</li>
+    <li>Share buttons for Facebook, X, LinkedIn and WhatsApp, together with a "copy link" option.</li>
+    <li>A photo gallery that opens images in a full-screen viewer, with swipe support on phones.</li>
+</ul>
+</div>
+
+<div class="feature">
+<h3>6.5 Downloads (Corporate Documents)</h3>
+<ul>
+    <li>One library for official documents: the strategic plan, service charter, tender documents, brochures, complaint forms and access-to-information forms.</li>
+    <li>Search and category filters, with a clear "View document" button on every file.</li>
+</ul>
+</div>
+
+<div class="feature">
+<h3>6.6 Careers and FAQ</h3>
+<ul>
+    <li>Careers lists open vacancies with a filter by location. When no roles are open, it explains how to submit a CV.</li>
+    <li>The FAQ answers common questions, with a search box that narrows the answers as the visitor types.</li>
+</ul>
+</div>
+
+<div class="feature">
+<h3>6.7 Contact and Communication</h3>
+<ul>
+    <li>A contact form that checks for missing details before sending the message to KSL's public affairs office.</li>
+    <li>Phone numbers, email addresses and office locations (Nairobi, Mombasa and Kisumu) on every page.</li>
+    <li>A WhatsApp button for quick conversations with KSL.</li>
+    <li>A site-wide search available from the header and the mobile menu.</li>
+</ul>
+</div>
+
+<h2><span>7</span>Inclusivity and Accessibility</h2>
+<p>The redesigned website is built to be usable by everyone:</p>
+<ul>
+    <li><strong>Accessibility panel:</strong> visitors can enlarge text, switch to a more readable font, underline or highlight links and turn on keyboard navigation. They can also make images grey, invert colours, use a dark "lights off" mode, stop animations or remove styling. These settings assist people with low vision, colour blindness, dyslexia or motion sensitivity.</li>
+    <li><strong>Languages:</strong> a language menu offers English and Kiswahili, both written by hand, as well as more than 240 African and world languages through automatic translation. Each language is shown in its own script (for example, العربية, 中文 and हिन्दी).</li>
+    <li><strong>Screen readers and keyboards:</strong> pages use proper headings, labels and descriptions, so that assistive technology reads them correctly.</li>
+</ul>
+
+<h2><span>8</span>Mobile Experience</h2>
+<ul>
+    <li>The layout adapts to any screen, from phones to large monitors.</li>
+    <li>On phones, a bottom navigation bar gives one-tap access to Home, Services, Contact and the full menu.</li>
+    <li>Content remains steady during fast scrolling, spacing is consistent and text is kept at a readable size.</li>
+    <li>Pop-up windows are sized for small screens and hide other floating buttons while open.</li>
+</ul>
+
+<h2><span>9</span>Content Management</h2>
+<p>News, events, services, downloads, careers, FAQ, the gallery and the organization structure are stored in simple data files, separate from the page design. Staff can add a news story, post a vacancy or publish a document by updating a single file, without any change to the page layout.</p>
+
+<h2><span>10</span>Technical Overview</h2>
+<ul>
+    <li>A lightweight website built with HTML, CSS and JavaScript on the Bootstrap framework.</li>
+    <li>No database or server software is required, which keeps the site fast, inexpensive to host and limits its exposure to security risks.</li>
+    <li>Images load only when needed, and files are versioned so that visitors always receive the latest updates.</li>
+    <li>The source code is kept under version control, so every change is recorded and can be reversed.</li>
+</ul>
+
+<h2><span>11</span>Benefits to KSL</h2>
+<ul>
+    <li>A modern, trustworthy image that matches KSL's role as a state corporation.</li>
+    <li>Better public access to information, in support of transparency and the Access to Information Act.</li>
+    <li>Fewer routine enquiries, because answers, documents and contacts are easy to find.</li>
+    <li>Wider reach to local and international clients through mobile access and multiple languages.</li>
+    <li>Low running costs and straightforward updates by KSL staff.</li>
+</ul>
+
+<h2><span>12</span>Conclusion</h2>
+<p>The redesigned website preserves the identity and information that KSL's audiences already know, while presenting them in a clearer, more accessible and more professional manner. It equips the corporation with a reliable digital platform that can grow alongside its shipbuilding, repair and engineering work.</p>
+
+<p class="closing">Kenya Shipyards Limited &middot; Catalyzing Shipbuilding Industry</p>
+
+</body>
+</html>
