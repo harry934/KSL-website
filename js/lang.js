@@ -571,12 +571,53 @@
         }
     }
 
+    var loadingEl = null;
+    var loadingTimer = null;
+    function showLoading(code) {
+        var lang = find(code);
+        if (!loadingEl) {
+            loadingEl = document.createElement("div");
+            loadingEl.className = "ksl-lang-loading notranslate";
+            loadingEl.setAttribute("translate", "no");
+            loadingEl.setAttribute("role", "status");
+            loadingEl.setAttribute("aria-live", "polite");
+            loadingEl.innerHTML = '<span class="ksl-lang-loading-spin" aria-hidden="true"></span><span class="ksl-lang-loading-text"></span>';
+            document.body.appendChild(loadingEl);
+        }
+        var label = lang ? lang.name : code;
+        loadingEl.querySelector(".ksl-lang-loading-text").textContent = (current() === "sw" ? "Inapakia " : "Loading ") + label + "…";
+        loadingEl.classList.add("is-on");
+    }
+
+    function hideLoading() {
+        clearTimeout(loadingTimer);
+        if (loadingEl) loadingEl.classList.remove("is-on");
+    }
+
+    /* Google marks <html> with translated-ltr/rtl and the target lang once the page is translated. */
+    function waitForGoogle(code) {
+        var root = document.documentElement;
+        var want = code.split("-")[0].toLowerCase();
+        var started = Date.now();
+        clearTimeout(loadingTimer);
+        (function poll() {
+            var translated = /\btranslated-(ltr|rtl)\b/.test(root.className);
+            var lang = (root.getAttribute("lang") || "").toLowerCase();
+            if ((translated && lang.indexOf(want) === 0) || Date.now() - started > 15000) {
+                hideLoading();
+                return;
+            }
+            loadingTimer = setTimeout(poll, 200);
+        })();
+    }
+
     function choose(code) {
         var previous = stored();
         var local = localMode(code);
         localStorage.setItem(KEY, code);
         if (local) {
             if (hasGoogleCookie()) {
+                showLoading(code);
                 setGoogleCookie("");
                 location.reload();
                 return;
@@ -584,6 +625,8 @@
             apply(local);
             return;
         }
+        showLoading(code);
+        waitForGoogle(code);
         setGoogleCookie(code);
         if (googleRequested && !localMode(previous)) {
             switchGoogle(code);
@@ -784,6 +827,8 @@
     if (!localMode(start)) {
         setGoogleCookie(start);
         loadGoogle();
+        showLoading(start);
+        waitForGoogle(start);
     } else if (hasGoogleCookie()) {
         setGoogleCookie("");
     }

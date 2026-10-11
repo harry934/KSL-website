@@ -73,6 +73,13 @@
     
     
     // Facts counter
+    document.querySelectorAll("[data-ksl-since]").forEach(function (el) {
+        var since = new Date(el.getAttribute("data-ksl-since"));
+        var now = new Date();
+        var years = now.getFullYear() - since.getFullYear();
+        if (now.getMonth() < since.getMonth() || (now.getMonth() === since.getMonth() && now.getDate() < since.getDate())) years -= 1;
+        if (years > 0) el.textContent = String(years);
+    });
     if ($('[data-toggle="counter-up"]').length && $.fn.counterUp) {
         $('[data-toggle="counter-up"]').counterUp({
             delay: 10,
