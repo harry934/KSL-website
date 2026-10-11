@@ -25,7 +25,9 @@
     
     
     // Initiate the wowjs
-    new WOW().init();
+    if (!window.matchMedia("(max-width: 991.98px)").matches) {
+        new WOW().init();
+    }
 
 
     var topbar = document.querySelector(".topbar-ksl");
@@ -132,10 +134,12 @@
 
     var aboutMainImage = document.querySelector(".about-frame-main img");
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    // Phones skip parallax entirely: background layers that move on scroll drift apart from the page on fast flicks.
+    var touchLayout = window.matchMedia("(max-width: 991.98px)").matches;
 
     // Where supported, parallax runs as CSS scroll-driven animations on the compositor so layers
     // stay locked to the page during fast scrolling; the rAF handlers below are the fallback.
-    var scrollLinked = !reduceMotion.matches && !!(window.CSS && CSS.supports && CSS.supports("animation-timeline: scroll()"));
+    var scrollLinked = !reduceMotion.matches && !touchLayout && !!(window.CSS && CSS.supports && CSS.supports("animation-timeline: scroll()"));
     var scrollLinks = [];
     var pageTop = function (el) {
         var top = 0;
@@ -365,9 +369,11 @@
                 heroTicking = true;
             }
         };
-        window.addEventListener("scroll", requestHeroParallax, { passive: true });
-        window.addEventListener("resize", requestHeroParallax);
-        updateHeroParallax();
+        if (!touchLayout) {
+            window.addEventListener("scroll", requestHeroParallax, { passive: true });
+            window.addEventListener("resize", requestHeroParallax);
+            updateHeroParallax();
+        }
         if (scrollLinked) {
             heroVideo.classList.add("ksl-scroll-linked");
             scrollLinks.push(function () {
@@ -444,7 +450,7 @@
             var origin = pageTop(section) + section.offsetHeight / 2 - viewport / 2;
             setScrollRange(factsBg, "sd", 0.42, origin, -slack, slack, "px");
         });
-    } else if (factsBg && !reduceMotion.matches) {
+    } else if (factsBg && !reduceMotion.matches && !touchLayout) {
         var factsSection = factsBg.parentElement;
         var factsTicking = false;
         var updateFacts = function () {
@@ -751,7 +757,7 @@
                 setScrollRange(header, "sd", 0.18, pageTop(header), -48, 48, "px");
             });
         });
-    } else if (pageHeaders.length) {
+    } else if (pageHeaders.length && !touchLayout) {
         var headerTicking = false;
         var updatePageHeaders = function () {
             pageHeaders.forEach(function (header) {

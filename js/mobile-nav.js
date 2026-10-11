@@ -25,7 +25,7 @@
 
         var page = currentPage();
         var iconHome = '<path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/>';
-        var iconService = '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>';
+        var iconService = '<path d="M2.5 16h19l-2.2 4.2a1.5 1.5 0 0 1-1.3.8H6a1.5 1.5 0 0 1-1.3-.8z"/><path d="M6.5 16v-3h6l1.5 3"/><path d="M18.5 16V3.5L9 3.5"/><path d="M18.5 7.5 14.5 3.5"/><path d="M10 3.5v3.7"/><path d="M10 7.2a1.4 1.4 0 1 1-1.4 1.4"/>';
         var iconContact = '<path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8M8 13h5"/>';
         var iconMenu = '<line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>';
 

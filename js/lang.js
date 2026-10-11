@@ -208,13 +208,97 @@
         "Message *": "Ujumbe *",
         "Send message": "Tuma ujumbe",
         "Please complete the highlighted fields.": "Tafadhali jaza sehemu zilizoangaziwa.",
-        "Your email app is opening with your message. If nothing opens, email publicaffairs@kenyashipyards.co.ke.": "Programu yako ya barua pepe inafunguka na ujumbe wako. Isipofunguka, tuma barua pepe kwa publicaffairs@kenyashipyards.co.ke."
+        "Your email app is opening with your message. If nothing opens, email publicaffairs@kenyashipyards.co.ke.": "Programu yako ya barua pepe inafunguka na ujumbe wako. Isipofunguka, tuma barua pepe kwa publicaffairs@kenyashipyards.co.ke.",
+        "Language": "Lugha",
+        "Choose language": "Chagua lugha",
+        "Search languages": "Tafuta lugha",
+        "Kenya and Africa": "Kenya na Afrika",
+        "World languages": "Lugha za dunia",
+        "No language found": "Hakuna lugha iliyopatikana",
+        "Close": "Funga",
+        "Languages other than English and Kiswahili are translated automatically by Google and may not be exact.": "Lugha zingine isipokuwa Kiingereza na Kiswahili zinatafsiriwa kiotomatiki na Google na huenda zisiwe sahihi kabisa."
     };
+
+    var LANGS = [
+        { code: "en", name: "English", en: "English", group: "africa" },
+        { code: "sw", name: "Kiswahili", en: "Swahili", group: "africa" },
+        { code: "luo", name: "Dholuo", en: "Luo", group: "africa" },
+        { code: "so", name: "Soomaali", en: "Somali", group: "africa" },
+        { code: "am", name: "አማርኛ", en: "Amharic", group: "africa" },
+        { code: "om", name: "Afaan Oromoo", en: "Oromo", group: "africa" },
+        { code: "ti", name: "ትግርኛ", en: "Tigrinya", group: "africa" },
+        { code: "ar", name: "العربية", en: "Arabic", group: "africa" },
+        { code: "fr", name: "Français", en: "French", group: "africa" },
+        { code: "pt", name: "Português", en: "Portuguese", group: "africa" },
+        { code: "rw", name: "Ikinyarwanda", en: "Kinyarwanda", group: "africa" },
+        { code: "lg", name: "Luganda", en: "Luganda", group: "africa" },
+        { code: "rn", name: "Ikirundi", en: "Kirundi", group: "africa" },
+        { code: "ach", name: "Acholi", en: "Acholi", group: "africa" },
+        { code: "din", name: "Thuɔŋjäŋ", en: "Dinka", group: "africa" },
+        { code: "ln", name: "Lingála", en: "Lingala", group: "africa" },
+        { code: "ny", name: "Chichewa", en: "Chichewa", group: "africa" },
+        { code: "sn", name: "chiShona", en: "Shona", group: "africa" },
+        { code: "ha", name: "Hausa", en: "Hausa", group: "africa" },
+        { code: "yo", name: "Yorùbá", en: "Yoruba", group: "africa" },
+        { code: "ig", name: "Igbo", en: "Igbo", group: "africa" },
+        { code: "ak", name: "Twi", en: "Twi (Akan)", group: "africa" },
+        { code: "wo", name: "Wolof", en: "Wolof", group: "africa" },
+        { code: "ff", name: "Fulfulde", en: "Fulani", group: "africa" },
+        { code: "tn", name: "Setswana", en: "Tswana", group: "africa" },
+        { code: "zu", name: "isiZulu", en: "Zulu", group: "africa" },
+        { code: "xh", name: "isiXhosa", en: "Xhosa", group: "africa" },
+        { code: "st", name: "Sesotho", en: "Sesotho", group: "africa" },
+        { code: "af", name: "Afrikaans", en: "Afrikaans", group: "africa" },
+        { code: "mg", name: "Malagasy", en: "Malagasy", group: "africa" },
+        { code: "zh-CN", name: "简体中文", en: "Chinese (Simplified)", group: "world" },
+        { code: "zh-TW", name: "繁體中文", en: "Chinese (Traditional)", group: "world" },
+        { code: "hi", name: "हिन्दी", en: "Hindi", group: "world" },
+        { code: "gu", name: "ગુજરાતી", en: "Gujarati", group: "world" },
+        { code: "pa", name: "ਪੰਜਾਬੀ", en: "Punjabi", group: "world" },
+        { code: "ur", name: "اردو", en: "Urdu", group: "world" },
+        { code: "bn", name: "বাংলা", en: "Bengali", group: "world" },
+        { code: "ta", name: "தமிழ்", en: "Tamil", group: "world" },
+        { code: "te", name: "తెలుగు", en: "Telugu", group: "world" },
+        { code: "ml", name: "മലയാളം", en: "Malayalam", group: "world" },
+        { code: "mr", name: "मराठी", en: "Marathi", group: "world" },
+        { code: "ne", name: "नेपाली", en: "Nepali", group: "world" },
+        { code: "si", name: "සිංහල", en: "Sinhala", group: "world" },
+        { code: "fa", name: "فارسی", en: "Persian", group: "world" },
+        { code: "iw", name: "עברית", en: "Hebrew", group: "world" },
+        { code: "tr", name: "Türkçe", en: "Turkish", group: "world" },
+        { code: "es", name: "Español", en: "Spanish", group: "world" },
+        { code: "de", name: "Deutsch", en: "German", group: "world" },
+        { code: "it", name: "Italiano", en: "Italian", group: "world" },
+        { code: "nl", name: "Nederlands", en: "Dutch", group: "world" },
+        { code: "sv", name: "Svenska", en: "Swedish", group: "world" },
+        { code: "no", name: "Norsk", en: "Norwegian", group: "world" },
+        { code: "da", name: "Dansk", en: "Danish", group: "world" },
+        { code: "fi", name: "Suomi", en: "Finnish", group: "world" },
+        { code: "pl", name: "Polski", en: "Polish", group: "world" },
+        { code: "cs", name: "Čeština", en: "Czech", group: "world" },
+        { code: "hu", name: "Magyar", en: "Hungarian", group: "world" },
+        { code: "ro", name: "Română", en: "Romanian", group: "world" },
+        { code: "el", name: "Ελληνικά", en: "Greek", group: "world" },
+        { code: "ru", name: "Русский", en: "Russian", group: "world" },
+        { code: "uk", name: "Українська", en: "Ukrainian", group: "world" },
+        { code: "ja", name: "日本語", en: "Japanese", group: "world" },
+        { code: "ko", name: "한국어", en: "Korean", group: "world" },
+        { code: "vi", name: "Tiếng Việt", en: "Vietnamese", group: "world" },
+        { code: "th", name: "ไทย", en: "Thai", group: "world" },
+        { code: "id", name: "Bahasa Indonesia", en: "Indonesian", group: "world" },
+        { code: "ms", name: "Bahasa Melayu", en: "Malay", group: "world" },
+        { code: "tl", name: "Filipino", en: "Filipino", group: "world" }
+    ];
 
     var originals = new WeakMap();
 
+    function stored() {
+        var code = localStorage.getItem(KEY) || "en";
+        return LANGS.some(function (l) { return l.code === code; }) ? code : "en";
+    }
+
     function current() {
-        return localStorage.getItem(KEY) === "sw" ? "sw" : "en";
+        return stored() === "sw" ? "sw" : "en";
     }
 
     function translateValue(value, lang) {
@@ -247,22 +331,262 @@
                 el.setAttribute(attr, lang === "sw" ? translateValue(source, "sw") : source);
             });
         });
-        document.querySelectorAll(".top-lang button").forEach(function (btn) {
-            var on = btn.getAttribute("data-lang") === lang;
-            btn.classList.toggle("is-on", on);
-            btn.setAttribute("aria-pressed", on ? "true" : "false");
+        markCurrent();
+    }
+
+    /* Languages other than en/sw go through Google's website translator, driven by the googtrans cookie. */
+    function setGoogleCookie(code) {
+        var host = location.hostname;
+        var expire = "expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        [host, "." + host.replace(/^www\./, "")].forEach(function (domain) {
+            document.cookie = "googtrans=; " + expire + "; path=/; domain=" + domain;
+        });
+        document.cookie = "googtrans=; " + expire + "; path=/";
+        if (code) document.cookie = "googtrans=/en/" + code + "; path=/";
+    }
+
+    function hasGoogleCookie() {
+        return /(?:^|;\s*)googtrans=\/en\/[^;]+/.test(document.cookie);
+    }
+
+    var googleRequested = false;
+    function loadGoogle() {
+        if (googleRequested) return;
+        googleRequested = true;
+        var holder = document.createElement("div");
+        holder.id = "kslGtEl";
+        holder.hidden = true;
+        document.body.appendChild(holder);
+        window.kslGtInit = function () {
+            new window.google.translate.TranslateElement({ pageLanguage: "en", autoDisplay: false }, "kslGtEl");
+        };
+        var s = document.createElement("script");
+        s.src = "https://translate.google.com/translate_a/element.js?cb=kslGtInit";
+        s.async = true;
+        document.body.appendChild(s);
+    }
+
+    function switchGoogle(code, tries) {
+        var combo = document.querySelector(".goog-te-combo");
+        if (combo && combo.options.length > 1) {
+            combo.value = code;
+            combo.dispatchEvent(new Event("change"));
+            return;
+        }
+        if ((tries || 0) < 40) {
+            setTimeout(function () { switchGoogle(code, (tries || 0) + 1); }, 150);
+        }
+    }
+
+    function choose(code) {
+        var previous = stored();
+        localStorage.setItem(KEY, code);
+        if (code === "en" || code === "sw") {
+            if (hasGoogleCookie()) {
+                setGoogleCookie("");
+                location.reload();
+                return;
+            }
+            apply(code);
+            return;
+        }
+        setGoogleCookie(code);
+        if (googleRequested && previous !== "en" && previous !== "sw") {
+            switchGoogle(code);
+            markCurrent();
+            return;
+        }
+        if (previous === "sw") apply("en");
+        loadGoogle();
+        switchGoogle(code);
+        markCurrent();
+    }
+
+    var ICON_GLOBE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/></svg>';
+    var ICON_CHEVRON = '<svg class="ksl-lang-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+    var ICON_CHECK = '<svg class="ksl-lang-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>';
+
+    var menu, backdrop, search, list, empty;
+
+    function shortCode(code) {
+        return code === "iw" ? "HE" : code.split("-")[0].toUpperCase();
+    }
+
+    function markCurrent() {
+        var code = stored();
+        document.querySelectorAll(".ksl-lang-btn-code").forEach(function (el) {
+            el.textContent = shortCode(code);
+        });
+        if (!menu) return;
+        menu.querySelectorAll(".ksl-lang-option").forEach(function (opt) {
+            var on = opt.getAttribute("data-lang") === code;
+            opt.classList.toggle("is-on", on);
+            opt.setAttribute("aria-selected", on ? "true" : "false");
+        });
+    }
+
+    function buildMenu() {
+        menu = document.createElement("div");
+        menu.className = "ksl-lang-menu notranslate";
+        menu.id = "kslLangMenu";
+        menu.setAttribute("translate", "no");
+        menu.setAttribute("role", "dialog");
+        menu.setAttribute("aria-label", "Choose language");
+        menu.hidden = true;
+
+        var html = '<div class="ksl-lang-head"><p>Language</p><button type="button" class="ksl-lang-close" aria-label="Close">&times;</button></div>';
+        html += '<label class="ksl-lang-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
+        html += '<input type="search" placeholder="Search languages" aria-label="Search languages" autocomplete="off"></label>';
+        html += '<div class="ksl-lang-list" role="listbox" aria-label="Language">';
+        [["africa", "Kenya and Africa"], ["world", "World languages"]].forEach(function (group) {
+            html += '<p class="ksl-lang-group">' + group[1] + "</p>";
+            LANGS.filter(function (l) { return l.group === group[0]; }).forEach(function (l) {
+                var dir = /^(ar|ur|fa|iw)$/.test(l.code) ? ' dir="rtl"' : "";
+                html += '<button type="button" class="ksl-lang-option" role="option" data-lang="' + l.code + '" lang="' + l.code + '" data-search="' + (l.name + " " + l.en).toLowerCase() + '">';
+                html += '<span class="ksl-lang-name"' + dir + ">" + l.name + "</span>";
+                if (l.name !== l.en) html += '<span class="ksl-lang-en">' + l.en + "</span>";
+                html += ICON_CHECK + "</button>";
+            });
+        });
+        html += '<p class="ksl-lang-empty" hidden>No language found</p></div>';
+        html += '<p class="ksl-lang-note">Languages other than English and Kiswahili are translated automatically by Google and may not be exact.</p>';
+        menu.innerHTML = html;
+        backdrop = document.createElement("div");
+        backdrop.className = "ksl-lang-backdrop";
+        backdrop.hidden = true;
+        document.body.appendChild(backdrop);
+        document.body.appendChild(menu);
+
+        search = menu.querySelector(".ksl-lang-search input");
+        list = menu.querySelector(".ksl-lang-list");
+        empty = menu.querySelector(".ksl-lang-empty");
+
+        search.addEventListener("input", function () {
+            var q = search.value.trim().toLowerCase();
+            var any = false;
+            list.querySelectorAll(".ksl-lang-option").forEach(function (opt) {
+                var show = !q || opt.getAttribute("data-search").indexOf(q) !== -1;
+                opt.hidden = !show;
+                if (show) any = true;
+            });
+            list.querySelectorAll(".ksl-lang-group").forEach(function (g) {
+                g.hidden = !!q;
+            });
+            empty.hidden = any;
+        });
+
+        menu.addEventListener("click", function (event) {
+            if (event.target.closest(".ksl-lang-close")) {
+                closeMenu(true);
+                return;
+            }
+            var opt = event.target.closest(".ksl-lang-option");
+            if (!opt) return;
+            closeMenu(true);
+            choose(opt.getAttribute("data-lang"));
+        });
+
+        menu.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                event.stopPropagation();
+                closeMenu(true);
+                return;
+            }
+            if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+            var opts = Array.prototype.filter.call(list.querySelectorAll(".ksl-lang-option"), function (o) { return !o.hidden; });
+            if (!opts.length) return;
+            event.preventDefault();
+            var i = opts.indexOf(document.activeElement);
+            i = event.key === "ArrowDown" ? Math.min(i + 1, opts.length - 1) : i - 1;
+            if (i < 0) search.focus(); else opts[i].focus();
+        });
+    }
+
+    var openerBtn = null;
+    var mobileMq = window.matchMedia("(max-width: 991.98px)");
+
+    function placeMenu() {
+        if (!openerBtn || mobileMq.matches) {
+            menu.style.top = menu.style.left = "";
+            return;
+        }
+        var r = openerBtn.getBoundingClientRect();
+        var width = menu.offsetWidth;
+        menu.style.top = Math.round(r.bottom + 8) + "px";
+        menu.style.left = Math.round(Math.max(12, Math.min(r.right - width, window.innerWidth - width - 12))) + "px";
+    }
+
+    function openMenu(btn) {
+        openerBtn = btn;
+        menu.hidden = false;
+        backdrop.hidden = false;
+        document.documentElement.classList.add("ksl-lang-open");
+        btn.setAttribute("aria-expanded", "true");
+        search.value = "";
+        search.dispatchEvent(new Event("input"));
+        placeMenu();
+        var on = menu.querySelector(".ksl-lang-option.is-on");
+        list.scrollTop = 0;
+        if (on) {
+            var top = on.offsetTop - list.offsetTop;
+            if (top + on.offsetHeight > list.clientHeight) list.scrollTop = top - list.clientHeight / 2 + on.offsetHeight / 2;
+        }
+        if (!mobileMq.matches) search.focus({ preventScroll: true });
+        else if (on) on.focus({ preventScroll: true });
+    }
+
+    function closeMenu(returnFocus) {
+        if (!menu || menu.hidden) return;
+        menu.hidden = true;
+        backdrop.hidden = true;
+        document.documentElement.classList.remove("ksl-lang-open");
+        if (openerBtn) {
+            openerBtn.setAttribute("aria-expanded", "false");
+            if (returnFocus) openerBtn.focus({ preventScroll: true });
+        }
+        openerBtn = null;
+    }
+
+    function upgradeSwitchers() {
+        document.querySelectorAll(".navbar-brand, .ksl-wordmark").forEach(function (el) {
+            el.classList.add("notranslate");
+        });
+        document.querySelectorAll(".top-lang").forEach(function (wrap) {
+            wrap.classList.add("notranslate");
+            wrap.setAttribute("translate", "no");
+            wrap.removeAttribute("role");
+            wrap.removeAttribute("aria-label");
+            wrap.innerHTML = '<button type="button" class="ksl-lang-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="kslLangMenu" aria-label="Choose language">' +
+                ICON_GLOBE + '<span class="ksl-lang-btn-code"></span>' + ICON_CHEVRON + "</button>";
         });
     }
 
     document.addEventListener("click", function (event) {
-        var btn = event.target.closest(".top-lang button[data-lang]");
-        if (!btn) {
+        var btn = event.target.closest(".ksl-lang-btn");
+        if (btn) {
+            if (!menu.hidden && openerBtn === btn) closeMenu(false);
+            else openMenu(btn);
             return;
         }
-        var lang = btn.getAttribute("data-lang") === "sw" ? "sw" : "en";
-        localStorage.setItem(KEY, lang);
-        apply(lang);
+        if (menu && !menu.hidden && !menu.contains(event.target)) closeMenu(false);
     });
 
+    window.addEventListener("resize", function () {
+        if (menu && !menu.hidden) placeMenu();
+    });
+    window.addEventListener("scroll", function () {
+        if (menu && !menu.hidden && !mobileMq.matches) closeMenu(false);
+    }, { passive: true });
+
+    upgradeSwitchers();
+    buildMenu();
+
+    var start = stored();
+    if (start !== "en" && start !== "sw") {
+        setGoogleCookie(start);
+        loadGoogle();
+    } else if (hasGoogleCookie()) {
+        setGoogleCookie("");
+    }
     apply(current());
 })();

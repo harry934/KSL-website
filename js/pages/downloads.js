@@ -123,7 +123,7 @@
                 var meta = [item.type, item.language, item.date].filter(Boolean).map(escapeHtml).join(" · ");
                 html += "<li><div><h3>" + escapeHtml(item.title) + "</h3>" + sub + "<p>" + escapeHtml(displayFilename(item.filename)) + "</p>";
                 html += '<p class="ksl-downloads-meta">' + meta + "</p></div>";
-                html += '<a class="download-button" href="' + escapeHtml(url) + '" target="_blank" rel="noopener"><span class="docs">Download</span><span class="download" aria-hidden="true">↓</span></a></li>';
+                html += window.kslDocButton(url, "Download") + "</li>";
             });
             html += "</ul></section>";
         });
