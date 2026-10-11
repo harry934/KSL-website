@@ -117,18 +117,41 @@
             morphObserver.observe(el);
         });
 
+        var pendingReveal = [];
+        var showReveal = function (el, instant) {
+            if (instant) el.classList.add("is-instant");
+            el.classList.add("is-visible");
+            revealObserver.unobserve(el);
+            var i = pendingReveal.indexOf(el);
+            if (i > -1) pendingReveal.splice(i, 1);
+        };
         var revealObserver = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add("is-visible");
-                    revealObserver.unobserve(entry.target);
-                }
+                if (entry.isIntersecting) showReveal(entry.target, false);
+                else if (entry.boundingClientRect.bottom < 0) showReveal(entry.target, true);
             });
-        }, { threshold: 0.15 });
+        }, { rootMargin: "0px 0px 12% 0px", threshold: 0 });
 
         document.querySelectorAll(".ksl-reveal").forEach(function (el) {
+            pendingReveal.push(el);
             revealObserver.observe(el);
         });
+
+        // Anchor jumps and fast flicks can skip past a block without it ever intersecting.
+        var sweepTicking = false;
+        var sweepReveal = function () {
+            sweepTicking = false;
+            pendingReveal.slice().forEach(function (el) {
+                var r = el.getBoundingClientRect();
+                if (r.bottom < 0) showReveal(el, true);
+                else if (r.top < window.innerHeight) showReveal(el, false);
+            });
+        };
+        window.addEventListener("scroll", function () {
+            if (sweepTicking || !pendingReveal.length) return;
+            sweepTicking = true;
+            window.requestAnimationFrame(sweepReveal);
+        }, { passive: true });
 
     } else {
         document.querySelectorAll(".ksl-morph").forEach(function (el) {
@@ -304,8 +327,10 @@
             heroVideoAttached = false;
         });
 
+        var heroConn = navigator.connection || {};
+        var heroSlowNet = heroConn.saveData === true || /(^|-)2g$|^3g$/.test(heroConn.effectiveType || "");
         var attachHeroVideo = function () {
-            if (!heroVideoEnabled || heroVideoAttached) {
+            if (!heroVideoEnabled || heroVideoAttached || heroSlowNet) {
                 return;
             }
             heroVideoAttached = true;
