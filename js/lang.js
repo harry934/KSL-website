@@ -212,7 +212,8 @@
         "Language": "Lugha",
         "Choose language": "Chagua lugha",
         "Search languages": "Tafuta lugha",
-        "Kenya and Africa": "Kenya na Afrika",
+        "English and Kiswahili": "Kiingereza na Kiswahili",
+        "African languages": "Lugha za Afrika",
         "World languages": "Lugha za dunia",
         "No language found": "Hakuna lugha iliyopatikana",
         "Close": "Funga",
@@ -220,85 +221,277 @@
     };
 
     var LANGS = [
-        { code: "en", name: "English", en: "English", group: "africa" },
-        { code: "sw", name: "Kiswahili", en: "Swahili", group: "africa" },
-        { code: "luo", name: "Dholuo", en: "Luo", group: "africa" },
-        { code: "so", name: "Soomaali", en: "Somali", group: "africa" },
-        { code: "am", name: "አማርኛ", en: "Amharic", group: "africa" },
-        { code: "om", name: "Afaan Oromoo", en: "Oromo", group: "africa" },
-        { code: "ti", name: "ትግርኛ", en: "Tigrinya", group: "africa" },
-        { code: "ar", name: "العربية", en: "Arabic", group: "africa" },
-        { code: "fr", name: "Français", en: "French", group: "africa" },
-        { code: "pt", name: "Português", en: "Portuguese", group: "africa" },
-        { code: "rw", name: "Ikinyarwanda", en: "Kinyarwanda", group: "africa" },
-        { code: "lg", name: "Luganda", en: "Luganda", group: "africa" },
-        { code: "rn", name: "Ikirundi", en: "Kirundi", group: "africa" },
-        { code: "ach", name: "Acholi", en: "Acholi", group: "africa" },
-        { code: "din", name: "Thuɔŋjäŋ", en: "Dinka", group: "africa" },
-        { code: "ln", name: "Lingála", en: "Lingala", group: "africa" },
-        { code: "ny", name: "Chichewa", en: "Chichewa", group: "africa" },
-        { code: "sn", name: "chiShona", en: "Shona", group: "africa" },
-        { code: "ha", name: "Hausa", en: "Hausa", group: "africa" },
-        { code: "yo", name: "Yorùbá", en: "Yoruba", group: "africa" },
-        { code: "ig", name: "Igbo", en: "Igbo", group: "africa" },
-        { code: "ak", name: "Twi", en: "Twi (Akan)", group: "africa" },
-        { code: "wo", name: "Wolof", en: "Wolof", group: "africa" },
-        { code: "ff", name: "Fulfulde", en: "Fulani", group: "africa" },
-        { code: "tn", name: "Setswana", en: "Tswana", group: "africa" },
-        { code: "zu", name: "isiZulu", en: "Zulu", group: "africa" },
-        { code: "xh", name: "isiXhosa", en: "Xhosa", group: "africa" },
-        { code: "st", name: "Sesotho", en: "Sesotho", group: "africa" },
+        { code: "en", name: "English", en: "English", group: "official" },
+        { code: "sw", name: "Kiswahili", en: "Swahili", group: "official" },
+        { code: "ach", name: "Lwo (Acholi)", en: "Acholi", group: "africa" },
+        { code: "aa", name: "Afar", en: "Afar", group: "africa" },
         { code: "af", name: "Afrikaans", en: "Afrikaans", group: "africa" },
+        { code: "alz", name: "Alur", en: "Alur", group: "africa" },
+        { code: "am", name: "አማርኛ", en: "Amharic", group: "africa" },
+        { code: "ar", name: "العربية", en: "Arabic", group: "africa" },
+        { code: "bm", name: "Bambara", en: "Bambara", group: "africa" },
+        { code: "bci", name: "Baoulé", en: "Baoulé", group: "africa" },
+        { code: "bem", name: "Bemba", en: "Bemba", group: "africa" },
+        { code: "ny", name: "Chichewa", en: "Chichewa", group: "africa" },
+        { code: "din", name: "Thuɔŋjäŋ", en: "Dinka", group: "africa" },
+        { code: "dov", name: "Dombe", en: "Dombe", group: "africa" },
+        { code: "dyu", name: "Dyula", en: "Dyula", group: "africa" },
+        { code: "ee", name: "Ewe", en: "Ewe", group: "africa" },
+        { code: "fon", name: "Fon", en: "Fon", group: "africa" },
+        { code: "fr", name: "Français", en: "French", group: "africa" },
+        { code: "ff", name: "Fulfulde", en: "Fulani", group: "africa" },
+        { code: "gaa", name: "Ga", en: "Ga", group: "africa" },
+        { code: "ha", name: "Hausa", en: "Hausa", group: "africa" },
+        { code: "ig", name: "Igbo", en: "Igbo", group: "africa" },
+        { code: "kr", name: "Kanuri", en: "Kanuri", group: "africa" },
+        { code: "cgg", name: "Kiga", en: "Kiga", group: "africa" },
+        { code: "kg", name: "Kikongo", en: "Kikongo", group: "africa" },
+        { code: "rw", name: "Ikinyarwanda", en: "Kinyarwanda", group: "africa" },
+        { code: "rn", name: "Ikirundi", en: "Kirundi", group: "africa" },
+        { code: "ktu", name: "Kituba", en: "Kituba", group: "africa" },
+        { code: "kri", name: "Krio", en: "Krio", group: "africa" },
+        { code: "ln", name: "Lingála", en: "Lingala", group: "africa" },
+        { code: "lg", name: "Luganda", en: "Luganda", group: "africa" },
         { code: "mg", name: "Malagasy", en: "Malagasy", group: "africa" },
+        { code: "mfe", name: "Mauritian Creole", en: "Mauritian Creole", group: "africa" },
+        { code: "bm-Nkoo", name: "N'Ko", en: "N'Ko", group: "africa" },
+        { code: "ndc-ZW", name: "Ndau", en: "Ndau", group: "africa" },
+        { code: "nr", name: "isiNdebele", en: "Ndebele (South)", group: "africa" },
+        { code: "nus", name: "Thok Naath", en: "Nuer", group: "africa" },
+        { code: "om", name: "Afaan Oromoo", en: "Oromo", group: "africa" },
+        { code: "pt", name: "Português", en: "Portuguese", group: "africa" },
+        { code: "sg", name: "Sango", en: "Sango", group: "africa" },
+        { code: "nso", name: "Sepedi", en: "Sepedi", group: "africa" },
+        { code: "st", name: "Sesotho", en: "Sesotho", group: "africa" },
+        { code: "crs", name: "Seychellois Creole", en: "Seychellois Creole", group: "africa" },
+        { code: "sn", name: "chiShona", en: "Shona", group: "africa" },
+        { code: "so", name: "Af-Soomaali", en: "Somali", group: "africa" },
+        { code: "sus", name: "Susu", en: "Susu", group: "africa" },
+        { code: "ss", name: "siSwati", en: "Swati", group: "africa" },
+        { code: "ber-Latn", name: "Tamazight", en: "Tamazight", group: "africa" },
+        { code: "ber", name: "Tamazight (Tifinagh)", en: "Tamazight (Tifinagh)", group: "africa" },
+        { code: "ti", name: "ትግርኛ", en: "Tigrinya", group: "africa" },
+        { code: "tiv", name: "Tiv", en: "Tiv", group: "africa" },
+        { code: "lua", name: "Tshiluba", en: "Tshiluba", group: "africa" },
+        { code: "ts", name: "Xitsonga", en: "Tsonga", group: "africa" },
+        { code: "tn", name: "Setswana", en: "Tswana", group: "africa" },
+        { code: "tum", name: "Tumbuka", en: "Tumbuka", group: "africa" },
+        { code: "ak", name: "Twi", en: "Twi (Akan)", group: "africa" },
+        { code: "ve", name: "Tshivenḓa", en: "Venda", group: "africa" },
+        { code: "wo", name: "Wolof", en: "Wolof", group: "africa" },
+        { code: "xh", name: "isiXhosa", en: "Xhosa", group: "africa" },
+        { code: "yo", name: "Yorùbá", en: "Yoruba", group: "africa" },
+        { code: "zu", name: "isiZulu", en: "Zulu", group: "africa" },
+        { code: "ab", name: "Abkhaz", en: "Abkhaz", group: "world" },
+        { code: "ace", name: "Acehnese", en: "Acehnese", group: "world" },
+        { code: "sq", name: "Shqip", en: "Albanian", group: "world" },
+        { code: "hy", name: "Հայերեն", en: "Armenian", group: "world" },
+        { code: "as", name: "অসমীয়া", en: "Assamese", group: "world" },
+        { code: "av", name: "Avar", en: "Avar", group: "world" },
+        { code: "awa", name: "Awadhi", en: "Awadhi", group: "world" },
+        { code: "ay", name: "Aymara", en: "Aymara", group: "world" },
+        { code: "az", name: "Azərbaycan", en: "Azerbaijani", group: "world" },
+        { code: "ban", name: "Balinese", en: "Balinese", group: "world" },
+        { code: "bal", name: "Baluchi", en: "Baluchi", group: "world" },
+        { code: "ba", name: "Bashkir", en: "Bashkir", group: "world" },
+        { code: "eu", name: "Euskara", en: "Basque", group: "world" },
+        { code: "btx", name: "Batak Karo", en: "Batak Karo", group: "world" },
+        { code: "bts", name: "Batak Simalungun", en: "Batak Simalungun", group: "world" },
+        { code: "bbc", name: "Batak Toba", en: "Batak Toba", group: "world" },
+        { code: "be", name: "Беларуская", en: "Belarusian", group: "world" },
+        { code: "bn", name: "বাংলা", en: "Bengali", group: "world" },
+        { code: "bew", name: "Betawi", en: "Betawi", group: "world" },
+        { code: "bho", name: "Bhojpuri", en: "Bhojpuri", group: "world" },
+        { code: "bik", name: "Bikol", en: "Bikol", group: "world" },
+        { code: "bs", name: "Bosanski", en: "Bosnian", group: "world" },
+        { code: "br", name: "Breton", en: "Breton", group: "world" },
+        { code: "bg", name: "Български", en: "Bulgarian", group: "world" },
+        { code: "bua", name: "Buryat", en: "Buryat", group: "world" },
+        { code: "yue", name: "粵語", en: "Cantonese", group: "world" },
+        { code: "ca", name: "Català", en: "Catalan", group: "world" },
+        { code: "ceb", name: "Cebuano", en: "Cebuano", group: "world" },
+        { code: "ch", name: "Chamorro", en: "Chamorro", group: "world" },
+        { code: "ce", name: "Chechen", en: "Chechen", group: "world" },
         { code: "zh-CN", name: "简体中文", en: "Chinese (Simplified)", group: "world" },
         { code: "zh-TW", name: "繁體中文", en: "Chinese (Traditional)", group: "world" },
-        { code: "hi", name: "हिन्दी", en: "Hindi", group: "world" },
-        { code: "gu", name: "ગુજરાતી", en: "Gujarati", group: "world" },
-        { code: "pa", name: "ਪੰਜਾਬੀ", en: "Punjabi", group: "world" },
-        { code: "ur", name: "اردو", en: "Urdu", group: "world" },
-        { code: "bn", name: "বাংলা", en: "Bengali", group: "world" },
-        { code: "ta", name: "தமிழ்", en: "Tamil", group: "world" },
-        { code: "te", name: "తెలుగు", en: "Telugu", group: "world" },
-        { code: "ml", name: "മലയാളം", en: "Malayalam", group: "world" },
-        { code: "mr", name: "मराठी", en: "Marathi", group: "world" },
-        { code: "ne", name: "नेपाली", en: "Nepali", group: "world" },
-        { code: "si", name: "සිංහල", en: "Sinhala", group: "world" },
-        { code: "fa", name: "فارسی", en: "Persian", group: "world" },
-        { code: "iw", name: "עברית", en: "Hebrew", group: "world" },
-        { code: "tr", name: "Türkçe", en: "Turkish", group: "world" },
-        { code: "es", name: "Español", en: "Spanish", group: "world" },
-        { code: "de", name: "Deutsch", en: "German", group: "world" },
-        { code: "it", name: "Italiano", en: "Italian", group: "world" },
-        { code: "nl", name: "Nederlands", en: "Dutch", group: "world" },
-        { code: "sv", name: "Svenska", en: "Swedish", group: "world" },
-        { code: "no", name: "Norsk", en: "Norwegian", group: "world" },
-        { code: "da", name: "Dansk", en: "Danish", group: "world" },
-        { code: "fi", name: "Suomi", en: "Finnish", group: "world" },
-        { code: "pl", name: "Polski", en: "Polish", group: "world" },
+        { code: "chk", name: "Chuukese", en: "Chuukese", group: "world" },
+        { code: "cv", name: "Chuvash", en: "Chuvash", group: "world" },
+        { code: "co", name: "Corsican", en: "Corsican", group: "world" },
+        { code: "crh", name: "Crimean Tatar (Cyrillic)", en: "Crimean Tatar (Cyrillic)", group: "world" },
+        { code: "crh-Latn", name: "Crimean Tatar (Latin)", en: "Crimean Tatar (Latin)", group: "world" },
+        { code: "hr", name: "Hrvatski", en: "Croatian", group: "world" },
         { code: "cs", name: "Čeština", en: "Czech", group: "world" },
-        { code: "hu", name: "Magyar", en: "Hungarian", group: "world" },
-        { code: "ro", name: "Română", en: "Romanian", group: "world" },
+        { code: "da", name: "Dansk", en: "Danish", group: "world" },
+        { code: "fa-AF", name: "دری", en: "Dari", group: "world" },
+        { code: "dv", name: "Dhivehi", en: "Dhivehi", group: "world" },
+        { code: "doi", name: "Dogri", en: "Dogri", group: "world" },
+        { code: "nl", name: "Nederlands", en: "Dutch", group: "world" },
+        { code: "dz", name: "Dzongkha", en: "Dzongkha", group: "world" },
+        { code: "eo", name: "Esperanto", en: "Esperanto", group: "world" },
+        { code: "et", name: "Eesti", en: "Estonian", group: "world" },
+        { code: "fo", name: "Faroese", en: "Faroese", group: "world" },
+        { code: "fj", name: "Fijian", en: "Fijian", group: "world" },
+        { code: "tl", name: "Filipino", en: "Filipino", group: "world" },
+        { code: "fi", name: "Suomi", en: "Finnish", group: "world" },
+        { code: "fr-CA", name: "Français (Canada)", en: "French (Canada)", group: "world" },
+        { code: "fy", name: "Frisian", en: "Frisian", group: "world" },
+        { code: "fur", name: "Friulian", en: "Friulian", group: "world" },
+        { code: "gl", name: "Galego", en: "Galician", group: "world" },
+        { code: "ka", name: "ქართული", en: "Georgian", group: "world" },
+        { code: "de", name: "Deutsch", en: "German", group: "world" },
         { code: "el", name: "Ελληνικά", en: "Greek", group: "world" },
-        { code: "ru", name: "Русский", en: "Russian", group: "world" },
-        { code: "uk", name: "Українська", en: "Ukrainian", group: "world" },
-        { code: "ja", name: "日本語", en: "Japanese", group: "world" },
-        { code: "ko", name: "한국어", en: "Korean", group: "world" },
-        { code: "vi", name: "Tiếng Việt", en: "Vietnamese", group: "world" },
-        { code: "th", name: "ไทย", en: "Thai", group: "world" },
+        { code: "gn", name: "Guarani", en: "Guarani", group: "world" },
+        { code: "gu", name: "ગુજરાતી", en: "Gujarati", group: "world" },
+        { code: "ht", name: "Haitian Creole", en: "Haitian Creole", group: "world" },
+        { code: "cnh", name: "Hakha Chin", en: "Hakha Chin", group: "world" },
+        { code: "haw", name: "Hawaiian", en: "Hawaiian", group: "world" },
+        { code: "iw", name: "עברית", en: "Hebrew", group: "world" },
+        { code: "hil", name: "Hiligaynon", en: "Hiligaynon", group: "world" },
+        { code: "hi", name: "हिन्दी", en: "Hindi", group: "world" },
+        { code: "hmn", name: "Hmong", en: "Hmong", group: "world" },
+        { code: "hu", name: "Magyar", en: "Hungarian", group: "world" },
+        { code: "hrx", name: "Hunsrik", en: "Hunsrik", group: "world" },
+        { code: "iba", name: "Iban", en: "Iban", group: "world" },
+        { code: "is", name: "Íslenska", en: "Icelandic", group: "world" },
+        { code: "ilo", name: "Ilocano", en: "Ilocano", group: "world" },
         { code: "id", name: "Bahasa Indonesia", en: "Indonesian", group: "world" },
+        { code: "iu-Latn", name: "Inuktut (Latin)", en: "Inuktut (Latin)", group: "world" },
+        { code: "iu", name: "Inuktut (Syllabics)", en: "Inuktut (Syllabics)", group: "world" },
+        { code: "ga", name: "Gaeilge", en: "Irish Gaelic", group: "world" },
+        { code: "it", name: "Italiano", en: "Italian", group: "world" },
+        { code: "jam", name: "Jamaican Patois", en: "Jamaican Patois", group: "world" },
+        { code: "ja", name: "日本語", en: "Japanese", group: "world" },
+        { code: "jw", name: "Javanese", en: "Javanese", group: "world" },
+        { code: "kac", name: "Jingpo", en: "Jingpo", group: "world" },
+        { code: "kl", name: "Kalaallisut", en: "Kalaallisut", group: "world" },
+        { code: "kn", name: "ಕನ್ನಡ", en: "Kannada", group: "world" },
+        { code: "pam", name: "Kapampangan", en: "Kapampangan", group: "world" },
+        { code: "kk", name: "Қазақ", en: "Kazakh", group: "world" },
+        { code: "kha", name: "Khasi", en: "Khasi", group: "world" },
+        { code: "km", name: "ខ្មែរ", en: "Khmer", group: "world" },
+        { code: "trp", name: "Kokborok", en: "Kokborok", group: "world" },
+        { code: "kv", name: "Komi", en: "Komi", group: "world" },
+        { code: "gom", name: "Konkani", en: "Konkani", group: "world" },
+        { code: "ko", name: "한국어", en: "Korean", group: "world" },
+        { code: "ku", name: "Kurdî", en: "Kurdish (Kurmanji)", group: "world" },
+        { code: "ckb", name: "کوردی", en: "Kurdish (Sorani)", group: "world" },
+        { code: "ky", name: "Kyrgyz", en: "Kyrgyz", group: "world" },
+        { code: "lo", name: "ລາວ", en: "Lao", group: "world" },
+        { code: "ltg", name: "Latgalian", en: "Latgalian", group: "world" },
+        { code: "la", name: "Latin", en: "Latin", group: "world" },
+        { code: "lv", name: "Latviešu", en: "Latvian", group: "world" },
+        { code: "lij", name: "Ligurian", en: "Ligurian", group: "world" },
+        { code: "li", name: "Limburgish", en: "Limburgish", group: "world" },
+        { code: "lt", name: "Lietuvių", en: "Lithuanian", group: "world" },
+        { code: "lmo", name: "Lombard", en: "Lombard", group: "world" },
+        { code: "lb", name: "Luxembourgish", en: "Luxembourgish", group: "world" },
+        { code: "mk", name: "Македонски", en: "Macedonian", group: "world" },
+        { code: "mad", name: "Madurese", en: "Madurese", group: "world" },
+        { code: "mai", name: "Maithili", en: "Maithili", group: "world" },
+        { code: "mak", name: "Makassar", en: "Makassar", group: "world" },
         { code: "ms", name: "Bahasa Melayu", en: "Malay", group: "world" },
-        { code: "tl", name: "Filipino", en: "Filipino", group: "world" }
+        { code: "ms-Arab", name: "Malay (Jawi)", en: "Malay (Jawi)", group: "world" },
+        { code: "ml", name: "മലയാളം", en: "Malayalam", group: "world" },
+        { code: "mt", name: "Malti", en: "Maltese", group: "world" },
+        { code: "mam", name: "Mam", en: "Mam", group: "world" },
+        { code: "gv", name: "Manx", en: "Manx", group: "world" },
+        { code: "mi", name: "Maori", en: "Maori", group: "world" },
+        { code: "mr", name: "मराठी", en: "Marathi", group: "world" },
+        { code: "mh", name: "Marshallese", en: "Marshallese", group: "world" },
+        { code: "mwr", name: "Marwadi", en: "Marwadi", group: "world" },
+        { code: "chm", name: "Meadow Mari", en: "Meadow Mari", group: "world" },
+        { code: "mni-Mtei", name: "Meiteilon (Manipuri)", en: "Meiteilon (Manipuri)", group: "world" },
+        { code: "min", name: "Minang", en: "Minang", group: "world" },
+        { code: "lus", name: "Mizo", en: "Mizo", group: "world" },
+        { code: "mn", name: "Монгол", en: "Mongolian", group: "world" },
+        { code: "my", name: "မြန်မာ", en: "Myanmar (Burmese)", group: "world" },
+        { code: "nhe", name: "Nahuatl (Eastern Huasteca)", en: "Nahuatl (Eastern Huasteca)", group: "world" },
+        { code: "new", name: "Nepal Bhasa (Newari)", en: "Nepal Bhasa (Newari)", group: "world" },
+        { code: "ne", name: "नेपाली", en: "Nepali", group: "world" },
+        { code: "no", name: "Norsk", en: "Norwegian", group: "world" },
+        { code: "oc", name: "Occitan", en: "Occitan", group: "world" },
+        { code: "or", name: "ଓଡ଼ିଆ", en: "Odia (Oriya)", group: "world" },
+        { code: "os", name: "Ossetian", en: "Ossetian", group: "world" },
+        { code: "pag", name: "Pangasinan", en: "Pangasinan", group: "world" },
+        { code: "pap", name: "Papiamento", en: "Papiamento", group: "world" },
+        { code: "ps", name: "پښتو", en: "Pashto", group: "world" },
+        { code: "fa", name: "فارسی", en: "Persian", group: "world" },
+        { code: "pl", name: "Polski", en: "Polish", group: "world" },
+        { code: "pt-PT", name: "Português (Portugal)", en: "Portuguese (Portugal)", group: "world" },
+        { code: "pa", name: "ਪੰਜਾਬੀ", en: "Punjabi", group: "world" },
+        { code: "pa-Arab", name: "پنجابی", en: "Punjabi (Shahmukhi)", group: "world" },
+        { code: "qu", name: "Quechua", en: "Quechua", group: "world" },
+        { code: "kek", name: "Qʼeqchiʼ", en: "Qʼeqchiʼ", group: "world" },
+        { code: "rom", name: "Romani", en: "Romani", group: "world" },
+        { code: "ro", name: "Română", en: "Romanian", group: "world" },
+        { code: "ru", name: "Русский", en: "Russian", group: "world" },
+        { code: "se", name: "Sami (North)", en: "Sami (North)", group: "world" },
+        { code: "sm", name: "Samoan", en: "Samoan", group: "world" },
+        { code: "sa", name: "Sanskrit", en: "Sanskrit", group: "world" },
+        { code: "sat-Latn", name: "Santali (Latin)", en: "Santali (Latin)", group: "world" },
+        { code: "sat", name: "Santali (Ol Chiki)", en: "Santali (Ol Chiki)", group: "world" },
+        { code: "gd", name: "Scots Gaelic", en: "Scots Gaelic", group: "world" },
+        { code: "sr", name: "Српски", en: "Serbian", group: "world" },
+        { code: "shn", name: "Shan", en: "Shan", group: "world" },
+        { code: "scn", name: "Sicilian", en: "Sicilian", group: "world" },
+        { code: "szl", name: "Silesian", en: "Silesian", group: "world" },
+        { code: "sd", name: "سنڌي", en: "Sindhi", group: "world" },
+        { code: "si", name: "සිංහල", en: "Sinhala", group: "world" },
+        { code: "sk", name: "Slovenčina", en: "Slovak", group: "world" },
+        { code: "sl", name: "Slovenščina", en: "Slovenian", group: "world" },
+        { code: "es", name: "Español", en: "Spanish", group: "world" },
+        { code: "su", name: "Sundanese", en: "Sundanese", group: "world" },
+        { code: "sv", name: "Svenska", en: "Swedish", group: "world" },
+        { code: "ty", name: "Tahitian", en: "Tahitian", group: "world" },
+        { code: "tg", name: "Tajik", en: "Tajik", group: "world" },
+        { code: "ta", name: "தமிழ்", en: "Tamil", group: "world" },
+        { code: "tt", name: "Tatar", en: "Tatar", group: "world" },
+        { code: "te", name: "తెలుగు", en: "Telugu", group: "world" },
+        { code: "tet", name: "Tetum", en: "Tetum", group: "world" },
+        { code: "th", name: "ไทย", en: "Thai", group: "world" },
+        { code: "bo", name: "Tibetan", en: "Tibetan", group: "world" },
+        { code: "tpi", name: "Tok Pisin", en: "Tok Pisin", group: "world" },
+        { code: "to", name: "Tongan", en: "Tongan", group: "world" },
+        { code: "tcy", name: "Tulu", en: "Tulu", group: "world" },
+        { code: "tr", name: "Türkçe", en: "Turkish", group: "world" },
+        { code: "tk", name: "Turkmen", en: "Turkmen", group: "world" },
+        { code: "tyv", name: "Tuvan", en: "Tuvan", group: "world" },
+        { code: "udm", name: "Udmurt", en: "Udmurt", group: "world" },
+        { code: "uk", name: "Українська", en: "Ukrainian", group: "world" },
+        { code: "ur", name: "اردو", en: "Urdu", group: "world" },
+        { code: "ug", name: "ئۇيغۇرچە", en: "Uyghur", group: "world" },
+        { code: "uz", name: "Oʻzbek", en: "Uzbek", group: "world" },
+        { code: "vec", name: "Venetian", en: "Venetian", group: "world" },
+        { code: "vi", name: "Tiếng Việt", en: "Vietnamese", group: "world" },
+        { code: "war", name: "Waray", en: "Waray", group: "world" },
+        { code: "cy", name: "Cymraeg", en: "Welsh", group: "world" },
+        { code: "sah", name: "Yakut", en: "Yakut", group: "world" },
+        { code: "yi", name: "ייִדיש", en: "Yiddish", group: "world" },
+        { code: "yua", name: "Yucatec Maya", en: "Yucatec Maya", group: "world" },
+        { code: "zap", name: "Zapotec", en: "Zapotec", group: "world" }
     ];
 
     var originals = new WeakMap();
 
+    function find(code) {
+        for (var i = 0; i < LANGS.length; i++) {
+            if (LANGS[i].code === code) return LANGS[i];
+        }
+        return null;
+    }
+
     function stored() {
         var code = localStorage.getItem(KEY) || "en";
-        return LANGS.some(function (l) { return l.code === code; }) ? code : "en";
+        return find(code) ? code : "en";
+    }
+
+    /* "en" or "sw" when the site's own text handles the language, otherwise null (Google). */
+    function localMode(code) {
+        return code === "en" || code === "sw" ? code : null;
     }
 
     function current() {
-        return stored() === "sw" ? "sw" : "en";
+        return localMode(stored()) || "en";
     }
 
     function translateValue(value, lang) {
@@ -380,23 +573,24 @@
 
     function choose(code) {
         var previous = stored();
+        var local = localMode(code);
         localStorage.setItem(KEY, code);
-        if (code === "en" || code === "sw") {
+        if (local) {
             if (hasGoogleCookie()) {
                 setGoogleCookie("");
                 location.reload();
                 return;
             }
-            apply(code);
+            apply(local);
             return;
         }
         setGoogleCookie(code);
-        if (googleRequested && previous !== "en" && previous !== "sw") {
+        if (googleRequested && !localMode(previous)) {
             switchGoogle(code);
             markCurrent();
             return;
         }
-        if (previous === "sw") apply("en");
+        if (localMode(previous) === "sw") apply("en");
         loadGoogle();
         switchGoogle(code);
         markCurrent();
@@ -409,7 +603,8 @@
     var menu, backdrop, search, list, empty;
 
     function shortCode(code) {
-        return code === "iw" ? "HE" : code.split("-")[0].toUpperCase();
+        if (code === "iw") return "HE";
+        return code.split("-")[0].toUpperCase();
     }
 
     function markCurrent() {
@@ -438,11 +633,15 @@
         html += '<label class="ksl-lang-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
         html += '<input type="search" placeholder="Search languages" aria-label="Search languages" autocomplete="off"></label>';
         html += '<div class="ksl-lang-list" role="listbox" aria-label="Language">';
-        [["africa", "Kenya and Africa"], ["world", "World languages"]].forEach(function (group) {
+        [
+            ["official", "English and Kiswahili"],
+            ["africa", "African languages"],
+            ["world", "World languages"]
+        ].forEach(function (group) {
             html += '<p class="ksl-lang-group">' + group[1] + "</p>";
             LANGS.filter(function (l) { return l.group === group[0]; }).forEach(function (l) {
-                var dir = /^(ar|ur|fa|iw)$/.test(l.code) ? ' dir="rtl"' : "";
-                html += '<button type="button" class="ksl-lang-option" role="option" data-lang="' + l.code + '" lang="' + l.code + '" data-search="' + (l.name + " " + l.en).toLowerCase() + '">';
+                var dir = /^(ar|ur|fa|fa-AF|iw|ps|sd|ckb|pa-Arab|ug|yi|dv|ms-Arab)$/.test(l.code) ? ' dir="rtl"' : "";
+                html += '<button type="button" class="ksl-lang-option" role="option" data-lang="' + l.code + '" lang="' + l.code + '" data-search="' + (l.name + " " + l.en).toLowerCase().replace(/"/g, "") + '">';
                 html += '<span class="ksl-lang-name"' + dir + ">" + l.name + "</span>";
                 if (l.name !== l.en) html += '<span class="ksl-lang-en">' + l.en + "</span>";
                 html += ICON_CHECK + "</button>";
@@ -527,7 +726,7 @@
         placeMenu();
         var on = menu.querySelector(".ksl-lang-option.is-on");
         list.scrollTop = 0;
-        if (on) {
+        if (on && stored() !== "en") {
             var top = on.offsetTop - list.offsetTop;
             if (top + on.offsetHeight > list.clientHeight) list.scrollTop = top - list.clientHeight / 2 + on.offsetHeight / 2;
         }
@@ -582,7 +781,7 @@
     buildMenu();
 
     var start = stored();
-    if (start !== "en" && start !== "sw") {
+    if (!localMode(start)) {
         setGoogleCookie(start);
         loadGoogle();
     } else if (hasGoogleCookie()) {
