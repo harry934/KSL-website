@@ -5349,8 +5349,8 @@ html[lang="sw"] .download-button .download::after {
 
 .whatsapp-fab {
     position: fixed !important;
-    right: 24px !important;
-    bottom: 24px !important;
+    right: 12px !important;
+    bottom: 16px !important;
     display: grid !important;
     place-items: center;
     width: 46px !important;
@@ -5373,7 +5373,6 @@ html[lang="sw"] .download-button .download::after {
 }
 
 .whatsapp-fab:hover {
-    transform: none;
     background: #25D366 !important;
     color: #fff !important;
     box-shadow: none !important;

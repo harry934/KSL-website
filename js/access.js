@@ -7,14 +7,14 @@
     style.id = "ksl-a11y-style";
     style.textContent = [
         ".ksl-a11y{font-family:Arial,Helvetica,sans-serif}",
-        ".ksl-a11y-toggle{position:fixed;right:24px;bottom:84px;z-index:999991;display:grid;place-items:center;width:46px;height:46px;margin:0;padding:0;border:1.5px solid #111;border-radius:50%;background:#C9A95C;color:#111;cursor:pointer;box-shadow:none;overflow:visible}",
+        ".ksl-a11y-toggle{position:fixed;right:12px;bottom:74px;z-index:999991;display:grid;place-items:center;width:46px;height:46px;margin:0;padding:0;border:1.5px solid #111;border-radius:50%;background:#C9A95C;color:#111;cursor:pointer;box-shadow:none;overflow:visible}",
         ".ksl-a11y-toggle:hover{filter:brightness(.93)}",
         ".ksl-a11y-toggle:focus-visible{outline:2px solid #111;outline-offset:3px}",
         ".ksl-a11y-toggle svg{width:24px;height:24px;display:block;fill:currentColor}",
+        "@media (min-width:992px){.ksl-a11y.is-open .ksl-a11y-toggle{right:calc(min(280px,88vw) + 16px)}}",
         ".ksl-a11y-label{display:none}",
         ".ksl-a11y-panel{position:fixed;top:0;right:0;bottom:0;left:auto;z-index:999992;width:min(280px,88vw);height:auto;visibility:hidden;pointer-events:none;transform:translateX(110%);transition:transform .25s ease;background:#232323;color:#fff;display:flex;flex-direction:column;box-shadow:-8px 0 24px rgba(0,0,0,.25)}",
         ".ksl-a11y.is-open .ksl-a11y-panel{visibility:visible;pointer-events:auto;transform:translateX(0)}",
-        "@media (min-width:992px){.ksl-a11y.is-open .ksl-a11y-toggle{right:calc(min(280px,88vw) + 16px)}}",
         "@media (max-width:991.98px){.ksl-a11y-toggle{right:0 !important;bottom:calc(132px + env(safe-area-inset-bottom,0px)) !important;width:40px !important;height:44px !important;padding:0 !important;border:0 !important;border-radius:10px 0 0 10px !important;box-shadow:-2px 4px 12px rgba(9,41,108,.18) !important}.ksl-a11y-toggle svg{width:22px;height:22px}}",
         "body.modal-open .ksl-a11y-toggle,body.modal-open .whatsapp-fab,body.modal-open .ksl-wa-pop{opacity:0 !important;visibility:hidden !important;pointer-events:none !important}",
         "body:has(.board-modal:not([hidden])) :is(.ksl-a11y-toggle,.whatsapp-fab,.ksl-wa-pop),body:has(.ksl-mobile-sheet[aria-hidden=\"false\"]) :is(.ksl-a11y-toggle,.whatsapp-fab,.ksl-wa-pop),body:has(#lightbox[style*=\"block\"]) :is(.ksl-a11y-toggle,.whatsapp-fab,.ksl-wa-pop){opacity:0 !important;visibility:hidden !important;pointer-events:none !important}",
@@ -43,7 +43,7 @@
         ".ksl-wa-pop p{margin:0 0 12px;font:600 14px/1.45 Arial,Helvetica,sans-serif;color:#273272}",
         ".ksl-wa-pop a{display:block;margin:0 0 8px;padding:10px 12px;background:#25D366;color:#fff;text-align:center;text-decoration:none;font:700 14px/1 Arial,Helvetica,sans-serif;border-radius:4px}",
         ".ksl-wa-pop button{display:block;width:100%;border:0;background:#216073;color:#fff;padding:8px 10px;cursor:pointer;font:700 14px/1 Arial,Helvetica,sans-serif}",
-        "@media (max-width:991.98px){.ksl-wa-pop{right:48px;bottom:calc(80px + env(safe-area-inset-bottom,0px));border-radius:10px}.ksl-a11y-toggle,.whatsapp-fab{transition:opacity .28s ease,transform .28s ease,visibility .28s ease !important}html.ksl-tabs-hidden .ksl-a11y-toggle,html.ksl-tabs-hidden .whatsapp-fab{opacity:0 !important;visibility:hidden !important;pointer-events:none !important;transform:translateX(120%) !important}}"
+        ".ksl-a11y-toggle,.whatsapp-fab{transition:opacity .5s cubic-bezier(.22,1,.36,1),transform .6s cubic-bezier(.22,1,.36,1),visibility 0s linear 0s,filter .18s ease !important}html.ksl-tabs-hidden .ksl-a11y-toggle,html.ksl-tabs-hidden .whatsapp-fab{opacity:0 !important;visibility:hidden !important;pointer-events:none !important;transform:translateX(130%) scale(.86) !important;transition:opacity .45s ease,transform .5s cubic-bezier(.55,0,.45,1),visibility 0s linear .5s,filter .18s ease !important}@media (max-width:991.98px){.ksl-wa-pop{right:48px;bottom:calc(80px + env(safe-area-inset-bottom,0px));border-radius:10px}}"
     ].join("");
     document.head.appendChild(style);
 
@@ -290,10 +290,6 @@
         }
 
         function hideWhileActive() {
-            if (!mq.matches) {
-                showTabs();
-                return;
-            }
             html.classList.add("ksl-tabs-hidden");
             window.clearTimeout(idleTimer);
             idleTimer = window.setTimeout(showTabs, IDLE_MS);
