@@ -9,6 +9,10 @@
     display: none !important;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: "Open Sans", sans-serif;
     color: #4A4A4A;
@@ -48,6 +52,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     font-weight: 700;
     color: #0165FC;
     margin-right: 14px;
+    transition: color .3s ease;
 }
 
 #header-carousel h1 {
@@ -97,6 +102,16 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     position: relative;
     overflow: hidden;
     background: #09296C;
+    animation: ksl-page-in .45s ease both;
+}
+
+main {
+    animation: ksl-page-in .5s ease both;
+}
+
+@keyframes ksl-page-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
 }
 
 .page-header::before {
@@ -1610,6 +1625,13 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .page-header,
+    main,
+    .board-modal-backdrop,
+    .board-modal-dialog {
+        animation: none;
+    }
     .ksl-morph {
         border-radius: 16px;
         transform: none;
@@ -2323,8 +2345,15 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     }
 
     .navbar .nav-item.dropdown > .dropdown-menu {
+        display: block;
+        top: 100% !important;
         margin-top: 0 !important;
         overflow: visible !important;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(12px);
+        pointer-events: none;
+        transition: opacity .3s ease, transform .3s ease, visibility .3s ease;
     }
 
     .navbar .nav-item.dropdown > .dropdown-menu::before,
@@ -2344,8 +2373,9 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
         top: 100% !important;
         opacity: 1 !important;
         visibility: visible !important;
+        transform: translateY(0);
         pointer-events: auto !important;
-        transition: opacity 150ms ease !important;
+        transition: opacity .3s ease, transform .3s ease, visibility 0s !important;
     }
 
     .navbar .ksl-subdrop > .dropdown-menu {
@@ -2359,8 +2389,9 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
         z-index: 1060;
         opacity: 0 !important;
         visibility: hidden !important;
+        transform: translateX(10px);
         pointer-events: none !important;
-        transition: opacity 120ms ease, visibility 120ms ease;
+        transition: opacity .3s ease, transform .3s ease, visibility .3s ease;
     }
 
     .navbar .ksl-subdrop:hover > .dropdown-menu,
@@ -2368,6 +2399,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     .navbar .ksl-subdrop.is-open > .dropdown-menu {
         opacity: 1 !important;
         visibility: visible !important;
+        transform: translateX(0);
         pointer-events: auto !important;
     }
 }
@@ -2477,7 +2509,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
 .dropdown-item {
     padding: 12px 20px !important;
     border: 0 !important;
-    transition: background-color 160ms ease, color 160ms ease;
+    transition: background-color .3s ease, color .3s ease;
 }
 
 .dropdown-item:hover,
@@ -3061,8 +3093,30 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     margin-bottom: 6px;
 }
 
-.board-grid > div {
+.board-grid > div,
+.board-featured .board-slot {
     display: flex;
+    align-items: stretch;
+}
+
+.board-card .ksl-more {
+    margin-top: auto;
+}
+
+.board-card:hover .ksl-more,
+.board-card:focus-visible .ksl-more {
+    color: #0A3E95;
+}
+
+.board-card:hover .ksl-more span::after,
+.board-card:focus-visible .ksl-more span::after {
+    transform: scaleX(1);
+}
+
+.board-card:hover .ksl-more i,
+.board-card:focus-visible .ksl-more i {
+    color: #0A3E95;
+    animation: ksl-more-swing .9s ease-out;
 }
 
 .board-highlights .board-highlight {
@@ -3086,6 +3140,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
 
 .board-card {
     width: 100%;
+    height: 100%;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -3141,9 +3196,11 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
 
 .board-card-body {
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
+    width: 100%;
     padding: 0;
 }
 
@@ -3158,7 +3215,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     line-height: 1.35;
 }
 
-.board-card-body > p:last-child {
+.board-card-body > p:last-of-type {
     margin: 0;
     font-size: 14px;
     line-height: 1.6;
@@ -3272,6 +3329,7 @@ html.board-motion .board-card.is-in .board-card-body {
 .board-featured {
     display: flex;
     flex-wrap: wrap;
+    align-items: stretch;
     justify-content: center;
     gap: 1.5rem;
     margin-bottom: 0.5rem;
@@ -3326,10 +3384,10 @@ html.board-motion .board-card.is-in .board-card-body {
 .board-modal-dialog {
     position: relative;
     z-index: 1;
-    width: min(520px, 100%);
+    width: min(560px, 100%);
     max-height: min(86vh, 760px);
     overflow: auto;
-    padding: 2rem 1.5rem 1.6rem;
+    padding: 2rem 1.6rem 1.6rem;
     background: #fff;
     text-align: center;
     box-shadow: 0 24px 60px rgba(10, 30, 70, 0.28);
@@ -3384,6 +3442,61 @@ html.board-motion .board-card.is-in .board-card-body {
     margin: 0 0 0.35rem;
     color: #4d5d78;
     font-size: 0.95rem;
+}
+
+.board-modal:not([hidden]) .board-modal-backdrop {
+    animation: ksl-fade .25s ease;
+}
+
+.board-modal:not([hidden]) .board-modal-dialog {
+    animation: ksl-pop .3s ease;
+}
+
+@keyframes ksl-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes ksl-pop {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+}
+
+.board-modal-copy,
+.board-modal-copy p,
+.board-modal-copy li {
+    text-align: left;
+    hyphens: manual;
+    -webkit-hyphens: manual;
+}
+
+.board-modal-copy {
+    margin-top: 0.35rem;
+    color: #334155;
+    line-height: 1.7;
+}
+
+.board-modal-copy p {
+    margin: 0 0 0.75rem;
+}
+
+.board-modal-copy ul {
+    margin: 0 0 0.9rem;
+    padding-left: 1.15rem;
+}
+
+.board-modal-copy li {
+    margin: 0 0 0.28rem;
+    padding: 0;
+}
+
+.board-modal-copy li::marker {
+    color: #99792c;
+}
+
+
+.board-modal-copy p:last-child {
+    margin-bottom: 0;
 }
 
 .board-modal-dialog h3 {
@@ -3605,7 +3718,7 @@ html.board-motion .board-card.is-in .board-card-body {
         font-size: 14px;
     }
 
-    .board-card-body > p:last-child {
+    .board-card-body > p:last-of-type {
         font-size: 13px;
         line-height: 1.55;
     }
@@ -11684,6 +11797,49 @@ body[data-ksl-motif="wheel"] {
     100% { transform: rotate(0); }
 }
 
+a.ksl-more i {
+    width: 22px;
+    height: 22px;
+}
+
+a.ksl-more:hover i,
+a.ksl-more:focus-visible i {
+    animation: none;
+}
+
+a.ksl-more:hover .ksl-ship,
+a.ksl-more:focus-visible .ksl-ship {
+    transform-origin: 50% 80%;
+    animation: ksl-ship-bob 1.15s ease-in-out infinite;
+}
+
+a.ksl-more:hover .ksl-ship-wave,
+a.ksl-more:focus-visible .ksl-ship-wave {
+    transform-origin: center;
+    animation: ksl-wave-roll 1.15s ease-in-out infinite;
+}
+
+a.ksl-more:hover .ksl-ship-flag,
+a.ksl-more:focus-visible .ksl-ship-flag {
+    transform-origin: 0 50%;
+    animation: ksl-flag-flutter .7s ease-in-out infinite;
+}
+
+@keyframes ksl-ship-bob {
+    0%, 100% { transform: translateY(0) rotate(-7deg); }
+    50% { transform: translateY(-1.5px) rotate(7deg); }
+}
+
+@keyframes ksl-wave-roll {
+    0%, 100% { transform: translateX(-0.6px); }
+    50% { transform: translateX(0.8px); }
+}
+
+@keyframes ksl-flag-flutter {
+    0%, 100% { transform: scaleX(1); }
+    50% { transform: scaleX(.78); }
+}
+
 .ksl-more:focus-visible {
     outline: 2px solid #C4A35A;
     outline-offset: 4px;
@@ -12314,7 +12470,6 @@ body[data-ksl-motif="wheel"] {
 /*** Justified paragraphs inside pop-ups ***/
 .ksl-service-modal-summary,
 .ksl-service-modal-detail p,
-.board-modal-dialog p:not(.board-modal-meta, .board-role),
 .ksl-feed-modal-copy p:not(.ksl-feed-modal-meta),
 .product-details-drawer p {
     text-align: justify;

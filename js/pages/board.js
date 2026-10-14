@@ -22,8 +22,7 @@
         '<p class="board-role" id="kslBoardModalRole"></p>' +
         '<h2 id="kslBoardModalTitle"></h2>' +
         '<p class="board-modal-meta" id="kslBoardModalArea"></p>' +
-        '<h3>Qualifications</h3>' +
-        '<p id="kslBoardModalBio"></p>' +
+        '<div class="board-modal-copy" id="kslBoardModalBio"></div>' +
         "</div>";
     (document.getElementById("ksl-page") || document.body).appendChild(modal);
 
@@ -41,14 +40,23 @@
         var img = card.querySelector("img");
         var role = card.querySelector(".board-role");
         var name = card.querySelector("h3");
-        var bio = card.querySelector(".board-card-body > p:last-child");
+        var bio = card.querySelector(".board-card-body > p:last-of-type");
         lastCard = card;
         modal.querySelector(".board-modal-photo img").src = img ? img.getAttribute("src") : "";
         modal.querySelector(".board-modal-photo img").alt = img ? img.alt : "";
         modal.querySelector("#kslBoardModalRole").textContent = role ? role.textContent : "";
         modal.querySelector("#kslBoardModalTitle").textContent = name ? name.textContent : "";
         modal.querySelector("#kslBoardModalArea").textContent = areaLabel(card);
-        modal.querySelector("#kslBoardModalBio").textContent = bio ? bio.textContent : "";
+        var bioEl = modal.querySelector("#kslBoardModalBio");
+        bioEl.replaceChildren();
+        var full = card.querySelector("template.board-bio");
+        if (full && full.content) {
+            bioEl.appendChild(full.content.cloneNode(true));
+        } else if (bio) {
+            var paragraph = document.createElement("p");
+            paragraph.textContent = bio.textContent;
+            bioEl.appendChild(paragraph);
+        }
         modal.hidden = false;
         document.documentElement.style.overflow = "hidden";
         var closeBtn = modal.querySelector(".board-modal-close");
@@ -90,6 +98,13 @@
     });
 
     cards.forEach(function (card) {
+        var body = card.querySelector(".board-card-body");
+        if (body && !body.querySelector(".ksl-more")) {
+            var more = document.createElement("span");
+            more.className = "ksl-more";
+            more.innerHTML = '<span>Read more</span><i aria-hidden="true"><svg viewBox="0 0 16 16"><circle cx="8" cy="2.8" r="1.6"/><path d="M8 4.4V14.2M5 6.6h6M2.6 10.6Q3.6 14.2 8 14.2T13.4 10.6M1.8 11.8l.8-1.2 1.4.9M14.2 11.8l-.8-1.2-1.4.9"/></svg></i>';
+            body.appendChild(more);
+        }
         card.addEventListener("click", function () { openCard(card); });
         card.addEventListener("keydown", function (event) {
             if (event.key === "Enter" || event.key === " ") {
@@ -170,9 +185,46 @@
         cards.forEach(function (card) { card.classList.add("is-in"); });
     }
 
+    function equalizeSections() {
+        document.querySelectorAll(".board-featured, .board-grid").forEach(function (group) {
+            var visible = [];
+            group.querySelectorAll(".board-card").forEach(function (card) {
+                var slot = card.closest(".board-slot");
+                if (slot && slot.hidden) return;
+                card.style.minHeight = "";
+                visible.push(card);
+            });
+            var tallest = 0;
+            visible.forEach(function (card) {
+                if (card.offsetHeight > tallest) tallest = card.offsetHeight;
+            });
+            if (!tallest) return;
+            visible.forEach(function (card) {
+                card.style.minHeight = tallest + "px";
+            });
+        });
+    }
+
+    var equalizeFrame = 0;
+    function queueEqualize() {
+        if (equalizeFrame) return;
+        equalizeFrame = window.requestAnimationFrame(function () {
+            equalizeFrame = 0;
+            equalizeSections();
+        });
+    }
+
+    queueEqualize();
+    window.addEventListener("resize", queueEqualize);
+    window.addEventListener("load", queueEqualize);
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(queueEqualize);
+    }
+
     var filterApply = applyFilter;
     applyFilter = function (name) {
         filterApply(name);
         window.requestAnimationFrame(revealInView);
+        queueEqualize();
     };
 })();
