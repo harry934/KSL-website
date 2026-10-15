@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { getStaffSession } from "@/lib/session";
 import { validatePassword } from "@/lib/accounts";
 import { verifyPassword } from "@/lib/auth-server";
@@ -7,7 +8,7 @@ import { logActivity } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
   const session = await getStaffSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
   const currentPassword = String(body.currentPassword ?? "");
@@ -32,5 +33,9 @@ export async function POST(req: NextRequest) {
 
   await admin.from("admin_profiles").update({ must_change_password: false }).eq("id", session.userId);
   await logActivity(session.userId, "staff", "change password", "admin_profile", session.userId);
+
+  // Changing the password ends existing sessions, so sign in again to keep this person signed in.
+  const supabase = await createClient();
+  await supabase.auth.signInWithPassword({ email: authEmail, password: newPassword });
   return NextResponse.json({ ok: true });
 }
