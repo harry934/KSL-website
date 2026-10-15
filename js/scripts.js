@@ -20,6 +20,7 @@
     ];
 
     var TAIL = [
+        "js/ksl-content.js",
         "js/access.js",
         "js/lang.js",
         "js/main.js?v=" + ASSET_V,

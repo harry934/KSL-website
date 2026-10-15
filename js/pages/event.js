@@ -203,11 +203,12 @@
         document.querySelector(".ksl-article-aside").hidden = true;
     }
 
-    fetch("data/events.json")
-        .then(function (res) {
+    (window.KSL_CONTENT
+        ? window.KSL_CONTENT.fetchJson("/api/public/events", "data/events.json")
+        : fetch("data/events.json").then(function (res) {
             if (!res.ok) throw new Error("events");
             return res.json();
-        })
+        }))
         .then(function (data) {
             var all = (data.upcoming || []).concat(data.past || []).sort(function (a, b) {
                 return String(b.date || "").localeCompare(String(a.date || ""));

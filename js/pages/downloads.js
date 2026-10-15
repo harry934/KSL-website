@@ -194,7 +194,45 @@
         render(window.__kslDownloadsData);
     }
 
-    if (listRoot) {
-        publish(documentsFromPage());
+    function itemsFromJson(data) {
+        var base = data.baseUrl || "";
+        return (data.items || []).map(function (item) {
+            var href = item.href || (item.file ? base + item.file : "");
+            return {
+                title: item.title,
+                subtitle: item.subtitle,
+                category: item.category,
+                categoryLabel: item.categoryLabel,
+                language: item.language,
+                date: item.date,
+                type: item.type,
+                href: href,
+                filename: item.filename || item.file || "",
+                note: "",
+                anchor: item.anchor || item.category
+            };
+        });
     }
+
+    function loadDocuments() {
+        if (!listRoot) {
+            return;
+        }
+        var fallback = function () {
+            publish(documentsFromPage());
+        };
+        (window.KSL_CONTENT
+            ? window.KSL_CONTENT.fetchJson("/api/public/downloads", "data/downloads.json")
+            : fetch("data/downloads.json").then(function (res) { return res.json(); }))
+            .then(function (data) {
+                if (!data || !data.items || !data.items.length) {
+                    fallback();
+                    return;
+                }
+                publish(itemsFromJson(data));
+            })
+            .catch(fallback);
+    }
+
+    loadDocuments();
 })();

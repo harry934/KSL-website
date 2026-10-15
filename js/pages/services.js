@@ -96,13 +96,14 @@
         }
     });
 
-    fetch("data/services.json")
-        .then(function (res) {
+    (window.KSL_CONTENT
+        ? window.KSL_CONTENT.fetchJson("/api/public/services", "data/services.json")
+        : fetch("data/services.json").then(function (res) {
             if (!res.ok) {
                 throw new Error("services.json");
             }
             return res.json();
-        })
+        }))
         .then(function (data) {
             window.kslServicesCatalog = data;
             window.kslServicesBySlug = {};

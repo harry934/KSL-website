@@ -28,7 +28,7 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-5">
       <div>
-        <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
+        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#5c6578]">
           Email
         </label>
         <Input
@@ -41,7 +41,7 @@ export function LoginForm() {
         />
       </div>
       <div>
-        <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
+        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#5c6578]">
           Password
         </label>
         <Input
@@ -53,7 +53,7 @@ export function LoginForm() {
         />
       </div>
       {error && (
-        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+        <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
         </p>
       )}

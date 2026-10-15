@@ -50,9 +50,13 @@
         );
     }
 
-    fetch("data/faq.json")
-        .then(function (res) { return res.json(); })
+    (window.KSL_CONTENT
+        ? window.KSL_CONTENT.fetchJson("/api/public/faq", "data/faq.json")
+        : fetch("data/faq.json").then(function (res) { return res.json(); }))
         .then(function (data) {
+            if (!data) {
+                return;
+            }
             var groups = data.groups || [];
             render(groups, "");
             if (search) {

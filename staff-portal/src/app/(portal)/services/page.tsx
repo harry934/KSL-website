@@ -1,4 +1,19 @@
-import { ModulePlaceholder } from "@/components/portal/module-placeholder";
-export default function Page() {
-  return <ModulePlaceholder module="services" />;
+import { ServicesEditor } from "@/components/services/services-editor";
+import { PageHeader } from "@/components/portal/page-header";
+import { getStaffSession } from "@/lib/session";
+import { canAccess } from "@/lib/modules";
+import { redirect } from "next/navigation";
+
+export default async function ServicesPage() {
+  const session = await getStaffSession();
+  if (!session || !canAccess(session.permissions, "services", "view", session.isSuperAdmin)) {
+    redirect("/");
+  }
+
+  return (
+    <>
+      <PageHeader title="Services" description="Service cards, modals, and download links on the public site." />
+      <ServicesEditor />
+    </>
+  );
 }

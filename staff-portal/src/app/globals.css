@@ -1,15 +1,56 @@
 @import "tailwindcss";
 
 :root {
-  --ksl-navy: #0b1f3f;
-  --ksl-gold: #c4a35a;
-  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --ksl-primary: #0165fc;
+  --ksl-primary-dark: #0a3e95;
+  --ksl-navy: #09296c;
+  --ksl-ink: #14213d;
+  --ksl-muted: #5c6578;
+  --ksl-gold: #99792c;
+  --ksl-gold-light: #c4a35a;
+  --ksl-surface: #ffffff;
+  --ksl-bg: #f7f9fb;
+  --ksl-border: #dde5f0;
+  --ksl-topbar: #0a3e95;
+  --font-sans: var(--font-manrope), "Open Sans", system-ui, sans-serif;
+  --font-display: var(--font-poppins), "Poppins", system-ui, sans-serif;
 }
 
 @theme inline {
   --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --color-ksl-primary: var(--ksl-primary);
+  --color-ksl-navy: var(--ksl-navy);
+  --color-ksl-gold: var(--ksl-gold);
 }
 
 body {
   font-family: var(--font-sans);
+  color: var(--ksl-ink);
+  background: var(--ksl-bg);
+}
+
+.ksl-display {
+  font-family: var(--font-display);
+}
+
+.ksl-card {
+  background: var(--ksl-surface);
+  border: 1px solid var(--ksl-border);
+  border-radius: 4px;
+  box-shadow: 0 10px 28px rgba(39, 50, 114, 0.06);
+}
+
+.ksl-kicker {
+  color: var(--ksl-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ksl-gold-rule {
+  height: 3px;
+  width: 48px;
+  background: linear-gradient(90deg, var(--ksl-gold-light), var(--ksl-gold));
+  border-radius: 1px;
 }

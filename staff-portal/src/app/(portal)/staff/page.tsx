@@ -1,6 +1,7 @@
 import { getStaffSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { StaffManager } from "@/components/staff/staff-manager";
+import { PageHeader } from "@/components/portal/page-header";
 
 export default async function StaffPage() {
   const session = await getStaffSession();
@@ -8,7 +9,7 @@ export default async function StaffPage() {
 
   return (
     <>
-      <h2 className="mb-6 text-lg font-semibold text-white">Staff management</h2>
+      <PageHeader title="Staff management" description="Register agents and set module permissions (osTicket-style)." />
       <StaffManager />
     </>
   );

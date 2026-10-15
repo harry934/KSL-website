@@ -112,9 +112,7 @@
         });
     }
 
-    fetch("data/careers.json")
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
+    function renderCareers(data) {
             var vacancies = data.vacancies || [];
             if (!vacancies.length && empty) {
                 empty.hidden = false;
@@ -148,6 +146,14 @@
             if (how) {
                 how.textContent = data.applyNote;
             }
+    }
+
+    (window.KSL_CONTENT
+        ? window.KSL_CONTENT.fetchJson("/api/public/careers", "data/careers.json")
+        : fetch("data/careers.json").then(function (res) { return res.json(); }))
+        .then(function (data) {
+            if (!data) throw new Error("careers");
+            renderCareers(data);
         })
         .catch(function () {
             if (empty) {

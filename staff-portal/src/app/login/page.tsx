@@ -1,4 +1,6 @@
 import { LoginForm } from "@/components/auth/login-form";
+import { KslMotif } from "@/components/brand/ksl-motif";
+import Image from "next/image";
 
 export const metadata = {
   title: "Sign in — KSL Content portal",
@@ -7,22 +9,27 @@ export const metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0B1F3F] px-4">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-40"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 20% 20%, #1a4a8a 0%, transparent 45%), radial-gradient(circle at 80% 80%, #C4A35A22 0%, transparent 40%)",
-        }}
-      />
-      <div className="relative w-full max-w-md">
-        <div className="mb-8 text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#C4A35A]">Kenya Shipyards</p>
-          <h1 className="mt-2 text-2xl font-semibold text-white">Content portal</h1>
-          <p className="mt-2 text-sm text-slate-400">Staff sign-in only. No public registration.</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-[#0d2847]/90 p-8 shadow-2xl shadow-black/30 backdrop-blur">
-          <LoginForm />
+    <div className="relative flex min-h-screen flex-col bg-[#F7F9FB]">
+      <div className="h-1.5 bg-gradient-to-r from-[#09296C] via-[#0A3E95] to-[#0165FC]" />
+      <div className="relative flex flex-1 items-center justify-center overflow-hidden px-4 py-12">
+        <KslMotif className="pointer-events-none absolute right-[-5%] top-[10%] h-[min(480px,70vh)] w-[min(480px,70vw)] opacity-[0.08]" />
+        <div className="relative z-10 w-full max-w-md">
+          <div className="mb-8 text-center">
+            <Image
+              src="/ksl-logo.png"
+              alt="Kenya Shipyards Limited"
+              width={72}
+              height={72}
+              className="mx-auto rounded-full border border-[#DDE5F0] bg-white p-1 shadow-sm"
+            />
+            <p className="ksl-kicker mt-5">Kenya Shipyards Limited</p>
+            <h1 className="ksl-display mt-2 text-2xl font-semibold text-[#09296C]">Content portal</h1>
+            <div className="ksl-gold-rule mx-auto mt-3" />
+            <p className="mt-4 text-sm text-[#5c6578]">Staff sign-in only. No public registration.</p>
+          </div>
+          <div className="ksl-card p-8">
+            <LoginForm />
+          </div>
         </div>
       </div>
     </div>

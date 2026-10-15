@@ -15,7 +15,7 @@ Optional: `npx skills add supabase/agent-skills` for Supabase-focused agent skil
 ## Setup
 
 1. **Supabase SQL** — In [Supabase Dashboard](https://supabase.com/dashboard) → SQL → New query, run the full script:
-   `../supabase/migrations/001_staff_portal_schema.sql`
+   `../supabase/migrations/001_staff_portal_schema.sql` through `005_organization_press.sql`
 
 2. **Environment** — Copy `.env.example` to `.env.local` (already configured locally; never commit `.env.local`).
 
@@ -25,11 +25,20 @@ Optional: `npx skills add supabase/agent-skills` for Supabase-focused agent skil
    node scripts/bootstrap-super-admin.mjs your@email.com YourSecurePassword "Your Name"
    ```
 
-4. **Run locally**:
+4. **Run locally** (must be inside `staff-portal`, not the main website folder):
    ```bash
+   cd staff-portal
    npm run dev
    ```
-   Open http://localhost:3000/login
+   Wait until the terminal shows **Ready** (first start can take ~30–60s while `/login` compiles).
+
+   Then open exactly:
+   - **http://localhost:3000/login**  
+   - or **http://127.0.0.1:3000/login**
+
+   Root `http://localhost:3000/` redirects to login when you are signed out.
+
+   If port 3000 is busy, run `npm run dev -- -p 3001` and use http://localhost:3001/login
 
 ## Security
 
@@ -41,10 +50,34 @@ Optional: `npx skills add supabase/agent-skills` for Supabase-focused agent skil
 
 | Status | Module |
 |--------|--------|
-| Live | Staff (super admin), FAQ |
-| Planned | News, events, gallery, services, careers, … |
+| Live | Staff, FAQ, News, Events, Gallery, Services, Careers, Downloads, **Organization**, **Press**, Account / password |
+| Planned | Products, CSR, site settings, … |
 
-Import FAQ from the main site JSON:
+### Connect the public website
+
+On the main site, set the portal URL on the root element (use your deployed portal origin, no trailing slash):
+
+```html
+<html lang="en" data-ksl-content-api="https://your-portal-host.example">
+```
+
+The site loads `js/ksl-content.js` and will read FAQ, news, events, services, gallery, careers, and downloads from `/api/public/*` with fallback to local `data/*.json`.
+
+### Deploy on Vercel
+
+1. Import the `staff-portal` folder as a new project.
+2. Add env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+3. Use a **non-obvious** hostname (not `admin.*).
+4. Set `data-ksl-content-api` on the main site to that URL.
+
+Import from the main site JSON:
 ```bash
 node scripts/import-faq-from-json.mjs
+node scripts/import-news-from-json.mjs
+node scripts/import-events-from-json.mjs
+node scripts/import-services-from-json.mjs
+node scripts/import-careers-from-json.mjs
+node scripts/import-downloads-from-json.mjs
+node scripts/import-organization-from-json.mjs
+node scripts/import-press-from-json.mjs
 ```

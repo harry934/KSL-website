@@ -1,4 +1,5 @@
 import { FaqEditor } from "@/components/faq/faq-editor";
+import { PageHeader } from "@/components/portal/page-header";
 import { getStaffSession } from "@/lib/session";
 import { canAccess } from "@/lib/modules";
 import { redirect } from "next/navigation";
@@ -11,7 +12,7 @@ export default async function FaqPage() {
 
   return (
     <>
-      <h2 className="mb-6 text-lg font-semibold text-white">FAQ</h2>
+      <PageHeader title="FAQ" description="Questions and answers shown on the public FAQ page." />
       <FaqEditor />
     </>
   );

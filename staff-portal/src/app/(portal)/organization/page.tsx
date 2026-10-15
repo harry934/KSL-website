@@ -1,4 +1,19 @@
-import { ModulePlaceholder } from "@/components/portal/module-placeholder";
-export default function Page() {
-  return <ModulePlaceholder module="organization" />;
+import { OrganizationEditor } from "@/components/organization/organization-editor";
+import { PageHeader } from "@/components/portal/page-header";
+import { getStaffSession } from "@/lib/session";
+import { canAccess } from "@/lib/modules";
+import { redirect } from "next/navigation";
+
+export default async function OrganizationPage() {
+  const session = await getStaffSession();
+  if (!session || !canAccess(session.permissions, "organization", "view", session.isSuperAdmin)) {
+    redirect("/");
+  }
+
+  return (
+    <>
+      <PageHeader title="Organization" description="Leadership and yard summaries on the organization page." />
+      <OrganizationEditor />
+    </>
+  );
 }

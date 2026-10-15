@@ -1,15 +1,15 @@
 "use client";
 
 import type { ComponentType } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Anchor,
   Briefcase,
   Calendar,
   Download,
   HelpCircle,
-  Image,
+  Image as ImageIcon,
   LayoutDashboard,
   LogOut,
   Megaphone,
@@ -27,7 +27,7 @@ import { createClient } from "@/lib/supabase/client";
 const ICONS: Partial<Record<ModuleKey, ComponentType<{ className?: string }>>> = {
   news: Newspaper,
   events: Calendar,
-  gallery: Image,
+  gallery: ImageIcon,
   services: Wrench,
   products: Package,
   careers: Briefcase,
@@ -60,29 +60,29 @@ export function Sidebar({ session }: { session: StaffSession }) {
     window.location.href = "/login";
   }
 
+  const linkClass = (active: boolean) =>
+    cn(
+      "flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium transition border-l-[3px]",
+      active
+        ? "border-[#99792c] bg-[#0165FC]/[0.06] text-[#09296C]"
+        : "border-transparent text-[#5c6578] hover:border-[#C4A35A]/50 hover:bg-[#F7F9FB] hover:text-[#09296C]"
+    );
+
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-white/10 bg-[#071a33]">
-      <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#C4A35A]/15 text-[#C4A35A]">
-          <Anchor className="h-5 w-5" aria-hidden />
-        </div>
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-400">KSL</p>
-          <p className="text-sm font-semibold text-white">Content portal</p>
+    <aside className="flex w-[260px] shrink-0 flex-col border-r border-[#DDE5F0] bg-white">
+      <div className="border-b border-[#DDE5F0] bg-[#0A3E95] px-5 py-4">
+        <div className="flex items-center gap-3">
+          <Image src="/ksl-logo.png" alt="" width={44} height={44} className="rounded-full bg-white p-0.5" />
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/80">Kenya Shipyards</p>
+            <p className="ksl-display text-sm font-semibold text-white">Content portal</p>
+          </div>
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        <Link
-          href="/"
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
-            pathname === "/"
-              ? "bg-[#C4A35A]/15 text-[#f0d9a0]"
-              : "text-slate-300 hover:bg-white/5 hover:text-white"
-          )}
-        >
-          <LayoutDashboard className="h-4 w-4 shrink-0 opacity-80" />
+      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
+        <Link href="/" className={linkClass(pathname === "/")}>
+          <LayoutDashboard className="h-4 w-4 shrink-0 text-[#0165FC]" />
           Dashboard
         </Link>
 
@@ -91,35 +91,27 @@ export function Sidebar({ session }: { session: StaffSession }) {
           const Icon = ICONS[key] ?? LayoutDashboard;
           const active = pathname === href || pathname.startsWith(href + "/");
           return (
-            <Link
-              key={key}
-              href={href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
-                active
-                  ? "bg-[#C4A35A]/15 text-[#f0d9a0]"
-                  : "text-slate-300 hover:bg-white/5 hover:text-white"
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0 opacity-80" />
+            <Link key={key} href={href} className={linkClass(active)}>
+              <Icon className={cn("h-4 w-4 shrink-0", active ? "text-[#0165FC]" : "text-[#9aa3b5]")} />
               {MODULE_LABELS[key]}
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-white/10 p-4">
-        <p className="truncate text-sm font-medium text-white">{session.displayName}</p>
-        <p className="truncate text-xs text-slate-500">{session.email}</p>
+      <div className="border-t border-[#DDE5F0] bg-[#F7F9FB] p-4">
+        <Link href="/account" className="mb-2 block text-xs font-semibold text-[#0165FC] hover:underline">
+          Account settings
+        </Link>
+        <p className="truncate text-sm font-semibold text-[#09296C]">{session.displayName}</p>
+        <p className="truncate text-xs text-[#5c6578]">{session.email}</p>
         {session.isSuperAdmin && (
-          <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[#C4A35A]">
-            Super admin
-          </p>
+          <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[#99792c]">Super admin</p>
         )}
         <button
           type="button"
           onClick={() => signOut()}
-          className="mt-3 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white"
+          className="mt-3 flex w-full items-center gap-2 rounded px-2 py-2 text-sm text-[#5c6578] transition hover:bg-white hover:text-[#09296C]"
         >
           <LogOut className="h-4 w-4" />
           Sign out

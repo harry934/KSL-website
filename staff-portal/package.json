@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "bootstrap:admin": "node scripts/bootstrap-super-admin.mjs",
-    "import:faq": "node scripts/import-faq-from-json.mjs"
+    "import:faq": "node scripts/import-faq-from-json.mjs",
+    "import:news": "node scripts/import-news-from-json.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

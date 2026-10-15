@@ -1547,9 +1547,13 @@
             });
         });
 
-        fetch("data/gallery.json")
-            .then(function (res) { return res.json(); })
+        (window.KSL_CONTENT
+            ? window.KSL_CONTENT.fetchJson("/api/public/gallery", "data/gallery.json")
+            : fetch("data/gallery.json").then(function (res) { return res.json(); }))
             .then(function (data) {
+                if (!data) {
+                    return;
+                }
                 galleryPhotos = data.photos || [];
                 renderGallery();
                 renderVideos(data.videos || []);
@@ -1625,18 +1629,21 @@
         if (searchIndexLoading) {
             return searchIndexLoading;
         }
-        function grab(url) {
-            return fetch(url).then(function (res) { return res.json(); }).catch(function () { return null; });
+        function grab(apiPath, fallbackPath) {
+            if (window.KSL_CONTENT) {
+                return window.KSL_CONTENT.fetchJson(apiPath, fallbackPath).catch(function () { return null; });
+            }
+            return fetch(fallbackPath).then(function (res) { return res.json(); }).catch(function () { return null; });
         }
         searchIndexLoading = Promise.all([
-            grab("data/news.json"),
-            grab("data/services.json"),
-            grab("data/faq.json"),
-            grab("data/events.json"),
-            grab("data/downloads.json"),
-            grab("data/careers.json"),
-            grab("data/organization.json"),
-            grab("data/gallery.json")
+            grab("/api/public/news", "data/news.json"),
+            grab("/api/public/services", "data/services.json"),
+            grab("/api/public/faq", "data/faq.json"),
+            grab("/api/public/events", "data/events.json"),
+            grab("/api/public/downloads", "data/downloads.json"),
+            grab("/api/public/careers", "data/careers.json"),
+            grab("/api/public/organization", "data/organization.json"),
+            grab("/api/public/gallery", "data/gallery.json")
         ]).then(function (results) {
             var list = SEARCH_PAGES.slice();
             var news = results[0];

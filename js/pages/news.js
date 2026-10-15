@@ -190,14 +190,18 @@
             grid.setAttribute("aria-busy", "true");
             grid.innerHTML = '<p class="ksl-search-loading"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Loading news…</p>';
             Promise.all([
-                fetch("data/news.json").then(function (res) {
-                    if (!res.ok) throw new Error("news");
-                    return res.json();
-                }),
-                fetch("data/events.json").then(function (res) {
-                    if (!res.ok) throw new Error("events");
-                    return res.json();
-                })
+                (window.KSL_CONTENT
+                    ? window.KSL_CONTENT.fetchJson("/api/public/news", "data/news.json")
+                    : fetch("data/news.json").then(function (res) {
+                        if (!res.ok) throw new Error("news");
+                        return res.json();
+                    })),
+                (window.KSL_CONTENT
+                    ? window.KSL_CONTENT.fetchJson("/api/public/events", "data/events.json")
+                    : fetch("data/events.json").then(function (res) {
+                        if (!res.ok) throw new Error("events");
+                        return res.json();
+                    }))
             ]).then(function (pair) {
                 var news = pair[0];
                 var events = pair[1];
@@ -239,30 +243,39 @@
 
     var press = document.getElementById("ksl-press-kit");
     if (press) {
-        fetch("data/press.json")
-            .then(function (res) { return res.json(); })
-            .then(function (data) {
-                fetch("data/downloads.json")
-                    .then(function (r) { return r.json(); })
-                    .then(function (dl) {
-                        var links = (data.assets || []).map(function (asset) {
-                            var href = asset.href;
-                            if (asset.downloadId) {
-                                var item = (dl.items || []).find(function (i) { return i.id === asset.downloadId; });
-                                if (item) {
-                                    href = dl.baseUrl + item.file;
-                                }
-                            }
-                            if (asset.downloadId && window.kslDocButton) {
-                                return '<li>' + window.kslDocButton(href, asset.title) + '</li>';
-                            }
-                            return '<li><a href="' + href + '" target="_blank" rel="noopener">' + asset.title + '</a> <span class="text-muted">(' + asset.type + ')</span></li>';
-                        }).join("");
-                        press.innerHTML =
-                            "<p>" + data.boilerplate + "</p>" +
-                            "<p><strong>Media contact:</strong> <a href=\"mailto:" + data.contactEmail + "\">" + data.contactEmail + "</a> · " + data.contactPhone + "</p>" +
-                            "<h3 class=\"h5 mt-4\">Press assets</h3><ul class=\"ksl-press-list\">" + links + "</ul>";
-                    });
-            });
+        function fetchPress() {
+            return window.KSL_CONTENT
+                ? window.KSL_CONTENT.fetchJson("/api/public/press", "data/press.json")
+                : fetch("data/press.json").then(function (res) { return res.json(); });
+        }
+        function fetchDownloads() {
+            return window.KSL_CONTENT
+                ? window.KSL_CONTENT.fetchJson("/api/public/downloads", "data/downloads.json")
+                : fetch("data/downloads.json").then(function (r) { return r.json(); });
+        }
+        Promise.all([fetchPress(), fetchDownloads()]).then(function (pair) {
+            var data = pair[0];
+            var dl = pair[1];
+            if (!data || !dl) {
+                return;
+            }
+            var links = (data.assets || []).map(function (asset) {
+                var href = asset.href;
+                if (asset.downloadId) {
+                    var item = (dl.items || []).find(function (i) { return i.id === asset.downloadId; });
+                    if (item) {
+                        href = item.href || (dl.baseUrl + (item.file || item.filename));
+                    }
+                }
+                if (asset.downloadId && window.kslDocButton) {
+                    return '<li>' + window.kslDocButton(href, asset.title) + '</li>';
+                }
+                return '<li><a href="' + href + '" target="_blank" rel="noopener">' + asset.title + '</a> <span class="text-muted">(' + asset.type + ')</span></li>';
+            }).join("");
+            press.innerHTML =
+                "<p>" + data.boilerplate + "</p>" +
+                "<p><strong>Media contact:</strong> <a href=\"mailto:" + data.contactEmail + "\">" + data.contactEmail + "</a> · " + data.contactPhone + "</p>" +
+                "<h3 class=\"h5 mt-4\">Press assets</h3><ul class=\"ksl-press-list\">" + links + "</ul>";
+        });
     }
 })();

@@ -174,9 +174,12 @@
         page.classList.remove("is-loading");
     }
 
-    fetch("data/news.json")
-        .then(function (res) { return res.json(); })
+    (window.KSL_CONTENT ? window.KSL_CONTENT.fetchJson("/api/public/news", "data/news.json") : fetch("data/news.json").then(function (res) { return res.json(); }))
         .then(function (data) {
+            if (!data) {
+                renderNotFound();
+                return;
+            }
             var items = data.items || [];
             var item = items.filter(function (i) { return i.slug === slug; })[0];
             if (item) {

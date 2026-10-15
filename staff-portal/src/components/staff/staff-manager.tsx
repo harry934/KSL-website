@@ -95,7 +95,7 @@ export function StaffManager() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-slate-400">
+      <div className="flex items-center gap-2 text-[#5c6578]">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading staff…
       </div>
     );
@@ -104,7 +104,7 @@ export function StaffManager() {
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-sm text-slate-400">Register agents and assign which parts of the website they can change.</p>
+        <p className="text-sm text-[#5c6578]">Register agents and assign which parts of the website they can change.</p>
         <Button type="button" onClick={() => setShowForm(!showForm)}>
           <UserPlus className="h-4 w-4" />
           Add agent
@@ -112,26 +112,26 @@ export function StaffManager() {
       </div>
 
       {error && (
-        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">{error}</p>
+        <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
       )}
 
       {showForm && (
         <form
           onSubmit={createStaff}
-          className="rounded-xl border border-white/10 bg-[#0d2847]/80 p-6 space-y-5"
+          className="ksl-card space-y-5 p-6"
         >
-          <h2 className="text-lg font-semibold text-white">New agent</h2>
+          <h2 className="ksl-display text-lg font-semibold text-[#09296C]">New agent</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs text-slate-400">Email</label>
+              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Email</label>
               <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-slate-400">Display name</label>
+              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Display name</label>
               <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs text-slate-400">Temporary password (min 8)</label>
+              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Temporary password (min 8)</label>
               <Input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -145,7 +145,7 @@ export function StaffManager() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-xs uppercase text-slate-500">
+                <tr className="border-b border-[#DDE5F0] text-xs uppercase text-[#5c6578]">
                   <th className="py-2 pr-4">Module</th>
                   <th className="px-2 py-2">View</th>
                   <th className="px-2 py-2">Edit</th>
@@ -155,15 +155,15 @@ export function StaffManager() {
               </thead>
               <tbody>
                 {permissions.map((p) => (
-                  <tr key={p.module_key} className="border-b border-white/5">
-                    <td className="py-2 pr-4 text-slate-200">{MODULE_LABELS[p.module_key]}</td>
+                  <tr key={p.module_key} className="border-b border-[#EEF3FA]">
+                    <td className="py-2 pr-4 text-[#14213d]">{MODULE_LABELS[p.module_key]}</td>
                     {(["can_view", "can_edit", "can_publish", "can_delete"] as const).map((field) => (
                       <td key={field} className="px-2 py-2 text-center">
                         <input
                           type="checkbox"
                           checked={p[field]}
                           onChange={() => togglePerm(p.module_key, field)}
-                          className="h-4 w-4 rounded border-white/20 accent-[#C4A35A]"
+                          className="h-4 w-4 rounded border-[#DDE5F0] accent-[#0165FC]"
                         />
                       </td>
                     ))}
@@ -180,9 +180,9 @@ export function StaffManager() {
         </form>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-white/10">
+      <div className="ksl-card overflow-hidden">
         <table className="w-full text-left text-sm">
-          <thead className="bg-[#071a33] text-xs uppercase text-slate-500">
+          <thead className="bg-[#F7F9FB] text-xs uppercase text-[#5c6578]">
             <tr>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Email</th>
@@ -192,17 +192,17 @@ export function StaffManager() {
           </thead>
           <tbody>
             {staff.map((row) => (
-              <tr key={row.id} className="border-t border-white/5">
-                <td className="px-4 py-3 font-medium text-white">{row.display_name}</td>
-                <td className="px-4 py-3 text-slate-400">{row.email}</td>
+              <tr key={row.id} className="border-t border-[#EEF3FA]">
+                <td className="px-4 py-3 font-medium text-[#09296C]">{row.display_name}</td>
+                <td className="px-4 py-3 text-[#5c6578]">{row.email}</td>
                 <td className="px-4 py-3">
                   {row.is_super_admin ? (
-                    <span className="text-[#C4A35A]">Super admin</span>
+                    <span className="font-semibold text-[#99792c]">Super admin</span>
                   ) : (
-                    <span className="text-slate-400">Agent</span>
+                    <span className="text-[#5c6578]">Agent</span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-slate-500">
+                <td className="px-4 py-3 text-[#5c6578]">
                   {row.is_super_admin
                     ? "All"
                     : row.permissions.filter((p) => p.can_view).map((p) => MODULE_LABELS[p.module_key]).join(", ") ||
