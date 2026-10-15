@@ -1,44 +1,59 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { ModulePermission } from "@/lib/modules";
+import { isInternalEmail } from "@/lib/accounts";
 
 export type StaffSession = {
   userId: string;
+  username: string;
   email: string;
   displayName: string;
   isSuperAdmin: boolean;
   isActive: boolean;
+  mustChangePassword: boolean;
   permissions: ModulePermission[];
 };
 
-export async function getStaffSession(): Promise<StaffSession | null> {
+type ProfileRow = {
+  display_name: string;
+  username: string | null;
+  contact_email: string | null;
+  is_super_admin: boolean;
+  is_active: boolean;
+  must_change_password: boolean;
+  admin_module_permissions: ModulePermission[] | null;
+};
+
+export const getStaffSession = cache(async (): Promise<StaffSession | null> => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const admin = await import("@/lib/supabase/admin").then((m) => m.createAdminClient());
-  const { data: profile } = await admin
+  const { data } = await createAdminClient()
     .from("admin_profiles")
-    .select("display_name, is_super_admin, is_active")
+    .select(
+      "display_name, username, contact_email, is_super_admin, is_active, must_change_password, admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
+    )
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!profile || !profile.is_active) {
-    return null;
-  }
+  const profile = data as ProfileRow | null;
+  if (!profile || !profile.is_active) return null;
 
-  const { data: perms } = await admin
-    .from("admin_module_permissions")
-    .select("module_key, can_view, can_edit, can_publish, can_delete")
-    .eq("profile_id", user.id);
+  const authEmail = user.email ?? "";
+  const email = profile.contact_email || (isInternalEmail(authEmail) ? "" : authEmail);
 
   return {
     userId: user.id,
-    email: user.email ?? "",
-    displayName: profile.display_name || user.email || "Staff",
+    username: profile.username ?? "",
+    email,
+    displayName: profile.display_name || profile.username || email || "Staff",
     isSuperAdmin: profile.is_super_admin,
     isActive: profile.is_active,
-    permissions: (perms ?? []) as ModulePermission[],
+    mustChangePassword: profile.must_change_password,
+    permissions: profile.admin_module_permissions ?? [],
   };
-}
+});

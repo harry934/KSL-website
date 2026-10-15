@@ -10,7 +10,7 @@ export async function GET() {
     .eq("status", "published")
     .order("sort_order");
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
   return NextResponse.json(
     { photos: (data ?? []).map(toPublicPhoto) },

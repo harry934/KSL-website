@@ -9,8 +9,8 @@ export async function GET() {
     admin.from("service_items").select("*").order("sort_order", { ascending: true }),
   ]);
 
-  if (settingsRes.error) return NextResponse.json({ error: settingsRes.error.message }, { status: 500 });
-  if (itemsRes.error) return NextResponse.json({ error: itemsRes.error.message }, { status: 500 });
+  if (settingsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
+  if (itemsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
   const payload = toPublicServicesPayload(
     settingsRes.data as ServicesSettings | null,

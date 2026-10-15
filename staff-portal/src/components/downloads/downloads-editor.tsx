@@ -96,7 +96,7 @@ export function DownloadsEditor() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-[#5c6578]">
+      <div className="flex items-center gap-2 text-[#5b6775]">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading downloads…
       </div>
     );
@@ -104,11 +104,11 @@ export function DownloadsEditor() {
 
   return (
     <div className="space-y-6">
-      {message && <p className="text-sm font-medium text-[#0165FC]">{message}</p>}
+      {message && <p className="text-sm font-medium text-[#0b1f3a]">{message}</p>}
 
       <div className="ksl-card space-y-4 p-6">
-        <h2 className="ksl-display text-lg font-semibold text-[#09296C]">File base URL</h2>
-        <p className="text-sm text-[#5c6578]">
+        <h2 className="text-[15px] font-bold text-[#0b1f3a]">File base URL</h2>
+        <p className="text-sm text-[#5b6775]">
           Prepended to each item&apos;s file name on the public site (e.g. corporate documents folder).
         </p>
         <Input
@@ -127,66 +127,66 @@ export function DownloadsEditor() {
 
       {editing && (
         <div className="ksl-card space-y-4 p-6">
-          <h2 className="ksl-display text-lg font-semibold text-[#09296C]">
+          <h2 className="text-[15px] font-bold text-[#0b1f3a]">
             {items.some((i) => i.id === editing.id) ? "Edit document" : "New document"}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">ID (slug)</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">ID (slug)</label>
               <Input value={editing.id ?? ""} onChange={(e) => setEditing({ ...editing, id: e.target.value })} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Anchor (page section)</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Anchor (page section)</label>
               <Input value={editing.anchor ?? ""} onChange={(e) => setEditing({ ...editing, anchor: e.target.value })} />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Title</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Title</label>
               <Input value={editing.title ?? ""} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Subtitle</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Subtitle</label>
               <Input value={editing.subtitle ?? ""} onChange={(e) => setEditing({ ...editing, subtitle: e.target.value })} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Category key</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Category key</label>
               <Input value={editing.category ?? ""} onChange={(e) => setEditing({ ...editing, category: e.target.value })} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Category label</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Category label</label>
               <Input
                 value={editing.category_label ?? ""}
                 onChange={(e) => setEditing({ ...editing, category_label: e.target.value })}
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">File name</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">File name</label>
               <Input value={editing.file_name ?? ""} onChange={(e) => setEditing({ ...editing, file_name: e.target.value })} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Full URL override</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Full URL override</label>
               <Input
                 value={editing.external_href ?? ""}
                 onChange={(e) => setEditing({ ...editing, external_href: e.target.value })}
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Type</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Type</label>
               <Input value={editing.file_type ?? ""} onChange={(e) => setEditing({ ...editing, file_type: e.target.value })} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Language</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Language</label>
               <Input value={editing.language ?? ""} onChange={(e) => setEditing({ ...editing, language: e.target.value })} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Date</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Date</label>
               <Input value={editing.doc_date ?? ""} onChange={(e) => setEditing({ ...editing, doc_date: e.target.value })} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Alias of (id)</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Alias of (id)</label>
               <Input value={editing.alias_of ?? ""} onChange={(e) => setEditing({ ...editing, alias_of: e.target.value })} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Sort order</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Sort order</label>
               <Input
                 type="number"
                 value={editing.sort_order ?? 0}
@@ -194,9 +194,9 @@ export function DownloadsEditor() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Status</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Status</label>
               <select
-                className="w-full rounded border border-[#DDE5F0] bg-white px-3 py-2.5 text-sm"
+                className="w-full rounded border border-[#d7dde5] bg-white px-3 py-2.5 text-sm"
                 value={editing.status ?? "draft"}
                 onChange={(e) => setEditing({ ...editing, status: e.target.value })}
               >
@@ -206,8 +206,8 @@ export function DownloadsEditor() {
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Upload file (optional)</label>
-              <input type="file" className="text-sm" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])} />
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Upload file (optional)</label>
+              <input type="file" accept=".pdf,.doc,.docx,application/pdf" className="text-sm" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])} />
             </div>
           </div>
           <div className="flex gap-3">
@@ -217,9 +217,9 @@ export function DownloadsEditor() {
         </div>
       )}
 
-      <div className="ksl-card overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-[#F7F9FB] text-xs uppercase text-[#5c6578]">
+      <div className="ksl-card overflow-x-auto">
+        <table className="w-full min-w-[640px] text-left text-[13px]">
+          <thead className="bg-[#f4f6f8] text-xs uppercase text-[#5b6775]">
             <tr>
               <th className="px-4 py-3">Title</th>
               <th className="px-4 py-3">Category</th>
@@ -230,13 +230,13 @@ export function DownloadsEditor() {
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id} className="border-t border-[#EEF3FA]">
-                <td className="px-4 py-3 font-medium text-[#09296C]">{item.title}</td>
-                <td className="px-4 py-3 text-[#5c6578]">{item.category_label}</td>
-                <td className="px-4 py-3 text-[#5c6578]">{item.file_name || item.external_href}</td>
-                <td className="px-4 py-3 capitalize text-[#5c6578]">{item.status}</td>
+              <tr key={item.id} className="border-t border-[#eef2f6]">
+                <td className="px-4 py-3 font-medium text-[#0b1f3a]">{item.title}</td>
+                <td className="px-4 py-3 text-[#5b6775]">{item.category_label}</td>
+                <td className="px-4 py-3 text-[#5b6775]">{item.file_name || item.external_href}</td>
+                <td className="px-4 py-3 capitalize text-[#5b6775]">{item.status}</td>
                 <td className="px-4 py-3 text-right">
-                  <button type="button" className="text-[#0165FC] hover:underline" onClick={() => setEditing(item)}>
+                  <button type="button" className="text-[#0b1f3a] hover:underline" onClick={() => setEditing(item)}>
                     Edit
                   </button>
                   <button type="button" className="ml-3 text-red-600" onClick={() => remove(item.id)} aria-label="Delete">

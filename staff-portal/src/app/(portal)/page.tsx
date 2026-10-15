@@ -1,51 +1,134 @@
+import Link from "next/link";
 import { getStaffSession } from "@/lib/session";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import { PageHeader } from "@/components/portal/page-header";
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+
+type CountRow = { module_key: ModuleKey; published: number; draft: number };
+type ActivityRow = {
+  id: string;
+  module_key: string | null;
+  action: string;
+  entity_type: string | null;
+  created_at: string;
+  admin_profiles: { display_name: string; username: string } | null;
+};
+
+const QUICK_ACTIONS: { module: ModuleKey; label: string }[] = [
+  { module: "news", label: "Post news" },
+  { module: "events", label: "Add event" },
+  { module: "gallery", label: "Upload photos" },
+  { module: "careers", label: "Post vacancy" },
+  { module: "downloads", label: "Add download" },
+];
+
+function formatWhen(iso: string) {
+  return new Intl.DateTimeFormat("en-KE", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Africa/Nairobi",
+  }).format(new Date(iso));
+}
+
+function describe(row: ActivityRow) {
+  const area = row.module_key && row.module_key in MODULE_LABELS ? MODULE_LABELS[row.module_key as ModuleKey] : row.module_key;
+  const target = row.entity_type ? row.entity_type.replace(/_/g, " ") : "item";
+  return `${row.action} ${target}${area ? ` in ${area}` : ""}`;
+}
 
 export default async function DashboardPage() {
   const session = await getStaffSession();
   if (!session) return null;
 
-  const modules: ModuleKey[] = session.isSuperAdmin
-    ? (Object.keys(MODULE_ROUTES) as ModuleKey[]).filter((k) => k !== "staff")
-    : session.permissions.filter((p) => p.can_view).map((p) => p.module_key);
+  const visible: ModuleKey[] = session.isSuperAdmin
+    ? (Object.keys(MODULE_ROUTES) as ModuleKey[])
+    : session.permissions.filter((p) => p.can_view && p.module_key !== "staff").map((p) => p.module_key);
+
+  const admin = createAdminClient();
+  let activityQuery = admin
+    .from("activity_log")
+    .select("id, module_key, action, entity_type, created_at, admin_profiles(display_name, username)")
+    .order("created_at", { ascending: false })
+    .limit(8);
+  if (!session.isSuperAdmin) activityQuery = activityQuery.in("module_key", visible.length ? visible : ["-"]);
+
+  const [countsRes, activityRes] = await Promise.all([admin.rpc("portal_content_counts"), activityQuery]);
+
+  const counts = new Map(((countsRes.data ?? []) as CountRow[]).map((row) => [row.module_key, row]));
+  const activity = (activityRes.data ?? []) as unknown as ActivityRow[];
+  const quick = QUICK_ACTIONS.filter((action) => {
+    if (session.isSuperAdmin) return true;
+    return session.permissions.some((p) => p.module_key === action.module && p.can_edit);
+  });
 
   return (
-    <>
+    <div className="flex flex-col gap-[14px]">
       <PageHeader
         title="Dashboard"
-        description={`Welcome back, ${session.displayName}. Open a module to update the public website.`}
+        description={`Welcome back, ${session.displayName}. Published and draft content across the modules you manage.`}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {modules.map((key) => (
-          <Link
-            key={key}
-            href={MODULE_ROUTES[key]}
-            className="ksl-card group p-5 transition hover:border-[#0165FC]/35 hover:shadow-md"
-          >
-            <p className="ksl-display font-semibold text-[#09296C]">{MODULE_LABELS[key]}</p>
-            <p className="mt-1 text-sm text-[#5c6578]">Manage {MODULE_LABELS[key].toLowerCase()} content</p>
-            <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-[#0165FC] opacity-0 transition group-hover:opacity-100">
-              Open <ArrowRight className="h-3 w-3" />
-            </span>
-          </Link>
-        ))}
-      </div>
-
-      {session.isSuperAdmin && (
-        <div className="mt-10 ksl-card border-l-4 border-l-[#99792c] p-5">
-          <p className="ksl-display font-semibold text-[#09296C]">Super admin</p>
-          <p className="mt-1 text-sm text-[#5c6578]">
-            Register staff and assign which modules each agent can edit.
-          </p>
-          <Link href="/staff" className="mt-3 inline-block text-sm font-semibold text-[#0165FC] hover:underline">
-            Manage staff →
-          </Link>
+      {quick.length > 0 && (
+        <div className="ksl-card flex flex-wrap items-center gap-2 p-[14px]">
+          <span className="mr-2 text-[11px] font-bold uppercase tracking-[0.06em] text-[#5b6775]">Quick actions</span>
+          {quick.map((action) => (
+            <Link
+              key={action.module}
+              href={MODULE_ROUTES[action.module]}
+              className="inline-flex items-center rounded-[2px] border border-[#0b1f3a] px-[13px] py-[7px] text-[13px] font-semibold text-[#0b1f3a] transition hover:-translate-y-px hover:border-[#c5a028]"
+            >
+              {action.label}
+            </Link>
+          ))}
         </div>
       )}
-    </>
+
+      <div className="kpi-grid">
+        {visible.map((key) => {
+          const row = counts.get(key);
+          const isStaff = key === "staff";
+          const isSettings = key === "site_settings";
+          return (
+            <Link key={key} href={MODULE_ROUTES[key]} className="kpi-card">
+              <h3>{MODULE_LABELS[key]}</h3>
+              <strong>{row ? Number(row.published) : 0}</strong>
+              <span className="kpi-hint">
+                {isStaff
+                  ? `${row ? Number(row.draft) : 0} suspended`
+                  : isSettings
+                    ? "Contact, socials, footer"
+                    : `${row ? Number(row.draft) : 0} draft`}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+
+      <section className="ksl-card p-[14px]">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-[15px] font-bold text-[#0b1f3a]">Recent activity</h2>
+          {session.isSuperAdmin && (
+            <Link href="/activity" className="text-[13px] font-semibold text-[#0b1f3a] underline-offset-2 hover:underline">
+              Full log
+            </Link>
+          )}
+        </div>
+        {activity.length === 0 ? (
+          <p className="text-sm text-[#5b6775]">No changes recorded yet.</p>
+        ) : (
+          <ul className="divide-y divide-[#d7dde5]">
+            {activity.map((row) => (
+              <li key={row.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2 text-[13px]">
+                <span className="min-w-0">
+                  <strong className="text-[#0b1f3a]">{row.admin_profiles?.display_name || "Someone"}</strong>{" "}
+                  <span className="text-[#1f2933]">{describe(row)}</span>
+                </span>
+                <span className="text-[12px] text-[#5b6775]">{formatWhen(row.created_at)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

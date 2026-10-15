@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity } from "@/lib/api-auth";
+import { requireStaff, logActivity, publishGuard } from "@/lib/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -26,6 +26,8 @@ export async function PUT(req: NextRequest) {
   if (error || !session) return error;
 
   const body = await req.json();
+  const denied = publishGuard(session, "faq", body.status ?? "published");
+  if (denied) return denied;
   const admin = createAdminClient();
 
   if (body.type === "group") {

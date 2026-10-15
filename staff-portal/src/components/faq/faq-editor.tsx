@@ -82,7 +82,7 @@ export function FaqEditor() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-[#5c6578]">
+      <div className="flex items-center gap-2 text-[#5b6775]">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading FAQ…
       </div>
     );
@@ -90,7 +90,7 @@ export function FaqEditor() {
 
   return (
     <div className="space-y-6">
-      {message && <p className="text-sm font-medium text-[#0165FC]">{message}</p>}
+      {message && <p className="text-sm font-medium text-[#0b1f3a]">{message}</p>}
       <Button type="button" onClick={addGroup}>
         <Plus className="h-4 w-4" /> Add group
       </Button>
@@ -99,7 +99,7 @@ export function FaqEditor() {
         <section key={group.id} className="ksl-card p-5">
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-[200px] flex-1">
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Group title</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Group title</label>
               <Input
                 value={group.title}
                 onChange={(e) =>
@@ -115,7 +115,7 @@ export function FaqEditor() {
             {items
               .filter((i) => i.group_id === group.id)
               .map((item) => (
-                <div key={item.id} className="rounded border border-[#EEF3FA] bg-[#F7F9FB] p-4 space-y-3">
+                <div key={item.id} className="rounded border border-[#eef2f6] bg-[#f4f6f8] p-4 space-y-3">
                   <Input
                     placeholder="Question"
                     value={item.question}
@@ -126,7 +126,7 @@ export function FaqEditor() {
                     }
                   />
                   <textarea
-                    className="w-full min-h-[80px] rounded border border-[#DDE5F0] bg-white px-3 py-2 text-sm text-[#14213d] focus:border-[#0165FC] focus:outline-none focus:ring-2 focus:ring-[#0165FC]/15"
+                    className="w-full min-h-[80px] rounded border border-[#d7dde5] bg-white px-3 py-2 text-sm text-[#1f2933] focus:border-[#0b1f3a] focus:outline-none focus:ring-2 focus:ring-[#0b1f3a]/15"
                     placeholder="Answer"
                     value={item.answer}
                     onChange={(e) =>
@@ -143,7 +143,7 @@ export function FaqEditor() {
       ))}
 
       {groups.length === 0 && (
-        <p className="text-sm text-[#5c6578]">No FAQ groups yet. Import from site JSON or add a group.</p>
+        <p className="text-sm text-[#5b6775]">No FAQ groups yet. Import from site JSON or add a group.</p>
       )}
     </div>
   );

@@ -53,6 +53,13 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   staff: "Staff",
 };
 
+export const MODULE_GROUPS: { label: string; modules: ModuleKey[] }[] = [
+  { label: "Content", modules: ["news", "events", "gallery", "press"] },
+  { label: "Company", modules: ["services", "products", "organization", "careers", "csr"] },
+  { label: "Resources", modules: ["faq", "downloads"] },
+  { label: "Administration", modules: ["staff", "site_settings"] },
+];
+
 export function canAccess(
   permissions: ModulePermission[],
   module: ModuleKey,

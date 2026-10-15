@@ -1,0 +1,25 @@
+{
+  "contact": {
+    "phone": "+254 726 277 377",
+    "email": "publicaffairs@kenyashipyards.co.ke",
+    "mdPhone": "+254 700 278 278",
+    "mdEmail": "info@kenyashipyards.co.ke",
+    "postalAddress": "P.O. Box 9706 00200 Nairobi",
+    "whatsapp": "254726277377"
+  },
+  "social": {
+    "facebook": "https://www.facebook.com/kenyashipyardslimited",
+    "x": "https://x.com/KenyaShipyards",
+    "instagram": "https://www.instagram.com/kenyashipyards"
+  },
+  "footer": {
+    "tagline": "Catalyzing Shipbuilding Industry",
+    "copyright": "© 2025, All Rights Reserved by Kenya Shipyards Limited.",
+    "locations": [
+      { "name": "Nairobi Head Office", "address": "Herufi House, Treasury Buildings." },
+      { "name": "Mombasa Shipyard", "address": "Next to Kenya Navy Base, Mtongwe." },
+      { "name": "Kisumu Shipyard", "address": "Next to Kisumu Port, along Marine Drive." }
+    ]
+  },
+  "announcement": { "enabled": false, "text": "", "linkLabel": "", "linkUrl": "" }
+}

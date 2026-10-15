@@ -1,0 +1,70 @@
+{
+  "kicker": "Purpose built for East African waters",
+  "title": "Vessels engineered around the mission",
+  "intro": "Explore KSL built medical, fishing, passenger, patrol, and utility vessels. Important dimensions stay visible, with additional specifications available inside each card.",
+  "catalogueUrl": "docs/KSL-Brochure-version-28-NOV-2024.pdf",
+  "rangeKicker": "Extended range",
+  "rangeTitle": "More ways to work on the water",
+  "rangeGroups": [
+    { "title": "Medical", "items": ["13 m ambulance boat", "7.05 m ambulance boat"] },
+    { "title": "Fishing", "items": ["30 ton medium scale vessel", "Small scale artisanal boat"] },
+    { "title": "Passenger", "items": ["29.05 m passenger ferry", "VIP boat / Admiral's barge"] },
+    { "title": "Utility", "items": ["Patrol, pilot, and landing craft", "RHIBs, dredgers, piers, and linkspans"] }
+  ],
+  "items": [
+    {
+      "slug": "ambulance",
+      "name": "7.05 m Ambulance Boat",
+      "category": "ambulance",
+      "categoryLabel": "Ambulance",
+      "eyebrow": "Ambulance vessel",
+      "image": "img/ksl/ambulance.jpg",
+      "imageAlt": "7.05 metre ambulance boat",
+      "keySpecs": [
+        { "label": "Length", "value": "7.05 m" },
+        { "label": "Beam", "value": "2.2 m" },
+        { "label": "Power", "value": "115 HP OBD" }
+      ],
+      "extraSpecs": [
+        { "label": "Crew", "value": "5" },
+        { "label": "Nursing beds", "value": "1" }
+      ]
+    },
+    {
+      "slug": "fishing",
+      "name": "15 Ton Medium Scale Fishing Vessel",
+      "category": "fishing",
+      "categoryLabel": "Fishing",
+      "eyebrow": "Fishing vessel",
+      "image": "img/ksl/fishing.jpg",
+      "imageAlt": "15 ton medium-scale fishing vessel",
+      "keySpecs": [
+        { "label": "Length", "value": "13 m" },
+        { "label": "Beam", "value": "3.5 m" },
+        { "label": "Speed", "value": "12 knots" }
+      ],
+      "extraSpecs": [
+        { "label": "Engine", "value": "Single 180 HP" },
+        { "label": "Depth", "value": "1.7 m" }
+      ]
+    },
+    {
+      "slug": "ferry",
+      "name": "16 m Passenger Boat",
+      "category": "ferry",
+      "categoryLabel": "Passenger",
+      "eyebrow": "Passenger vessel",
+      "image": "img/ksl/ferry.jpg",
+      "imageAlt": "16 metre passenger boat",
+      "keySpecs": [
+        { "label": "Length", "value": "16 m" },
+        { "label": "Capacity", "value": "60 passengers" },
+        { "label": "Material", "value": "Aluminium" }
+      ],
+      "extraSpecs": [
+        { "label": "Beam", "value": "4.5 m" },
+        { "label": "Propulsion", "value": "Twin 115 HP OBD" }
+      ]
+    }
+  ]
+}

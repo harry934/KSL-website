@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261012-3";
+    var ASSET_V = "20261015-1";
 
     var BUNDLES = {
         wow: [
@@ -21,6 +21,7 @@
 
     var TAIL = [
         "js/ksl-content.js",
+        "js/site-settings.js",
         "js/access.js",
         "js/lang.js",
         "js/main.js?v=" + ASSET_V,

@@ -662,8 +662,10 @@
         });
     });
 
-    document.querySelectorAll(".product-filters button").forEach(function (btn) {
-        btn.addEventListener("click", function () {
+    // Delegated so cards re-rendered from the content API keep working.
+    document.addEventListener("click", function (event) {
+        var btn = event.target.closest && event.target.closest(".product-filters button");
+        if (btn) {
             document.querySelectorAll(".product-filters button").forEach(function (b) {
                 b.classList.remove("is-on");
                 b.setAttribute("aria-pressed", "false");
@@ -674,23 +676,22 @@
             document.querySelectorAll("[data-cat]").forEach(function (el) {
                 el.hidden = !(filter === "all" || el.getAttribute("data-cat") === filter);
             });
-        });
-    });
+            return;
+        }
 
-    document.querySelectorAll("[data-product-toggle]").forEach(function (control) {
-        control.addEventListener("click", function () {
-            var targetId = control.getAttribute("data-product-toggle");
-            var drawer = document.getElementById(targetId);
-            if (!drawer) return;
+        var control = event.target.closest && event.target.closest("[data-product-toggle]");
+        if (!control) return;
+        var targetId = control.getAttribute("data-product-toggle");
+        var drawer = document.getElementById(targetId);
+        if (!drawer) return;
 
-            var willOpen = drawer.hidden;
-            drawer.hidden = !willOpen;
-            document.querySelectorAll('[aria-controls="' + targetId + '"]').forEach(function (item) {
-                item.setAttribute("aria-expanded", willOpen ? "true" : "false");
-                if (item.classList.contains("product-details-toggle")) {
-                    item.textContent = willOpen ? "Hide details" : "View details";
-                }
-            });
+        var willOpen = drawer.hidden;
+        drawer.hidden = !willOpen;
+        document.querySelectorAll('[aria-controls="' + targetId + '"]').forEach(function (item) {
+            item.setAttribute("aria-expanded", willOpen ? "true" : "false");
+            if (item.classList.contains("product-details-toggle")) {
+                item.textContent = willOpen ? "Hide details" : "View details";
+            }
         });
     });
 

@@ -1,0 +1,65 @@
+{
+  "kicker": "Corporate Social Responsibility",
+  "title": "Empowering communities on land and at sea",
+  "tagline": "Empowering Communities · Protecting the Environment · Advancing Maritime Growth",
+  "intro": "Corporate social responsibility is at the heart of KSL’s mission. Programmes empower communities, promote environmental stewardship, and drive socio economic transformation across Kenya and Eastern Africa.",
+  "badges": ["Tree planting & conservation", "Medical camps", "Beach & community outreach"],
+  "heroImages": [
+    { "src": "img/ksl/gallery/dsc_5591-scaled.jpg", "alt": "CSR activity with community members" },
+    { "src": "img/ksl/gallery/dsc_5805-scaled.jpg", "alt": "Medical camp outreach" },
+    { "src": "img/ksl/gallery/20220509_172713.jpg", "alt": "Community engagement at the coast" }
+  ],
+  "stats": [
+    { "value": "10,000+", "label": "Seedlings planted (5 years)" },
+    { "value": "2", "label": "Shipyard communities" },
+    { "value": "6", "label": "Active CSR programmes" },
+    { "value": "HSE", "label": "Safety & environment advocacy" }
+  ],
+  "footnote": "Community programme figures reflect KSL CSR reporting (2020 to 2025). Environmental performance is covered on Sustainability.",
+  "programmesTitle": "Our programmes",
+  "programmesIntro": "Hands on initiatives around Kisumu and Mombasa that complement our sustainability commitments.",
+  "programmes": [
+    {
+      "slug": "tree-planting",
+      "title": "Tree planting",
+      "summary": "KSL has planted over 10,000 seedlings in the last 5 years, contributing to national afforestation.",
+      "image": "img/ksl/gallery/dsc_5580-scaled.jpg",
+      "imageAlt": "Tree planting programme"
+    },
+    {
+      "slug": "medical-camp",
+      "title": "Medical camp",
+      "summary": "Medical camps for communities around the Kisumu and Mombasa shipyards.",
+      "image": "img/ksl/gallery/dsc_5806-scaled.jpg",
+      "imageAlt": "Medical camp"
+    },
+    {
+      "slug": "charity-runs",
+      "title": "Charity runs",
+      "summary": "Runs and walks that raise awareness of shipbuilding and the maritime sector.",
+      "image": "img/ksl/gallery/dsc_5812-scaled.jpg",
+      "imageAlt": "Charity run"
+    },
+    {
+      "slug": "visiting-the-vulnerable",
+      "title": "Visiting the vulnerable",
+      "summary": "Visits to children’s homes, with gifts in kind.",
+      "image": "img/ksl/gallery/dsc_5833-scaled.jpg",
+      "imageAlt": "Visit to vulnerable community"
+    },
+    {
+      "slug": "beach-cleanups",
+      "title": "Beach cleanups",
+      "summary": "Beach cleaning around the Mombasa and Kisumu shipyards.",
+      "image": "img/ksl/gallery/dji_0505.jpg",
+      "imageAlt": "Coastal cleanup"
+    },
+    {
+      "slug": "hse-training",
+      "title": "HSE training",
+      "summary": "Health, safety, and environment advocacy, emergency response, and safety compliance campaigns.",
+      "image": "img/ksl/gallery/dsc_5686-scaled.jpg",
+      "imageAlt": "HSE training session"
+    }
+  ]
+}

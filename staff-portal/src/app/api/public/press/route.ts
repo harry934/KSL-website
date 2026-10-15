@@ -9,8 +9,8 @@ export async function GET() {
     admin.from("press_assets").select("*").order("sort_order", { ascending: true }),
   ]);
 
-  if (settingsRes.error) return NextResponse.json({ error: settingsRes.error.message }, { status: 500 });
-  if (assetsRes.error) return NextResponse.json({ error: assetsRes.error.message }, { status: 500 });
+  if (settingsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
+  if (assetsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
   const payload = toPublicPress(settingsRes.data as PressSettings | null, (assetsRes.data ?? []) as PressAssetRow[]);
 

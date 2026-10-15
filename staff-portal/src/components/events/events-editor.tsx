@@ -82,7 +82,7 @@ export function EventsEditor() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-[#5c6578]">
+      <div className="flex items-center gap-2 text-[#5b6775]">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading events…
       </div>
     );
@@ -91,7 +91,7 @@ export function EventsEditor() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        {message && <p className="text-sm font-medium text-[#0165FC]">{message}</p>}
+        {message && <p className="text-sm font-medium text-[#0b1f3a]">{message}</p>}
         <Button type="button" onClick={startNew}>
           <Plus className="h-4 w-4" /> New event
         </Button>
@@ -99,12 +99,12 @@ export function EventsEditor() {
 
       {editing && (
         <div className="ksl-card space-y-4 p-6">
-          <h2 className="ksl-display text-lg font-semibold text-[#09296C]">
+          <h2 className="text-[15px] font-bold text-[#0b1f3a]">
             {editing.id ? "Edit event" : "New event"}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Title</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Title</label>
               <Input
                 value={editing.title ?? ""}
                 onChange={(e) =>
@@ -113,11 +113,11 @@ export function EventsEditor() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Slug</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Slug</label>
               <Input value={editing.slug ?? ""} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Event date</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Event date</label>
               <Input
                 type="date"
                 value={editing.event_date ?? ""}
@@ -125,36 +125,36 @@ export function EventsEditor() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Theme / tagline</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Theme / tagline</label>
               <Input value={editing.theme ?? ""} onChange={(e) => setEditing({ ...editing, theme: e.target.value })} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Start time (HH:MM)</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Start time (HH:MM)</label>
               <Input value={editing.time_start ?? ""} onChange={(e) => setEditing({ ...editing, time_start: e.target.value })} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">End time (HH:MM)</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">End time (HH:MM)</label>
               <Input value={editing.time_end ?? ""} onChange={(e) => setEditing({ ...editing, time_end: e.target.value })} />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Venue</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Venue</label>
               <Input value={editing.venue ?? ""} onChange={(e) => setEditing({ ...editing, venue: e.target.value })} />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Short description</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Short description</label>
               <Input
                 value={editing.description ?? ""}
                 onChange={(e) => setEditing({ ...editing, description: e.target.value })}
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Summary (past events)</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Summary (past events)</label>
               <Input value={editing.summary ?? ""} onChange={(e) => setEditing({ ...editing, summary: e.target.value })} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Status</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Status</label>
               <select
-                className="w-full rounded border border-[#DDE5F0] bg-white px-3 py-2.5 text-sm"
+                className="w-full rounded border border-[#d7dde5] bg-white px-3 py-2.5 text-sm"
                 value={editing.status ?? "draft"}
                 onChange={(e) => setEditing({ ...editing, status: e.target.value })}
               >
@@ -164,7 +164,7 @@ export function EventsEditor() {
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Cover image</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Cover image</label>
               <Input
                 value={editing.image_path ?? ""}
                 onChange={(e) => setEditing({ ...editing, image_path: e.target.value })}
@@ -178,9 +178,9 @@ export function EventsEditor() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Body (HTML)</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Body (HTML)</label>
               <textarea
-                className="min-h-[200px] w-full rounded border border-[#DDE5F0] bg-white px-3 py-2 text-sm"
+                className="min-h-[200px] w-full rounded border border-[#d7dde5] bg-white px-3 py-2 text-sm"
                 value={editing.body_html ?? ""}
                 onChange={(e) => setEditing({ ...editing, body_html: e.target.value })}
               />
@@ -193,9 +193,9 @@ export function EventsEditor() {
         </div>
       )}
 
-      <div className="ksl-card overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-[#F7F9FB] text-xs uppercase text-[#5c6578]">
+      <div className="ksl-card overflow-x-auto">
+        <table className="w-full min-w-[640px] text-left text-[13px]">
+          <thead className="bg-[#f4f6f8] text-xs uppercase text-[#5b6775]">
             <tr>
               <th className="px-4 py-3">Title</th>
               <th className="px-4 py-3">Date</th>
@@ -206,13 +206,13 @@ export function EventsEditor() {
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id} className="border-t border-[#EEF3FA]">
-                <td className="px-4 py-3 font-medium text-[#09296C]">{item.title}</td>
-                <td className="px-4 py-3 text-[#5c6578]">{item.event_date}</td>
-                <td className="px-4 py-3 text-[#5c6578]">{item.venue}</td>
-                <td className="px-4 py-3 capitalize text-[#5c6578]">{item.status}</td>
+              <tr key={item.id} className="border-t border-[#eef2f6]">
+                <td className="px-4 py-3 font-medium text-[#0b1f3a]">{item.title}</td>
+                <td className="px-4 py-3 text-[#5b6775]">{item.event_date}</td>
+                <td className="px-4 py-3 text-[#5b6775]">{item.venue}</td>
+                <td className="px-4 py-3 capitalize text-[#5b6775]">{item.status}</td>
                 <td className="px-4 py-3 text-right">
-                  <button type="button" className="text-[#0165FC] hover:underline" onClick={() => setEditing(item)}>
+                  <button type="button" className="text-[#0b1f3a] hover:underline" onClick={() => setEditing(item)}>
                     Edit
                   </button>
                   <button type="button" className="ml-3 text-red-600" onClick={() => remove(item.id)} aria-label="Delete">

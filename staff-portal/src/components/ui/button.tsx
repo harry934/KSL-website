@@ -1,17 +1,15 @@
 import { cn } from "@/lib/cn";
 import { ButtonHTMLAttributes, forwardRef } from "react";
 
-type Variant = "primary" | "gold" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "gold" | "secondary" | "outline" | "ghost" | "danger";
 
 const variants: Record<Variant, string> = {
-  primary:
-    "bg-[#0165FC] text-white hover:bg-[#0A3E95] border border-[#0A3E95] shadow-sm",
-  gold:
-    "bg-[#99792c] text-white hover:bg-[#7a6122] border border-[#99792c] shadow-sm",
-  secondary:
-    "bg-white text-[#09296C] border border-[#DDE5F0] hover:border-[#0165FC]/40 hover:bg-[#F7F9FB]",
-  ghost: "text-[#5c6578] hover:bg-[#F7F9FB] hover:text-[#09296C]",
-  danger: "bg-red-600 text-white hover:bg-red-700",
+  primary: "bg-[#0b1f3a] text-white border-[#0b1f3a] hover:bg-transparent hover:text-[#0b1f3a]",
+  gold: "bg-[#c5a028] text-[#0b1f3a] border-[#c5a028] hover:bg-transparent",
+  secondary: "bg-white text-[#0b1f3a] border-[#0b1f3a] hover:border-[#c5a028]",
+  outline: "bg-transparent text-[#0b1f3a] border-[#0b1f3a] hover:border-[#c5a028]",
+  ghost: "border-transparent text-[#5b6775] hover:bg-[#f4f6f8] hover:text-[#0b1f3a]",
+  danger: "bg-[#b42318] text-white border-[#b42318] hover:bg-transparent hover:text-[#b42318]",
 };
 
 export const Button = forwardRef<
@@ -22,7 +20,7 @@ export const Button = forwardRef<
     <button
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded px-4 py-2.5 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0165FC] disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-[2px] border px-[13px] py-2 text-[13px] font-semibold transition hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c5a028] disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         className
       )}

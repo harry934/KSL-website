@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export function LoginForm() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -15,36 +14,46 @@ export function LoginForm() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const supabase = createClient();
-    const { error: signError } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (signError) {
-      setError(signError.message);
+    const res = await fetch("/api/auth/sign-in", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier, password }),
+    }).catch(() => null);
+    const json = res ? await res.json().catch(() => ({})) : {};
+    if (!res || !res.ok) {
+      setLoading(false);
+      setError(json.error ?? "Could not sign in. Check your connection and try again.");
       return;
     }
     window.location.href = "/";
   }
 
+  const label = "mb-1.5 block text-[11px] font-bold uppercase tracking-[0.06em] text-[#5b6775]";
+
   return (
     <form onSubmit={onSubmit} className="space-y-5">
       <div>
-        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#5c6578]">
-          Email
+        <label htmlFor="login-identifier" className={label}>
+          Username or email
         </label>
         <Input
-          type="email"
-          autoComplete="email"
+          id="login-identifier"
+          type="text"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
           required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@kenyashipyards.co.ke"
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+          placeholder="e.g. jkamau"
         />
       </div>
       <div>
-        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#5c6578]">
+        <label htmlFor="login-password" className={label}>
           Password
         </label>
         <Input
+          id="login-password"
           type="password"
           autoComplete="current-password"
           required
@@ -53,11 +62,11 @@ export function LoginForm() {
         />
       </div>
       {error && (
-        <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-[#b42318]" role="alert">
           {error}
         </p>
       )}
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" className="w-full py-2.5" disabled={loading}>
         {loading ? "Signing in…" : "Sign in"}
       </Button>
     </form>

@@ -9,8 +9,8 @@ export async function GET() {
     admin.from("career_listings").select("*").order("sort_order", { ascending: true }),
   ]);
 
-  if (settingsRes.error) return NextResponse.json({ error: settingsRes.error.message }, { status: 500 });
-  if (listingsRes.error) return NextResponse.json({ error: listingsRes.error.message }, { status: 500 });
+  if (settingsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
+  if (listingsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
   const payload = toPublicCareersPayload(
     settingsRes.data as CareersSettings | null,

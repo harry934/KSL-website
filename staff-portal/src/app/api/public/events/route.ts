@@ -6,7 +6,7 @@ export async function GET() {
   const admin = createAdminClient();
   const { data, error } = await admin.from("event_items").select("*").eq("status", "published");
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
   const today = new Date().toISOString().slice(0, 10);
   const payload = splitEventsByDate((data ?? []) as EventRow[], today);

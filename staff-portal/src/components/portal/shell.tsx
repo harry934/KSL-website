@@ -1,6 +1,13 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/portal/sidebar";
-import { KslMotif } from "@/components/brand/ksl-motif";
+import { Topbar } from "@/components/portal/topbar";
+import { cn } from "@/lib/cn";
 import type { StaffSession } from "@/lib/session";
+
+const COLLAPSE_KEY = "ksl-sidebar-collapsed";
 
 export function PortalShell({
   session,
@@ -9,15 +16,41 @@ export function PortalShell({
   session: StaffSession;
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === "1");
+  }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  function toggleSidebar() {
+    if (window.matchMedia("(max-width: 991.98px)").matches) {
+      setMobileOpen((open) => !open);
+      return;
+    }
+    setCollapsed((value) => {
+      window.localStorage.setItem(COLLAPSE_KEY, value ? "0" : "1");
+      return !value;
+    });
+  }
+
   return (
-    <div className="flex min-h-screen flex-col bg-[#F7F9FB]">
-      <div className="h-1.5 shrink-0 bg-gradient-to-r from-[#09296C] via-[#0A3E95] to-[#0165FC]" aria-hidden />
-      <div className="flex min-h-0 flex-1">
-        <Sidebar session={session} />
-        <div className="relative flex min-w-0 flex-1 flex-col">
-          <KslMotif className="pointer-events-none absolute -right-16 top-8 h-[min(420px,50vh)] w-[min(420px,45vw)] opacity-[0.07]" />
-          <main className="relative z-10 flex-1 overflow-auto px-8 py-8">{children}</main>
-        </div>
+    <div className={cn(collapsed && "app-collapsed", mobileOpen && "app-mobile-open")}>
+      <div className="kenya-stripe" aria-hidden>
+        <span />
+        <span />
+        <span />
+      </div>
+      <Sidebar session={session} />
+      <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} aria-hidden />
+      <div className="app-main">
+        <Topbar session={session} collapsed={collapsed} onToggleSidebar={toggleSidebar} />
+        <main className="app-content">{children}</main>
       </div>
     </div>
   );

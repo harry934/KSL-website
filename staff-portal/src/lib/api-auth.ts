@@ -19,6 +19,20 @@ export async function requireStaff(
   return { error: null, session };
 }
 
+/** Agents with edit-only rights may save drafts; going live needs publish rights. */
+export function publishGuard(
+  session: { permissions: Parameters<typeof canAccess>[0]; isSuperAdmin: boolean },
+  module: ModuleKey,
+  status: unknown
+) {
+  if (status !== "published") return null;
+  if (canAccess(session.permissions, module, "publish", session.isSuperAdmin)) return null;
+  return NextResponse.json(
+    { error: "You can save this as a draft. Publishing needs publish permission for this module." },
+    { status: 403 }
+  );
+}
+
 export async function logActivity(
   actorId: string,
   moduleKey: string,

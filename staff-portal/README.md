@@ -17,14 +17,14 @@ Optional: `npx skills add supabase/agent-skills` for Supabase-focused agent skil
 ## Setup
 
 1. **Supabase SQL** — In [Supabase Dashboard](https://supabase.com/dashboard) → SQL → New query, run the full script:
-   `../supabase/migrations/001_staff_portal_schema.sql` through `005_organization_press.sql`
+   `../supabase/migrations/001_staff_portal_schema.sql` through `007_usernames_security.sql`
 
 2. **Environment** — Copy `.env.example` to `.env.local` (already configured locally; never commit `.env.local`).
 
 3. **First super admin** (after SQL succeeds):
    ```bash
    cd staff-portal
-   node scripts/bootstrap-super-admin.mjs your@email.com YourSecurePassword "Your Name"
+   node scripts/bootstrap-super-admin.mjs yourusername YourSecurePassword1 "Your Name" [optional@email.com]
    ```
 
 4. **Run locally** (must be inside `staff-portal`, not the main website folder):
@@ -52,18 +52,19 @@ Optional: `npx skills add supabase/agent-skills` for Supabase-focused agent skil
 
 | Status | Module |
 |--------|--------|
-| Live | Staff, FAQ, News, Events, Gallery, Services, Careers, Downloads, **Organization**, **Press**, Account / password |
-| Planned | Products, CSR, site settings, … |
+| Live | Dashboard, Staff, News, Events, Gallery, Press, Services, Products, Organization, Careers, CSR, FAQ, Downloads, Site settings, Activity log, Account / password |
+
+Production: https://ksl-websitemink.vercel.app/login — sign in with **username or email**.
 
 ### Connect the public website
 
-On the main site, set the portal URL on the root element (use your deployed portal origin, no trailing slash):
+Every public page already sets the portal URL on the root element (no trailing slash):
 
 ```html
-<html lang="en" data-ksl-content-api="https://your-portal-host.example">
+<html lang="en" data-ksl-content-api="https://ksl-websitemink.vercel.app">
 ```
 
-The site loads `js/ksl-content.js` and will read FAQ, news, events, services, gallery, careers, and downloads from `/api/public/*` with fallback to local `data/*.json`.
+The site loads `js/ksl-content.js` and reads FAQ, news, events, services, products, CSR, gallery, careers, downloads, organization, press and site settings from `/api/public/*` with fallback to local `data/*.json`.
 
 ### Deploy on Vercel
 
@@ -82,4 +83,6 @@ node scripts/import-careers-from-json.mjs
 node scripts/import-downloads-from-json.mjs
 node scripts/import-organization-from-json.mjs
 node scripts/import-press-from-json.mjs
+node scripts/import-products-from-json.mjs
+node scripts/import-csr-from-json.mjs
 ```

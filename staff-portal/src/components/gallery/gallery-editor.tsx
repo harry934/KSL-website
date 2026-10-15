@@ -70,7 +70,7 @@ export function GalleryEditor() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-[#5c6578]">
+      <div className="flex items-center gap-2 text-[#5b6775]">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading gallery…
       </div>
     );
@@ -78,8 +78,8 @@ export function GalleryEditor() {
 
   return (
     <div className="space-y-6">
-      <label className="inline-flex cursor-pointer items-center gap-2 rounded border border-[#DDE5F0] bg-white px-4 py-2.5 text-sm font-semibold text-[#09296C] hover:border-[#0165FC]/40">
-        <Upload className="h-4 w-4 text-[#0165FC]" />
+      <label className="inline-flex cursor-pointer items-center gap-2 rounded border border-[#d7dde5] bg-white px-4 py-2.5 text-sm font-semibold text-[#0b1f3a] hover:border-[#0b1f3a]/40">
+        <Upload className="h-4 w-4 text-[#0b1f3a]" />
         {uploading ? "Uploading…" : "Upload image"}
         <input type="file" accept="image/*" className="hidden" onChange={onUpload} disabled={uploading} />
       </label>
@@ -88,7 +88,8 @@ export function GalleryEditor() {
         {photos.map((p) => (
           <div key={p.id} className="ksl-card overflow-hidden">
             {p.public_url && (
-              <img src={p.public_url} alt="" className="h-40 w-full object-cover" />
+              // eslint-disable-next-line @next/next/no-img-element -- Supabase CDN already serves these
+              <img src={p.public_url} alt="" className="h-40 w-full object-cover" loading="lazy" decoding="async" />
             )}
             <div className="space-y-2 p-3">
               <Input

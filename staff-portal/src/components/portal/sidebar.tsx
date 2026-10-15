@@ -7,25 +7,28 @@ import kslLogo from "../../../public/ksl-logo.png";
 import { usePathname } from "next/navigation";
 import {
   Briefcase,
+  Building2,
   Calendar,
   Download,
+  HandHeart,
   HelpCircle,
+  History,
   Image as ImageIcon,
   LayoutDashboard,
-  LogOut,
   Megaphone,
   Newspaper,
   Package,
   Settings,
-  Users,
+  UserCog,
   Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
+import { MODULE_GROUPS, MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import type { StaffSession } from "@/lib/session";
-import { createClient } from "@/lib/supabase/client";
 
-const ICONS: Partial<Record<ModuleKey, ComponentType<{ className?: string }>>> = {
+type IconType = ComponentType<{ className?: string }>;
+
+const ICONS: Record<ModuleKey, IconType> = {
   news: Newspaper,
   events: Calendar,
   gallery: ImageIcon,
@@ -33,91 +36,84 @@ const ICONS: Partial<Record<ModuleKey, ComponentType<{ className?: string }>>> =
   products: Package,
   careers: Briefcase,
   faq: HelpCircle,
-  csr: Megaphone,
+  csr: HandHeart,
   downloads: Download,
-  organization: Users,
+  organization: Building2,
   press: Megaphone,
   site_settings: Settings,
-  staff: Users,
+  staff: UserCog,
 };
 
-function visibleModules(session: StaffSession): ModuleKey[] {
-  if (session.isSuperAdmin) {
-    return Object.keys(MODULE_ROUTES) as ModuleKey[];
-  }
-  return session.permissions
-    .filter((p) => p.can_view)
-    .map((p) => p.module_key)
-    .sort((a, b) => a.localeCompare(b));
+function canSee(session: StaffSession, key: ModuleKey) {
+  if (session.isSuperAdmin) return true;
+  if (key === "staff") return false;
+  return session.permissions.some((p) => p.module_key === key && p.can_view);
+}
+
+function NavLink({
+  href,
+  label,
+  icon: Icon,
+  active,
+}: {
+  href: string;
+  label: string;
+  icon: IconType;
+  active: boolean;
+}) {
+  return (
+    <Link href={href} title={label} className={cn("nav-link", active && "is-active")} prefetch>
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="nav-link-label">{label}</span>
+    </Link>
+  );
 }
 
 export function Sidebar({ session }: { session: StaffSession }) {
   const pathname = usePathname();
-  const modules = visibleModules(session);
-
-  async function signOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    window.location.href = "/login";
-  }
-
-  const linkClass = (active: boolean) =>
-    cn(
-      "flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium transition border-l-[3px]",
-      active
-        ? "border-[#99792c] bg-[#0165FC]/[0.06] text-[#09296C]"
-        : "border-transparent text-[#5c6578] hover:border-[#C4A35A]/50 hover:bg-[#F7F9FB] hover:text-[#09296C]"
-    );
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/"));
 
   return (
-    <aside className="flex w-[260px] shrink-0 flex-col border-r border-[#DDE5F0] bg-white">
-      <div className="border-b border-[#DDE5F0] bg-[#0A3E95] px-5 py-4">
-        <div className="flex items-center gap-3">
-          <Image src={kslLogo} alt="" width={44} height={44} unoptimized className="rounded-full bg-white p-0.5" />
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/80">Kenya Shipyards</p>
-            <p className="ksl-display text-sm font-semibold text-white">Content portal</p>
-          </div>
+    <aside className="app-sidebar" aria-label="Portal navigation">
+      <div className="brand-block">
+        <Image src={kslLogo} alt="Kenya Shipyards Limited" width={52} height={52} unoptimized priority className="shrink-0" />
+        <div className="brand-text">
+          <h1>Kenya Shipyards</h1>
+          <p>Content portal</p>
         </div>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
-        <Link href="/" className={linkClass(pathname === "/")}>
-          <LayoutDashboard className="h-4 w-4 shrink-0 text-[#0165FC]" />
-          Dashboard
-        </Link>
+      <nav className="flex flex-1 flex-col pb-4">
+        <div className="nav-group">
+          <p className="nav-group-label">Overview</p>
+          <NavLink href="/" label="Dashboard" icon={LayoutDashboard} active={isActive("/")} />
+        </div>
 
-        {modules.map((key) => {
-          const href = MODULE_ROUTES[key];
-          const Icon = ICONS[key] ?? LayoutDashboard;
-          const active = pathname === href || pathname.startsWith(href + "/");
+        {MODULE_GROUPS.map((group) => {
+          const keys = group.modules.filter((key) => canSee(session, key));
+          const showActivity = group.label === "Administration" && session.isSuperAdmin;
+          if (!keys.length && !showActivity) return null;
           return (
-            <Link key={key} href={href} className={linkClass(active)}>
-              <Icon className={cn("h-4 w-4 shrink-0", active ? "text-[#0165FC]" : "text-[#9aa3b5]")} />
-              {MODULE_LABELS[key]}
-            </Link>
+            <div key={group.label} className="nav-group">
+              <p className="nav-group-label">{group.label}</p>
+              {keys.map((key) => (
+                <NavLink
+                  key={key}
+                  href={MODULE_ROUTES[key]}
+                  label={MODULE_LABELS[key]}
+                  icon={ICONS[key]}
+                  active={isActive(MODULE_ROUTES[key])}
+                />
+              ))}
+              {showActivity && (
+                <NavLink href="/activity" label="Activity log" icon={History} active={isActive("/activity")} />
+              )}
+            </div>
           );
         })}
       </nav>
 
-      <div className="border-t border-[#DDE5F0] bg-[#F7F9FB] p-4">
-        <Link href="/account" className="mb-2 block text-xs font-semibold text-[#0165FC] hover:underline">
-          Account settings
-        </Link>
-        <p className="truncate text-sm font-semibold text-[#09296C]">{session.displayName}</p>
-        <p className="truncate text-xs text-[#5c6578]">{session.email}</p>
-        {session.isSuperAdmin && (
-          <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[#99792c]">Super admin</p>
-        )}
-        <button
-          type="button"
-          onClick={() => signOut()}
-          className="mt-3 flex w-full items-center gap-2 rounded px-2 py-2 text-sm text-[#5c6578] transition hover:bg-white hover:text-[#09296C]"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign out
-        </button>
-      </div>
+      <p className="sidebar-footer">Kenya Shipyards Limited</p>
     </aside>
   );
 }

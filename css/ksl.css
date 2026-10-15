@@ -12826,3 +12826,37 @@ body[data-ksl-motif-2="binoculars"] { --ksl-motif-2: var(--ksl-draw-binoculars);
 body[data-ksl-motif-2="gauge"] { --ksl-motif-2: var(--ksl-draw-gauge); --ksl-motif-2-w: 300px; }
 body[data-ksl-motif-2="dividers"] { --ksl-motif-2: var(--ksl-draw-dividers); --ksl-motif-2-ratio: 160 / 220; --ksl-motif-2-w: 240px; }
 body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl-motif-2-ratio: 140 / 200; --ksl-motif-2-w: 230px; }
+
+/* Portal-managed site announcement */
+.ksl-announcement {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    z-index: 1040;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    max-width: min(440px, calc(100vw - 104px));
+    padding: 14px 14px 14px 18px;
+    background: #0b1f3a;
+    color: #fff;
+    border-left: 4px solid #c5a028;
+    box-shadow: 0 12px 32px rgba(11, 31, 58, 0.28);
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+.ksl-announcement p { margin: 0; }
+.ksl-announcement a { color: #f1d27a; font-weight: 600; text-decoration: underline; }
+.ksl-announcement button {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.ksl-announcement button:hover,
+.ksl-announcement button:focus-visible { color: #f1d27a; }

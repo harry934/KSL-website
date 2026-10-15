@@ -2,7 +2,13 @@
 
 **GitHub repo:** https://github.com/harry934/KSL-website  
 
-**Quick Vercel clicks:** [VERCEL-GITHUB-SETUP.md](./VERCEL-GITHUB-SETUP.md)
+**Quick Vercel clicks:** [VERCEL-GITHUB-SETUP.md](./VERCEL-GITHUB-SETUP.md)  
+**Current status:** [PROJECT-STATUS.md](./PROJECT-STATUS.md)
+
+| Live URL | Vercel project |
+|----------|----------------|
+| https://ksl-website.vercel.app | `ksl-website` (root `.`) |
+| https://ksl-websitemink.vercel.app/login | `ksl-website_mink` (root `staff-portal`) |
 
 This repo has **two separate apps** that share one **Supabase** project. They deploy to **two different Vercel projects** (or two hosts). They do **not** share a folder on the server.
 
@@ -11,7 +17,7 @@ This repo has **two separate apps** that share one **Supabase** project. They de
 ```
 ┌─────────────────────────────┐     HTTPS GET only      ┌──────────────────────────────┐
 │  Public website (static)    │ ──────────────────────► │  Staff portal (Next.js)      │
-│  kenyashipyards.co.ke       │   /api/public/news      │  obscure-name.vercel.app     │
+│  ksl-website.vercel.app     │   /api/public/news      │  ksl-websitemink.vercel.app  │
 │  Repo root: index.html,     │   /api/public/faq, …    │  Repo folder: staff-portal/  │
 │  css/, js/, data/, img/     │                         │  /login, /news, /api/*       │
 └──────────────┬──────────────┘                         └──────────────┬───────────────┘
@@ -29,8 +35,8 @@ This repo has **two separate apps** that share one **Supabase** project. They de
 
 | Piece | Where to host | URL example | Purpose |
 |--------|----------------|-------------|---------|
-| **Main website** | Vercel project #1 — **root directory** = repo root (not `staff-portal`) | `https://www.kenyashipyards.co.ke` | Public HTML/CSS/JS |
-| **Staff portal (admin)** | Vercel project #2 — **root directory** = `staff-portal` | `https://ksl-content-7f3a9c.vercel.app` (pick a random name) | Login + CMS only |
+| **Main website** | Vercel `ksl-website` — **root directory** = repo root (not `staff-portal`) | `https://ksl-website.vercel.app` (later `kenyashipyards.co.ke`) | Public HTML/CSS/JS |
+| **Staff portal (admin)** | Vercel `ksl-website_mink` — **root directory** = `staff-portal` | `https://ksl-websitemink.vercel.app` | Login + CMS only |
 | **Database & auth** | [Supabase](https://supabase.com/dashboard) (already created) | `https://envqgczfhxywkxcnsxrt.supabase.co` | Content + staff users |
 
 **Do not** put the portal on `admin.kenyashipyards.co.ke` or link it from the public site menu. Staff bookmark `/login` on the obscure URL.
@@ -40,7 +46,7 @@ This repo has **two separate apps** that share one **Supabase** project. They de
 ## Part A — Supabase (one-time, mostly done)
 
 1. Run SQL migrations in order:  
-   `supabase/migrations/001_…` through `005_organization_press.sql`  
+   `supabase/migrations/001_…` through `007_usernames_security.sql`  
    (Dashboard → SQL, or already applied via MCP.)
 
 2. **Auth hardening** (Dashboard → Authentication → Providers → Email):
@@ -80,16 +86,16 @@ This repo has **two separate apps** that share one **Supabase** project. They de
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | from Supabase API settings |
    | `SUPABASE_SERVICE_ROLE_KEY` | from Supabase API settings (secret) |
 
-5. Deploy. Note the URL, e.g. `https://ksl-content-xxxxx.vercel.app`.
+5. Deploy. Production URL: `https://ksl-websitemink.vercel.app`.
 
 6. Optional: Settings → Domains → add a **custom** obscure subdomain you do not advertise.
 
 7. Sign in: `https://YOUR-PORTAL-URL/login`  
-   Use the super-admin email/password (bootstrap script or existing account).
+   Use the super-admin username (or email) and password.
 
-8. Optional: Vercel **Deployment Protection** (password or SSO) for an extra gate in front of the whole portal.
+8. Vercel **Deployment Protection** blocks staff who are not on your Vercel team. Keep it **off** for Production; the portal's own sign-in is the gate.
 
-`staff-portal/vercel.json` already sets CORS on **`/api/public/*`** for the main site (GET only).
+`staff-portal/src/middleware.ts` sets CORS on **`/api/public/*`** for the KSL site origins (GET only): `ksl-website.vercel.app` (and its preview URLs), `kenyashipyards.co.ke`, `www.kenyashipyards.co.ke`, and localhost. Security headers (CSP, HSTS, frame blocking) are in `staff-portal/next.config.ts`. Portal functions run in `dub1` (Dublin), next to the Supabase database in `eu-west-1` (`staff-portal/vercel.json`).
 
 ---
 
@@ -104,8 +110,10 @@ This repo has **two separate apps** that share one **Supabase** project. They de
 4. **Connect site to portal** — on **every** public HTML page (or once in a shared template), set on `<html>`:
 
    ```html
-   <html lang="en" data-ksl-content-api="https://YOUR-PORTAL-URL">
+   <html lang="en" data-ksl-content-api="https://ksl-websitemink.vercel.app">
    ```
+
+   (Already set on every public page.)
 
    - Use the portal origin **only** (no trailing slash, no `/login`).
    - `js/ksl-content.js` (via `js/scripts.js`) will call  

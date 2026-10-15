@@ -77,7 +77,7 @@ export function OrganizationEditor() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-[#5c6578]">
+      <div className="flex items-center gap-2 text-[#5b6775]">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading organization…
       </div>
     );
@@ -85,11 +85,11 @@ export function OrganizationEditor() {
 
   return (
     <div className="space-y-6">
-      {message && <p className="text-sm font-medium text-[#0165FC]">{message}</p>}
+      {message && <p className="text-sm font-medium text-[#0b1f3a]">{message}</p>}
 
       <div className="ksl-card space-y-4 p-6">
-        <h2 className="ksl-display text-lg font-semibold text-[#09296C]">Strategic plan download</h2>
-        <p className="text-sm text-[#5c6578]">Download item ID from the Downloads module (e.g. strategic-plan).</p>
+        <h2 className="text-[15px] font-bold text-[#0b1f3a]">Strategic plan download</h2>
+        <p className="text-sm text-[#5b6775]">Download item ID from the Downloads module (e.g. strategic-plan).</p>
         <Input value={chartDownloadId} onChange={(e) => setChartDownloadId(e.target.value)} />
         <Button type="button" onClick={saveSettings} disabled={saving}>Save settings</Button>
       </div>
@@ -101,37 +101,37 @@ export function OrganizationEditor() {
 
       {editing && (
         <div className="ksl-card space-y-4 p-6">
-          <h2 className="ksl-display text-lg font-semibold text-[#09296C]">
+          <h2 className="text-[15px] font-bold text-[#0b1f3a]">
             {editing.scope === "yard" ? "Yard" : "Leadership"}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {editing.scope === "yard" ? (
               <>
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-xs font-medium text-[#5c6578]">Yard name</label>
+                  <label className="mb-1 block text-xs font-medium text-[#5b6775]">Yard name</label>
                   <Input value={(editing as EditYard).name ?? ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-xs font-medium text-[#5c6578]">Lead division</label>
+                  <label className="mb-1 block text-xs font-medium text-[#5b6775]">Lead division</label>
                   <Input value={(editing as EditYard).lead ?? ""} onChange={(e) => setEditing({ ...editing, lead: e.target.value })} />
                 </div>
               </>
             ) : (
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-[#5c6578]">Role title</label>
+                <label className="mb-1 block text-xs font-medium text-[#5b6775]">Role title</label>
                 <Input value={(editing as EditLeadership).role ?? ""} onChange={(e) => setEditing({ ...editing, role: e.target.value })} />
               </div>
             )}
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Summary</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Summary</label>
               <textarea
-                className="min-h-[80px] w-full rounded border border-[#DDE5F0] bg-white px-3 py-2 text-sm"
+                className="min-h-[80px] w-full rounded border border-[#d7dde5] bg-white px-3 py-2 text-sm"
                 value={editing.summary ?? ""}
                 onChange={(e) => setEditing({ ...editing, summary: e.target.value })}
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Sort order</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Sort order</label>
               <Input
                 type="number"
                 value={editing.sort_order ?? 0}
@@ -139,9 +139,9 @@ export function OrganizationEditor() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5c6578]">Status</label>
+              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Status</label>
               <select
-                className="w-full rounded border border-[#DDE5F0] bg-white px-3 py-2.5 text-sm"
+                className="w-full rounded border border-[#d7dde5] bg-white px-3 py-2.5 text-sm"
                 value={editing.status ?? "draft"}
                 onChange={(e) => setEditing({ ...editing, status: e.target.value })}
               >
@@ -158,18 +158,18 @@ export function OrganizationEditor() {
         </div>
       )}
 
-      <div className="ksl-card overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-[#F7F9FB] text-xs uppercase text-[#5c6578]">
+      <div className="ksl-card overflow-x-auto">
+        <table className="w-full min-w-[640px] text-left text-[13px]">
+          <thead className="bg-[#f4f6f8] text-xs uppercase text-[#5b6775]">
             <tr><th className="px-4 py-3">Leadership</th><th className="px-4 py-3">Status</th><th /></tr>
           </thead>
           <tbody>
             {leadership.map((row) => (
-              <tr key={row.id} className="border-t border-[#EEF3FA]">
-                <td className="px-4 py-3 font-medium text-[#09296C]">{row.role}</td>
-                <td className="px-4 py-3 capitalize text-[#5c6578]">{row.status}</td>
+              <tr key={row.id} className="border-t border-[#eef2f6]">
+                <td className="px-4 py-3 font-medium text-[#0b1f3a]">{row.role}</td>
+                <td className="px-4 py-3 capitalize text-[#5b6775]">{row.status}</td>
                 <td className="px-4 py-3 text-right">
-                  <button type="button" className="text-[#0165FC] hover:underline" onClick={() => setEditing({ ...row, scope: "leadership" })}>Edit</button>
+                  <button type="button" className="text-[#0b1f3a] hover:underline" onClick={() => setEditing({ ...row, scope: "leadership" })}>Edit</button>
                   <button type="button" className="ml-3 text-red-600" onClick={() => remove(row.id, "leadership")} aria-label="Delete"><Trash2 className="inline h-4 w-4" /></button>
                 </td>
               </tr>
@@ -178,18 +178,18 @@ export function OrganizationEditor() {
         </table>
       </div>
 
-      <div className="ksl-card overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-[#F7F9FB] text-xs uppercase text-[#5c6578]">
+      <div className="ksl-card overflow-x-auto">
+        <table className="w-full min-w-[640px] text-left text-[13px]">
+          <thead className="bg-[#f4f6f8] text-xs uppercase text-[#5b6775]">
             <tr><th className="px-4 py-3">Yard</th><th className="px-4 py-3">Status</th><th /></tr>
           </thead>
           <tbody>
             {yards.map((row) => (
-              <tr key={row.id} className="border-t border-[#EEF3FA]">
-                <td className="px-4 py-3 font-medium text-[#09296C]">{row.name}</td>
-                <td className="px-4 py-3 capitalize text-[#5c6578]">{row.status}</td>
+              <tr key={row.id} className="border-t border-[#eef2f6]">
+                <td className="px-4 py-3 font-medium text-[#0b1f3a]">{row.name}</td>
+                <td className="px-4 py-3 capitalize text-[#5b6775]">{row.status}</td>
                 <td className="px-4 py-3 text-right">
-                  <button type="button" className="text-[#0165FC] hover:underline" onClick={() => setEditing({ ...row, scope: "yard" })}>Edit</button>
+                  <button type="button" className="text-[#0b1f3a] hover:underline" onClick={() => setEditing({ ...row, scope: "yard" })}>Edit</button>
                   <button type="button" className="ml-3 text-red-600" onClick={() => remove(row.id, "yard")} aria-label="Delete"><Trash2 className="inline h-4 w-4" /></button>
                 </td>
               </tr>

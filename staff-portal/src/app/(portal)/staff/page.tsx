@@ -9,7 +9,10 @@ export default async function StaffPage() {
 
   return (
     <>
-      <PageHeader title="Staff management" description="Register agents and set module permissions (osTicket-style)." />
+      <PageHeader
+        title="Staff management"
+        description="Create agent accounts, choose which modules each agent can view, edit, publish or delete, and reset passwords."
+      />
       <StaffManager />
     </>
   );

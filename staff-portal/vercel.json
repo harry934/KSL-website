@@ -1,11 +1,3 @@
 {
-  "headers": [
-    {
-      "source": "/api/public/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" }
-      ]
-    }
-  ]
+  "regions": ["dub1"]
 }

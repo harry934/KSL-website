@@ -10,9 +10,9 @@ export async function GET() {
     admin.from("organization_yards").select("*").order("sort_order", { ascending: true }),
   ]);
 
-  if (settingsRes.error) return NextResponse.json({ error: settingsRes.error.message }, { status: 500 });
-  if (leadershipRes.error) return NextResponse.json({ error: leadershipRes.error.message }, { status: 500 });
-  if (yardsRes.error) return NextResponse.json({ error: yardsRes.error.message }, { status: 500 });
+  if (settingsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
+  if (leadershipRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
+  if (yardsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
   const payload = toPublicOrganization(
     settingsRes.data?.chart_download_id ?? null,
