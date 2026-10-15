@@ -1941,7 +1941,8 @@ main {
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(2, 1fr);
     gap: 10px;
-    height: 560px;
+    height: 600px;
+    padding-bottom: 48px;
     margin: 0 18px 18px 0;
     isolation: isolate;
 }
@@ -1982,8 +1983,38 @@ main {
     transition: transform 600ms cubic-bezier(.2, .7, .2, 1), filter 320ms ease;
 }
 
-.about-frame:nth-child(3) img {
+.about-frame:nth-child(even) {
+    top: 48px;
+}
+
+.about-frame:nth-child(3) img:first-child {
     object-position: center 58%;
+}
+
+.about-frame:nth-child(4) img:first-child {
+    object-position: 56% center;
+}
+
+.about-frame .about-frame-alt {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    animation: about-frame-swap 16s ease-in-out infinite;
+}
+
+.about-frame:nth-child(1) .about-frame-alt { animation-delay: 2s; }
+.about-frame:nth-child(2) .about-frame-alt { animation-delay: 6s; }
+.about-frame:nth-child(3) .about-frame-alt { animation-delay: 10s; }
+.about-frame:nth-child(4) .about-frame-alt { animation-delay: 14s; }
+
+.about-frame:hover .about-frame-alt {
+    animation-play-state: paused;
+}
+
+@keyframes about-frame-swap {
+    0%, 42% { opacity: 0; }
+    50%, 92% { opacity: 1; }
+    100% { opacity: 0; }
 }
 
 .about-frame:hover img {
@@ -3566,6 +3597,7 @@ html.board-motion .board-card.is-in .board-card-body {
     .about-gallery {
         height: auto;
         gap: 6px;
+        padding-bottom: 24px;
         margin: 0 10px 10px 0;
     }
 
@@ -3575,6 +3607,10 @@ html.board-motion .board-card.is-in .board-card-body {
 
     .about-frame {
         aspect-ratio: 1 / 1;
+    }
+
+    .about-frame:nth-child(even) {
+        top: 24px;
     }
 
     .news-row {
@@ -5052,6 +5088,10 @@ body {
         transition: none !important;
         animation: none !important;
         opacity: 1 !important;
+    }
+
+    .about-frame .about-frame-alt {
+        display: none;
     }
 
 }
