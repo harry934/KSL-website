@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldGrid, FormSection, Notice } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
+import { SearchBox, matchesSearch } from "@/components/ui/list-tools";
+import { UserAvatar } from "@/components/portal/user-avatar";
 import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
 import { sendJson } from "@/lib/upload-client";
@@ -32,6 +34,7 @@ type StaffRow = {
   is_super_admin: boolean;
   is_active: boolean;
   must_change_password: boolean;
+  avatar_url: string | null;
   permissions: PermRow[];
 };
 
@@ -163,6 +166,7 @@ export function StaffManager() {
   const [panel, setPanel] = useState<Panel>(null);
   const [issued, setIssued] = useState<Issued | null>(null);
   const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState("");
 
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -317,6 +321,10 @@ export function StaffManager() {
     }
   }
 
+  const shownStaff = staff.filter((row) =>
+    matchesSearch(query, row.display_name, row.username, row.contact_email, row.is_super_admin ? "administrator" : "agent")
+  );
+
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-[14px] text-[#5b6775]">
@@ -349,11 +357,12 @@ export function StaffManager() {
   return (
     <div className="flex flex-col gap-4">
       {!panel && !issued && (
-        <div className="flex justify-end">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Button onClick={openCreate}>
             <UserPlus className="h-4 w-4" />
             Add agent
           </Button>
+          <SearchBox value={query} onChange={setQuery} placeholder="Search by name, username or email" className="sm:w-[300px]" />
         </div>
       )}
 
@@ -413,14 +422,29 @@ export function StaffManager() {
             </tr>
           </thead>
           <tbody>
-            {staff.map((row) => (
+            {shownStaff.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-[#6b7785]">
+                  No results found.{" "}
+                  <button type="button" className="font-semibold text-[#0b1f3a] underline" onClick={() => setQuery("")}>
+                    Clear search
+                  </button>
+                </td>
+              </tr>
+            )}
+            {shownStaff.map((row) => (
               <tr key={row.id} className="border-t border-[#eef1f4] align-top">
                 <td className="px-4 py-3">
-                  <p className="font-semibold text-[#0b1f3a]">{row.display_name || row.username}</p>
-                  <p className="text-[12.5px] text-[#6b7785]">
-                    {row.username}
-                    {row.contact_email ? ` · ${row.contact_email}` : ""}
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <UserAvatar name={row.display_name || row.username} url={row.avatar_url} size={34} />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-[#0b1f3a]">{row.display_name || row.username}</p>
+                      <p className="text-[12.5px] text-[#6b7785]">
+                        {row.username}
+                        {row.contact_email ? ` · ${row.contact_email}` : ""}
+                      </p>
+                    </div>
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-[#5b6775]">{row.is_super_admin ? "Administrator" : "Agent"}</td>
                 <td className="px-4 py-3">

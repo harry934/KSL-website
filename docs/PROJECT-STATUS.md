@@ -1,4 +1,4 @@
-# KSL website + content portal — project status
+# KSL website + admin portal — project status
 
 Last updated: October 2026
 
@@ -7,7 +7,7 @@ Last updated: October 2026
 | Piece | Where | Notes |
 |-------|-------|-------|
 | Public website (static HTML/CSS/JS) | Vercel project `ksl-website` → https://ksl-website.vercel.app | Repo root. Root Directory = `.` |
-| Staff content portal (Next.js 15) | Vercel project `ksl-website_mink` → https://ksl-websitemink.vercel.app/login | Folder `staff-portal/`. Root Directory = `staff-portal` |
+| Staff admin portal (Next.js 15) | Vercel project `ksl-website_mink` → https://ksl-websitemink.vercel.app/login | Folder `staff-portal/`. Root Directory = `staff-portal` |
 | Database, auth, file storage | Supabase project `envqgczfhxywkxcnsxrt` | Migrations in `supabase/migrations/` |
 | Source code | https://github.com/harry934/KSL-website (`main`) | One repo, two Vercel projects |
 
@@ -22,6 +22,7 @@ Last updated: October 2026
 - Editors use plain forms only (no code, JSON or HTML): photo and file upload buttons, a word-processor box for long text, up/down arrows for order, and an "On website / Hidden" switch. Web address endings are generated from the title.
 - Content has hidden (draft) / on website (published) status; the public site only ever sees published rows. Agents without "Put live" can save drafts only.
 - Site settings has a **website banner**: a full-width strip under the menu on every public page, with a tag, message, button, three colour styles, optional moving text and an optional end date. A live preview is shown while editing.
+- The portal uses the same look and behaviour as the KSL Task Management System: progress bar and "Please wait…" overlay while saving, a notification bell (changes by other staff in the sections you can see), profile photos, a visible Sign out button, search with Clear and 25 items per page on every list, searchable dropdowns, password show/hide with live hints, and activity log filters (person, section, what happened, date range).
 - Gallery: 57 photos and 3 videos.
 - Document links point to the site's own `docs/` folder.
 
@@ -43,6 +44,7 @@ Last updated: October 2026
 | `006_products_csr_settings.sql` | Products, CSR projects, site settings |
 | `007_usernames_security.sql` | Usernames, optional contact email, forced password change, login rate limiting |
 | `008_gallery_videos.sql` | Gallery videos (YouTube) |
+| `009_profile_photos.sql` | Staff profile photos (`admin_profiles.avatar_path`, files in `media-public/avatars/`) |
 
 ## Security summary
 

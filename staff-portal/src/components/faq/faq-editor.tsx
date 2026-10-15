@@ -10,12 +10,12 @@ import {
   FormSection,
   MoveButtons,
   SaveBar,
-  Select,
   StatusBadge,
   Textarea,
   VisibilitySwitch,
 } from "@/components/ui/form-bits";
 import { ItemList } from "@/components/ui/item-list";
+import { SearchSelect } from "@/components/ui/search-select";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { keyFrom, moveItem } from "@/lib/list-utils";
@@ -267,13 +267,12 @@ export function FaqEditor() {
           </FormSection>
           <div className="space-y-4">
             <FormSection title="Group">
-              <Select value={editing.item.group_id} onChange={(e) => set({ group_id: e.target.value })}>
-                {groups.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.title}
-                  </option>
-                ))}
-              </Select>
+              <SearchSelect
+                value={editing.item.group_id}
+                options={groups.map((g) => ({ value: g.id, label: g.title }))}
+                onChange={(group_id) => set({ group_id })}
+                searchPlaceholder="Search groups"
+              />
             </FormSection>
             <FormSection title="Visibility">
               <VisibilitySwitch status={editing.item.status} canPublish={canPublish} onChange={(status) => set({ status })} />

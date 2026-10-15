@@ -24,3 +24,10 @@ export function useDocuments() {
 
   return documents;
 }
+
+/** Dropdown options for the documents, keeping the saved one even if it is no longer published. */
+export function documentOptions(documents: DocumentChoice[], current: string | null | undefined) {
+  const options = documents.map((d) => ({ value: d.id, label: d.title }));
+  if (current && !documents.some((d) => d.id === current)) options.push({ value: current, label: "Current document" });
+  return options;
+}

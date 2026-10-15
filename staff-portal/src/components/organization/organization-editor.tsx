@@ -4,13 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, FormSection, SaveBar, Select, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
+import { Field, FormSection, SaveBar, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
+import { SearchSelect } from "@/components/ui/search-select";
 import { ItemList } from "@/components/ui/item-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { moveItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
-import { useDocuments } from "@/lib/use-documents";
+import { documentOptions, useDocuments } from "@/lib/use-documents";
 import type { LeadershipRow, YardRow } from "@/lib/organization";
 
 type Scope = "leadership" | "yard";
@@ -216,17 +217,13 @@ export function OrganizationEditor() {
 
       <FormSection title="Organisation chart document" description="The document visitors download from the Organisation page.">
         <Field label="Document">
-          <Select value={chartDownloadId} onChange={(e) => setChartDownloadId(e.target.value)}>
-            <option value="">No document</option>
-            {documents.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.title}
-              </option>
-            ))}
-            {chartDownloadId && !documents.some((d) => d.id === chartDownloadId) && (
-              <option value={chartDownloadId}>Current document</option>
-            )}
-          </Select>
+          <SearchSelect
+            value={chartDownloadId}
+            options={documentOptions(documents, chartDownloadId)}
+            onChange={setChartDownloadId}
+            emptyLabel="No document"
+            searchPlaceholder="Search documents"
+          />
         </Field>
         <Button onClick={saveSettings} disabled={saving === "settings"}>
           {saving === "settings" ? "Saving…" : "Save"}

@@ -3,6 +3,7 @@ import { requireStaff, logActivity } from "@/lib/api-auth";
 import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
 import { authEmailFor, generateOneTimePassword } from "@/lib/auth-server";
 import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
+import { avatarUrl } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
 
 type PermInput = {
@@ -45,12 +46,16 @@ export async function GET() {
   const { data, error: dbError } = await admin
     .from("admin_profiles")
     .select(
-      "id, username, display_name, contact_email, is_super_admin, is_active, must_change_password, created_at, permissions:admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
+      "id, username, display_name, contact_email, is_super_admin, is_active, must_change_password, avatar_path, created_at, permissions:admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
     )
     .order("created_at", { ascending: false });
 
   if (dbError) return NextResponse.json({ error: "Could not load the staff list." }, { status: 500 });
-  return NextResponse.json({ staff: data ?? [] });
+  const staff = (data ?? []).map(({ avatar_path, ...row }) => ({
+    ...row,
+    avatar_url: avatar_path ? avatarUrl(avatar_path) : null,
+  }));
+  return NextResponse.json({ staff });
 }
 
 export async function POST(req: NextRequest) {

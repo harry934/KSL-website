@@ -1,4 +1,4 @@
-# KSL website + content portal — deployment guide
+# KSL website + admin portal — deployment guide
 
 **GitHub repo:** https://github.com/harry934/KSL-website  
 

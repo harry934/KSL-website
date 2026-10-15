@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { ActivityIndicators } from "@/components/portal/activity-indicators";
 import { Sidebar } from "@/components/portal/sidebar";
 import { Topbar } from "@/components/portal/topbar";
 import { SessionProvider } from "@/components/portal/session-context";
@@ -50,6 +51,9 @@ export function PortalShell({
             <span />
             <span />
           </div>
+          <Suspense fallback={null}>
+            <ActivityIndicators />
+          </Suspense>
           <Sidebar session={session} />
           <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} aria-hidden />
           <div className="app-main">

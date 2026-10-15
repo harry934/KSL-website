@@ -28,7 +28,7 @@ export default function LoginPage() {
           />
           <p className="mb-1.5 text-center text-[11px] font-bold uppercase tracking-[0.1em] text-[#c5a028]">Ministry of Defence</p>
           <h1 className="text-center text-[20px] font-bold text-[#0b1f3a]">Kenya Shipyards Limited</h1>
-          <p className="mb-4 mt-2 text-center text-[14px] text-[#5b6775]">Website content portal</p>
+          <p className="mb-4 mt-2 text-center text-[14px] text-[#5b6775]">Website admin portal</p>
 
           <div className="rounded-[8px] border border-[#e3e8ee] bg-white p-4 text-left sm:p-5">
             <strong className="mb-3 block text-[15px] text-[#0b1f3a]">Sign in</strong>

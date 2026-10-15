@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordHints, PasswordInput } from "@/components/ui/password-input";
 import { Field, Notice } from "@/components/ui/form-bits";
 import { validatePassword } from "@/lib/accounts";
 
@@ -56,11 +56,10 @@ export function ChangePasswordForm({ forced = false }: { forced?: boolean }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <Field label={forced ? "One-time password" : "Current password"} hint={forced ? "The password the administrator gave you." : undefined}>
-        <Input type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
+        <PasswordInput autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
       </Field>
-      <Field label="New password" hint="At least 10 characters, with letters and numbers.">
-        <Input
-          type="password"
+      <Field label="New password">
+        <PasswordInput
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -68,15 +67,15 @@ export function ChangePasswordForm({ forced = false }: { forced?: boolean }) {
           required
         />
       </Field>
-      <Field label="Confirm">
-        <Input
-          type="password"
+      <Field label="Confirm new password">
+        <PasswordInput
           autoComplete="new-password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           minLength={10}
           required
         />
+        <PasswordHints password={password} confirm={confirm} />
       </Field>
       {error && <Notice kind="error">{error}</Notice>}
       {message && <Notice kind="success">{message}</Notice>}

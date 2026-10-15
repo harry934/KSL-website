@@ -710,6 +710,256 @@ a.kpi-card:focus-visible {
   }
 }
 
+/* ---------- Loading bar and "Please wait" overlay ---------- */
+.app-progress-bar {
+  position: fixed;
+  top: var(--stripe-h);
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 2500;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--navy) 50%, var(--gold) 100%);
+  background-size: 200% 100%;
+  animation: ksl-progress 0.9s linear infinite;
+}
+
+@keyframes ksl-progress {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.processing-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.55);
+  animation: ksl-fade-in var(--dur-fast) ease;
+}
+
+.processing-card {
+  padding: 20px 28px;
+  text-align: center;
+  background: var(--white);
+  border: 1px solid #e3e8ee;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(11, 31, 58, 0.12);
+}
+
+.processing-card p {
+  margin: 12px 0 0;
+  color: var(--navy);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.ksl-spinner {
+  display: block;
+  width: 28px;
+  height: 28px;
+  margin: 0 auto;
+  border: 3px solid var(--line);
+  border-top-color: var(--navy);
+  border-radius: 50%;
+  animation: ksl-spin 0.7s linear infinite;
+}
+
+@keyframes ksl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ksl-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ksl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Top bar: notifications and sign out ---------- */
+.icon-button.icon-quiet {
+  position: relative;
+  border-color: transparent;
+  background: transparent;
+}
+
+.icon-button.icon-quiet:hover,
+.icon-button.icon-quiet[aria-expanded="true"] {
+  border-color: var(--line);
+  background: var(--page);
+}
+
+.notify-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--danger);
+  color: var(--white);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--dur-fast) ease, background-color var(--dur-fast) ease;
+}
+
+.btn-quiet:hover {
+  color: var(--navy);
+  background: var(--page);
+}
+
+.notification-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 60;
+  width: min(380px, 92vw);
+  overflow: hidden;
+  background: var(--white);
+  border: 1px solid #e3e8ee;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(11, 31, 58, 0.14);
+  animation: ksl-rise var(--dur-fast) var(--ease);
+}
+
+.notification-dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid #eef1f4;
+}
+
+.notification-dropdown-header strong {
+  display: block;
+  color: var(--navy);
+  font-size: 14px;
+}
+
+.notification-count {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.notification-dropdown-list {
+  max-height: 360px;
+  overflow: auto;
+}
+
+.notification-item {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 11px 14px 11px 28px;
+  border-bottom: 1px solid #eef1f4;
+  text-align: left;
+  color: inherit;
+  transition: background-color var(--dur-fast) ease;
+}
+
+.notification-item:last-child {
+  border-bottom: 0;
+}
+
+.notification-item.is-unread::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 17px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.notification-item:hover {
+  background: var(--page);
+}
+
+.notification-item strong {
+  display: block;
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.notification-item span {
+  display: block;
+  margin-top: 2px;
+  color: #1f2933;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.notification-item em {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-style: normal;
+}
+
+/* ---------- Password rules ---------- */
+.password-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.password-hints span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.password-hints span.is-ok {
+  color: var(--success);
+}
+
 /* Tables inside editors never push the page sideways. */
 .app-content table {
   max-width: 100%;

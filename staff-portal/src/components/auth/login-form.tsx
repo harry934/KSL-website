@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { fieldLabel, Notice } from "@/components/ui/form-bits";
 
 export function LoginForm() {
@@ -51,9 +52,8 @@ export function LoginForm() {
         <label htmlFor="login-password" className={fieldLabel}>
           Password
         </label>
-        <Input
+        <PasswordInput
           id="login-password"
-          type="password"
           autoComplete="current-password"
           required
           disabled={loading}

@@ -1,4 +1,4 @@
-# KSL Content portal (staff)
+# KSL Admin portal (staff)
 
 Private admin for Kenya Shipyards website content. **Do not** deploy on a hostname containing `admin`. Use an unguessable URL and do not link from the public site.
 
@@ -17,7 +17,7 @@ Optional: `npx skills add supabase/agent-skills` for Supabase-focused agent skil
 ## Setup
 
 1. **Supabase SQL** — In [Supabase Dashboard](https://supabase.com/dashboard) → SQL → New query, run the full script:
-   `../supabase/migrations/001_staff_portal_schema.sql` through `007_usernames_security.sql`
+   `../supabase/migrations/001_staff_portal_schema.sql` through `009_profile_photos.sql`
 
 2. **Environment** — Copy `.env.example` to `.env.local` (already configured locally; never commit `.env.local`).
 
@@ -58,7 +58,9 @@ Production: https://ksl-websitemink.vercel.app/login — sign in with **username
 
 New agents: Staff → Add agent. The portal shows a one-time password once; give it to the agent, who chooses their own password at first sign-in. "New password" on a staff row does the same for a forgotten password.
 
-Shared form pieces live in `src/components/ui/` (`form-bits`, `image-field`, `file-field`, `row-list`, `item-list`, `rich-text`, `feedback`). Use them for new editors so wording and styling stay consistent.
+Shared form pieces live in `src/components/ui/` (`form-bits`, `image-field`, `file-field`, `row-list`, `item-list`, `list-tools`, `search-select`, `password-input`, `rich-text`, `feedback`). Use them for new editors so wording and styling stay consistent.
+
+The look follows the KSL Task Management System: top progress bar and "Please wait…" overlay (wrap slow work in `withBusy` from `lib/upload-client.ts`; `uploadFile` and `sendJson` already do), notification bell, profile photo in the user chip, quiet Sign out button, list search with Clear and 25 per page, searchable dropdowns, password show/hide with live hints, and activity log filters.
 
 ### Connect the public website
 

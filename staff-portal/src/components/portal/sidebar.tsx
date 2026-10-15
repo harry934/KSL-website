@@ -44,8 +44,8 @@ export function Sidebar({ session }: { session: StaffSession }) {
       <div className="brand-block">
         <Image src={kslLogo} alt="Kenya Shipyards Limited" width={52} height={52} unoptimized priority className="shrink-0" />
         <div className="brand-text">
-          <h1>Kenya Shipyards</h1>
-          <p>Content portal</p>
+          <h1>Kenya Shipyards Limited</h1>
+          <p>Admin portal</p>
         </div>
       </div>
 
@@ -79,7 +79,7 @@ export function Sidebar({ session }: { session: StaffSession }) {
         })}
       </nav>
 
-      <p className="sidebar-footer">Kenya Shipyards Limited</p>
+      <p className="sidebar-footer">Ministry of Defence</p>
     </aside>
   );
 }

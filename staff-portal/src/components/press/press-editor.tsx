@@ -4,14 +4,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChoiceField, Field, FieldGrid, FormSection, SaveBar, Select, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
+import { ChoiceField, Field, FieldGrid, FormSection, SaveBar, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
 import { FileField } from "@/components/ui/file-field";
 import { ItemList } from "@/components/ui/item-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { moveItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
-import { useDocuments } from "@/lib/use-documents";
+import { documentOptions, useDocuments } from "@/lib/use-documents";
+import { SearchSelect } from "@/components/ui/search-select";
 import { cn } from "@/lib/cn";
 import type { PressAssetRow } from "@/lib/press";
 
@@ -205,17 +206,13 @@ export function PressEditor() {
             </div>
             {editing.source === "document" && (
               <Field label="Document">
-                <Select value={editing.download_id ?? ""} onChange={(e) => set({ download_id: e.target.value })}>
-                  <option value="">Choose a document…</option>
-                  {documents.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.title}
-                    </option>
-                  ))}
-                  {editing.download_id && !documents.some((d) => d.id === editing.download_id) && (
-                    <option value={editing.download_id}>Current document</option>
-                  )}
-                </Select>
+                <SearchSelect
+                  value={editing.download_id ?? ""}
+                  options={documentOptions(documents, editing.download_id)}
+                  onChange={(download_id) => set({ download_id })}
+                  placeholder="Choose a document…"
+                  searchPlaceholder="Search documents"
+                />
               </Field>
             )}
             {editing.source === "file" && (

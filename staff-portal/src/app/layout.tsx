@@ -10,7 +10,7 @@ const sourceSans = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "KSL Content portal",
+  title: "KSL Admin portal",
   description: "Kenya Shipyards Limited staff content management",
   robots: { index: false, follow: false },
 };
