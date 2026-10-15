@@ -1,6 +1,6 @@
 import { LoginForm } from "@/components/auth/login-form";
-import { KslMotif } from "@/components/brand/ksl-motif";
 import Image from "next/image";
+import kslLogo from "../../../public/ksl-logo.png";
 
 export const metadata = {
   title: "Sign in — KSL Content portal",
@@ -11,15 +11,16 @@ export default function LoginPage() {
   return (
     <div className="relative flex min-h-screen flex-col bg-[#F7F9FB]">
       <div className="h-1.5 bg-gradient-to-r from-[#09296C] via-[#0A3E95] to-[#0165FC]" />
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden px-4 py-12">
-        <KslMotif className="pointer-events-none absolute right-[-5%] top-[10%] h-[min(480px,70vh)] w-[min(480px,70vw)] opacity-[0.08]" />
+      <div className="ksl-login-stage relative isolate flex flex-1 items-center justify-center overflow-hidden px-4 py-12">
         <div className="relative z-10 w-full max-w-md">
           <div className="mb-8 text-center">
             <Image
-              src="/ksl-logo.png"
+              src={kslLogo}
               alt="Kenya Shipyards Limited"
               width={72}
               height={72}
+              priority
+              unoptimized
               className="mx-auto rounded-full border border-[#DDE5F0] bg-white p-1 shadow-sm"
             />
             <p className="ksl-kicker mt-5">Kenya Shipyards Limited</p>

@@ -2,6 +2,8 @@
 
 Private admin for Kenya Shipyards website content. **Do not** deploy on a hostname containing `admin`. Use an unguessable URL and do not link from the public site.
 
+**Full deploy guide (two Vercel projects + Supabase):** [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md)
+
 ## Cursor + Supabase MCP
 
 This repo includes [`.cursor/mcp.json`](../.cursor/mcp.json) for the Supabase MCP server (project `envqgczfhxywkxcnsxrt`). After reloading Cursor:

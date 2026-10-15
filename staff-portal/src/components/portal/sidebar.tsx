@@ -3,6 +3,7 @@
 import type { ComponentType } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import kslLogo from "../../../public/ksl-logo.png";
 import { usePathname } from "next/navigation";
 import {
   Briefcase,
@@ -72,7 +73,7 @@ export function Sidebar({ session }: { session: StaffSession }) {
     <aside className="flex w-[260px] shrink-0 flex-col border-r border-[#DDE5F0] bg-white">
       <div className="border-b border-[#DDE5F0] bg-[#0A3E95] px-5 py-4">
         <div className="flex items-center gap-3">
-          <Image src="/ksl-logo.png" alt="" width={44} height={44} className="rounded-full bg-white p-0.5" />
+          <Image src={kslLogo} alt="" width={44} height={44} unoptimized className="rounded-full bg-white p-0.5" />
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/80">Kenya Shipyards</p>
             <p className="ksl-display text-sm font-semibold text-white">Content portal</p>
