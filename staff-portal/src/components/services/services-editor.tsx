@@ -1,276 +1,295 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import {
+  AdvancedSlug,
+  ChoiceField,
+  Field,
+  FormSection,
+  SaveBar,
+  Textarea,
+  VisibilitySwitch,
+} from "@/components/ui/form-bits";
+import { FileField } from "@/components/ui/file-field";
+import { ImageField } from "@/components/ui/image-field";
+import { ItemList } from "@/components/ui/item-list";
+import { RowList } from "@/components/ui/row-list";
+import { useFeedback } from "@/components/ui/feedback";
+import { useCan } from "@/components/portal/session-context";
 import type { ServiceRow } from "@/lib/services";
-import { slugify } from "@/lib/services";
+import { keyFrom, moveItem, uniqueSlug } from "@/lib/list-utils";
+import { sendJson } from "@/lib/upload-client";
 
-type SettingsState = {
-  intro: string;
-  download_catalog: Record<string, { title: string; href: string }>;
-};
+type DocRow = { key: string; title: string; href: string };
+
+function catalogToRows(catalog: Record<string, { title: string; href: string }>): DocRow[] {
+  return Object.entries(catalog).map(([key, v]) => ({ key, title: v.title ?? "", href: v.href ?? "" }));
+}
 
 export function ServicesEditor() {
+  const { toast, confirm } = useFeedback();
+  const canPublish = useCan("services", "publish");
+  const canDelete = useCan("services", "delete");
   const [intro, setIntro] = useState("");
-  const [catalogJson, setCatalogJson] = useState("{}");
+  const [docs, setDocs] = useState<DocRow[]>([]);
+  const [savedCatalog, setSavedCatalog] = useState<Record<string, { title: string; href: string }>>({});
   const [items, setItems] = useState<ServiceRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<Partial<ServiceRow> & { downloadsText?: string } | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Partial<ServiceRow> | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/services");
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setIntro(data.intro ?? "");
-      setCatalogJson(JSON.stringify(data.download_catalog ?? {}, null, 2));
+      setSavedCatalog(data.download_catalog ?? {});
+      setDocs(catalogToRows(data.download_catalog ?? {}));
       setItems(data.items ?? []);
+    } else {
+      toast(data.error ?? "Could not load the services.", "error");
     }
     setLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  async function saveSettings() {
-    setSaving(true);
-    setMessage(null);
-    let download_catalog: SettingsState["download_catalog"] = {};
-    try {
-      download_catalog = JSON.parse(catalogJson);
-    } catch {
-      setSaving(false);
-      setMessage("Download catalog must be valid JSON");
+  const categories = useMemo(
+    () =>
+      Array.from(new Set(items.map((i) => i.category).filter((c): c is string => !!c))).map((c) => ({ value: c, label: c })),
+    [items]
+  );
+
+  async function saveSettings(what: "intro" | "documents") {
+    const missing = docs.find((d) => !d.title.trim() || !d.href.trim());
+    if (what === "documents" && missing) {
+      toast("Every document needs a name and a file (or link).", "error");
       return;
     }
-    const res = await fetch("/api/services", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scope: "settings", intro, download_catalog }),
-    });
-    setSaving(false);
-    if (res.ok) setMessage("Settings saved");
+    const taken: string[] = [];
+    let download_catalog: Record<string, { title: string; href: string }> = {};
+    if (what === "documents") {
+      for (const doc of docs) {
+        const key = doc.key || keyFrom(doc.title, [...taken, ...docs.map((d) => d.key).filter(Boolean)]);
+        taken.push(key);
+        download_catalog[key] = { title: doc.title.trim(), href: doc.href.trim() };
+      }
+    } else {
+      download_catalog = savedCatalog;
+    }
+    setSaving(what);
+    try {
+      await sendJson("/api/services", "POST", { scope: "settings", intro, download_catalog });
+      toast(what === "intro" ? "Introduction saved." : "Documents saved.");
+      setSavedCatalog(download_catalog);
+      if (what === "documents") setDocs(catalogToRows(download_catalog));
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSaving(null);
+    }
   }
 
   function startNew() {
     setEditing({
       title: "",
       slug: "",
-      category: "",
+      category: categories[0]?.value ?? "",
       excerpt: "",
       detail: "",
       image_path: "",
-      downloadsText: "",
-      sort_order: items.length,
-      status: "draft",
+      downloads: [],
+      sort_order: items.length ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0,
+      status: canPublish ? "published" : "draft",
     });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function saveItem() {
-    if (!editing?.title) return;
-    setSaving(true);
-    setMessage(null);
-    const downloads = (editing.downloadsText ?? "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const payload = {
-      ...editing,
-      slug: editing.slug || slugify(editing.title),
-      downloads,
-    };
-    delete (payload as { downloadsText?: string }).downloadsText;
-    const res = await fetch("/api/services", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    setSaving(false);
-    if (res.ok) {
-      setMessage("Saved");
+  async function saveItem(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    if (!editing.title?.trim()) {
+      toast("Give the service a name.", "error");
+      return;
+    }
+    setSaving("item");
+    try {
+      const slug =
+        editing.slug?.trim() ||
+        uniqueSlug(editing.title, items.filter((i) => i.id !== editing.id).map((i) => i.slug), "service");
+      await sendJson("/api/services", "POST", { ...editing, slug });
+      toast(editing.status === "published" ? "Service saved and shown on the website." : "Service saved as hidden (draft).");
       setEditing(null);
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function move(index: number, delta: number) {
+    const next = moveItem(items, index, delta).map((item, i) => ({ ...item, sort_order: i }));
+    const before = new Map(items.map((i) => [i.id, i.sort_order]));
+    setItems(next);
+    try {
+      await Promise.all(next.filter((i) => before.get(i.id) !== i.sort_order).map((i) => sendJson("/api/services", "POST", i)));
+    } catch (err) {
+      toast((err as Error).message, "error");
       load();
     }
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this service?")) return;
-    await fetch("/api/services?id=" + encodeURIComponent(id), { method: "DELETE" });
-    load();
-  }
-
-  async function uploadImage(file: File) {
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", headers: { "x-ksl-module": "services" }, body: fd });
-    const data = await res.json();
-    if (res.ok) {
-      setEditing((e) => (e ? { ...e, image_path: data.public_url } : e));
+    const item = items.find((i) => i.id === id);
+    const ok = await confirm({
+      title: "Delete this service?",
+      message: item ? `"${item.title}" will be removed from the website for good.` : undefined,
+      confirmLabel: "Delete service",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await sendJson(`/api/services?id=${encodeURIComponent(id)}`, "DELETE");
+      toast("Service deleted.");
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
     }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-[#5b6775]">
+      <div className="flex items-center gap-2 text-[14px] text-[#5b6775]">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading services…
       </div>
     );
   }
 
+  if (editing) {
+    const set = (patch: Partial<ServiceRow>) => setEditing({ ...editing, ...patch });
+    const attached = new Set(editing.downloads ?? []);
+    const savedDocs = catalogToRows(savedCatalog);
+    return (
+      <form onSubmit={saveItem} className="space-y-4">
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <FormSection title={editing.id ? "Edit service" : "New service"}>
+            <Field label="Service name">
+              <Input value={editing.title ?? ""} onChange={(e) => set({ title: e.target.value })} autoFocus={!editing.id} />
+            </Field>
+            <Field label="Group">
+              <ChoiceField
+                value={editing.category ?? ""}
+                options={categories}
+                onChange={(category) => set({ category })}
+                newLabel="Add a new group…"
+              />
+            </Field>
+            <Field label="Short summary" hint="Shown on the service card.">
+              <Textarea rows={2} className="min-h-[70px]" value={editing.excerpt ?? ""} onChange={(e) => set({ excerpt: e.target.value })} />
+            </Field>
+            <Field label="Full description" hint="Shown when a visitor opens the service. Leave an empty line between paragraphs.">
+              <Textarea className="min-h-[220px]" value={editing.detail ?? ""} onChange={(e) => set({ detail: e.target.value })} />
+            </Field>
+          </FormSection>
+          <div className="space-y-4">
+            <FormSection title="Visibility">
+              <VisibilitySwitch status={editing.status ?? "draft"} canPublish={canPublish} onChange={(status) => set({ status })} />
+            </FormSection>
+            <FormSection title="Photo">
+              <ImageField module="services" value={editing.image_path ?? ""} onChange={(image_path) => set({ image_path })} />
+            </FormSection>
+            <FormSection title="Documents" description="Tick the documents visitors can download from this service.">
+              {savedDocs.length === 0 ? (
+                <p className="text-[13px] text-[#6b7785]">No documents yet. Add them under Documents on the Services page.</p>
+              ) : (
+                <div className="space-y-2">
+                  {savedDocs.map((doc) => (
+                    <label key={doc.key} className="flex cursor-pointer items-center gap-2.5 text-[14px] text-[#1f2933]">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-[#0b1f3a]"
+                        checked={attached.has(doc.key)}
+                        onChange={(e) => {
+                          const next = new Set(attached);
+                          if (e.target.checked) next.add(doc.key);
+                          else next.delete(doc.key);
+                          set({ downloads: savedDocs.map((d) => d.key).filter((k) => next.has(k)) });
+                        }}
+                      />
+                      {doc.title}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </FormSection>
+            <AdvancedSlug value={editing.slug ?? ""} onChange={(slug) => set({ slug })} />
+          </div>
+        </div>
+        <SaveBar>
+          <Button variant="secondary" onClick={() => setEditing(null)}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={saving === "item"}>
+            {saving === "item" ? "Saving…" : "Save service"}
+          </Button>
+        </SaveBar>
+      </form>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {message && <p className="text-sm font-medium text-[#0b1f3a]">{message}</p>}
-
-      <div className="ksl-card space-y-4 p-6">
-        <h2 className="text-[15px] font-bold text-[#0b1f3a]">Page intro</h2>
-        <textarea
-          className="min-h-[80px] w-full rounded border border-[#d7dde5] bg-white px-3 py-2 text-sm"
-          value={intro}
-          onChange={(e) => setIntro(e.target.value)}
+    <div className="space-y-5">
+      <div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-[15px] font-bold text-[#0b1f3a]">Services</h2>
+          <Button onClick={startNew}>
+            <Plus className="h-4 w-4" /> New service
+          </Button>
+        </div>
+        <ItemList
+          showImages
+          items={items.map((i) => ({ id: i.id, title: i.title, subtitle: i.category, image: i.image_path, status: i.status }))}
+          onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
+          onDelete={canDelete ? remove : undefined}
+          onMove={move}
+          emptyText="No services yet. Click New service to add one."
         />
-        <div>
-          <label className="mb-1 block text-xs font-medium text-[#5b6775]">Download catalog (JSON)</label>
-          <textarea
-            className="min-h-[120px] w-full rounded border border-[#d7dde5] bg-white px-3 py-2 font-mono text-xs"
-            value={catalogJson}
-            onChange={(e) => setCatalogJson(e.target.value)}
+      </div>
+
+      <div className="grid items-start gap-4 xl:grid-cols-2">
+        <FormSection title="Page introduction" description="The paragraph at the top of the Services page.">
+          <Textarea className="min-h-[120px]" value={intro} onChange={(e) => setIntro(e.target.value)} />
+          <Button onClick={() => saveSettings("intro")} disabled={saving === "intro"}>
+            {saving === "intro" ? "Saving…" : "Save introduction"}
+          </Button>
+        </FormSection>
+
+        <FormSection title="Documents" description="Brochures, charters and forms that can be attached to services.">
+          <RowList
+            items={docs}
+            onChange={setDocs}
+            newItem={() => ({ key: "", title: "", href: "" })}
+            addLabel="Add document"
+            emptyText="No documents yet."
+            renderRow={(doc, update) => (
+              <div className="space-y-3">
+                <Field label="Document name">
+                  <Input value={doc.title} onChange={(e) => update({ title: e.target.value })} placeholder="e.g. KSL Brochure" />
+                </Field>
+                <FileField module="services" value={doc.href} onChange={(href) => update({ href })} />
+              </div>
+            )}
           />
-        </div>
-        <Button type="button" onClick={saveSettings} disabled={saving}>Save settings</Button>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        <Button type="button" onClick={startNew}>
-          <Plus className="h-4 w-4" /> New service
-        </Button>
-      </div>
-
-      {editing && (
-        <div className="ksl-card space-y-4 p-6">
-          <h2 className="text-[15px] font-bold text-[#0b1f3a]">
-            {editing.id ? "Edit service" : "New service"}
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Title</label>
-              <Input
-                value={editing.title ?? ""}
-                onChange={(e) =>
-                  setEditing({ ...editing, title: e.target.value, slug: slugify(e.target.value) })
-                }
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Slug</label>
-              <Input value={editing.slug ?? ""} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Category</label>
-              <Input value={editing.category ?? ""} onChange={(e) => setEditing({ ...editing, category: e.target.value })} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Excerpt</label>
-              <Input value={editing.excerpt ?? ""} onChange={(e) => setEditing({ ...editing, excerpt: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Sort order</label>
-              <Input
-                type="number"
-                value={editing.sort_order ?? 0}
-                onChange={(e) => setEditing({ ...editing, sort_order: parseInt(e.target.value, 10) || 0 })}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Status</label>
-              <select
-                className="w-full rounded border border-[#d7dde5] bg-white px-3 py-2.5 text-sm"
-                value={editing.status ?? "draft"}
-                onChange={(e) => setEditing({ ...editing, status: e.target.value })}
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Download keys (comma-separated)</label>
-              <Input
-                value={editing.downloadsText ?? (editing.downloads || []).join(", ")}
-                onChange={(e) => setEditing({ ...editing, downloadsText: e.target.value })}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Image</label>
-              <Input
-                value={editing.image_path ?? ""}
-                onChange={(e) => setEditing({ ...editing, image_path: e.target.value })}
-              />
-              <input
-                type="file"
-                accept="image/*"
-                className="mt-2 text-sm"
-                onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0])}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Detail (modal text)</label>
-              <textarea
-                className="min-h-[200px] w-full rounded border border-[#d7dde5] bg-white px-3 py-2 text-sm"
-                value={editing.detail ?? ""}
-                onChange={(e) => setEditing({ ...editing, detail: e.target.value })}
-              />
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button type="button" onClick={saveItem} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
-            <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
-          </div>
-        </div>
-      )}
-
-      <div className="ksl-card overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-[13px]">
-          <thead className="bg-[#f4f6f8] text-xs uppercase text-[#5b6775]">
-            <tr>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Category</th>
-              <th className="px-4 py-3">Order</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id} className="border-t border-[#eef2f6]">
-                <td className="px-4 py-3 font-medium text-[#0b1f3a]">{item.title}</td>
-                <td className="px-4 py-3 text-[#5b6775]">{item.category}</td>
-                <td className="px-4 py-3 text-[#5b6775]">{item.sort_order}</td>
-                <td className="px-4 py-3 capitalize text-[#5b6775]">{item.status}</td>
-                <td className="px-4 py-3 text-right">
-                  <button
-                    type="button"
-                    className="text-[#0b1f3a] hover:underline"
-                    onClick={() =>
-                      setEditing({
-                        ...item,
-                        downloadsText: (item.downloads || []).join(", "),
-                      })
-                    }
-                  >
-                    Edit
-                  </button>
-                  <button type="button" className="ml-3 text-red-600" onClick={() => remove(item.id)} aria-label="Delete">
-                    <Trash2 className="inline h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          <Button onClick={() => saveSettings("documents")} disabled={saving === "documents"}>
+            {saving === "documents" ? "Saving…" : "Save documents"}
+          </Button>
+        </FormSection>
       </div>
     </div>
   );

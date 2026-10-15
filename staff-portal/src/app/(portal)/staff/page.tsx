@@ -10,8 +10,8 @@ export default async function StaffPage() {
   return (
     <>
       <PageHeader
-        title="Staff management"
-        description="Create agent accounts, choose which modules each agent can view, edit, publish or delete, and reset passwords."
+        title="Staff"
+        description="People who can sign in to this portal, and what each of them is allowed to do."
       />
       <StaffManager />
     </>

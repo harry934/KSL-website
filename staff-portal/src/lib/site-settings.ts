@@ -21,11 +21,18 @@ export type FooterSettings = {
   locations: LocationEntry[];
 };
 
+export type BannerStyle = "navy" | "gold" | "light";
+
 export type AnnouncementSettings = {
   enabled: boolean;
+  label: string;
   text: string;
   linkLabel: string;
   linkUrl: string;
+  style: BannerStyle;
+  scroll: boolean;
+  /** YYYY-MM-DD; the banner stops showing after this day. Empty means no end date. */
+  endsOn: string;
 };
 
 export type SiteSettings = {
@@ -61,7 +68,16 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
       { name: "Kisumu Shipyard", address: "Next to Kisumu Port, along Marine Drive." },
     ],
   },
-  announcement: { enabled: false, text: "", linkLabel: "", linkUrl: "" },
+  announcement: {
+    enabled: false,
+    label: "Announcement",
+    text: "",
+    linkLabel: "",
+    linkUrl: "",
+    style: "navy",
+    scroll: false,
+    endsOn: "",
+  },
 };
 
 export function mergeSiteSettings(rows: { key: string; value: unknown }[]): SiteSettings {

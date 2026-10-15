@@ -1,48 +1,14 @@
 "use client";
 
-import type { ComponentType } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import kslLogo from "../../../public/ksl-logo.png";
 import { usePathname } from "next/navigation";
-import {
-  Briefcase,
-  Building2,
-  Calendar,
-  Download,
-  HandHeart,
-  HelpCircle,
-  History,
-  Image as ImageIcon,
-  LayoutDashboard,
-  Megaphone,
-  Newspaper,
-  Package,
-  Settings,
-  UserCog,
-  Wrench,
-} from "lucide-react";
+import { History, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { MODULE_GROUPS, MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import type { StaffSession } from "@/lib/session";
-
-type IconType = ComponentType<{ className?: string }>;
-
-const ICONS: Record<ModuleKey, IconType> = {
-  news: Newspaper,
-  events: Calendar,
-  gallery: ImageIcon,
-  services: Wrench,
-  products: Package,
-  careers: Briefcase,
-  faq: HelpCircle,
-  csr: HandHeart,
-  downloads: Download,
-  organization: Building2,
-  press: Megaphone,
-  site_settings: Settings,
-  staff: UserCog,
-};
+import { MODULE_ICONS as ICONS, type IconType } from "@/components/portal/module-icons";
 
 function canSee(session: StaffSession, key: ModuleKey) {
   if (session.isSuperAdmin) return true;

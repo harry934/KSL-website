@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard } from "@/lib/api-auth";
+import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { slugify } from "@/lib/events";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -13,7 +13,7 @@ export async function GET() {
     .select("*")
     .order("event_date", { ascending: false });
 
-  if (dbErr) return NextResponse.json({ error: dbErr.message }, { status: 500 });
+  if (dbErr) return NextResponse.json({ error: dbError(dbErr) }, { status: 500 });
   return NextResponse.json({ items: data ?? [] });
 }
 
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   };
 
   const { data, error: upErr } = await admin.from("event_items").upsert(row).select("id").single();
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   await logActivity(session.userId, "events", "upsert", "event_item", data?.id ?? slug);
   return NextResponse.json({ ok: true, id: data?.id });
 }
@@ -57,11 +57,11 @@ export async function DELETE(req: NextRequest) {
   if (error || !session) return error;
 
   const id = new URL(req.url).searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
   const admin = createAdminClient();
   const { error: delErr } = await admin.from("event_items").delete().eq("id", id);
-  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
+  if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
   await logActivity(session.userId, "events", "delete", "event_item", id);
   return NextResponse.json({ ok: true });
 }

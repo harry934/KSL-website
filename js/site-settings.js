@@ -98,26 +98,85 @@
         });
     }
 
+    var ICON_MEGAPHONE =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>';
+    var ICON_ARROW =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
+    var ICON_CLOSE =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">' +
+        '<path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+
+    function todayInNairobi() {
+        try {
+            return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Nairobi" }).format(new Date());
+        } catch (e) {
+            return new Date().toISOString().slice(0, 10);
+        }
+    }
+
+    function formatEndDate(iso) {
+        try {
+            return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(iso + "T12:00:00"));
+        } catch (e) {
+            return iso;
+        }
+    }
+
     function applyAnnouncement(a) {
         if (!a || !a.enabled || !a.text) return;
+        var endsOn = /^\d{4}-\d{2}-\d{2}$/.test(a.endsOn || "") ? a.endsOn : "";
+        if (endsOn && todayInNairobi() > endsOn) return;
         var key = "ksl-announcement-dismissed:" + a.text;
         try {
             if (window.sessionStorage.getItem(key)) return;
         } catch (e) {}
-        var bar = document.createElement("div");
-        bar.className = "ksl-announcement";
-        bar.setAttribute("role", "region");
-        bar.setAttribute("aria-label", "Announcement");
+
+        var style = a.style === "gold" || a.style === "light" ? a.style : "navy";
+        var ticker = !!a.scroll;
         var link = safeUrl(a.linkUrl);
+        var external = /^https?:\/\//i.test(link) && link.indexOf(window.location.host) === -1;
+        var text = '<p class="ksl-banner-text">' + escapeHtml(a.text) + "</p>";
+        var until = endsOn && !ticker ? '<span class="ksl-banner-until">Until ' + escapeHtml(formatEndDate(endsOn)) + "</span>" : "";
+
+        var bar = document.createElement("section");
+        bar.className = "ksl-banner is-" + style + (ticker ? " is-ticker" : "");
+        bar.setAttribute("aria-label", "Announcement");
         bar.innerHTML =
-            '<p><span>' + escapeHtml(a.text) + "</span>" +
-            (link && a.linkLabel ? ' <a href="' + escapeHtml(link) + '">' + escapeHtml(a.linkLabel) + "</a>" : "") +
-            '</p><button type="button" aria-label="Dismiss announcement">&times;</button>';
-        bar.querySelector("button").addEventListener("click", function () {
-            bar.remove();
+            '<div class="ksl-banner-inner">' +
+            '<span class="ksl-banner-icon">' + ICON_MEGAPHONE + "</span>" +
+            '<span class="ksl-banner-tag">' + escapeHtml(a.label || "Announcement") + "</span>" +
+            '<div class="ksl-banner-body">' +
+            (ticker ? '<div class="ksl-banner-track">' + text + text.replace("<p ", '<p aria-hidden="true" ') + "</div>" : text + until) +
+            "</div>" +
+            (link && a.linkLabel
+                ? '<a class="ksl-banner-cta" href="' + escapeHtml(link) + '"' +
+                  (external ? ' target="_blank" rel="noopener"' : "") + ">" +
+                  escapeHtml(a.linkLabel) + ICON_ARROW + "</a>"
+                : "") +
+            "</div>" +
+            '<button type="button" class="ksl-banner-close" aria-label="Close announcement">' + ICON_CLOSE + "</button>";
+
+        if (ticker) {
+            bar.style.setProperty("--kb-ticker-duration", Math.min(60, Math.max(16, a.text.length * 0.28)) + "s");
+        }
+
+        bar.querySelector(".ksl-banner-close").addEventListener("click", function () {
             try { window.sessionStorage.setItem(key, "1"); } catch (e) {}
+            bar.style.maxHeight = bar.offsetHeight + "px";
+            void bar.offsetHeight;
+            bar.classList.add("is-closing");
+            bar.style.maxHeight = "0px";
+            window.setTimeout(function () { bar.remove(); }, 380);
         });
-        document.body.insertBefore(bar, document.body.firstChild);
+
+        var nav = document.querySelector("nav.navbar");
+        if (nav && nav.parentNode) {
+            nav.parentNode.insertBefore(bar, nav.nextSibling);
+        } else {
+            document.body.insertBefore(bar, document.body.firstChild);
+        }
     }
 
     window.KSL_CONTENT.fetchJson("/api/public/settings", "data/settings.json").then(function (data) {

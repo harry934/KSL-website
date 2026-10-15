@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard } from "@/lib/api-auth";
+import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -12,11 +12,11 @@ export async function GET() {
     .select("*")
     .order("sort_order");
 
-  if (gErr) return NextResponse.json({ error: gErr.message }, { status: 500 });
+  if (gErr) return NextResponse.json({ error: dbError(gErr) }, { status: 500 });
 
   const { data: items, error: iErr } = await admin.from("faq_items").select("*").order("sort_order");
 
-  if (iErr) return NextResponse.json({ error: iErr.message }, { status: 500 });
+  if (iErr) return NextResponse.json({ error: dbError(iErr) }, { status: 500 });
 
   return NextResponse.json({ groups: groups ?? [], items: items ?? [] });
 }
@@ -38,7 +38,7 @@ export async function PUT(req: NextRequest) {
       status: body.status ?? "published",
       updated_by: session.userId,
     });
-    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     await logActivity(session.userId, "faq", "upsert", "faq_group", body.id);
     return NextResponse.json({ ok: true });
   }
@@ -54,10 +54,27 @@ export async function PUT(req: NextRequest) {
       updated_by: session.userId,
     };
     const { error: upErr } = await admin.from("faq_items").upsert(row);
-    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     await logActivity(session.userId, "faq", "upsert", "faq_item", body.id);
     return NextResponse.json({ ok: true });
   }
 
   return NextResponse.json({ error: "Invalid type" }, { status: 400 });
+}
+
+/** Removes one question, or a whole group together with its questions. */
+export async function DELETE(req: NextRequest) {
+  const { error, session } = await requireStaff("faq", "delete");
+  if (error || !session) return error;
+
+  const params = new URL(req.url).searchParams;
+  const id = params.get("id");
+  const type = params.get("type") === "group" ? "group" : "item";
+  if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
+
+  const table = type === "group" ? "faq_groups" : "faq_items";
+  const { error: delErr } = await createAdminClient().from(table).delete().eq("id", id);
+  if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
+  await logActivity(session.userId, "faq", "delete", type === "group" ? "faq_group" : "faq_item", id);
+  return NextResponse.json({ ok: true });
 }

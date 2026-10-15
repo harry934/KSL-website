@@ -12,7 +12,7 @@ export default async function OrganizationPage() {
 
   return (
     <>
-      <PageHeader title="Organization" description="Leadership and yard summaries on the organization page." />
+      <PageHeader title="Organisation" description="Our leaders and shipyards, shown on the Organisation page." />
       <OrganizationEditor />
     </>
   );

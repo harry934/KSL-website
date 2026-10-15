@@ -1,29 +1,58 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import {
+  AdvancedSlug,
+  ChoiceField,
+  Field,
+  FieldGrid,
+  FormSection,
+  SaveBar,
+  Textarea,
+  VisibilitySwitch,
+} from "@/components/ui/form-bits";
+import { ImageField } from "@/components/ui/image-field";
+import { ItemList } from "@/components/ui/item-list";
+import { RichText } from "@/components/ui/rich-text";
+import { useFeedback } from "@/components/ui/feedback";
+import { useCan } from "@/components/portal/session-context";
 import type { NewsRow } from "@/lib/news";
-import { slugify } from "@/lib/news";
+import { uniqueSlug } from "@/lib/list-utils";
+import { sendJson } from "@/lib/upload-client";
+
+function formatDate(value: string | null) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(new Date(value));
+}
 
 export function NewsEditor() {
+  const { toast, confirm } = useFeedback();
+  const canPublish = useCan("news", "publish");
+  const canDelete = useCan("news", "delete");
   const [items, setItems] = useState<NewsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<NewsRow> | null>(null);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/news");
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) setItems(data.items ?? []);
+    else toast(data.error ?? "Could not load the news.", "error");
     setLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const categories = useMemo(() => {
+    const names = new Set(["News", ...items.map((i) => i.category).filter((c): c is string => !!c)]);
+    return Array.from(names).map((name) => ({ value: name, label: name }));
+  }, [items]);
 
   function startNew() {
     setEditing({
@@ -36,170 +65,136 @@ export function NewsEditor() {
       author: "KSL Communications",
       location: "",
       body_html: "",
-      status: "draft",
+      status: canPublish ? "published" : "draft",
     });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function save() {
-    if (!editing?.title) return;
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    if (!editing.title?.trim()) {
+      toast("Give the article a title.", "error");
+      return;
+    }
     setSaving(true);
-    setMessage(null);
-    const payload = {
-      ...editing,
-      slug: editing.slug || slugify(editing.title),
-    };
-    const res = await fetch("/api/news", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    setSaving(false);
-    if (res.ok) {
-      setMessage("Saved");
+    try {
+      const slug =
+        editing.slug?.trim() ||
+        uniqueSlug(editing.title, items.filter((i) => i.id !== editing.id).map((i) => i.slug), "news");
+      await sendJson("/api/news", "POST", { ...editing, slug });
+      toast(editing.status === "published" ? "Article saved and shown on the website." : "Article saved as hidden (draft).");
       setEditing(null);
       load();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSaving(false);
     }
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this article?")) return;
-    await fetch("/api/news?id=" + encodeURIComponent(id), { method: "DELETE" });
-    load();
-  }
-
-  async function uploadImage(file: File) {
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", headers: { "x-ksl-module": "news" }, body: fd });
-    const data = await res.json();
-    if (res.ok) {
-      setEditing((e) => (e ? { ...e, image_path: data.public_url } : e));
+    const item = items.find((i) => i.id === id);
+    const ok = await confirm({
+      title: "Delete this article?",
+      message: item ? `"${item.title}" will be removed from the website for good.` : undefined,
+      confirmLabel: "Delete article",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await sendJson(`/api/news?id=${encodeURIComponent(id)}`, "DELETE");
+      toast("Article deleted.");
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
     }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-[#5b6775]">
+      <div className="flex items-center gap-2 text-[14px] text-[#5b6775]">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading news…
       </div>
     );
   }
 
+  if (editing) {
+    const set = (patch: Partial<NewsRow>) => setEditing({ ...editing, ...patch });
+    return (
+      <form onSubmit={save} className="space-y-4">
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-4">
+            <FormSection title={editing.id ? "Edit article" : "New article"}>
+              <Field label="Title">
+                <Input value={editing.title ?? ""} onChange={(e) => set({ title: e.target.value })} autoFocus={!editing.id} />
+              </Field>
+              <Field label="Short summary" hint="One or two sentences shown on the news list.">
+                <Textarea rows={2} className="min-h-[70px]" value={editing.excerpt ?? ""} onChange={(e) => set({ excerpt: e.target.value })} />
+              </Field>
+              <Field label="Full story">
+                <RichText value={editing.body_html ?? ""} onChange={(html) => set({ body_html: html })} placeholder="Write the full story here…" />
+              </Field>
+            </FormSection>
+          </div>
+          <div className="space-y-4">
+            <FormSection title="Visibility">
+              <VisibilitySwitch status={editing.status ?? "draft"} canPublish={canPublish} onChange={(status) => set({ status })} />
+            </FormSection>
+            <FormSection title="Details">
+              <Field label="Date">
+                <Input type="date" value={editing.published_date ?? ""} onChange={(e) => set({ published_date: e.target.value })} />
+              </Field>
+              <Field label="Category">
+                <ChoiceField value={editing.category ?? ""} options={categories} onChange={(category) => set({ category })} />
+              </Field>
+              <FieldGrid className="sm:grid-cols-1">
+                <Field label="Place" optional>
+                  <Input value={editing.location ?? ""} onChange={(e) => set({ location: e.target.value })} placeholder="e.g. Mombasa" />
+                </Field>
+                <Field label="Written by" optional>
+                  <Input value={editing.author ?? ""} onChange={(e) => set({ author: e.target.value })} />
+                </Field>
+              </FieldGrid>
+            </FormSection>
+            <FormSection title="Cover photo">
+              <ImageField module="news" value={editing.image_path ?? ""} onChange={(image_path) => set({ image_path })} />
+            </FormSection>
+            <AdvancedSlug value={editing.slug ?? ""} onChange={(slug) => set({ slug })} />
+          </div>
+        </div>
+        <SaveBar>
+          <Button variant="secondary" onClick={() => setEditing(null)}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={saving}>
+            {saving ? "Saving…" : "Save article"}
+          </Button>
+        </SaveBar>
+      </form>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {message && <p className="text-sm font-medium text-[#0b1f3a]">{message}</p>}
-        <Button type="button" onClick={startNew}>
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={startNew}>
           <Plus className="h-4 w-4" /> New article
         </Button>
       </div>
-
-      {editing && (
-        <div className="ksl-card space-y-4 p-6">
-          <h2 className="text-[15px] font-bold text-[#0b1f3a]">
-            {editing.id ? "Edit article" : "New article"}
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Title</label>
-              <Input
-                value={editing.title ?? ""}
-                onChange={(e) =>
-                  setEditing({ ...editing, title: e.target.value, slug: slugify(e.target.value) })
-                }
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Slug</label>
-              <Input value={editing.slug ?? ""} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Date</label>
-              <Input
-                type="date"
-                value={editing.published_date ?? ""}
-                onChange={(e) => setEditing({ ...editing, published_date: e.target.value })}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Excerpt</label>
-              <Input value={editing.excerpt ?? ""} onChange={(e) => setEditing({ ...editing, excerpt: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Location</label>
-              <Input value={editing.location ?? ""} onChange={(e) => setEditing({ ...editing, location: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Status</label>
-              <select
-                className="w-full rounded border border-[#d7dde5] bg-white px-3 py-2.5 text-sm"
-                value={editing.status ?? "draft"}
-                onChange={(e) => setEditing({ ...editing, status: e.target.value })}
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Cover image</label>
-              <Input
-                value={editing.image_path ?? ""}
-                onChange={(e) => setEditing({ ...editing, image_path: e.target.value })}
-                placeholder="URL or upload below"
-              />
-              <input
-                type="file"
-                accept="image/*"
-                className="mt-2 text-sm"
-                onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0])}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Body (HTML)</label>
-              <textarea
-                className="min-h-[200px] w-full rounded border border-[#d7dde5] bg-white px-3 py-2 text-sm"
-                value={editing.body_html ?? ""}
-                onChange={(e) => setEditing({ ...editing, body_html: e.target.value })}
-              />
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button type="button" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
-            <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
-          </div>
-        </div>
-      )}
-
-      <div className="ksl-card overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-[13px]">
-          <thead className="bg-[#f4f6f8] text-xs uppercase text-[#5b6775]">
-            <tr>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id} className="border-t border-[#eef2f6]">
-                <td className="px-4 py-3 font-medium text-[#0b1f3a]">{item.title}</td>
-                <td className="px-4 py-3 text-[#5b6775]">{item.published_date}</td>
-                <td className="px-4 py-3 capitalize text-[#5b6775]">{item.status}</td>
-                <td className="px-4 py-3 text-right">
-                  <button type="button" className="text-[#0b1f3a] hover:underline" onClick={() => setEditing(item)}>
-                    Edit
-                  </button>
-                  <button type="button" className="ml-3 text-red-600" onClick={() => remove(item.id)} aria-label="Delete">
-                    <Trash2 className="inline h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ItemList
+        showImages
+        items={items.map((i) => ({
+          id: i.id,
+          title: i.title,
+          subtitle: [formatDate(i.published_date), i.category].filter(Boolean).join(" · "),
+          image: i.image_path,
+          status: i.status,
+        }))}
+        onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
+        onDelete={canDelete ? remove : undefined}
+        emptyText="No articles yet. Click New article to write the first one."
+      />
     </div>
   );
 }

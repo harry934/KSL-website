@@ -16,7 +16,7 @@ export default async function SiteSettingsPage() {
     <>
       <PageHeader
         title="Site settings"
-        description="Contact details, social links, footer and the announcement banner shown on every public page. Changes go live when saved."
+        description="The banner, contact details, social media links and footer shown on every page of the website."
       />
       <SiteSettingsEditor canEdit={canEdit} />
     </>

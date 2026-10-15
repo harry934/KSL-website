@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/portal/sidebar";
 import { Topbar } from "@/components/portal/topbar";
+import { SessionProvider } from "@/components/portal/session-context";
+import { FeedbackProvider } from "@/components/ui/feedback";
 import { cn } from "@/lib/cn";
 import type { StaffSession } from "@/lib/session";
 
@@ -40,18 +42,22 @@ export function PortalShell({
   }
 
   return (
-    <div className={cn(collapsed && "app-collapsed", mobileOpen && "app-mobile-open")}>
-      <div className="kenya-stripe" aria-hidden>
-        <span />
-        <span />
-        <span />
-      </div>
-      <Sidebar session={session} />
-      <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} aria-hidden />
-      <div className="app-main">
-        <Topbar session={session} collapsed={collapsed} onToggleSidebar={toggleSidebar} />
-        <main className="app-content">{children}</main>
-      </div>
-    </div>
+    <SessionProvider session={session}>
+      <FeedbackProvider>
+        <div className={cn(collapsed && "app-collapsed", mobileOpen && "app-mobile-open")}>
+          <div className="kenya-stripe" aria-hidden>
+            <span />
+            <span />
+            <span />
+          </div>
+          <Sidebar session={session} />
+          <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} aria-hidden />
+          <div className="app-main">
+            <Topbar session={session} collapsed={collapsed} onToggleSidebar={toggleSidebar} />
+            <main className="app-content">{children}</main>
+          </div>
+        </div>
+      </FeedbackProvider>
+    </SessionProvider>
   );
 }

@@ -1,253 +1,249 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { ChoiceField, Field, FieldGrid, FormSection, SaveBar, VisibilitySwitch } from "@/components/ui/form-bits";
+import { FileField } from "@/components/ui/file-field";
+import { ItemList } from "@/components/ui/item-list";
+import { useFeedback } from "@/components/ui/feedback";
+import { useCan } from "@/components/portal/session-context";
+import { slugify } from "@/lib/news";
+import { keyFrom, moveItem } from "@/lib/list-utils";
+import { sendJson } from "@/lib/upload-client";
 import type { DownloadItemRow } from "@/lib/downloads";
 
+type Draft = Partial<DownloadItemRow> & { isNew?: boolean };
+
+const LANGUAGES = ["English", "Kiswahili", "English and Kiswahili"];
+
+function fileTypeFor(href: string) {
+  const ext = href.split(/[?#]/)[0].split(".").pop()?.toLowerCase();
+  if (ext === "pdf") return "PDF";
+  if (ext === "doc" || ext === "docx") return "Word";
+  return null;
+}
+
+function baseName(href: string) {
+  const clean = href.split(/[?#]/)[0];
+  return decodeURIComponent(clean.slice(clean.lastIndexOf("/") + 1));
+}
+
 export function DownloadsEditor() {
+  const { toast, confirm } = useFeedback();
+  const canPublish = useCan("downloads", "publish");
+  const canDelete = useCan("downloads", "delete");
   const [baseUrl, setBaseUrl] = useState("");
   const [items, setItems] = useState<DownloadItemRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<Partial<DownloadItemRow> | null>(null);
+  const [editing, setEditing] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/downloads");
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
-      setBaseUrl(data.settings?.base_url ?? "");
+      setBaseUrl((data.settings?.base_url ?? "").replace(/\/?$/, "/"));
       setItems(data.items ?? []);
+    } else {
+      toast(data.error ?? "Could not load the downloads.", "error");
     }
     setLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  async function saveSettings() {
-    setSaving(true);
-    setMessage(null);
-    const res = await fetch("/api/downloads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scope: "settings", base_url: baseUrl }),
-    });
-    setSaving(false);
-    if (res.ok) setMessage("Settings saved");
+  const sections = useMemo(() => {
+    const map = new Map<string, { key: string; anchor: string | null }>();
+    for (const item of items) {
+      if (!map.has(item.category_label)) map.set(item.category_label, { key: item.category, anchor: item.anchor });
+    }
+    return map;
+  }, [items]);
+
+  function fileHref(item: Partial<DownloadItemRow>) {
+    if (item.external_href) return item.external_href;
+    if (item.file_name) return baseUrl + item.file_name;
+    return "";
   }
 
   function startNew() {
+    const [label, section] = sections.entries().next().value ?? ["", { key: "", anchor: null }];
     setEditing({
-      id: "",
+      isNew: true,
       title: "",
       subtitle: "",
-      category: "plans",
-      category_label: "Plans and publications",
+      category: section.key,
+      category_label: label,
+      anchor: section.anchor,
       language: "English",
       doc_date: "",
       file_type: "PDF",
       file_name: "",
-      anchor: "",
-      alias_of: "",
       external_href: "",
-      sort_order: items.length,
-      status: "draft",
+      sort_order: items.length ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0,
+      status: canPublish ? "published" : "draft",
     });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function saveItem() {
-    if (!editing?.id || !editing.title) return;
+  async function saveItem(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    if (!editing.title?.trim()) {
+      toast("Give the document a name.", "error");
+      return;
+    }
+    if (!editing.category_label?.trim()) {
+      toast("Choose which part of the Downloads page it belongs in.", "error");
+      return;
+    }
+    if (!fileHref(editing)) {
+      toast("Upload the file, or paste a link to it.", "error");
+      return;
+    }
     setSaving(true);
-    setMessage(null);
-    const res = await fetch("/api/downloads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editing),
-    });
-    setSaving(false);
-    if (res.ok) {
-      setMessage("Saved");
+    try {
+      const { isNew, ...row } = editing;
+      const id = isNew ? keyFrom(editing.title, items.map((i) => i.id)) : editing.id;
+      await sendJson("/api/downloads", "POST", { ...row, id });
+      toast(editing.status === "published" ? "Document saved and shown on the website." : "Document saved as hidden (draft).");
       setEditing(null);
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function move(index: number, delta: number) {
+    const next = moveItem(items, index, delta).map((item, i) => ({ ...item, sort_order: i }));
+    const before = new Map(items.map((i) => [i.id, i.sort_order]));
+    setItems(next);
+    try {
+      await Promise.all(next.filter((i) => before.get(i.id) !== i.sort_order).map((i) => sendJson("/api/downloads", "POST", i)));
+    } catch (err) {
+      toast((err as Error).message, "error");
       load();
     }
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this document?")) return;
-    await fetch("/api/downloads?id=" + encodeURIComponent(id), { method: "DELETE" });
-    load();
-  }
-
-  async function uploadFile(file: File) {
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", headers: { "x-ksl-module": "downloads" }, body: fd });
-    const data = await res.json();
-    if (res.ok) {
-      setEditing((e) =>
-        e ? { ...e, external_href: data.public_url, file_name: file.name } : e
-      );
+    const item = items.find((i) => i.id === id);
+    const ok = await confirm({
+      title: "Delete this document?",
+      message: item ? `"${item.title}" will no longer be available to download.` : undefined,
+      confirmLabel: "Delete document",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await sendJson(`/api/downloads?id=${encodeURIComponent(id)}`, "DELETE");
+      toast("Document deleted.");
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
     }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-[#5b6775]">
+      <div className="flex items-center gap-2 text-[14px] text-[#5b6775]">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading downloads…
       </div>
     );
   }
 
+  if (editing) {
+    const set = (patch: Partial<DownloadItemRow>) => setEditing({ ...editing, ...patch });
+    return (
+      <form onSubmit={saveItem} className="space-y-4">
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <FormSection title={editing.isNew ? "New document" : "Edit document"}>
+            <Field label="Document name">
+              <Input value={editing.title ?? ""} onChange={(e) => set({ title: e.target.value })} autoFocus={editing.isNew} />
+            </Field>
+            <Field label="Short description" optional>
+              <Input value={editing.subtitle ?? ""} onChange={(e) => set({ subtitle: e.target.value })} />
+            </Field>
+            <Field label="File">
+              <FileField
+                module="downloads"
+                value={fileHref(editing)}
+                onChange={(href) => set({ external_href: href, file_name: href ? baseName(href) : "", file_type: fileTypeFor(href) ?? editing.file_type })}
+              />
+            </Field>
+          </FormSection>
+          <div className="space-y-4">
+            <FormSection title="Visibility">
+              <VisibilitySwitch status={editing.status ?? "draft"} canPublish={canPublish} onChange={(status) => set({ status })} />
+            </FormSection>
+            <FormSection title="Details">
+              <Field label="Part of the Downloads page">
+                <ChoiceField
+                  value={editing.category_label ?? ""}
+                  options={Array.from(sections.keys()).map((label) => ({ value: label, label }))}
+                  onChange={(label) => {
+                    const section = sections.get(label);
+                    set({ category_label: label, category: section?.key ?? slugify(label), anchor: section?.anchor ?? null });
+                  }}
+                  newLabel="Add a new part…"
+                />
+              </Field>
+              <FieldGrid className="sm:grid-cols-1">
+                <Field label="Language">
+                  <ChoiceField
+                    value={editing.language ?? ""}
+                    options={LANGUAGES.map((l) => ({ value: l, label: l }))}
+                    onChange={(language) => set({ language })}
+                    newLabel="Another language…"
+                  />
+                </Field>
+                <Field label="Date" optional>
+                  <Input value={editing.doc_date ?? ""} onChange={(e) => set({ doc_date: e.target.value })} placeholder="e.g. November 2024" />
+                </Field>
+              </FieldGrid>
+            </FormSection>
+          </div>
+        </div>
+        <SaveBar>
+          <Button variant="secondary" onClick={() => setEditing(null)}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={saving}>
+            {saving ? "Saving…" : "Save document"}
+          </Button>
+        </SaveBar>
+      </form>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {message && <p className="text-sm font-medium text-[#0b1f3a]">{message}</p>}
-
-      <div className="ksl-card space-y-4 p-6">
-        <h2 className="text-[15px] font-bold text-[#0b1f3a]">File base URL</h2>
-        <p className="text-sm text-[#5b6775]">
-          Prepended to each item&apos;s file name on the public site (e.g. corporate documents folder).
-        </p>
-        <Input
-          value={baseUrl}
-          onChange={(e) => setBaseUrl(e.target.value)}
-          placeholder="https://example.com/corporate-documents/"
-        />
-        <Button type="button" onClick={saveSettings} disabled={saving}>Save settings</Button>
-      </div>
-
+    <div className="space-y-4">
       <div className="flex justify-end">
-        <Button type="button" onClick={startNew}>
+        <Button onClick={startNew}>
           <Plus className="h-4 w-4" /> New document
         </Button>
       </div>
-
-      {editing && (
-        <div className="ksl-card space-y-4 p-6">
-          <h2 className="text-[15px] font-bold text-[#0b1f3a]">
-            {items.some((i) => i.id === editing.id) ? "Edit document" : "New document"}
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">ID (slug)</label>
-              <Input value={editing.id ?? ""} onChange={(e) => setEditing({ ...editing, id: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Anchor (page section)</label>
-              <Input value={editing.anchor ?? ""} onChange={(e) => setEditing({ ...editing, anchor: e.target.value })} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Title</label>
-              <Input value={editing.title ?? ""} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Subtitle</label>
-              <Input value={editing.subtitle ?? ""} onChange={(e) => setEditing({ ...editing, subtitle: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Category key</label>
-              <Input value={editing.category ?? ""} onChange={(e) => setEditing({ ...editing, category: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Category label</label>
-              <Input
-                value={editing.category_label ?? ""}
-                onChange={(e) => setEditing({ ...editing, category_label: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">File name</label>
-              <Input value={editing.file_name ?? ""} onChange={(e) => setEditing({ ...editing, file_name: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Full URL override</label>
-              <Input
-                value={editing.external_href ?? ""}
-                onChange={(e) => setEditing({ ...editing, external_href: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Type</label>
-              <Input value={editing.file_type ?? ""} onChange={(e) => setEditing({ ...editing, file_type: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Language</label>
-              <Input value={editing.language ?? ""} onChange={(e) => setEditing({ ...editing, language: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Date</label>
-              <Input value={editing.doc_date ?? ""} onChange={(e) => setEditing({ ...editing, doc_date: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Alias of (id)</label>
-              <Input value={editing.alias_of ?? ""} onChange={(e) => setEditing({ ...editing, alias_of: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Sort order</label>
-              <Input
-                type="number"
-                value={editing.sort_order ?? 0}
-                onChange={(e) => setEditing({ ...editing, sort_order: parseInt(e.target.value, 10) || 0 })}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Status</label>
-              <select
-                className="w-full rounded border border-[#d7dde5] bg-white px-3 py-2.5 text-sm"
-                value={editing.status ?? "draft"}
-                onChange={(e) => setEditing({ ...editing, status: e.target.value })}
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Upload file (optional)</label>
-              <input type="file" accept=".pdf,.doc,.docx,application/pdf" className="text-sm" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])} />
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button type="button" onClick={saveItem} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
-            <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
-          </div>
-        </div>
-      )}
-
-      <div className="ksl-card overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-[13px]">
-          <thead className="bg-[#f4f6f8] text-xs uppercase text-[#5b6775]">
-            <tr>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Category</th>
-              <th className="px-4 py-3">File</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id} className="border-t border-[#eef2f6]">
-                <td className="px-4 py-3 font-medium text-[#0b1f3a]">{item.title}</td>
-                <td className="px-4 py-3 text-[#5b6775]">{item.category_label}</td>
-                <td className="px-4 py-3 text-[#5b6775]">{item.file_name || item.external_href}</td>
-                <td className="px-4 py-3 capitalize text-[#5b6775]">{item.status}</td>
-                <td className="px-4 py-3 text-right">
-                  <button type="button" className="text-[#0b1f3a] hover:underline" onClick={() => setEditing(item)}>
-                    Edit
-                  </button>
-                  <button type="button" className="ml-3 text-red-600" onClick={() => remove(item.id)} aria-label="Delete">
-                    <Trash2 className="inline h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ItemList
+        items={items.map((i) => ({
+          id: i.id,
+          title: i.title,
+          subtitle: [i.category_label, i.language, i.file_type].filter(Boolean).join(" · "),
+          status: i.status,
+        }))}
+        onEdit={(id) => {
+          const item = items.find((i) => i.id === id);
+          if (item) setEditing({ ...item, isNew: false });
+        }}
+        onDelete={canDelete ? remove : undefined}
+        onMove={move}
+        emptyText="No documents yet. Click New document to add one."
+      />
     </div>
   );
 }

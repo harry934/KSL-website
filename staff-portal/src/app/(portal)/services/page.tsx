@@ -12,7 +12,7 @@ export default async function ServicesPage() {
 
   return (
     <>
-      <PageHeader title="Services" description="Service cards, modals, and download links on the public site." />
+      <PageHeader title="Services" description="The services shown on the website, with their documents." />
       <ServicesEditor />
     </>
   );

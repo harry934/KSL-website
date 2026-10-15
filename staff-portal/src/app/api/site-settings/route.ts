@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard } from "@/lib/api-auth";
+import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { mergeSiteSettings, SITE_SETTING_KEYS, type SiteSettingKey } from "@/lib/site-settings";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -7,8 +7,8 @@ export async function GET() {
   const { error } = await requireStaff("site_settings", "view");
   if (error) return error;
 
-  const { data, error: dbError } = await createAdminClient().from("site_settings").select("key, value, updated_at");
-  if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 });
+  const { data, error: loadErr } = await createAdminClient().from("site_settings").select("key, value, updated_at");
+  if (loadErr) return NextResponse.json({ error: dbError(loadErr) }, { status: 500 });
   return NextResponse.json({ settings: mergeSiteSettings(data ?? []) });
 }
 
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     status: "published",
     updated_by: session.userId,
   });
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
 
   await logActivity(session.userId, "site_settings", "update", "site_setting", key);
   return NextResponse.json({ ok: true });

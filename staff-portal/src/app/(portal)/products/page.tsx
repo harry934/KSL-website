@@ -10,7 +10,7 @@ export default async function ProductsPage() {
 
   return (
     <>
-      <PageHeader title="Products" description="Vessel cards, specifications and filters on the public Products page." />
+      <PageHeader title="Products" description="The boats on the Products page, with their details and specifications." />
       <ProductsEditor
         canPublish={canAccess(session.permissions, "products", "publish", session.isSuperAdmin)}
         canDelete={canAccess(session.permissions, "products", "delete", session.isSuperAdmin)}

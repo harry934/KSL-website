@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard } from "@/lib/api-auth";
+import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       id: "default",
       chart_download_id: body.chart_download_id ?? null,
     });
-    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     await logActivity(session.userId, "organization", "upsert", "organization_settings", "default");
     return NextResponse.json({ ok: true });
   }
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       })
       .select("id")
       .single();
-    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     await logActivity(session.userId, "organization", "upsert", "organization_yards", data?.id ?? id);
     return NextResponse.json({ ok: true, id: data?.id });
   }
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     })
     .select("id")
     .single();
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   await logActivity(session.userId, "organization", "upsert", "organization_leadership", data?.id ?? id);
   return NextResponse.json({ ok: true, id: data?.id });
 }
@@ -92,7 +92,7 @@ export async function DELETE(req: NextRequest) {
   const table = scope === "yard" ? "organization_yards" : "organization_leadership";
   const admin = createAdminClient();
   const { error: delErr } = await admin.from(table).delete().eq("id", id);
-  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
+  if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
   await logActivity(session.userId, "organization", "delete", table, id);
   return NextResponse.json({ ok: true });
 }

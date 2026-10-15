@@ -1,202 +1,237 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Field, FormSection, SaveBar, Select, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
+import { ItemList } from "@/components/ui/item-list";
+import { useFeedback } from "@/components/ui/feedback";
+import { useCan } from "@/components/portal/session-context";
+import { moveItem } from "@/lib/list-utils";
+import { sendJson } from "@/lib/upload-client";
+import { useDocuments } from "@/lib/use-documents";
 import type { LeadershipRow, YardRow } from "@/lib/organization";
 
-type EditLeadership = Partial<LeadershipRow> & { scope?: "leadership" };
-type EditYard = Partial<YardRow> & { scope?: "yard" };
+type Scope = "leadership" | "yard";
+type Draft = { scope: Scope; id?: string; role?: string; name?: string; lead?: string | null; summary: string | null; sort_order: number; status: string };
 
 export function OrganizationEditor() {
+  const { toast, confirm } = useFeedback();
+  const canPublish = useCan("organization", "publish");
+  const canDelete = useCan("organization", "delete");
+  const documents = useDocuments();
   const [chartDownloadId, setChartDownloadId] = useState("");
   const [leadership, setLeadership] = useState<LeadershipRow[]>([]);
   const [yards, setYards] = useState<YardRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<EditLeadership | EditYard | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Draft | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/organization");
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setChartDownloadId(data.settings?.chart_download_id ?? "");
       setLeadership(data.leadership ?? []);
       setYards(data.yards ?? []);
+    } else {
+      toast(data.error ?? "Could not load the organisation page.", "error");
     }
     setLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   async function saveSettings() {
-    setSaving(true);
-    const res = await fetch("/api/organization", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scope: "settings", chart_download_id: chartDownloadId }),
+    setSaving("settings");
+    try {
+      await sendJson("/api/organization", "POST", { scope: "settings", chart_download_id: chartDownloadId || null });
+      toast("Saved.");
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  function start(scope: Scope) {
+    const list = scope === "yard" ? yards : leadership;
+    setEditing({
+      scope,
+      role: "",
+      name: "",
+      lead: "",
+      summary: "",
+      sort_order: list.length ? Math.max(...list.map((r) => r.sort_order)) + 1 : 0,
+      status: canPublish ? "published" : "draft",
     });
-    setSaving(false);
-    if (res.ok) setMessage("Settings saved");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function startLeadership() {
-    setEditing({ scope: "leadership", role: "", summary: "", sort_order: leadership.length, status: "draft" });
-  }
-
-  function startYard() {
-    setEditing({ scope: "yard", name: "", lead: "", summary: "", sort_order: yards.length, status: "draft" });
-  }
-
-  async function saveRow() {
+  async function saveRow(e: React.FormEvent) {
+    e.preventDefault();
     if (!editing) return;
-    setSaving(true);
-    const scope = editing.scope === "yard" ? "yard" : "leadership";
-    const res = await fetch("/api/organization", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...editing, scope }),
-    });
-    setSaving(false);
-    if (res.ok) {
-      setMessage("Saved");
+    const name = editing.scope === "yard" ? editing.name : editing.role;
+    if (!name?.trim()) {
+      toast(editing.scope === "yard" ? "Give the shipyard a name." : "Write the role or office name.", "error");
+      return;
+    }
+    setSaving("row");
+    try {
+      await sendJson("/api/organization", "POST", editing);
+      toast("Saved.");
       setEditing(null);
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function move(scope: Scope, index: number, delta: number) {
+    const list: (LeadershipRow | YardRow)[] = scope === "yard" ? yards : leadership;
+    const next = moveItem(list, index, delta).map((row, i) => ({ ...row, sort_order: i }));
+    const before = new Map(list.map((r) => [r.id, r.sort_order]));
+    if (scope === "yard") setYards(next as YardRow[]);
+    else setLeadership(next as LeadershipRow[]);
+    try {
+      await Promise.all(
+        next.filter((r) => before.get(r.id) !== r.sort_order).map((r) => sendJson("/api/organization", "POST", { ...r, scope }))
+      );
+    } catch (err) {
+      toast((err as Error).message, "error");
       load();
     }
   }
 
-  async function remove(id: string, scope: "yard" | "leadership") {
-    if (!confirm("Delete this entry?")) return;
-    await fetch("/api/organization?id=" + encodeURIComponent(id) + "&scope=" + scope, { method: "DELETE" });
-    load();
+  async function remove(id: string, scope: Scope) {
+    const ok = await confirm({
+      title: "Delete this entry?",
+      message: "It will be removed from the Organisation page for good.",
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await sendJson(`/api/organization?id=${encodeURIComponent(id)}&scope=${scope}`, "DELETE");
+      toast("Deleted.");
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-[#5b6775]">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading organization…
+      <div className="flex items-center gap-2 text-[14px] text-[#5b6775]">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading the organisation page…
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {message && <p className="text-sm font-medium text-[#0b1f3a]">{message}</p>}
-
-      <div className="ksl-card space-y-4 p-6">
-        <h2 className="text-[15px] font-bold text-[#0b1f3a]">Strategic plan download</h2>
-        <p className="text-sm text-[#5b6775]">Download item ID from the Downloads module (e.g. strategic-plan).</p>
-        <Input value={chartDownloadId} onChange={(e) => setChartDownloadId(e.target.value)} />
-        <Button type="button" onClick={saveSettings} disabled={saving}>Save settings</Button>
-      </div>
-
-      <div className="flex flex-wrap gap-3">
-        <Button type="button" onClick={startLeadership}><Plus className="h-4 w-4" /> Leadership row</Button>
-        <Button type="button" variant="ghost" onClick={startYard}><Plus className="h-4 w-4" /> Yard row</Button>
-      </div>
-
-      {editing && (
-        <div className="ksl-card space-y-4 p-6">
-          <h2 className="text-[15px] font-bold text-[#0b1f3a]">
-            {editing.scope === "yard" ? "Yard" : "Leadership"}
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {editing.scope === "yard" ? (
+  if (editing) {
+    const set = (patch: Partial<Draft>) => setEditing({ ...editing, ...patch });
+    const isYard = editing.scope === "yard";
+    return (
+      <form onSubmit={saveRow} className="space-y-4">
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <FormSection title={isYard ? (editing.id ? "Edit shipyard" : "New shipyard") : editing.id ? "Edit leadership role" : "New leadership role"}>
+            {isYard ? (
               <>
-                <div className="sm:col-span-2">
-                  <label className="mb-1 block text-xs font-medium text-[#5b6775]">Yard name</label>
-                  <Input value={(editing as EditYard).name ?? ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="mb-1 block text-xs font-medium text-[#5b6775]">Lead division</label>
-                  <Input value={(editing as EditYard).lead ?? ""} onChange={(e) => setEditing({ ...editing, lead: e.target.value })} />
-                </div>
+                <Field label="Shipyard name">
+                  <Input value={editing.name ?? ""} onChange={(e) => set({ name: e.target.value })} autoFocus={!editing.id} />
+                </Field>
+                <Field label="Led by" optional hint="The division or office in charge.">
+                  <Input value={editing.lead ?? ""} onChange={(e) => set({ lead: e.target.value })} />
+                </Field>
               </>
             ) : (
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-[#5b6775]">Role title</label>
-                <Input value={(editing as EditLeadership).role ?? ""} onChange={(e) => setEditing({ ...editing, role: e.target.value })} />
-              </div>
+              <Field label="Role or office">
+                <Input value={editing.role ?? ""} onChange={(e) => set({ role: e.target.value })} autoFocus={!editing.id} placeholder="e.g. Managing Director" />
+              </Field>
             )}
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Summary</label>
-              <textarea
-                className="min-h-[80px] w-full rounded border border-[#d7dde5] bg-white px-3 py-2 text-sm"
-                value={editing.summary ?? ""}
-                onChange={(e) => setEditing({ ...editing, summary: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Sort order</label>
-              <Input
-                type="number"
-                value={editing.sort_order ?? 0}
-                onChange={(e) => setEditing({ ...editing, sort_order: parseInt(e.target.value, 10) || 0 })}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Status</label>
-              <select
-                className="w-full rounded border border-[#d7dde5] bg-white px-3 py-2.5 text-sm"
-                value={editing.status ?? "draft"}
-                onChange={(e) => setEditing({ ...editing, status: e.target.value })}
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button type="button" onClick={saveRow} disabled={saving}>Save</Button>
-            <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
-          </div>
+            <Field label="Description">
+              <Textarea className="min-h-[120px]" value={editing.summary ?? ""} onChange={(e) => set({ summary: e.target.value })} />
+            </Field>
+          </FormSection>
+          <FormSection title="Visibility">
+            <VisibilitySwitch status={editing.status} canPublish={canPublish} onChange={(status) => set({ status })} />
+          </FormSection>
         </div>
-      )}
+        <SaveBar>
+          <Button variant="secondary" onClick={() => setEditing(null)}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={saving === "row"}>
+            {saving === "row" ? "Saving…" : "Save"}
+          </Button>
+        </SaveBar>
+      </form>
+    );
+  }
 
-      <div className="ksl-card overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-[13px]">
-          <thead className="bg-[#f4f6f8] text-xs uppercase text-[#5b6775]">
-            <tr><th className="px-4 py-3">Leadership</th><th className="px-4 py-3">Status</th><th /></tr>
-          </thead>
-          <tbody>
-            {leadership.map((row) => (
-              <tr key={row.id} className="border-t border-[#eef2f6]">
-                <td className="px-4 py-3 font-medium text-[#0b1f3a]">{row.role}</td>
-                <td className="px-4 py-3 capitalize text-[#5b6775]">{row.status}</td>
-                <td className="px-4 py-3 text-right">
-                  <button type="button" className="text-[#0b1f3a] hover:underline" onClick={() => setEditing({ ...row, scope: "leadership" })}>Edit</button>
-                  <button type="button" className="ml-3 text-red-600" onClick={() => remove(row.id, "leadership")} aria-label="Delete"><Trash2 className="inline h-4 w-4" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+  return (
+    <div className="space-y-5">
+      <div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-[15px] font-bold text-[#0b1f3a]">Leadership</h2>
+          <Button onClick={() => start("leadership")}>
+            <Plus className="h-4 w-4" /> New role
+          </Button>
+        </div>
+        <ItemList
+          items={leadership.map((r) => ({ id: r.id, title: r.role, subtitle: r.summary, status: r.status }))}
+          onEdit={(id) => {
+            const row = leadership.find((r) => r.id === id);
+            if (row) setEditing({ ...row, scope: "leadership" });
+          }}
+          onDelete={canDelete ? (id) => remove(id, "leadership") : undefined}
+          onMove={(index, delta) => move("leadership", index, delta)}
+          emptyText="No leadership roles yet."
+        />
       </div>
 
-      <div className="ksl-card overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-[13px]">
-          <thead className="bg-[#f4f6f8] text-xs uppercase text-[#5b6775]">
-            <tr><th className="px-4 py-3">Yard</th><th className="px-4 py-3">Status</th><th /></tr>
-          </thead>
-          <tbody>
-            {yards.map((row) => (
-              <tr key={row.id} className="border-t border-[#eef2f6]">
-                <td className="px-4 py-3 font-medium text-[#0b1f3a]">{row.name}</td>
-                <td className="px-4 py-3 capitalize text-[#5b6775]">{row.status}</td>
-                <td className="px-4 py-3 text-right">
-                  <button type="button" className="text-[#0b1f3a] hover:underline" onClick={() => setEditing({ ...row, scope: "yard" })}>Edit</button>
-                  <button type="button" className="ml-3 text-red-600" onClick={() => remove(row.id, "yard")} aria-label="Delete"><Trash2 className="inline h-4 w-4" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-[15px] font-bold text-[#0b1f3a]">Shipyards</h2>
+          <Button variant="secondary" onClick={() => start("yard")}>
+            <Plus className="h-4 w-4" /> New shipyard
+          </Button>
+        </div>
+        <ItemList
+          items={yards.map((r) => ({ id: r.id, title: r.name, subtitle: r.lead, status: r.status }))}
+          onEdit={(id) => {
+            const row = yards.find((r) => r.id === id);
+            if (row) setEditing({ ...row, scope: "yard" });
+          }}
+          onDelete={canDelete ? (id) => remove(id, "yard") : undefined}
+          onMove={(index, delta) => move("yard", index, delta)}
+          emptyText="No shipyards yet."
+        />
       </div>
+
+      <FormSection title="Organisation chart document" description="The document visitors download from the Organisation page.">
+        <Field label="Document">
+          <Select value={chartDownloadId} onChange={(e) => setChartDownloadId(e.target.value)}>
+            <option value="">No document</option>
+            {documents.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.title}
+              </option>
+            ))}
+            {chartDownloadId && !documents.some((d) => d.id === chartDownloadId) && (
+              <option value={chartDownloadId}>Current document</option>
+            )}
+          </Select>
+        </Field>
+        <Button onClick={saveSettings} disabled={saving === "settings"}>
+          {saving === "settings" ? "Saving…" : "Save"}
+        </Button>
+      </FormSection>
     </div>
   );
 }

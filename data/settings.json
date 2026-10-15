@@ -21,5 +21,14 @@
       { "name": "Kisumu Shipyard", "address": "Next to Kisumu Port, along Marine Drive." }
     ]
   },
-  "announcement": { "enabled": false, "text": "", "linkLabel": "", "linkUrl": "" }
+  "announcement": {
+    "enabled": false,
+    "label": "Announcement",
+    "text": "",
+    "linkLabel": "",
+    "linkUrl": "",
+    "style": "navy",
+    "scroll": false,
+    "endsOn": ""
+  }
 }

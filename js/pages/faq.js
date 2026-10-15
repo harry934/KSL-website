@@ -7,10 +7,28 @@
         return;
     }
 
+    function escapeHtml(value) {
+        return String(value == null ? "" : value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function answerHtml(text) {
+        return escapeHtml(text).replace(/\r?\n/g, "<br>");
+    }
+
     function render(groups, filter) {
         var q = (filter || "").toLowerCase();
         var html = "";
-        groups.forEach(function (group) {
+        groups.forEach(function (rawGroup) {
+            var group = {
+                id: String(rawGroup.id || "").replace(/[^\w-]/g, ""),
+                title: rawGroup.title,
+                items: rawGroup.items || []
+            };
             var items = group.items.filter(function (item) {
                 if (!q) {
                     return true;
@@ -21,7 +39,7 @@
                 return;
             }
             html += '<section class="ksl-faq-group" id="faq-' + group.id + '" aria-labelledby="faq-' + group.id + '-title">';
-            html += '<h2 class="h4 mb-3" id="faq-' + group.id + '-title">' + group.title + "</h2>";
+            html += '<h2 class="h4 mb-3" id="faq-' + group.id + '-title">' + escapeHtml(group.title) + "</h2>";
             html += '<div class="accordion" id="faq-' + group.id + '-acc">';
             items.forEach(function (item, idx) {
                 var cid = group.id + "-" + idx;
@@ -30,9 +48,9 @@
                 html +=
                     '<div class="accordion-item">' +
                     '<h3 class="accordion-header" id="h-' + cid + '">' +
-                    '<button class="accordion-button' + collapsed + '" type="button" data-bs-toggle="collapse" data-bs-target="#c-' + cid + '">' + item.q + "</button></h3>" +
+                    '<button class="accordion-button' + collapsed + '" type="button" data-bs-toggle="collapse" data-bs-target="#c-' + cid + '">' + escapeHtml(item.q) + "</button></h3>" +
                     '<div id="c-' + cid + '" class="accordion-collapse collapse' + open + '" data-bs-parent="#faq-' + group.id + '-acc">' +
-                    '<div class="accordion-body">' + item.a;
+                    '<div class="accordion-body">' + answerHtml(item.a);
                 if (group.id === "complaints") {
                     html += ' <a href="downloads.html#dl-complaints">Download complaint form</a>.';
                 }

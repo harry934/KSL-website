@@ -12,7 +12,7 @@ export default async function PressPage() {
 
   return (
     <>
-      <PageHeader title="Press" description="Media boilerplate and assets on the news room press kit." />
+      <PageHeader title="Press kit" description="Information and files for journalists, shown in the News Room." />
       <PressEditor />
     </>
   );

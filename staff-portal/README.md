@@ -52,9 +52,13 @@ Optional: `npx skills add supabase/agent-skills` for Supabase-focused agent skil
 
 | Status | Module |
 |--------|--------|
-| Live | Dashboard, Staff, News, Events, Gallery, Press, Services, Products, Organization, Careers, CSR, FAQ, Downloads, Site settings, Activity log, Account / password |
+| Live | Dashboard, Staff, News, Events, Gallery, Press kit, Services, Products, Organisation, Careers, Community (CSR), Questions (FAQ), Downloads, Site settings, Activity log, My account |
 
-Production: https://ksl-websitemink.vercel.app/login — sign in with **username or email**.
+Production: https://ksl-websitemink.vercel.app/login — sign in with **username and password**.
+
+New agents: Staff → Add agent. The portal shows a one-time password once; give it to the agent, who chooses their own password at first sign-in. "New password" on a staff row does the same for a forgotten password.
+
+Shared form pieces live in `src/components/ui/` (`form-bits`, `image-field`, `file-field`, `row-list`, `item-list`, `rich-text`, `feedback`). Use them for new editors so wording and styling stay consistent.
 
 ### Connect the public website
 

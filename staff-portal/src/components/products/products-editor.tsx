@@ -1,331 +1,343 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImageField } from "@/components/ui/image-field";
-import { Field, Notice, Select, StatusBadge, Textarea } from "@/components/ui/form-bits";
+import { FileField } from "@/components/ui/file-field";
+import { ItemList } from "@/components/ui/item-list";
+import { RowList } from "@/components/ui/row-list";
+import {
+  AdvancedSlug,
+  ChoiceField,
+  Field,
+  FieldGrid,
+  FormSection,
+  SaveBar,
+  Textarea,
+  VisibilitySwitch,
+} from "@/components/ui/form-bits";
+import { useFeedback } from "@/components/ui/feedback";
 import { slugify } from "@/lib/news";
-import { specsToText, textToSpecs, type ProductRow, type ProductsSettings, type RangeGroup } from "@/lib/products";
+import { moveItem, uniqueSlug } from "@/lib/list-utils";
+import { sendJson } from "@/lib/upload-client";
+import type { ProductRow, ProductsSettings, Spec } from "@/lib/products";
 
-type Draft = Partial<ProductRow> & { keySpecsText: string; extraSpecsText: string };
+type GroupDraft = { title: string; itemsText: string };
 
-function groupsToText(groups: RangeGroup[]) {
-  return groups.map((g) => `${g.title}: ${g.items.join("; ")}`).join("\n");
-}
+const EMPTY_SETTINGS: ProductsSettings = {
+  kicker: "",
+  title: "",
+  intro: "",
+  catalogue_url: "",
+  range_kicker: "",
+  range_title: "",
+  range_groups: [],
+};
 
-function textToGroups(text: string): RangeGroup[] {
-  return text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const idx = line.indexOf(":");
-      const title = idx === -1 ? line : line.slice(0, idx).trim();
-      const items = idx === -1 ? [] : line.slice(idx + 1).split(";").map((s) => s.trim()).filter(Boolean);
-      return { title, items };
-    });
+function SpecRows({ specs, onChange, addLabel }: { specs: Spec[]; onChange: (specs: Spec[]) => void; addLabel: string }) {
+  return (
+    <RowList
+      items={specs}
+      onChange={onChange}
+      newItem={() => ({ label: "", value: "" })}
+      addLabel={addLabel}
+      emptyText="None added yet."
+      renderRow={(spec, update) => (
+        <FieldGrid>
+          <Input value={spec.label} onChange={(e) => update({ label: e.target.value })} placeholder="e.g. Length" aria-label="Name" />
+          <Input value={spec.value} onChange={(e) => update({ value: e.target.value })} placeholder="e.g. 7.05 m" aria-label="Value" />
+        </FieldGrid>
+      )}
+    />
+  );
 }
 
 export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean; canDelete: boolean }) {
+  const { toast, confirm } = useFeedback();
   const [items, setItems] = useState<ProductRow[]>([]);
-  const [settings, setSettings] = useState<ProductsSettings>({
-    kicker: "",
-    title: "",
-    intro: "",
-    catalogue_url: "",
-    range_kicker: "",
-    range_title: "",
-    range_groups: [],
-  });
-  const [groupsText, setGroupsText] = useState("");
-  const [editing, setEditing] = useState<Draft | null>(null);
+  const [settings, setSettings] = useState<ProductsSettings>(EMPTY_SETTINGS);
+  const [groups, setGroups] = useState<GroupDraft[]>([]);
+  const [editing, setEditing] = useState<Partial<ProductRow> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/products");
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setItems(data.items ?? []);
       if (data.settings) {
-        setSettings(data.settings);
-        setGroupsText(groupsToText(data.settings.range_groups ?? []));
+        setSettings({ ...EMPTY_SETTINGS, ...data.settings });
+        setGroups(
+          ((data.settings.range_groups ?? []) as ProductsSettings["range_groups"]).map((g) => ({
+            title: g.title,
+            itemsText: g.items.join("\n"),
+          }))
+        );
       }
     } else {
-      setError(data.error ?? "Failed to load products");
+      toast(data.error ?? "Could not load the products.", "error");
     }
     setLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  async function post(body: unknown) {
-    setSaving(true);
-    setError(null);
-    setMessage(null);
-    const res = await fetch("/api/products", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json().catch(() => ({}));
-    setSaving(false);
-    if (!res.ok) {
-      setError(data.error ?? "Save failed");
-      return false;
-    }
-    return true;
-  }
+  const types = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of items) map.set(item.category_label || item.category, item.category);
+    return map;
+  }, [items]);
 
   async function saveSettings() {
-    if (await post({ scope: "settings", ...settings, range_groups: textToGroups(groupsText) })) {
-      setMessage("Page text saved.");
+    setSaving("settings");
+    try {
+      await sendJson("/api/products", "POST", {
+        scope: "settings",
+        ...settings,
+        range_groups: groups
+          .filter((g) => g.title.trim())
+          .map((g) => ({
+            title: g.title.trim(),
+            items: g.itemsText
+              .split(/\r?\n/)
+              .map((s) => s.trim())
+              .filter(Boolean),
+          })),
+      });
+      toast("Page text saved.");
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSaving(null);
     }
   }
 
   function startNew() {
+    const [firstLabel, firstKey] = types.entries().next().value ?? ["", ""];
     setEditing({
       name: "",
       slug: "",
-      category: "",
-      category_label: "",
+      category: firstKey,
+      category_label: firstLabel,
       eyebrow: "",
       image_path: "",
       image_alt: "",
-      keySpecsText: "",
-      extraSpecsText: "",
-      sort_order: items.length,
-      status: "draft",
+      key_specs: [],
+      extra_specs: [],
+      sort_order: items.length ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0,
+      status: canPublish ? "published" : "draft",
     });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function saveItem() {
-    if (!editing?.name) {
-      setError("Name is required.");
+  async function saveItem(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    if (!editing.name?.trim()) {
+      toast("Give the product a name.", "error");
       return;
     }
-    const { keySpecsText, extraSpecsText, ...rest } = editing;
-    const ok = await post({
-      ...rest,
-      slug: rest.slug || slugify(rest.name ?? ""),
-      key_specs: textToSpecs(keySpecsText),
-      extra_specs: textToSpecs(extraSpecsText),
-    });
-    if (ok) {
-      setMessage(`Saved "${editing.name}".`);
+    if (!editing.category_label?.trim()) {
+      toast("Choose the type of boat.", "error");
+      return;
+    }
+    setSaving("item");
+    try {
+      const slug =
+        editing.slug?.trim() ||
+        uniqueSlug(editing.name, items.filter((i) => i.id !== editing.id).map((i) => i.slug), "product");
+      const clean = (specs: Spec[] | undefined) => (specs ?? []).filter((s) => s.label.trim() || s.value.trim());
+      await sendJson("/api/products", "POST", {
+        ...editing,
+        slug,
+        key_specs: clean(editing.key_specs),
+        extra_specs: clean(editing.extra_specs),
+      });
+      toast(editing.status === "published" ? "Product saved and shown on the website." : "Product saved as hidden (draft).");
       setEditing(null);
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function move(index: number, delta: number) {
+    const next = moveItem(items, index, delta).map((item, i) => ({ ...item, sort_order: i }));
+    const before = new Map(items.map((i) => [i.id, i.sort_order]));
+    setItems(next);
+    try {
+      await Promise.all(next.filter((i) => before.get(i.id) !== i.sort_order).map((i) => sendJson("/api/products", "POST", i)));
+    } catch (err) {
+      toast((err as Error).message, "error");
       load();
     }
   }
 
-  async function remove(item: ProductRow) {
-    if (!confirm(`Delete "${item.name}"?`)) return;
-    const res = await fetch("/api/products?id=" + encodeURIComponent(item.id), { method: "DELETE" });
-    if (!res.ok) setError((await res.json().catch(() => ({}))).error ?? "Delete failed");
-    load();
+  async function remove(id: string) {
+    const item = items.find((i) => i.id === id);
+    const ok = await confirm({
+      title: "Delete this product?",
+      message: item ? `"${item.name}" will be removed from the website for good.` : undefined,
+      confirmLabel: "Delete product",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await sendJson(`/api/products?id=${encodeURIComponent(id)}`, "DELETE");
+      toast("Product deleted.");
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-[#5b6775]">
+      <div className="flex items-center gap-2 text-[14px] text-[#5b6775]">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading products…
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-col gap-[14px]">
-      {error && <Notice kind="error">{error}</Notice>}
-      {message && <Notice kind="success">{message}</Notice>}
-
-      <section className="ksl-card space-y-4 p-[18px]">
-        <h2 className="text-[15px] font-bold text-[#0b1f3a]">Page text</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Kicker">
-            <Input value={settings.kicker ?? ""} onChange={(e) => setSettings({ ...settings, kicker: e.target.value })} />
-          </Field>
-          <Field label="Heading">
-            <Input value={settings.title ?? ""} onChange={(e) => setSettings({ ...settings, title: e.target.value })} />
-          </Field>
-          <Field label="Intro" className="sm:col-span-2">
-            <Textarea value={settings.intro ?? ""} onChange={(e) => setSettings({ ...settings, intro: e.target.value })} />
-          </Field>
-          <Field label="Extended range kicker">
-            <Input
-              value={settings.range_kicker ?? ""}
-              onChange={(e) => setSettings({ ...settings, range_kicker: e.target.value })}
-            />
-          </Field>
-          <Field label="Extended range heading">
-            <Input
-              value={settings.range_title ?? ""}
-              onChange={(e) => setSettings({ ...settings, range_title: e.target.value })}
-            />
-          </Field>
-          <Field label="Product catalogue link" className="sm:col-span-2">
-            <Input
-              value={settings.catalogue_url ?? ""}
-              onChange={(e) => setSettings({ ...settings, catalogue_url: e.target.value })}
-              placeholder="docs/KSL-Brochure-version-28-NOV-2024.pdf"
-            />
-          </Field>
-          <Field
-            label="Extended range groups"
-            hint='One group per line: "Medical: 13 m ambulance boat; 7.05 m ambulance boat"'
-            className="sm:col-span-2"
-          >
-            <Textarea value={groupsText} onChange={(e) => setGroupsText(e.target.value)} className="min-h-[110px]" />
-          </Field>
+  if (editing) {
+    const set = (patch: Partial<ProductRow>) => setEditing({ ...editing, ...patch });
+    return (
+      <form onSubmit={saveItem} className="space-y-4">
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-4">
+            <FormSection title={editing.id ? `Edit ${editing.name}` : "New product"}>
+              <Field label="Product name">
+                <Input value={editing.name ?? ""} onChange={(e) => set({ name: e.target.value })} autoFocus={!editing.id} />
+              </Field>
+              <FieldGrid>
+                <Field label="Type of boat" hint="Visitors can filter the products by type.">
+                  <ChoiceField
+                    value={editing.category_label ?? ""}
+                    options={Array.from(types.keys()).map((label) => ({ value: label, label }))}
+                    onChange={(label) => set({ category_label: label, category: types.get(label) ?? slugify(label) })}
+                    newLabel="Add a new type…"
+                  />
+                </Field>
+                <Field label="Short label" optional hint="Small text above the name, e.g. Ambulance vessel.">
+                  <Input value={editing.eyebrow ?? ""} onChange={(e) => set({ eyebrow: e.target.value })} />
+                </Field>
+              </FieldGrid>
+            </FormSection>
+            <FormSection title="Main specifications" description="Shown on the product card, e.g. Length – 7.05 m.">
+              <SpecRows specs={editing.key_specs ?? []} onChange={(key_specs) => set({ key_specs })} addLabel="Add specification" />
+            </FormSection>
+            <FormSection title="More specifications" description="Shown when a visitor opens the product details.">
+              <SpecRows specs={editing.extra_specs ?? []} onChange={(extra_specs) => set({ extra_specs })} addLabel="Add specification" />
+            </FormSection>
+          </div>
+          <div className="space-y-4">
+            <FormSection title="Visibility">
+              <VisibilitySwitch status={editing.status ?? "draft"} canPublish={canPublish} onChange={(status) => set({ status })} />
+            </FormSection>
+            <FormSection title="Photo">
+              <ImageField module="products" value={editing.image_path ?? ""} onChange={(image_path) => set({ image_path })} />
+              <Field label="Describe the photo" optional hint="Read aloud to visitors who cannot see the image.">
+                <Input value={editing.image_alt ?? ""} onChange={(e) => set({ image_alt: e.target.value })} />
+              </Field>
+            </FormSection>
+            <AdvancedSlug value={editing.slug ?? ""} onChange={(slug) => set({ slug })} />
+          </div>
         </div>
-        <Button type="button" onClick={saveSettings} disabled={saving}>
-          Save page text
-        </Button>
-      </section>
+        <SaveBar>
+          <Button variant="secondary" onClick={() => setEditing(null)}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={saving === "item"}>
+            {saving === "item" ? "Saving…" : "Save product"}
+          </Button>
+        </SaveBar>
+      </form>
+    );
+  }
 
-      <div className="flex justify-end">
-        <Button type="button" onClick={startNew}>
-          <Plus className="h-4 w-4" /> New product
-        </Button>
+  const setS = (patch: Partial<ProductsSettings>) => setSettings({ ...settings, ...patch });
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-[15px] font-bold text-[#0b1f3a]">Products</h2>
+          <Button onClick={startNew}>
+            <Plus className="h-4 w-4" /> New product
+          </Button>
+        </div>
+        <ItemList
+          showImages
+          items={items.map((i) => ({
+            id: i.id,
+            title: i.name,
+            subtitle: [i.category_label || i.category, i.eyebrow].filter(Boolean).join(" · "),
+            image: i.image_path,
+            status: i.status,
+          }))}
+          onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
+          onDelete={canDelete ? remove : undefined}
+          onMove={move}
+          emptyText="No products yet. Click New product to add one."
+        />
       </div>
 
-      {editing && (
-        <section className="ksl-card space-y-4 border-t-[3px] border-t-[#c5a028] p-[18px]">
-          <h2 className="text-[15px] font-bold text-[#0b1f3a]">{editing.id ? `Edit ${editing.name}` : "New product"}</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Name" className="sm:col-span-2">
-              <Input
-                value={editing.name ?? ""}
-                onChange={(e) =>
-                  setEditing({ ...editing, name: e.target.value, slug: editing.id ? editing.slug : slugify(e.target.value) })
-                }
-              />
-            </Field>
-            <Field label="Slug">
-              <Input value={editing.slug ?? ""} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} />
-            </Field>
-            <Field label="Eyebrow" hint="Small label above the name, e.g. Ambulance vessel">
-              <Input value={editing.eyebrow ?? ""} onChange={(e) => setEditing({ ...editing, eyebrow: e.target.value })} />
-            </Field>
-            <Field label="Filter key" hint="Groups products for the filter buttons, e.g. fishing">
-              <Input
-                value={editing.category ?? ""}
-                onChange={(e) => setEditing({ ...editing, category: e.target.value.toLowerCase().replace(/\s+/g, "-") })}
-              />
-            </Field>
-            <Field label="Filter button label" hint="e.g. Fishing">
-              <Input
-                value={editing.category_label ?? ""}
-                onChange={(e) => setEditing({ ...editing, category_label: e.target.value })}
-              />
-            </Field>
-            <Field label="Image" className="sm:col-span-2">
-              <ImageField
-                module="products"
-                value={editing.image_path ?? ""}
-                onChange={(url) => setEditing({ ...editing, image_path: url })}
-              />
-            </Field>
-            <Field label="Image description (alt text)" className="sm:col-span-2">
-              <Input value={editing.image_alt ?? ""} onChange={(e) => setEditing({ ...editing, image_alt: e.target.value })} />
-            </Field>
-            <Field label="Key specs (on the card)" hint='One per line: "Length: 7.05 m"'>
-              <Textarea
-                value={editing.keySpecsText}
-                onChange={(e) => setEditing({ ...editing, keySpecsText: e.target.value })}
-              />
-            </Field>
-            <Field label="Additional specs (in details)" hint='One per line: "Crew: 5"'>
-              <Textarea
-                value={editing.extraSpecsText}
-                onChange={(e) => setEditing({ ...editing, extraSpecsText: e.target.value })}
-              />
-            </Field>
-            <Field label="Sort order">
-              <Input
-                type="number"
-                value={editing.sort_order ?? 0}
-                onChange={(e) => setEditing({ ...editing, sort_order: parseInt(e.target.value, 10) || 0 })}
-              />
-            </Field>
-            <Field label="Status" hint={canPublish ? undefined : "You can save drafts. A publisher makes them live."}>
-              <Select value={editing.status ?? "draft"} onChange={(e) => setEditing({ ...editing, status: e.target.value })}>
-                <option value="draft">Draft</option>
-                {canPublish && <option value="published">Published</option>}
-                <option value="archived">Archived</option>
-              </Select>
-            </Field>
-          </div>
-          <div className="flex gap-2">
-            <Button type="button" onClick={saveItem} disabled={saving}>
-              {saving ? "Saving…" : "Save product"}
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => setEditing(null)}>
-              Cancel
-            </Button>
-          </div>
-        </section>
-      )}
+      <FormSection title="Page text" description="The words at the top of the Products page.">
+        <FieldGrid>
+          <Field label="Small text above the heading" optional>
+            <Input value={settings.kicker ?? ""} onChange={(e) => setS({ kicker: e.target.value })} />
+          </Field>
+          <Field label="Heading">
+            <Input value={settings.title ?? ""} onChange={(e) => setS({ title: e.target.value })} />
+          </Field>
+        </FieldGrid>
+        <Field label="Introduction">
+          <Textarea value={settings.intro ?? ""} onChange={(e) => setS({ intro: e.target.value })} />
+        </Field>
+        <Field label="Product catalogue" hint="The file visitors get when they click Download catalogue.">
+          <FileField module="products" value={settings.catalogue_url ?? ""} onChange={(catalogue_url) => setS({ catalogue_url })} />
+        </Field>
+      </FormSection>
 
-      <div className="ksl-card overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-[13px]">
-          <thead className="bg-[#f4f6f8] text-[11px] uppercase tracking-[0.06em] text-[#5b6775]">
-            <tr>
-              <th className="px-4 py-3">Product</th>
-              <th className="px-4 py-3">Filter</th>
-              <th className="px-4 py-3">Order</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {items.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-[#5b6775]">
-                  No products yet.
-                </td>
-              </tr>
-            )}
-            {items.map((item) => (
-              <tr key={item.id} className="border-t border-[#eef2f6]">
-                <td className="px-4 py-3">
-                  <p className="font-semibold text-[#0b1f3a]">{item.name}</p>
-                  <p className="text-[12px] text-[#5b6775]">{item.eyebrow}</p>
-                </td>
-                <td className="px-4 py-3 text-[#5b6775]">{item.category_label || item.category}</td>
-                <td className="px-4 py-3 text-[#5b6775]">{item.sort_order}</td>
-                <td className="px-4 py-3">
-                  <StatusBadge status={item.status} />
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 text-right">
-                  <button
-                    type="button"
-                    className="font-semibold text-[#0b1f3a] hover:underline"
-                    onClick={() =>
-                      setEditing({
-                        ...item,
-                        keySpecsText: specsToText(item.key_specs),
-                        extraSpecsText: specsToText(item.extra_specs),
-                      })
-                    }
-                  >
-                    Edit
-                  </button>
-                  {canDelete && (
-                    <button type="button" className="ml-3 text-[#b42318]" onClick={() => remove(item)} aria-label="Delete">
-                      <Trash2 className="inline h-4 w-4" />
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <FormSection title="Other boats we build" description="The list of boat types further down the Products page.">
+        <FieldGrid>
+          <Field label="Small text above the heading" optional>
+            <Input value={settings.range_kicker ?? ""} onChange={(e) => setS({ range_kicker: e.target.value })} />
+          </Field>
+          <Field label="Heading">
+            <Input value={settings.range_title ?? ""} onChange={(e) => setS({ range_title: e.target.value })} />
+          </Field>
+        </FieldGrid>
+        <RowList
+          items={groups}
+          onChange={setGroups}
+          newItem={() => ({ title: "", itemsText: "" })}
+          addLabel="Add group"
+          emptyText="No groups yet."
+          renderRow={(group, update) => (
+            <div className="space-y-3">
+              <Field label="Group name">
+                <Input value={group.title} onChange={(e) => update({ title: e.target.value })} placeholder="e.g. Medical" />
+              </Field>
+              <Field label="Boats in this group" hint="Write one boat on each line.">
+                <Textarea value={group.itemsText} onChange={(e) => update({ itemsText: e.target.value })} className="min-h-[80px]" />
+              </Field>
+            </div>
+          )}
+        />
+      </FormSection>
+
+      <div className="flex justify-end">
+        <Button onClick={saveSettings} disabled={saving === "settings"}>
+          {saving === "settings" ? "Saving…" : "Save page text"}
+        </Button>
       </div>
     </div>
   );

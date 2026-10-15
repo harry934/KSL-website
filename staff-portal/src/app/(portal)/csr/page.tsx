@@ -11,8 +11,8 @@ export default async function CsrPage() {
   return (
     <>
       <PageHeader
-        title="CSR"
-        description="Corporate social responsibility page: intro, impact figures and community programmes."
+        title="Community (CSR)"
+        description="Our work with communities: the introduction, our impact in numbers and each programme."
       />
       <CsrEditor
         canPublish={canAccess(session.permissions, "csr", "publish", session.isSuperAdmin)}

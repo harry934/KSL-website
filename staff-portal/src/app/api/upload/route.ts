@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff } from "@/lib/api-auth";
+import { requireStaff, dbError } from "@/lib/api-auth";
 import type { ModuleKey } from "@/lib/modules";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     upsert: false,
   });
 
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
 
   const { data: pub } = admin.storage.from("media-public").getPublicUrl(path);
   return NextResponse.json({ storage_path: path, public_url: pub.publicUrl });

@@ -1,6 +1,7 @@
 import { ChangePasswordForm } from "@/components/account/change-password-form";
 import { ProfileForm } from "@/components/account/profile-form";
 import { PageHeader } from "@/components/portal/page-header";
+import { FormSection } from "@/components/ui/form-bits";
 import { getStaffSession } from "@/lib/session";
 
 export default async function AccountPage() {
@@ -9,19 +10,19 @@ export default async function AccountPage() {
 
   return (
     <>
-      <PageHeader
-        title="Account settings"
-        description="Your sign-in username, optional email and password. You can sign in with either the username or the email."
-      />
-      <div className="grid items-start gap-[14px] lg:grid-cols-2">
-        <section>
-          <h2 className="mb-2 text-[15px] font-bold text-[#0b1f3a]">Profile</h2>
-          <ProfileForm username={session.username} displayName={session.displayName} email={session.email} />
-        </section>
-        <section>
-          <h2 className="mb-2 text-[15px] font-bold text-[#0b1f3a]">Password</h2>
+      <PageHeader title="My account" description="Your name, contact email and password." />
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <FormSection title="My details">
+          <ProfileForm
+            username={session.username}
+            displayName={session.displayName}
+            email={session.email}
+            canRename={session.isSuperAdmin}
+          />
+        </FormSection>
+        <FormSection title="Change password">
           <ChangePasswordForm />
-        </section>
+        </FormSection>
       </div>
     </>
   );

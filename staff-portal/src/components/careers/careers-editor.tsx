@@ -1,51 +1,69 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Field, FieldGrid, FormSection, SaveBar, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
+import { ItemList } from "@/components/ui/item-list";
+import { useFeedback } from "@/components/ui/feedback";
+import { useCan } from "@/components/portal/session-context";
+import { moveItem } from "@/lib/list-utils";
+import { sendJson } from "@/lib/upload-client";
 import type { CareerListingRow } from "@/lib/careers";
 
 type Settings = { apply_email: string; apply_note: string | null };
+type Kind = CareerListingRow["kind"];
+
+const KIND_WORDS: Record<Kind, { one: string; many: string }> = {
+  vacancy: { one: "job", many: "Job openings" },
+  internship: { one: "internship", many: "Internships" },
+};
+
+function formatDate(value: string | null) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(new Date(value));
+}
 
 export function CareersEditor() {
+  const { toast, confirm } = useFeedback();
+  const canPublish = useCan("careers", "publish");
+  const canDelete = useCan("careers", "delete");
   const [settings, setSettings] = useState<Settings>({ apply_email: "", apply_note: "" });
   const [listings, setListings] = useState<CareerListingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<CareerListingRow> | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/careers");
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
-      setSettings({
-        apply_email: data.settings?.apply_email ?? "",
-        apply_note: data.settings?.apply_note ?? "",
-      });
+      setSettings({ apply_email: data.settings?.apply_email ?? "", apply_note: data.settings?.apply_note ?? "" });
       setListings(data.listings ?? []);
+    } else {
+      toast(data.error ?? "Could not load careers.", "error");
     }
     setLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   async function saveSettings() {
-    setSaving(true);
-    setMessage(null);
-    const res = await fetch("/api/careers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scope: "settings", ...settings }),
-    });
-    setSaving(false);
-    if (res.ok) setMessage("Settings saved");
+    setSaving("settings");
+    try {
+      await sendJson("/api/careers", "POST", { scope: "settings", ...settings });
+      toast("How to apply saved.");
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSaving(null);
+    }
   }
 
-  function startNew(kind: "vacancy" | "internship") {
+  function startNew(kind: Kind) {
     setEditing({
       kind,
       title: "",
@@ -53,172 +71,160 @@ export function CareersEditor() {
       summary: "",
       closing_date: "",
       apply_url: "",
-      sort_order: listings.length,
-      status: "draft",
+      sort_order: listings.length ? Math.max(...listings.map((l) => l.sort_order)) + 1 : 0,
+      status: canPublish ? "published" : "draft",
     });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function saveListing() {
-    if (!editing?.title) return;
-    setSaving(true);
-    setMessage(null);
-    const res = await fetch("/api/careers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editing),
-    });
-    setSaving(false);
-    if (res.ok) {
-      setMessage("Saved");
+  async function saveListing(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    if (!editing.title?.trim()) {
+      toast("Give it a title.", "error");
+      return;
+    }
+    setSaving("item");
+    try {
+      await sendJson("/api/careers", "POST", {
+        ...editing,
+        closing_date: editing.closing_date || null,
+        apply_url: editing.apply_url?.trim() || null,
+      });
+      toast(editing.status === "published" ? "Saved and shown on the website." : "Saved as hidden (draft).");
       setEditing(null);
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function move(kind: Kind, index: number, delta: number) {
+    const group = listings.filter((l) => l.kind === kind);
+    const updated = moveItem(group, index, delta).map((l, i) => ({ ...l, sort_order: i }));
+    const before = new Map(listings.map((l) => [l.id, l.sort_order]));
+    const byId = new Map(updated.map((l) => [l.id, l]));
+    setListings((list) =>
+      [...list.map((l) => byId.get(l.id) ?? l)].sort((a, b) => a.sort_order - b.sort_order)
+    );
+    try {
+      await Promise.all(updated.filter((l) => before.get(l.id) !== l.sort_order).map((l) => sendJson("/api/careers", "POST", l)));
+    } catch (err) {
+      toast((err as Error).message, "error");
       load();
     }
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this listing?")) return;
-    await fetch("/api/careers?id=" + encodeURIComponent(id), { method: "DELETE" });
-    load();
+    const item = listings.find((l) => l.id === id);
+    const ok = await confirm({
+      title: "Delete this listing?",
+      message: item ? `"${item.title}" will be removed from the website for good.` : undefined,
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await sendJson(`/api/careers?id=${encodeURIComponent(id)}`, "DELETE");
+      toast("Listing deleted.");
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-[#5b6775]">
+      <div className="flex items-center gap-2 text-[14px] text-[#5b6775]">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading careers…
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {message && <p className="text-sm font-medium text-[#0b1f3a]">{message}</p>}
-
-      <div className="ksl-card space-y-4 p-6">
-        <h2 className="text-[15px] font-bold text-[#0b1f3a]">Application guidance</h2>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-[#5b6775]">Apply email</label>
-          <Input
-            value={settings.apply_email}
-            onChange={(e) => setSettings({ ...settings, apply_email: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-[#5b6775]">How to apply (note)</label>
-          <textarea
-            className="min-h-[80px] w-full rounded border border-[#d7dde5] bg-white px-3 py-2 text-sm"
-            value={settings.apply_note ?? ""}
-            onChange={(e) => setSettings({ ...settings, apply_note: e.target.value })}
-          />
-        </div>
-        <Button type="button" onClick={saveSettings} disabled={saving}>Save settings</Button>
-      </div>
-
-      <div className="flex flex-wrap gap-3">
-        <Button type="button" onClick={() => startNew("vacancy")}>
-          <Plus className="h-4 w-4" /> Vacancy
-        </Button>
-        <Button type="button" variant="ghost" onClick={() => startNew("internship")}>
-          <Plus className="h-4 w-4" /> Internship
-        </Button>
-      </div>
-
-      {editing && (
-        <div className="ksl-card space-y-4 p-6">
-          <h2 className="text-[15px] font-bold text-[#0b1f3a]">
-            {editing.id ? "Edit" : "New"} {editing.kind === "internship" ? "internship" : "vacancy"}
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Title</label>
-              <Input value={editing.title ?? ""} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Location</label>
-              <Input value={editing.location ?? ""} onChange={(e) => setEditing({ ...editing, location: e.target.value })} />
-            </div>
+  if (editing) {
+    const set = (patch: Partial<CareerListingRow>) => setEditing({ ...editing, ...patch });
+    const word = KIND_WORDS[editing.kind ?? "vacancy"].one;
+    return (
+      <form onSubmit={saveListing} className="space-y-4">
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <FormSection title={editing.id ? `Edit ${word}` : `New ${word}`}>
+            <Field label={editing.kind === "internship" ? "Internship title" : "Job title"}>
+              <Input value={editing.title ?? ""} onChange={(e) => set({ title: e.target.value })} autoFocus={!editing.id} />
+            </Field>
+            <Field label="Place" optional>
+              <Input value={editing.location ?? ""} onChange={(e) => set({ location: e.target.value })} placeholder="e.g. Mombasa" />
+            </Field>
+            <Field label="Description" hint="What the role involves and who should apply.">
+              <Textarea className="min-h-[160px]" value={editing.summary ?? ""} onChange={(e) => set({ summary: e.target.value })} />
+            </Field>
             {editing.kind === "vacancy" && (
-              <>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[#5b6775]">Closing date</label>
-                  <Input
-                    type="date"
-                    value={editing.closing_date ?? ""}
-                    onChange={(e) => setEditing({ ...editing, closing_date: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[#5b6775]">Apply URL (optional)</label>
-                  <Input value={editing.apply_url ?? ""} onChange={(e) => setEditing({ ...editing, apply_url: e.target.value })} />
-                </div>
-              </>
+              <FieldGrid>
+                <Field label="Closing date" optional>
+                  <Input type="date" value={editing.closing_date ?? ""} onChange={(e) => set({ closing_date: e.target.value })} />
+                </Field>
+                <Field label="Online application link" optional hint="Only if applications are made on another website.">
+                  <Input value={editing.apply_url ?? ""} onChange={(e) => set({ apply_url: e.target.value })} placeholder="https://…" />
+                </Field>
+              </FieldGrid>
             )}
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Summary</label>
-              <textarea
-                className="min-h-[100px] w-full rounded border border-[#d7dde5] bg-white px-3 py-2 text-sm"
-                value={editing.summary ?? ""}
-                onChange={(e) => setEditing({ ...editing, summary: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Sort order</label>
-              <Input
-                type="number"
-                value={editing.sort_order ?? 0}
-                onChange={(e) => setEditing({ ...editing, sort_order: parseInt(e.target.value, 10) || 0 })}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Status</label>
-              <select
-                className="w-full rounded border border-[#d7dde5] bg-white px-3 py-2.5 text-sm"
-                value={editing.status ?? "draft"}
-                onChange={(e) => setEditing({ ...editing, status: e.target.value })}
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button type="button" onClick={saveListing} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
-            <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
-          </div>
+          </FormSection>
+          <FormSection title="Visibility">
+            <VisibilitySwitch status={editing.status ?? "draft"} canPublish={canPublish} onChange={(status) => set({ status })} />
+          </FormSection>
         </div>
-      )}
+        <SaveBar>
+          <Button variant="secondary" onClick={() => setEditing(null)}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={saving === "item"}>
+            {saving === "item" ? "Saving…" : `Save ${word}`}
+          </Button>
+        </SaveBar>
+      </form>
+    );
+  }
 
-      <div className="ksl-card overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-[13px]">
-          <thead className="bg-[#f4f6f8] text-xs uppercase text-[#5b6775]">
-            <tr>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Location</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {listings.map((item) => (
-              <tr key={item.id} className="border-t border-[#eef2f6]">
-                <td className="px-4 py-3 capitalize text-[#5b6775]">{item.kind}</td>
-                <td className="px-4 py-3 font-medium text-[#0b1f3a]">{item.title}</td>
-                <td className="px-4 py-3 text-[#5b6775]">{item.location}</td>
-                <td className="px-4 py-3 capitalize text-[#5b6775]">{item.status}</td>
-                <td className="px-4 py-3 text-right">
-                  <button type="button" className="text-[#0b1f3a] hover:underline" onClick={() => setEditing(item)}>
-                    Edit
-                  </button>
-                  <button type="button" className="ml-3 text-red-600" onClick={() => remove(item.id)} aria-label="Delete">
-                    <Trash2 className="inline h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+  return (
+    <div className="space-y-5">
+      {(["vacancy", "internship"] as Kind[]).map((kind) => {
+        const group = listings.filter((l) => l.kind === kind);
+        return (
+          <div key={kind}>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-[15px] font-bold text-[#0b1f3a]">{KIND_WORDS[kind].many}</h2>
+              <Button variant={kind === "vacancy" ? "primary" : "secondary"} onClick={() => startNew(kind)}>
+                <Plus className="h-4 w-4" /> New {KIND_WORDS[kind].one}
+              </Button>
+            </div>
+            <ItemList
+              items={group.map((l) => ({
+                id: l.id,
+                title: l.title,
+                subtitle: [l.location, l.closing_date ? `Closes ${formatDate(l.closing_date)}` : ""].filter(Boolean).join(" · "),
+                status: l.status,
+              }))}
+              onEdit={(id) => setEditing(listings.find((l) => l.id === id) ?? null)}
+              onDelete={canDelete ? remove : undefined}
+              onMove={(index, delta) => move(kind, index, delta)}
+              emptyText={kind === "vacancy" ? "No job openings right now." : "No internships right now."}
+            />
+          </div>
+        );
+      })}
+
+      <FormSection title="How to apply" description="Shown on the Careers page under the listings.">
+        <Field label="Email for applications">
+          <Input type="email" value={settings.apply_email} onChange={(e) => setSettings({ ...settings, apply_email: e.target.value })} />
+        </Field>
+        <Field label="Instructions" optional>
+          <Textarea value={settings.apply_note ?? ""} onChange={(e) => setSettings({ ...settings, apply_note: e.target.value })} />
+        </Field>
+        <Button onClick={saveSettings} disabled={saving === "settings"}>
+          {saving === "settings" ? "Saving…" : "Save"}
+        </Button>
+      </FormSection>
     </div>
   );
 }

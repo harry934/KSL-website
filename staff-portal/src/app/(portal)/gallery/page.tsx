@@ -12,7 +12,7 @@ export default async function GalleryPage() {
 
   return (
     <>
-      <PageHeader title="Gallery" description="Photos for the public gallery page. Upload to Supabase Storage." />
+      <PageHeader title="Gallery" description="Photos and videos on the website's Gallery page." />
       <GalleryEditor />
     </>
   );

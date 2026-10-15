@@ -12,7 +12,7 @@ export default async function FaqPage() {
 
   return (
     <>
-      <PageHeader title="FAQ" description="Questions and answers shown on the public FAQ page." />
+      <PageHeader title="Questions and answers" description="The questions and answers on the website's FAQ page." />
       <FaqEditor />
     </>
   );

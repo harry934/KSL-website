@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard } from "@/lib/api-auth";
+import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -35,13 +35,13 @@ export async function POST(req: NextRequest) {
       id: "default",
       base_url: body.base_url ?? null,
     });
-    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     await logActivity(session.userId, "downloads", "upsert", "downloads_settings", "default");
     return NextResponse.json({ ok: true });
   }
 
   const id = (body.id || "").trim();
-  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
   const row = {
     id,
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   };
 
   const { error: upErr } = await admin.from("download_items").upsert(row);
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   await logActivity(session.userId, "downloads", "upsert", "download_item", id);
   return NextResponse.json({ ok: true, id });
 }
@@ -72,11 +72,11 @@ export async function DELETE(req: NextRequest) {
   if (error || !session) return error;
 
   const id = new URL(req.url).searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
   const admin = createAdminClient();
   const { error: delErr } = await admin.from("download_items").delete().eq("id", id);
-  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
+  if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
   await logActivity(session.userId, "downloads", "delete", "download_item", id);
   return NextResponse.json({ ok: true });
 }

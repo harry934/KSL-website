@@ -1,174 +1,299 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { ChoiceField, Field, FieldGrid, FormSection, SaveBar, Select, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
+import { FileField } from "@/components/ui/file-field";
+import { ItemList } from "@/components/ui/item-list";
+import { useFeedback } from "@/components/ui/feedback";
+import { useCan } from "@/components/portal/session-context";
+import { moveItem } from "@/lib/list-utils";
+import { sendJson } from "@/lib/upload-client";
+import { useDocuments } from "@/lib/use-documents";
+import { cn } from "@/lib/cn";
 import type { PressAssetRow } from "@/lib/press";
 
+type Source = "document" | "file" | "link";
+type Draft = Partial<PressAssetRow> & { source: Source };
+
+const SOURCES: { value: Source; label: string; hint: string }[] = [
+  { value: "document", label: "A document from Downloads", hint: "Pick one of the documents already on the Downloads page." },
+  { value: "file", label: "A file I upload", hint: "For example the logo or a press release." },
+  { value: "link", label: "A link", hint: "A page on this website or another website." },
+];
+
+function typeForHref(href: string) {
+  const ext = href.split(/[?#]/)[0].split(".").pop()?.toLowerCase();
+  if (ext === "pdf") return "PDF";
+  if (ext === "doc" || ext === "docx") return "Word";
+  if (ext === "png" || ext === "jpg" || ext === "jpeg" || ext === "webp") return "Image";
+  return null;
+}
+
+function sourceOf(row: Partial<PressAssetRow>): Source {
+  if (row.download_id) return "document";
+  if (row.href && typeForHref(row.href)) return "file";
+  return "link";
+}
+
 export function PressEditor() {
+  const { toast, confirm } = useFeedback();
+  const canPublish = useCan("press", "publish");
+  const canDelete = useCan("press", "delete");
+  const documents = useDocuments();
   const [boilerplate, setBoilerplate] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [assets, setAssets] = useState<PressAssetRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<Partial<PressAssetRow> | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Draft | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/press");
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setBoilerplate(data.settings?.boilerplate ?? "");
       setContactEmail(data.settings?.contact_email ?? "");
       setContactPhone(data.settings?.contact_phone ?? "");
       setAssets(data.assets ?? []);
+    } else {
+      toast(data.error ?? "Could not load the press page.", "error");
     }
     setLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  const typeOptions = useMemo(() => {
+    const names = new Set(["PDF", "Word", "Image", "Page", ...assets.map((a) => a.asset_type).filter((t): t is string => !!t)]);
+    return Array.from(names).map((t) => ({ value: t, label: t }));
+  }, [assets]);
+
   async function saveSettings() {
-    setSaving(true);
-    const res = await fetch("/api/press", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        scope: "settings",
-        boilerplate,
-        contact_email: contactEmail,
-        contact_phone: contactPhone,
-      }),
-    });
-    setSaving(false);
-    if (res.ok) setMessage("Settings saved");
+    setSaving("settings");
+    try {
+      await sendJson("/api/press", "POST", { scope: "settings", boilerplate, contact_email: contactEmail, contact_phone: contactPhone });
+      toast("Press contact saved.");
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSaving(null);
+    }
   }
 
   function startNew() {
     setEditing({
+      source: "document",
       title: "",
       href: "",
       download_id: "",
-      asset_type: "Link",
-      sort_order: assets.length,
-      status: "draft",
+      asset_type: "PDF",
+      sort_order: assets.length ? Math.max(...assets.map((a) => a.sort_order)) + 1 : 0,
+      status: canPublish ? "published" : "draft",
     });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function saveAsset() {
-    if (!editing?.title) return;
-    setSaving(true);
-    const res = await fetch("/api/press", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editing),
-    });
-    setSaving(false);
-    if (res.ok) {
-      setMessage("Saved");
+  async function saveAsset(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    if (!editing.title?.trim()) {
+      toast("Give it a name.", "error");
+      return;
+    }
+    const { source, ...row } = editing;
+    if (source === "document" && !row.download_id) {
+      toast("Choose a document.", "error");
+      return;
+    }
+    if (source !== "document" && !row.href?.trim()) {
+      toast(source === "file" ? "Upload the file." : "Paste the web address.", "error");
+      return;
+    }
+    setSaving("asset");
+    try {
+      await sendJson("/api/press", "POST", {
+        ...row,
+        download_id: source === "document" ? row.download_id : null,
+        href: source === "document" ? null : row.href?.trim(),
+      });
+      toast(row.status === "published" ? "Saved and shown on the website." : "Saved as hidden (draft).");
       setEditing(null);
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function move(index: number, delta: number) {
+    const next = moveItem(assets, index, delta).map((a, i) => ({ ...a, sort_order: i }));
+    const before = new Map(assets.map((a) => [a.id, a.sort_order]));
+    setAssets(next);
+    try {
+      await Promise.all(next.filter((a) => before.get(a.id) !== a.sort_order).map((a) => sendJson("/api/press", "POST", a)));
+    } catch (err) {
+      toast((err as Error).message, "error");
       load();
     }
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this asset?")) return;
-    await fetch("/api/press?id=" + encodeURIComponent(id), { method: "DELETE" });
-    load();
+    const item = assets.find((a) => a.id === id);
+    const ok = await confirm({
+      title: "Remove this item?",
+      message: item ? `"${item.title}" will be removed from the press kit.` : undefined,
+      confirmLabel: "Remove",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await sendJson(`/api/press?id=${encodeURIComponent(id)}`, "DELETE");
+      toast("Removed.");
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-[#5b6775]">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading press kit…
+      <div className="flex items-center gap-2 text-[14px] text-[#5b6775]">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading the press kit…
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {message && <p className="text-sm font-medium text-[#0b1f3a]">{message}</p>}
-
-      <div className="ksl-card space-y-4 p-6">
-        <h2 className="text-[15px] font-bold text-[#0b1f3a]">Press contact</h2>
-        <textarea
-          className="min-h-[80px] w-full rounded border border-[#d7dde5] bg-white px-3 py-2 text-sm"
-          value={boilerplate}
-          onChange={(e) => setBoilerplate(e.target.value)}
-          placeholder="Boilerplate"
-        />
-        <Input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="Email" />
-        <Input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="Phone" />
-        <Button type="button" onClick={saveSettings} disabled={saving}>Save settings</Button>
-      </div>
-
-      <div className="flex justify-end">
-        <Button type="button" onClick={startNew}><Plus className="h-4 w-4" /> Asset</Button>
-      </div>
-
-      {editing && (
-        <div className="ksl-card space-y-4 p-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Title</label>
-              <Input value={editing.title ?? ""} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />
-            </div>
+  if (editing) {
+    const set = (patch: Partial<Draft>) => setEditing({ ...editing, ...patch });
+    return (
+      <form onSubmit={saveAsset} className="space-y-4">
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <FormSection title={editing.id ? "Edit press kit item" : "New press kit item"}>
+            <Field label="Name" hint="What visitors see, e.g. KSL logo (PNG).">
+              <Input value={editing.title ?? ""} onChange={(e) => set({ title: e.target.value })} autoFocus={!editing.id} />
+            </Field>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Link URL</label>
-              <Input value={editing.href ?? ""} onChange={(e) => setEditing({ ...editing, href: e.target.value })} />
+              <p className="mb-2 text-[13px] font-semibold text-[#1f2933]">What visitors get</p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {SOURCES.map((s) => (
+                  <label
+                    key={s.value}
+                    className={cn(
+                      "cursor-pointer rounded-[8px] border px-3 py-2.5 transition-colors",
+                      editing.source === s.value ? "border-[#0b1f3a] bg-[#f1f4f8]" : "border-[#e3e8ee] hover:bg-[#fafbfc]"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="press-source"
+                      className="sr-only"
+                      checked={editing.source === s.value}
+                      onChange={() => set({ source: s.value })}
+                    />
+                    <span className="block text-[14px] font-semibold text-[#0b1f3a]">{s.label}</span>
+                    <span className="mt-0.5 block text-[12px] text-[#6b7785]">{s.hint}</span>
+                  </label>
+                ))}
+              </div>
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Download ID (optional)</label>
-              <Input value={editing.download_id ?? ""} onChange={(e) => setEditing({ ...editing, download_id: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Type label</label>
-              <Input value={editing.asset_type ?? ""} onChange={(e) => setEditing({ ...editing, asset_type: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Status</label>
-              <select
-                className="w-full rounded border border-[#d7dde5] bg-white px-3 py-2.5 text-sm"
-                value={editing.status ?? "draft"}
-                onChange={(e) => setEditing({ ...editing, status: e.target.value })}
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button type="button" onClick={saveAsset} disabled={saving}>Save</Button>
-            <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+            {editing.source === "document" && (
+              <Field label="Document">
+                <Select value={editing.download_id ?? ""} onChange={(e) => set({ download_id: e.target.value })}>
+                  <option value="">Choose a document…</option>
+                  {documents.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.title}
+                    </option>
+                  ))}
+                  {editing.download_id && !documents.some((d) => d.id === editing.download_id) && (
+                    <option value={editing.download_id}>Current document</option>
+                  )}
+                </Select>
+              </Field>
+            )}
+            {editing.source === "file" && (
+              <Field label="File">
+                <FileField
+                  module="press"
+                  allowImages
+                  value={editing.href ?? ""}
+                  onChange={(href) => set({ href, asset_type: typeForHref(href) ?? editing.asset_type })}
+                />
+              </Field>
+            )}
+            {editing.source === "link" && (
+              <Field label="Web address" hint="Copy it from the address bar of your browser.">
+                <Input value={editing.href ?? ""} onChange={(e) => set({ href: e.target.value })} placeholder="https://…" />
+              </Field>
+            )}
+          </FormSection>
+          <div className="space-y-4">
+            <FormSection title="Visibility">
+              <VisibilitySwitch status={editing.status ?? "draft"} canPublish={canPublish} onChange={(status) => set({ status })} />
+            </FormSection>
+            <FormSection title="Label">
+              <Field label="Shown next to the name" hint="Tells visitors what kind of file it is.">
+                <ChoiceField value={editing.asset_type ?? ""} options={typeOptions} onChange={(asset_type) => set({ asset_type })} />
+              </Field>
+            </FormSection>
           </div>
         </div>
-      )}
+        <SaveBar>
+          <Button variant="secondary" onClick={() => setEditing(null)}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={saving === "asset"}>
+            {saving === "asset" ? "Saving…" : "Save"}
+          </Button>
+        </SaveBar>
+      </form>
+    );
+  }
 
-      <div className="ksl-card overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-[13px]">
-          <thead className="bg-[#f4f6f8] text-xs uppercase text-[#5b6775]">
-            <tr><th className="px-4 py-3">Title</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Status</th><th /></tr>
-          </thead>
-          <tbody>
-            {assets.map((item) => (
-              <tr key={item.id} className="border-t border-[#eef2f6]">
-                <td className="px-4 py-3 font-medium text-[#0b1f3a]">{item.title}</td>
-                <td className="px-4 py-3 text-[#5b6775]">{item.asset_type}</td>
-                <td className="px-4 py-3 capitalize text-[#5b6775]">{item.status}</td>
-                <td className="px-4 py-3 text-right">
-                  <button type="button" className="text-[#0b1f3a] hover:underline" onClick={() => setEditing(item)}>Edit</button>
-                  <button type="button" className="ml-3 text-red-600" onClick={() => remove(item.id)} aria-label="Delete"><Trash2 className="inline h-4 w-4" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+  return (
+    <div className="space-y-5">
+      <div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-[15px] font-bold text-[#0b1f3a]">Press kit</h2>
+          <Button onClick={startNew}>
+            <Plus className="h-4 w-4" /> Add item
+          </Button>
+        </div>
+        <ItemList
+          items={assets.map((a) => ({ id: a.id, title: a.title, subtitle: a.asset_type, status: a.status }))}
+          onEdit={(id) => {
+            const row = assets.find((a) => a.id === id);
+            if (row) setEditing({ ...row, source: sourceOf(row) });
+          }}
+          onDelete={canDelete ? remove : undefined}
+          onMove={move}
+          emptyText="Nothing in the press kit yet. Click Add item to start."
+        />
       </div>
+
+      <FormSection title="Press contact" description="Shown to journalists on the Press page.">
+        <Field label="About Kenya Shipyards" hint="A short paragraph journalists can copy into their stories.">
+          <Textarea className="min-h-[110px]" value={boilerplate} onChange={(e) => setBoilerplate(e.target.value)} />
+        </Field>
+        <FieldGrid>
+          <Field label="Email">
+            <Input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+          </Field>
+          <Field label="Phone">
+            <Input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
+          </Field>
+        </FieldGrid>
+        <Button onClick={saveSettings} disabled={saving === "settings"}>
+          {saving === "settings" ? "Saving…" : "Save press contact"}
+        </Button>
+      </FormSection>
     </div>
   );
 }

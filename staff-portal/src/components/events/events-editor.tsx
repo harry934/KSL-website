@@ -1,25 +1,40 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { AdvancedSlug, Field, FieldGrid, FormSection, SaveBar, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
+import { ImageField } from "@/components/ui/image-field";
+import { ItemList } from "@/components/ui/item-list";
+import { RichText } from "@/components/ui/rich-text";
+import { useFeedback } from "@/components/ui/feedback";
+import { useCan } from "@/components/portal/session-context";
 import type { EventRow } from "@/lib/events";
-import { slugify } from "@/lib/events";
+import { uniqueSlug } from "@/lib/list-utils";
+import { sendJson } from "@/lib/upload-client";
+
+function formatDate(value: string | null) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(new Date(value));
+}
 
 export function EventsEditor() {
+  const { toast, confirm } = useFeedback();
+  const canPublish = useCan("events", "publish");
+  const canDelete = useCan("events", "delete");
   const [items, setItems] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<EventRow> | null>(null);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/events");
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) setItems(data.items ?? []);
+    else toast(data.error ?? "Could not load the events.", "error");
     setLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     load();
@@ -39,191 +54,146 @@ export function EventsEditor() {
       summary: "",
       image_path: "",
       body_html: "",
-      status: "draft",
+      status: canPublish ? "published" : "draft",
     });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function save() {
-    if (!editing?.title || !editing.event_date) return;
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    if (!editing.title?.trim()) {
+      toast("Give the event a name.", "error");
+      return;
+    }
+    if (!editing.event_date) {
+      toast("Choose the date of the event.", "error");
+      return;
+    }
     setSaving(true);
-    setMessage(null);
-    const payload = {
-      ...editing,
-      slug: editing.slug || slugify(editing.title),
-    };
-    const res = await fetch("/api/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    setSaving(false);
-    if (res.ok) {
-      setMessage("Saved");
+    try {
+      const slug =
+        editing.slug?.trim() ||
+        uniqueSlug(editing.title, items.filter((i) => i.id !== editing.id).map((i) => i.slug), "event");
+      await sendJson("/api/events", "POST", { ...editing, slug });
+      toast(editing.status === "published" ? "Event saved and shown on the website." : "Event saved as hidden (draft).");
       setEditing(null);
       load();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSaving(false);
     }
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this event?")) return;
-    await fetch("/api/events?id=" + encodeURIComponent(id), { method: "DELETE" });
-    load();
-  }
-
-  async function uploadImage(file: File) {
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", headers: { "x-ksl-module": "events" }, body: fd });
-    const data = await res.json();
-    if (res.ok) {
-      setEditing((e) => (e ? { ...e, image_path: data.public_url } : e));
+    const item = items.find((i) => i.id === id);
+    const ok = await confirm({
+      title: "Delete this event?",
+      message: item ? `"${item.title}" will be removed from the website for good.` : undefined,
+      confirmLabel: "Delete event",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await sendJson(`/api/events?id=${encodeURIComponent(id)}`, "DELETE");
+      toast("Event deleted.");
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
     }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-[#5b6775]">
+      <div className="flex items-center gap-2 text-[14px] text-[#5b6775]">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading events…
       </div>
     );
   }
 
+  if (editing) {
+    const set = (patch: Partial<EventRow>) => setEditing({ ...editing, ...patch });
+    return (
+      <form onSubmit={save} className="space-y-4">
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-4">
+            <FormSection title={editing.id ? "Edit event" : "New event"}>
+              <Field label="Event name">
+                <Input value={editing.title ?? ""} onChange={(e) => set({ title: e.target.value })} autoFocus={!editing.id} />
+              </Field>
+              <Field label="Theme or tagline" optional>
+                <Input value={editing.theme ?? ""} onChange={(e) => set({ theme: e.target.value })} />
+              </Field>
+              <Field label="Short description" hint="Shown on the events list before the event takes place.">
+                <Textarea rows={2} className="min-h-[70px]" value={editing.description ?? ""} onChange={(e) => set({ description: e.target.value })} />
+              </Field>
+              <Field label="What happened" optional hint="A short recap shown once the event is over.">
+                <Textarea rows={2} className="min-h-[70px]" value={editing.summary ?? ""} onChange={(e) => set({ summary: e.target.value })} />
+              </Field>
+              <Field label="Full details" optional>
+                <RichText value={editing.body_html ?? ""} onChange={(html) => set({ body_html: html })} placeholder="Programme, speakers, how to attend…" />
+              </Field>
+            </FormSection>
+          </div>
+          <div className="space-y-4">
+            <FormSection title="Visibility">
+              <VisibilitySwitch status={editing.status ?? "draft"} canPublish={canPublish} onChange={(status) => set({ status })} />
+            </FormSection>
+            <FormSection title="When and where">
+              <Field label="Date">
+                <Input type="date" value={editing.event_date ?? ""} onChange={(e) => set({ event_date: e.target.value })} />
+              </Field>
+              <FieldGrid>
+                <Field label="Starts" optional>
+                  <Input type="time" value={editing.time_start ?? ""} onChange={(e) => set({ time_start: e.target.value })} />
+                </Field>
+                <Field label="Ends" optional>
+                  <Input type="time" value={editing.time_end ?? ""} onChange={(e) => set({ time_end: e.target.value })} />
+                </Field>
+              </FieldGrid>
+              <Field label="Venue" optional>
+                <Input value={editing.venue ?? ""} onChange={(e) => set({ venue: e.target.value })} placeholder="e.g. KSL Mombasa Shipyard" />
+              </Field>
+            </FormSection>
+            <FormSection title="Cover photo">
+              <ImageField module="events" value={editing.image_path ?? ""} onChange={(image_path) => set({ image_path })} />
+            </FormSection>
+            <AdvancedSlug value={editing.slug ?? ""} onChange={(slug) => set({ slug })} />
+          </div>
+        </div>
+        <SaveBar>
+          <Button variant="secondary" onClick={() => setEditing(null)}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={saving}>
+            {saving ? "Saving…" : "Save event"}
+          </Button>
+        </SaveBar>
+      </form>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {message && <p className="text-sm font-medium text-[#0b1f3a]">{message}</p>}
-        <Button type="button" onClick={startNew}>
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={startNew}>
           <Plus className="h-4 w-4" /> New event
         </Button>
       </div>
-
-      {editing && (
-        <div className="ksl-card space-y-4 p-6">
-          <h2 className="text-[15px] font-bold text-[#0b1f3a]">
-            {editing.id ? "Edit event" : "New event"}
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Title</label>
-              <Input
-                value={editing.title ?? ""}
-                onChange={(e) =>
-                  setEditing({ ...editing, title: e.target.value, slug: slugify(e.target.value) })
-                }
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Slug</label>
-              <Input value={editing.slug ?? ""} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Event date</label>
-              <Input
-                type="date"
-                value={editing.event_date ?? ""}
-                onChange={(e) => setEditing({ ...editing, event_date: e.target.value })}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Theme / tagline</label>
-              <Input value={editing.theme ?? ""} onChange={(e) => setEditing({ ...editing, theme: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Start time (HH:MM)</label>
-              <Input value={editing.time_start ?? ""} onChange={(e) => setEditing({ ...editing, time_start: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">End time (HH:MM)</label>
-              <Input value={editing.time_end ?? ""} onChange={(e) => setEditing({ ...editing, time_end: e.target.value })} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Venue</label>
-              <Input value={editing.venue ?? ""} onChange={(e) => setEditing({ ...editing, venue: e.target.value })} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Short description</label>
-              <Input
-                value={editing.description ?? ""}
-                onChange={(e) => setEditing({ ...editing, description: e.target.value })}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Summary (past events)</label>
-              <Input value={editing.summary ?? ""} onChange={(e) => setEditing({ ...editing, summary: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Status</label>
-              <select
-                className="w-full rounded border border-[#d7dde5] bg-white px-3 py-2.5 text-sm"
-                value={editing.status ?? "draft"}
-                onChange={(e) => setEditing({ ...editing, status: e.target.value })}
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Cover image</label>
-              <Input
-                value={editing.image_path ?? ""}
-                onChange={(e) => setEditing({ ...editing, image_path: e.target.value })}
-                placeholder="URL or upload below"
-              />
-              <input
-                type="file"
-                accept="image/*"
-                className="mt-2 text-sm"
-                onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0])}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#5b6775]">Body (HTML)</label>
-              <textarea
-                className="min-h-[200px] w-full rounded border border-[#d7dde5] bg-white px-3 py-2 text-sm"
-                value={editing.body_html ?? ""}
-                onChange={(e) => setEditing({ ...editing, body_html: e.target.value })}
-              />
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button type="button" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
-            <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
-          </div>
-        </div>
-      )}
-
-      <div className="ksl-card overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-[13px]">
-          <thead className="bg-[#f4f6f8] text-xs uppercase text-[#5b6775]">
-            <tr>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Venue</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id} className="border-t border-[#eef2f6]">
-                <td className="px-4 py-3 font-medium text-[#0b1f3a]">{item.title}</td>
-                <td className="px-4 py-3 text-[#5b6775]">{item.event_date}</td>
-                <td className="px-4 py-3 text-[#5b6775]">{item.venue}</td>
-                <td className="px-4 py-3 capitalize text-[#5b6775]">{item.status}</td>
-                <td className="px-4 py-3 text-right">
-                  <button type="button" className="text-[#0b1f3a] hover:underline" onClick={() => setEditing(item)}>
-                    Edit
-                  </button>
-                  <button type="button" className="ml-3 text-red-600" onClick={() => remove(item.id)} aria-label="Delete">
-                    <Trash2 className="inline h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ItemList
+        showImages
+        items={items.map((i) => ({
+          id: i.id,
+          title: i.title,
+          subtitle: [formatDate(i.event_date), i.venue].filter(Boolean).join(" · "),
+          image: i.image_path,
+          status: i.status,
+        }))}
+        onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
+        onDelete={canDelete ? remove : undefined}
+        emptyText="No events yet. Click New event to add one."
+      />
     </div>
   );
 }

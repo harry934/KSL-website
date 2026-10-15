@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard } from "@/lib/api-auth";
+import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { slugify } from "@/lib/news";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       range_title: body.range_title ?? null,
       range_groups: Array.isArray(body.range_groups) ? body.range_groups : [],
     });
-    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     await logActivity(session.userId, "products", "update", "products_settings", "default");
     return NextResponse.json({ ok: true });
   }
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   };
 
   const { data, error: upErr } = await admin.from("products").upsert(row).select("id").single();
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   await logActivity(session.userId, "products", status === "published" ? "publish" : "save", "product", data?.id);
   return NextResponse.json({ ok: true, id: data?.id });
 }
@@ -74,10 +74,10 @@ export async function DELETE(req: NextRequest) {
   if (error || !session) return error;
 
   const id = new URL(req.url).searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
   const { error: delErr } = await createAdminClient().from("products").delete().eq("id", id);
-  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
+  if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
   await logActivity(session.userId, "products", "delete", "product", id);
   return NextResponse.json({ ok: true });
 }

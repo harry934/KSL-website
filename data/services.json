@@ -165,23 +165,23 @@
   "downloadCatalog": {
     "strategic-plan": {
       "title": "Strategic Business Plan",
-      "href": "http://10.104.4.139/corporate-documents/KSL-Strategic-Business-Plan-2024-v21-26022025-wo.pdf"
+      "href": "docs/KSL-Strategic-Business-Plan-2024-v21-26022025-wo.pdf"
     },
     "brochure": {
       "title": "KSL Brochure",
-      "href": "http://10.104.4.139/corporate-documents/KSL-Brochure-version-28-NOV-2024.pdf"
+      "href": "docs/KSL-Brochure-version-28-NOV-2024.pdf"
     },
     "product-catalogue": {
       "title": "Product Catalogue",
-      "href": "http://10.104.4.139/corporate-documents/KSL-Brochure-version-28-NOV-2024.pdf"
+      "href": "docs/KSL-Brochure-version-28-NOV-2024.pdf"
     },
     "charter-en": {
       "title": "Service Delivery Charter (English)",
-      "href": "http://10.104.4.139/corporate-documents/Service-Delivery-Charter-2.pdf"
+      "href": "docs/Service-Delivery-Charter-2.pdf"
     },
     "complaints": {
       "title": "Customer Complaint Form",
-      "href": "http://10.104.4.139/corporate-documents/Complaints-lodging-form.docx"
+      "href": "docs/Complaints-lodging-form.docx"
     }
   },
   "source": "http://10.104.4.139/services/ (Elementor popups)"

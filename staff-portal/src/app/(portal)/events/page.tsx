@@ -12,7 +12,7 @@ export default async function EventsPage() {
 
   return (
     <>
-      <PageHeader title="Events" description="Upcoming and past events on the news room and event detail pages." />
+      <PageHeader title="Events" description="Upcoming and past events shown in the News Room." />
       <EventsEditor />
     </>
   );

@@ -1,48 +1,91 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, Megaphone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, Notice, Textarea } from "@/components/ui/form-bits";
+import { Field, FieldGrid, FormSection, Notice, Select, Switch } from "@/components/ui/form-bits";
+import { RowList } from "@/components/ui/row-list";
+import { useFeedback } from "@/components/ui/feedback";
+import { cn } from "@/lib/cn";
+import { sendJson } from "@/lib/upload-client";
 import {
   DEFAULT_SITE_SETTINGS,
-  type LocationEntry,
+  type AnnouncementSettings,
+  type BannerStyle,
   type SiteSettingKey,
   type SiteSettings,
 } from "@/lib/site-settings";
 
-function locationsToText(locations: LocationEntry[]) {
-  return locations.map((l) => `${l.name} | ${l.address}`).join("\n");
+const BANNER_STYLES: { value: BannerStyle; label: string }[] = [
+  { value: "navy", label: "Navy blue with gold (recommended)" },
+  { value: "gold", label: "Gold with navy" },
+  { value: "light", label: "Light and calm" },
+];
+
+const TAG_SUGGESTIONS = ["Announcement", "Notice", "Tender", "Vacancy", "Event", "New"];
+
+function todayInNairobi() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Nairobi" }).format(new Date());
 }
 
-function textToLocations(text: string): LocationEntry[] {
-  return text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [name, ...rest] = line.split("|");
-      return { name: name.trim(), address: rest.join("|").trim() };
-    });
+function formatDay(iso: string) {
+  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(
+    new Date(`${iso}T12:00:00`)
+  );
+}
+
+function BannerPreview({ a }: { a: AnnouncementSettings }) {
+  const text = a.text.trim() || "Your message will appear here.";
+  return (
+    <div className={cn("kb-preview", `is-${a.style}`, a.scroll && "is-ticker")}>
+      <div className="kb-preview-inner">
+        <span className="kb-preview-icon">
+          <Megaphone className="h-5 w-5" />
+        </span>
+        <span className="kb-preview-tag">{a.label.trim() || "Announcement"}</span>
+        <div className="kb-preview-body">
+          {a.scroll ? (
+            <div className="kb-preview-track">
+              <p className="kb-preview-text">{text}</p>
+              <p className="kb-preview-text" aria-hidden>
+                {text}
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="kb-preview-text">{text}</p>
+              {a.endsOn && <span className="kb-preview-until">Until {formatDay(a.endsOn)}</span>}
+            </>
+          )}
+        </div>
+        {a.linkLabel.trim() && a.linkUrl.trim() && (
+          <span className="kb-preview-cta">
+            {a.linkLabel.trim()}
+            <ArrowRight className="h-4 w-4" />
+          </span>
+        )}
+      </div>
+      <span className="kb-preview-close" aria-hidden>
+        <X className="h-4 w-4" />
+      </span>
+    </div>
+  );
 }
 
 export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
+  const { toast } = useFeedback();
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
-  const [locationsText, setLocationsText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState<SiteSettingKey | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/site-settings");
-    const data = await res.json();
-    if (res.ok) {
+    try {
+      const data = await sendJson("/api/site-settings", "GET");
       setSettings(data.settings);
-      setLocationsText(locationsToText(data.settings.footer.locations ?? []));
-    } else {
-      setError(data.error ?? "Failed to load settings");
+    } catch (err) {
+      setLoadError((err as Error).message);
     }
     setLoading(false);
   }, []);
@@ -52,22 +95,34 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
   }, [load]);
 
   async function save(key: SiteSettingKey) {
-    setSaving(key);
-    setError(null);
-    setMessage(null);
-    const value = key === "footer" ? { ...settings.footer, locations: textToLocations(locationsText) } : settings[key];
-    const res = await fetch("/api/site-settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, value }),
-    });
-    const data = await res.json().catch(() => ({}));
-    setSaving(null);
-    if (!res.ok) {
-      setError(data.error ?? "Save failed");
-      return;
+    let value: unknown = settings[key];
+    if (key === "footer") {
+      value = {
+        ...settings.footer,
+        locations: settings.footer.locations
+          .map((l) => ({ name: l.name.trim(), address: l.address.trim() }))
+          .filter((l) => l.name || l.address),
+      };
     }
-    setMessage("Saved. The public website picks this up within about a minute.");
+    if (key === "announcement") {
+      const a = settings.announcement;
+      if (a.enabled && !a.text.trim()) {
+        toast("Write a message before switching the banner on.", "error");
+        return;
+      }
+      if (a.linkLabel.trim() && !a.linkUrl.trim()) {
+        toast("Add the web link the button should open, or clear the button text.", "error");
+        return;
+      }
+    }
+    setSaving(key);
+    try {
+      await sendJson("/api/site-settings", "POST", { key, value });
+      toast("Saved. The website updates within about a minute.");
+    } catch (err) {
+      toast((err as Error).message, "error");
+    }
+    setSaving(null);
   }
 
   if (loading) {
@@ -78,52 +133,148 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
     );
   }
 
+  if (loadError) return <Notice kind="error">{loadError}</Notice>;
+
   const set = <K extends SiteSettingKey>(key: K, patch: Partial<SiteSettings[K]>) =>
     setSettings((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
 
   const saveButton = (key: SiteSettingKey) =>
     canEdit && (
-      <Button type="button" onClick={() => save(key)} disabled={saving !== null}>
-        {saving === key ? "Saving…" : "Save"}
-      </Button>
+      <div className="flex justify-end border-t border-[#eef1f4] pt-4">
+        <Button variant="primary" onClick={() => save(key)} disabled={saving !== null}>
+          {saving === key ? "Saving…" : "Save"}
+        </Button>
+      </div>
     );
 
-  return (
-    <div className="flex flex-col gap-[14px]">
-      {error && <Notice kind="error">{error}</Notice>}
-      {message && <Notice kind="success">{message}</Notice>}
+  const a = settings.announcement;
+  const expired = !!a.endsOn && a.endsOn < todayInNairobi();
 
-      <section className="ksl-card space-y-4 border-t-[3px] border-t-[#c5a028] p-[18px]">
-        <h2 className="text-[15px] font-bold text-[#0b1f3a]">Announcement banner</h2>
-        <label className="flex items-center gap-2 text-[13px] text-[#1f2933]">
-          <input
-            type="checkbox"
-            className="h-4 w-4 accent-[#0b1f3a]"
-            checked={settings.announcement.enabled}
-            onChange={(e) => set("announcement", { enabled: e.target.checked })}
+  return (
+    <fieldset disabled={!canEdit} className="flex min-w-0 flex-col gap-[18px]">
+      {!canEdit && (
+        <Notice kind="info">You can look at these settings. Only an administrator can change them.</Notice>
+      )}
+
+      <FormSection
+        title="Website banner"
+        description="A wide strip just under the menu on every page. Use it for tenders, vacancies, events or important notices."
+      >
+        <div className="space-y-2">
+          <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-[#8a96a5]">Preview</p>
+          <div className="overflow-hidden rounded-[10px] border border-[#e3e8ee] bg-white">
+            <div className="flex items-center gap-2 border-b border-[#eef1f4] px-4 py-2.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#e3e8ee]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#e3e8ee]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#e3e8ee]" />
+              <span className="ml-3 text-[12px] font-semibold text-[#0b1f3a]">Kenya Shipyards Limited</span>
+              <span className="ml-auto hidden gap-4 text-[11.5px] text-[#6b7785] sm:flex">
+                <span>Home</span>
+                <span>About</span>
+                <span>Services</span>
+                <span>Contact</span>
+              </span>
+            </div>
+            <BannerPreview a={a} />
+            <div className="h-10 bg-[linear-gradient(180deg,#f4f6f9,#fff)]" />
+          </div>
+          {!a.enabled && (
+            <p className="text-[12.5px] text-[#6b7785]">The banner is switched off, so visitors will not see it.</p>
+          )}
+          {a.enabled && expired && (
+            <p className="text-[12.5px] text-[#b42318]">
+              The end date has passed, so visitors no longer see this banner. Change or clear the date to show it again.
+            </p>
+          )}
+        </div>
+
+        <Switch
+          checked={a.enabled}
+          onChange={(on) => set("announcement", { enabled: on })}
+          label={a.enabled ? "Banner is on" : "Banner is off"}
+          hint="Switch on to show the banner on every page of the website."
+        />
+
+        <Field label="Message" hint="Keep it short: one sentence works best.">
+          <Input
+            value={a.text}
+            maxLength={220}
+            placeholder="e.g. Tender for supply of marine paint is now open. Closing date 30 November."
+            onChange={(e) => set("announcement", { text: e.target.value })}
           />
-          Show a banner at the top of every public page
-        </label>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Message" className="sm:col-span-2">
-            <Input value={settings.announcement.text} onChange={(e) => set("announcement", { text: e.target.value })} />
-          </Field>
-          <Field label="Link label (optional)">
+        </Field>
+
+        <FieldGrid>
+          <Field label="Small tag" hint="The short word at the start, such as Tender or Vacancy.">
             <Input
-              value={settings.announcement.linkLabel}
+              value={a.label}
+              maxLength={24}
+              list="banner-tag-suggestions"
+              placeholder="Announcement"
+              onChange={(e) => set("announcement", { label: e.target.value })}
+            />
+            <datalist id="banner-tag-suggestions">
+              {TAG_SUGGESTIONS.map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
+          </Field>
+          <Field label="Colours">
+            <Select
+              value={a.style}
+              onChange={(e) => set("announcement", { style: e.target.value as BannerStyle })}
+            >
+              {BANNER_STYLES.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Button text" optional hint='For example "Read more" or "Apply now".'>
+            <Input
+              value={a.linkLabel}
+              maxLength={30}
               onChange={(e) => set("announcement", { linkLabel: e.target.value })}
             />
           </Field>
-          <Field label="Link URL (optional)">
-            <Input value={settings.announcement.linkUrl} onChange={(e) => set("announcement", { linkUrl: e.target.value })} />
+          <Field label="Button opens" optional hint="A web address, or a page on this site such as careers.html.">
+            <Input
+              value={a.linkUrl}
+              autoCapitalize="none"
+              spellCheck={false}
+              placeholder="https://… or careers.html"
+              onChange={(e) => set("announcement", { linkUrl: e.target.value.trim() })}
+            />
           </Field>
-        </div>
+          <Field label="Stop showing after" optional hint="The banner hides itself after this day. Leave empty to keep it up.">
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={a.endsOn}
+                onChange={(e) => set("announcement", { endsOn: e.target.value })}
+              />
+              {a.endsOn && (
+                <Button variant="ghost" onClick={() => set("announcement", { endsOn: "" })}>
+                  Clear
+                </Button>
+              )}
+            </div>
+          </Field>
+          <div className="sm:pt-7">
+            <Switch
+              checked={a.scroll}
+              onChange={(on) => set("announcement", { scroll: on })}
+              label="Moving text"
+              hint="The message glides across like a news ticker."
+            />
+          </div>
+        </FieldGrid>
         {saveButton("announcement")}
-      </section>
+      </FormSection>
 
-      <section className="ksl-card space-y-4 p-[18px]">
-        <h2 className="text-[15px] font-bold text-[#0b1f3a]">Contact details</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+      <FormSection title="Contact details" description="Shown at the top of every page and in the footer.">
+        <FieldGrid>
           <Field label="Inquiries phone">
             <Input value={settings.contact.phone} onChange={(e) => set("contact", { phone: e.target.value })} />
           </Field>
@@ -142,47 +293,59 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
               onChange={(e) => set("contact", { postalAddress: e.target.value })}
             />
           </Field>
-          <Field label="WhatsApp number" hint="Digits only with country code, e.g. 254726277377">
+          <Field label="WhatsApp number" hint="Numbers only, starting with the country code. For example 254726277377.">
             <Input
               value={settings.contact.whatsapp}
+              inputMode="numeric"
               onChange={(e) => set("contact", { whatsapp: e.target.value.replace(/\D/g, "") })}
             />
           </Field>
-        </div>
+        </FieldGrid>
         {saveButton("contact")}
-      </section>
+      </FormSection>
 
-      <section className="ksl-card space-y-4 p-[18px]">
-        <h2 className="text-[15px] font-bold text-[#0b1f3a]">Social media</h2>
+      <FormSection title="Social media" description="Leave a box empty to hide that icon on the website.">
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Facebook">
+          <Field label="Facebook page">
             <Input value={settings.social.facebook} onChange={(e) => set("social", { facebook: e.target.value })} />
           </Field>
-          <Field label="X (Twitter)">
+          <Field label="X (Twitter) page">
             <Input value={settings.social.x} onChange={(e) => set("social", { x: e.target.value })} />
           </Field>
-          <Field label="Instagram">
+          <Field label="Instagram page">
             <Input value={settings.social.instagram} onChange={(e) => set("social", { instagram: e.target.value })} />
           </Field>
         </div>
         {saveButton("social")}
-      </section>
+      </FormSection>
 
-      <section className="ksl-card space-y-4 p-[18px]">
-        <h2 className="text-[15px] font-bold text-[#0b1f3a]">Footer</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+      <FormSection title="Footer" description="The dark section at the bottom of every page.">
+        <FieldGrid>
           <Field label="Footer heading">
             <Input value={settings.footer.tagline} onChange={(e) => set("footer", { tagline: e.target.value })} />
           </Field>
           <Field label="Copyright line">
             <Input value={settings.footer.copyright} onChange={(e) => set("footer", { copyright: e.target.value })} />
           </Field>
-          <Field label="Locations" hint='One per line: "Mombasa Shipyard | Next to Kenya Navy Base, Mtongwe."' className="sm:col-span-2">
-            <Textarea value={locationsText} onChange={(e) => setLocationsText(e.target.value)} />
-          </Field>
+        </FieldGrid>
+        <div>
+          <p className="mb-1.5 text-[13px] font-semibold text-[#1f2933]">Our locations</p>
+          <RowList
+            items={settings.footer.locations}
+            onChange={(locations) => set("footer", { locations })}
+            newItem={() => ({ name: "", address: "" })}
+            addLabel="Add location"
+            emptyText="No locations yet."
+            renderRow={(loc, update) => (
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+                <Input value={loc.name} placeholder="Place name" onChange={(e) => update({ name: e.target.value })} />
+                <Input value={loc.address} placeholder="Where it is" onChange={(e) => update({ address: e.target.value })} />
+              </div>
+            )}
+          />
         </div>
         {saveButton("footer")}
-      </section>
-    </div>
+      </FormSection>
+    </fieldset>
   );
 }

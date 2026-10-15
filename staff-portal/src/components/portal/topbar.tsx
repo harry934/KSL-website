@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 
 const EXTRA_TITLES: Record<string, string> = {
   "/": "Dashboard",
-  "/account": "Account settings",
+  "/account": "My account",
   "/activity": "Activity log",
 };
 
@@ -65,7 +65,7 @@ export function Topbar({
     window.location.href = "/login";
   }
 
-  const role = session.isSuperAdmin ? "Super admin" : "Content agent";
+  const role = session.isSuperAdmin ? "Administrator" : "Agent";
 
   return (
     <header className="app-topbar">
@@ -102,26 +102,26 @@ export function Topbar({
         {menuOpen && (
           <div
             role="menu"
-            className="absolute right-0 top-[calc(100%+6px)] z-50 w-56 border border-[#d7dde5] border-t-[3px] border-t-[#c5a028] bg-white py-1 shadow-[0_10px_24px_rgba(11,31,58,0.16)]"
+            className="absolute right-0 top-[calc(100%+6px)] z-50 w-60 overflow-hidden rounded-[10px] border border-[#e3e8ee] bg-white p-1 shadow-[0_12px_28px_rgba(11,31,58,0.16)]"
           >
-            <div className="border-b border-[#d7dde5] px-3 py-2">
-              <p className="truncate text-[13px] font-semibold text-[#0b1f3a]">{session.displayName}</p>
-              <p className="truncate text-[11px] text-[#5b6775]">@{session.username}</p>
+            <div className="mb-1 border-b border-[#eef1f4] px-3 py-2.5">
+              <p className="truncate text-[14px] font-semibold text-[#0b1f3a]">{session.displayName}</p>
+              <p className="truncate text-[12px] text-[#6b7785]">Username: {session.username}</p>
             </div>
             <Link
               href="/account"
               role="menuitem"
-              className="flex items-center gap-2 px-3 py-2 text-[13px] text-[#1f2933] hover:bg-[#f4f6f8]"
+              className="flex items-center gap-2 rounded-[6px] px-3 py-2 text-[14px] text-[#1f2933] hover:bg-[#f4f6f8]"
               onClick={() => setMenuOpen(false)}
             >
-              <KeyRound className="h-4 w-4" />
-              Account &amp; password
+              <KeyRound className="h-4 w-4 text-[#5b6775]" />
+              My account and password
             </Link>
             <button
               type="button"
               role="menuitem"
               onClick={signOut}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-[#b42318] hover:bg-[#f4f6f8]"
+              className="flex w-full items-center gap-2 rounded-[6px] px-3 py-2 text-left text-[14px] text-[#b42318] hover:bg-[#fdf1f0]"
             >
               <LogOut className="h-4 w-4" />
               Sign out

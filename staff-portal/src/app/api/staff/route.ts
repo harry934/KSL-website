@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity } from "@/lib/api-auth";
-import { normalizeUsername, validateEmail, validatePassword, validateUsername } from "@/lib/accounts";
-import { authEmailFor } from "@/lib/auth-server";
+import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
+import { authEmailFor, generateOneTimePassword } from "@/lib/auth-server";
 import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -49,7 +49,7 @@ export async function GET() {
     )
     .order("created_at", { ascending: false });
 
-  if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 });
+  if (dbError) return NextResponse.json({ error: "Could not load the staff list." }, { status: 500 });
   return NextResponse.json({ staff: data ?? [] });
 }
 
@@ -60,10 +60,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const username = normalizeUsername(body.username);
   const contactEmail = String(body.email ?? "").trim().toLowerCase() || null;
-  const password = String(body.password ?? "");
+  const password = generateOneTimePassword();
   const displayName = String(body.displayName ?? "").trim() || username;
 
-  const problem = validateUsername(username) ?? validateEmail(contactEmail ?? "") ?? validatePassword(password);
+  const problem = validateUsername(username) ?? validateEmail(contactEmail ?? "");
   if (problem) return NextResponse.json({ error: problem }, { status: 400 });
 
   const admin = createAdminClient();
@@ -78,8 +78,8 @@ export async function POST(req: NextRequest) {
 
   if (createError || !created.user) {
     const message = /already/i.test(createError?.message ?? "")
-      ? "That email is already used by another account."
-      : createError?.message ?? "Create failed";
+      ? "That contact email is already used by another account."
+      : "Could not create the account. Please try again.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
@@ -97,14 +97,14 @@ export async function POST(req: NextRequest) {
 
   if (profileError) {
     await admin.auth.admin.deleteUser(userId);
-    return NextResponse.json({ error: profileError.message }, { status: 500 });
+    return NextResponse.json({ error: "Could not create the account. Please try again." }, { status: 500 });
   }
 
   const rows = permissionRows(userId, body.permissions);
   if (rows.length) await admin.from("admin_module_permissions").insert(rows);
 
   await logActivity(session.userId, "staff", "create", "admin_profile", userId, { username });
-  return NextResponse.json({ id: userId });
+  return NextResponse.json({ id: userId, oneTimePassword: password });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -132,26 +132,37 @@ export async function PATCH(req: NextRequest) {
     const rows = permissionRows(id, body.permissions);
     if (rows.length) {
       const { error: insErr } = await admin.from("admin_module_permissions").insert(rows);
-      if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+      if (insErr) return NextResponse.json({ error: "Could not save what this agent can do." }, { status: 500 });
     }
   } else if (action === "profile") {
-    const displayName = String(body.displayName ?? "").trim() || target.username;
+    const username = body.username === undefined ? target.username : normalizeUsername(body.username);
+    const displayName = String(body.displayName ?? "").trim() || username;
     const contactEmail = String(body.email ?? "").trim().toLowerCase() || null;
-    const emailProblem = validateEmail(contactEmail ?? "");
-    if (emailProblem) return NextResponse.json({ error: emailProblem }, { status: 400 });
+    const problem = validateUsername(username) ?? validateEmail(contactEmail ?? "");
+    if (problem) return NextResponse.json({ error: problem }, { status: 400 });
+    if (username !== target.username) {
+      const { data: taken } = await admin.from("admin_profiles").select("id").eq("username", username).neq("id", id).maybeSingle();
+      if (taken) return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
+    }
     const { error: authErr } = await admin.auth.admin.updateUserById(id, {
-      email: authEmailFor(target.username, contactEmail),
+      email: authEmailFor(username, contactEmail),
       email_confirm: true,
     });
-    if (authErr) return NextResponse.json({ error: authErr.message }, { status: 400 });
-    await admin.from("admin_profiles").update({ display_name: displayName, contact_email: contactEmail }).eq("id", id);
+    if (authErr) {
+      const message = /already/i.test(authErr.message) ? "That contact email is already used by another account." : "Could not save the changes.";
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    await admin
+      .from("admin_profiles")
+      .update({ username, display_name: displayName, contact_email: contactEmail })
+      .eq("id", id);
   } else if (action === "reset_password") {
-    const password = String(body.password ?? "");
-    const problem = validatePassword(password);
-    if (problem) return NextResponse.json({ error: problem }, { status: 400 });
+    const password = generateOneTimePassword();
     const { error: authErr } = await admin.auth.admin.updateUserById(id, { password });
-    if (authErr) return NextResponse.json({ error: authErr.message }, { status: 400 });
+    if (authErr) return NextResponse.json({ error: "Could not reset the password. Please try again." }, { status: 400 });
     await admin.from("admin_profiles").update({ must_change_password: true }).eq("id", id);
+    await logActivity(session.userId, "staff", "reset password", "admin_profile", id, { username: target.username });
+    return NextResponse.json({ ok: true, oneTimePassword: password });
   } else if (action === "set_active") {
     const active = !!body.active;
     await admin.from("admin_profiles").update({ is_active: active }).eq("id", id);

@@ -12,7 +12,7 @@ export default async function NewsPage() {
 
   return (
     <>
-      <PageHeader title="News" description="Articles shown on the home page, news room, and article pages." />
+      <PageHeader title="News" description="News stories shown on the home page and in the News Room." />
       <NewsEditor />
     </>
   );

@@ -12,7 +12,7 @@ export default async function CareersPage() {
 
   return (
     <>
-      <PageHeader title="Careers" description="Vacancies, internships, and how candidates should apply." />
+      <PageHeader title="Careers" description="Job openings, internships and how to apply." />
       <CareersEditor />
     </>
   );

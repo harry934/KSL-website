@@ -12,7 +12,7 @@ export default async function DownloadsPage() {
 
   return (
     <>
-      <PageHeader title="Downloads" description="Corporate documents on the downloads page and site search." />
+      <PageHeader title="Downloads" description="Documents visitors can open or download from the Downloads page." />
       <DownloadsEditor />
     </>
   );
