@@ -1,5 +1,9 @@
 # KSL website + content portal — deployment guide
 
+**GitHub repo:** https://github.com/harry934/KSL-website  
+
+**Quick Vercel clicks:** [VERCEL-GITHUB-SETUP.md](./VERCEL-GITHUB-SETUP.md)
+
 This repo has **two separate apps** that share one **Supabase** project. They deploy to **two different Vercel projects** (or two hosts). They do **not** share a folder on the server.
 
 ## Architecture (what lives where)
