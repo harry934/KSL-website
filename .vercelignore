@@ -1,0 +1,6 @@
+.git
+**/node_modules
+**/.next
+staff-portal/.next
+staff-portal/node_modules
+data/ksl-*-scrape.html

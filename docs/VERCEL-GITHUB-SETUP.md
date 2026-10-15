@@ -29,7 +29,10 @@ Vercel cannot be completed from this machine without **your** Vercel login. Use 
 
 1. **[Import the same repo again](https://vercel.com/new/import?s=https://github.com/harry934/KSL-website)** as a **second** project.
 2. **Project name:** use something **unguessable**, e.g. `ksl-content-7f3a9c` — not `admin` or `staff`.
-3. **Root Directory:** click **Edit** → set to **`staff-portal`**.
+3. **Root Directory:** click **Edit** → set to **`staff-portal`** (the **folder name**, not `main` and not empty).
+
+> **Wrong root directory?** Vercel → your portal project → **Settings → General → Root Directory** → `staff-portal` → Save → **Redeploy**.  
+> Keep **`ksl-website`** (public site) on **empty** root — never `staff-portal`.
 4. **Framework Preset:** **Next.js** (auto).
 5. **Environment variables** (Production + Preview) — from Supabase → Project Settings → API:
 
