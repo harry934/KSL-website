@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity } from "@/lib/api-auth";
 import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
-import { authEmailFor, generateOneTimePassword } from "@/lib/auth-server";
+import { authEmailFor, generateOneTimePassword, suggestUsername } from "@/lib/auth-server";
 import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 import { avatarUrl } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
@@ -63,17 +63,24 @@ export async function POST(req: NextRequest) {
   if (error || !session) return error;
 
   const body = await req.json().catch(() => ({}));
-  const username = normalizeUsername(body.username);
   const contactEmail = String(body.email ?? "").trim().toLowerCase() || null;
   const password = generateOneTimePassword();
-  const displayName = String(body.displayName ?? "").trim() || username;
-
-  const problem = validateUsername(username) ?? validateEmail(contactEmail ?? "");
-  if (problem) return NextResponse.json({ error: problem }, { status: 400 });
+  const displayName = String(body.displayName ?? "").trim();
+  if (!displayName) return NextResponse.json({ error: "Write the agent's full name." }, { status: 400 });
+  const emailProblem = validateEmail(contactEmail ?? "");
+  if (emailProblem) return NextResponse.json({ error: emailProblem }, { status: 400 });
 
   const admin = createAdminClient();
-  const { data: taken } = await admin.from("admin_profiles").select("id").eq("username", username).maybeSingle();
-  if (taken) return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
+  let username = "";
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const candidate = suggestUsername(displayName);
+    const { data: taken } = await admin.from("admin_profiles").select("id").eq("username", candidate).maybeSingle();
+    if (!taken) {
+      username = candidate;
+      break;
+    }
+  }
+  if (!username) return NextResponse.json({ error: "Could not create a username. Please try again." }, { status: 500 });
 
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email: authEmailFor(username, contactEmail),
@@ -97,6 +104,7 @@ export async function POST(req: NextRequest) {
     is_super_admin: false,
     is_active: true,
     must_change_password: true,
+    must_change_username: true,
     created_by: session.userId,
   });
 
@@ -109,7 +117,7 @@ export async function POST(req: NextRequest) {
   if (rows.length) await admin.from("admin_module_permissions").insert(rows);
 
   await logActivity(session.userId, "staff", "create", "admin_profile", userId, { username });
-  return NextResponse.json({ id: userId, oneTimePassword: password });
+  return NextResponse.json({ id: userId, username, oneTimePassword: password });
 }
 
 export async function PATCH(req: NextRequest) {

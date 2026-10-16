@@ -8,7 +8,7 @@ import { Field, FieldGrid, FormSection, SaveBar, Textarea, VisibilitySwitch } fr
 import { ItemList } from "@/components/ui/item-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
-import { moveItem } from "@/lib/list-utils";
+import { reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import type { CareerListingRow } from "@/lib/careers";
 
@@ -101,9 +101,9 @@ export function CareersEditor() {
     }
   }
 
-  async function move(kind: Kind, index: number, delta: number) {
+  async function move(kind: Kind, from: number, to: number) {
     const group = listings.filter((l) => l.kind === kind);
-    const updated = moveItem(group, index, delta).map((l, i) => ({ ...l, sort_order: i }));
+    const updated = reorderItem(group, from, to).map((l, i) => ({ ...l, sort_order: i }));
     const before = new Map(listings.map((l) => [l.id, l.sort_order]));
     const byId = new Map(updated.map((l) => [l.id, l]));
     setListings((list) =>
@@ -207,7 +207,7 @@ export function CareersEditor() {
               }))}
               onEdit={(id) => setEditing(listings.find((l) => l.id === id) ?? null)}
               onDelete={canDelete ? remove : undefined}
-              onMove={(index, delta) => move(kind, index, delta)}
+              onReorder={(from, to) => move(kind, from, to)}
               emptyText={kind === "vacancy" ? "No job openings right now." : "No internships right now."}
             />
           </div>

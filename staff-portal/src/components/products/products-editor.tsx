@@ -9,7 +9,6 @@ import { FileField } from "@/components/ui/file-field";
 import { ItemList } from "@/components/ui/item-list";
 import { RowList } from "@/components/ui/row-list";
 import {
-  AdvancedSlug,
   ChoiceField,
   Field,
   FieldGrid,
@@ -20,7 +19,7 @@ import {
 } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { slugify } from "@/lib/news";
-import { moveItem, uniqueSlug } from "@/lib/list-utils";
+import { reorderItem, uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import type { ProductRow, ProductsSettings, Spec } from "@/lib/products";
 
@@ -35,6 +34,15 @@ const EMPTY_SETTINGS: ProductsSettings = {
   range_title: "",
   range_groups: [],
 };
+
+function productCategories(items: ProductRow[]) {
+  const names: string[] = [];
+  for (const item of items) {
+    const name = item.category_label || item.category || "General";
+    if (!names.includes(name)) names.push(name);
+  }
+  return names;
+}
 
 function SpecRows({ specs, onChange, addLabel }: { specs: Spec[]; onChange: (specs: Spec[]) => void; addLabel: string }) {
   return (
@@ -168,12 +176,14 @@ export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean;
     }
   }
 
-  async function move(index: number, delta: number) {
-    const next = moveItem(items, index, delta).map((item, i) => ({ ...item, sort_order: i }));
-    const before = new Map(items.map((i) => [i.id, i.sort_order]));
-    setItems(next);
+  async function move(category: string, from: number, to: number) {
+    const group = items.filter((item) => (item.category_label || item.category || "General") === category);
+    const updated = reorderItem(group, from, to).map((item, i) => ({ ...item, sort_order: i }));
+    const before = new Map(group.map((item) => [item.id, item.sort_order]));
+    const byId = new Map(updated.map((item) => [item.id, item]));
+    setItems((list) => list.map((item) => byId.get(item.id) ?? item));
     try {
-      await Promise.all(next.filter((i) => before.get(i.id) !== i.sort_order).map((i) => sendJson("/api/products", "POST", i)));
+      await Promise.all(updated.filter((item) => before.get(item.id) !== item.sort_order).map((item) => sendJson("/api/products", "POST", item)));
     } catch (err) {
       toast((err as Error).message, "error");
       load();
@@ -247,7 +257,6 @@ export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean;
                 <Input value={editing.image_alt ?? ""} onChange={(e) => set({ image_alt: e.target.value })} />
               </Field>
             </FormSection>
-            <AdvancedSlug value={editing.slug ?? ""} onChange={(slug) => set({ slug })} />
           </div>
         </div>
         <SaveBar>
@@ -273,20 +282,34 @@ export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean;
             <Plus className="h-4 w-4" /> New product
           </Button>
         </div>
-        <ItemList
-          showImages
-          items={items.map((i) => ({
-            id: i.id,
-            title: i.name,
-            subtitle: [i.category_label || i.category, i.eyebrow].filter(Boolean).join(" · "),
-            image: i.image_path,
-            status: i.status,
-          }))}
-          onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
-          onDelete={canDelete ? remove : undefined}
-          onMove={move}
-          emptyText="No products yet. Click New product to add one."
-        />
+        {items.length === 0 ? (
+          <ItemList items={[]} onEdit={() => undefined} emptyText="No products yet. Click New product to add one." />
+        ) : (
+          <div className="space-y-5">
+            {productCategories(items).map((category) => {
+              const group = items.filter((item) => (item.category_label || item.category || "General") === category);
+              return (
+                <div key={category}>
+                  <h3 className="mb-2 text-[13px] font-semibold uppercase tracking-[0.06em] text-[#5b6775]">{category}</h3>
+                  <ItemList
+                    showImages
+                    items={group.map((i) => ({
+                      id: i.id,
+                      title: i.name,
+                      subtitle: i.eyebrow,
+                      image: i.image_path,
+                      status: i.status,
+                    }))}
+                    onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
+                    onDelete={canDelete ? remove : undefined}
+                    onReorder={(from, to) => move(category, from, to)}
+                    emptyText="No products in this category."
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <FormSection title="Page text" description="The words at the top of the Products page.">

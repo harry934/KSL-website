@@ -573,6 +573,72 @@ a.kpi-card:focus-visible {
   --kb-icon: #0b1f3a;
   --kb-wave: rgba(11, 31, 58, 0.06);
 }
+.kb-preview.is-kenya {
+  --kb-bg-1: #0c6b3a;
+  --kb-bg-2: #12824a;
+  --kb-text: #fff;
+  --kb-muted: rgba(255, 255, 255, 0.82);
+  --kb-tag-bg: #bb1e24;
+  --kb-tag-text: #fff;
+  --kb-cta-bg: #111;
+  --kb-cta-text: #fff;
+  --kb-icon-bg: rgba(255, 255, 255, 0.14);
+  --kb-icon: #fff;
+  --kb-wave: rgba(255, 255, 255, 0.1);
+}
+.kb-preview.is-alert {
+  --kb-bg-1: #8d1d24;
+  --kb-bg-2: #c43740;
+  --kb-text: #fff;
+  --kb-muted: rgba(255, 255, 255, 0.82);
+  --kb-tag-bg: #fff;
+  --kb-tag-text: #8d1d24;
+  --kb-cta-bg: #fff;
+  --kb-cta-text: #8d1d24;
+  --kb-icon-bg: rgba(255, 255, 255, 0.16);
+  --kb-icon: #fff;
+  --kb-wave: rgba(255, 255, 255, 0.12);
+}
+.kb-preview.is-forest {
+  --kb-bg-1: #14382a;
+  --kb-bg-2: #1f6b48;
+  --kb-text: #fff;
+  --kb-muted: rgba(255, 255, 255, 0.8);
+  --kb-tag-bg: #d7b15a;
+  --kb-tag-text: #14382a;
+  --kb-cta-bg: #d7b15a;
+  --kb-cta-text: #14382a;
+  --kb-icon-bg: rgba(255, 255, 255, 0.12);
+  --kb-icon: #d7b15a;
+  --kb-wave: rgba(255, 255, 255, 0.08);
+}
+.kb-preview.is-midnight {
+  --kb-bg-1: #070d18;
+  --kb-bg-2: #16243d;
+  --kb-text: #f7f4ea;
+  --kb-muted: rgba(247, 244, 234, 0.72);
+  --kb-tag-bg: #c5a028;
+  --kb-tag-text: #070d18;
+  --kb-cta-bg: #c5a028;
+  --kb-cta-text: #070d18;
+  --kb-icon-bg: rgba(197, 160, 40, 0.16);
+  --kb-icon: #c5a028;
+  --kb-wave: rgba(197, 160, 40, 0.16);
+}
+.kb-preview.is-framed {
+  --kb-bg-1: #fff;
+  --kb-bg-2: #f7f8fb;
+  --kb-text: #0b1f3a;
+  --kb-muted: #4a5868;
+  --kb-tag-bg: #0b1f3a;
+  --kb-tag-text: #fff;
+  --kb-cta-bg: #0b1f3a;
+  --kb-cta-text: #fff;
+  --kb-icon-bg: rgba(11, 31, 58, 0.08);
+  --kb-icon: #0b1f3a;
+  --kb-wave: rgba(11, 31, 58, 0.05);
+  box-shadow: inset 0 0 0 2px #0b1f3a;
+}
 .kb-preview::before {
   content: "";
   position: absolute;
@@ -593,7 +659,7 @@ a.kpi-card:focus-visible {
   left: -40%;
   width: 30%;
   pointer-events: none;
-  background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.16) 50%, transparent 100%);
+  background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.08) 50%, transparent 100%);
   transform: skewX(-18deg);
   animation: kb-shine 6.5s ease-in-out 1s infinite;
 }
@@ -601,7 +667,7 @@ a.kpi-card:focus-visible {
   position: relative;
   z-index: 1;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 10px 14px;
   padding: 12px 48px 12px 16px;

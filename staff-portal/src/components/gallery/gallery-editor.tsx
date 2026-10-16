@@ -1,14 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Pencil, Plus, Star, Trash2, Upload } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { GripVertical, Loader2, Pencil, Plus, Star, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { EmptyState, Field, FieldGrid, FormSection, GridOrder, MoveButtons, Select, Switch, Textarea } from "@/components/ui/form-bits";
+import { EmptyState, Field, FieldGrid, FormSection, Select, Switch, Textarea } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { GALLERY_CATEGORIES, photoSrc, youtubeIdFrom, type GalleryRow, type GalleryVideoRow } from "@/lib/gallery";
-import { moveItem } from "@/lib/list-utils";
+import { reorderItem } from "@/lib/list-utils";
 import { siteAssetUrl } from "@/lib/site-url";
 import { sendJson, uploadFile } from "@/lib/upload-client";
 import { cn } from "@/lib/cn";
@@ -31,8 +31,6 @@ export function GalleryEditor() {
   const [videos, setVideos] = useState<GalleryVideoRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [place, setPlace] = useState("any");
-  const [columns, setColumns] = useState(1);
-  const photoGrid = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [video, setVideo] = useState<VideoDraft | null>(null);
   const [savingVideo, setSavingVideo] = useState(false);
@@ -54,19 +52,6 @@ export function GalleryEditor() {
   }, [load]);
 
   const shown = useMemo(() => (place === "any" ? photos : photos.filter((p) => (p.category || "all") === place)), [photos, place]);
-
-  useEffect(() => {
-    const el = photoGrid.current;
-    if (!el) return;
-    const measure = () => {
-      const count = getComputedStyle(el).gridTemplateColumns.split(" ").filter(Boolean).length;
-      setColumns(Math.max(1, count));
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [shown.length, loading, place]);
 
   async function savePhoto(row: GalleryRow, message?: string) {
     try {
@@ -112,19 +97,6 @@ export function GalleryEditor() {
     setProgress(null);
     if (added) toast(added === 1 ? "Photo added." : `${added} photos added.`);
     load();
-  }
-
-  async function movePhoto(index: number, delta: number) {
-    const next = moveItem(photos, index, delta).map((p, i) => ({ ...p, sort_order: i }));
-    const before = new Map(photos.map((p) => [p.id, p.sort_order]));
-    const changed = next.filter((p) => before.get(p.id) !== p.sort_order);
-    setPhotos(next);
-    try {
-      await Promise.all(changed.map((p) => sendJson("/api/gallery", "POST", p)));
-    } catch (e) {
-      toast((e as Error).message, "error");
-      load();
-    }
   }
 
   async function removePhoto(row: GalleryRow) {
@@ -209,8 +181,8 @@ export function GalleryEditor() {
     }
   }
 
-  async function moveVideo(index: number, delta: number) {
-    const next = moveItem(videos, index, delta).map((v, i) => ({ ...v, sort_order: i }));
+  async function moveVideo(from: number, to: number) {
+    const next = reorderItem(videos, from, to).map((v, i) => ({ ...v, sort_order: i }));
     setVideos(next);
     try {
       await Promise.all(next.map((v) => saveVideoRow(v)));
@@ -251,11 +223,7 @@ export function GalleryEditor() {
     <div className="space-y-5">
       <FormSection
         title="Photos"
-        description={
-          place === "any"
-            ? `${photos.length} photos, ${live} shown on the website. Up and down move a photo to another row. Left and right move it along the row. Photo 1 is shown first.`
-            : `${photos.length} photos, ${live} shown on the website. Choose All places to change the order.`
-        }
+        description={`${photos.length} photos, ${live} shown on the website.`}
         actions={
           <>
             <div className="w-[190px]">
@@ -294,9 +262,8 @@ export function GalleryEditor() {
         {shown.length === 0 ? (
           <EmptyState>No photos here yet. Click Upload photos to add some.</EmptyState>
         ) : (
-          <div ref={photoGrid} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {shown.map((p) => {
-              const index = photos.findIndex((x) => x.id === p.id);
               return (
                 <div key={p.id} className="overflow-hidden rounded-[10px] border border-[#e3e8ee] bg-white">
                   <div className="relative aspect-[4/3] bg-[#f1f4f7]">
@@ -343,9 +310,6 @@ export function GalleryEditor() {
                         label={<span className="text-[13px]">On website</span>}
                       />
                       <span className="flex items-center">
-                        {place === "any" && (
-                          <GridOrder index={index} count={photos.length} columns={columns} onMove={movePhoto} />
-                        )}
                         {canDelete && (
                           <button
                             type="button"
@@ -369,7 +333,7 @@ export function GalleryEditor() {
 
       <FormSection
         title="Videos"
-        description="YouTube videos shown on the Gallery page. Higher in the list is shown first. The featured video is also shown on the home page."
+        description="YouTube videos shown on the Gallery page. Drag a video to change the order. The featured video is also shown on the home page."
         actions={
           !video && (
             <Button onClick={() => startVideo()}>
@@ -440,7 +404,34 @@ export function GalleryEditor() {
         ) : (
           <ul className="divide-y divide-[#eef1f4]">
             {videos.map((v, index) => (
-              <li key={v.id} className="flex flex-wrap items-center gap-4 py-3">
+              <li
+                key={v.id}
+                className="flex flex-wrap items-center gap-4 py-3"
+                onDragOver={(event) => {
+                  if (videos.length < 2) return;
+                  event.preventDefault();
+                }}
+                onDrop={(event) => {
+                  const from = Number(event.dataTransfer.getData("application/x-ksl-video"));
+                  if (!Number.isInteger(from) || from === index) return;
+                  event.preventDefault();
+                  moveVideo(from, index);
+                }}
+              >
+                {videos.length > 1 && (
+                  <span
+                    draggable
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("application/x-ksl-video", String(index));
+                    }}
+                    className="inline-flex h-8 w-6 shrink-0 cursor-grab items-center justify-center text-[#98a3b1] active:cursor-grabbing"
+                    aria-label="Drag to reorder"
+                    title="Drag to reorder"
+                  >
+                    <GripVertical className="h-4 w-4" />
+                  </span>
+                )}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`https://img.youtube.com/vi/${v.youtube_id}/mqdefault.jpg`}
@@ -465,12 +456,6 @@ export function GalleryEditor() {
                     disabled={!canPublish}
                     onChange={(on) => toggleVideo(v, on ? "published" : "draft")}
                     label={<span className="text-[13px]">On website</span>}
-                  />
-                  <MoveButtons
-                    onUp={() => moveVideo(index, -1)}
-                    onDown={() => moveVideo(index, 1)}
-                    first={index === 0}
-                    last={index === videos.length - 1}
                   />
                   <Button variant="secondary" size="sm" onClick={() => startVideo(v)}>
                     <Pencil className="h-3.5 w-3.5" /> Edit

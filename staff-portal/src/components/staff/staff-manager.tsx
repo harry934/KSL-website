@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, KeyRound, Loader2, Pencil, Trash2, UserPlus } from "lucide-react";
+import { Check, Copy, KeyRound, Loader2, Mail, MessageCircle, Pencil, Trash2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldGrid, FormSection, Notice } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { SearchBox, matchesSearch } from "@/components/ui/list-tools";
 import { UserAvatar } from "@/components/portal/user-avatar";
-import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
+import { MODULE_GROUPS, MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
 import { sendJson } from "@/lib/upload-client";
 import { cn } from "@/lib/cn";
@@ -17,14 +17,8 @@ const EDITABLE_MODULES = (Object.keys(MODULE_LABELS) as ModuleKey[]).filter((k) 
 const PERM_FIELDS = ["can_view", "can_edit", "can_publish", "can_delete"] as const;
 type PermField = (typeof PERM_FIELDS)[number];
 
-const PERM_LABELS: Record<PermField, { title: string; hint: string }> = {
-  can_view: { title: "See", hint: "Open this section" },
-  can_edit: { title: "Change", hint: "Add and edit, saved as hidden drafts" },
-  can_publish: { title: "Put live", hint: "Show changes on the website" },
-  can_delete: { title: "Remove", hint: "Delete items" },
-};
-
 type PermRow = { module_key: ModuleKey } & Record<PermField, boolean>;
+type AccessLevel = "read" | "edit" | "publish" | "full";
 
 type StaffRow = {
   id: string;
@@ -39,7 +33,7 @@ type StaffRow = {
 };
 
 type Panel = { kind: "create" } | { kind: "edit"; row: StaffRow } | null;
-type Issued = { username: string; password: string; isNew: boolean };
+type Issued = { username: string; password: string; email: string; phone: string; isNew: boolean };
 
 function emptyPerms(): PermRow[] {
   return EDITABLE_MODULES.map((key) => ({
@@ -55,75 +49,145 @@ function permsFrom(row: StaffRow): PermRow[] {
   return emptyPerms().map((empty) => row.permissions.find((p) => p.module_key === empty.module_key) ?? empty);
 }
 
-function PermissionMatrix({
+function flagsFor(level: AccessLevel): Record<PermField, boolean> {
+  return {
+    can_view: true,
+    can_edit: level !== "read",
+    can_publish: level === "publish" || level === "full",
+    can_delete: level === "full",
+  };
+}
+
+function levelOf(row: PermRow): AccessLevel {
+  if (row.can_delete) return "full";
+  if (row.can_publish) return "publish";
+  if (row.can_edit) return "edit";
+  return "read";
+}
+
+function AccessEditor({
   permissions,
-  onToggle,
-  onRow,
+  onChange,
 }: {
   permissions: PermRow[];
-  onToggle: (module: ModuleKey, field: PermField) => void;
-  onRow: (module: ModuleKey, on: boolean) => void;
+  onChange: (next: PermRow[]) => void;
 }) {
+  const granted = permissions.filter((row) => row.can_view);
+  const available = MODULE_GROUPS.map((group) => ({
+    label: group.label,
+    modules: group.modules.filter((key) => key !== "staff" && !granted.some((row) => row.module_key === key)),
+  })).filter((group) => group.modules.length > 0);
+
+  function setLevel(module: ModuleKey, level: string) {
+    onChange(
+      permissions.map((row) => {
+        if (row.module_key !== module) return row;
+        if (level === "restricted") {
+          return { ...row, can_view: false, can_edit: false, can_publish: false, can_delete: false };
+        }
+        return { ...row, ...flagsFor(level as AccessLevel) };
+      })
+    );
+  }
+
   return (
-    <div className="overflow-x-auto rounded-[8px] border border-[#e3e8ee]">
-      <table className="w-full min-w-[600px] text-left text-[13.5px]">
-        <thead className="bg-[#f6f8fa]">
-          <tr className="text-[#5b6775]">
-            <th className="px-4 py-2.5 font-semibold">Section of the website</th>
-            {PERM_FIELDS.map((field) => (
-              <th key={field} className="px-2 py-2.5 text-center font-semibold" title={PERM_LABELS[field].hint}>
-                {PERM_LABELS[field].title}
-              </th>
-            ))}
-            <th className="px-2 py-2.5 text-center font-semibold">Everything</th>
-          </tr>
-        </thead>
-        <tbody>
-          {permissions.map((p) => {
-            const all = PERM_FIELDS.every((f) => p[f]);
-            return (
-              <tr key={p.module_key} className="border-t border-[#eef1f4]">
-                <td className="px-4 py-2 text-[#1f2933]">{MODULE_LABELS[p.module_key]}</td>
-                {PERM_FIELDS.map((field) => (
-                  <td key={field} className="px-2 py-2 text-center">
-                    <input
-                      type="checkbox"
-                      checked={p[field]}
-                      onChange={() => onToggle(p.module_key, field)}
-                      className="h-4 w-4 cursor-pointer accent-[#0b1f3a]"
-                      aria-label={`${MODULE_LABELS[p.module_key]}: ${PERM_LABELS[field].title}`}
-                    />
-                  </td>
-                ))}
-                <td className="px-2 py-2 text-center">
-                  <input
-                    type="checkbox"
-                    checked={all}
-                    onChange={() => onRow(p.module_key, !all)}
-                    className="h-4 w-4 cursor-pointer accent-[#0b1f3a]"
-                    aria-label={`${MODULE_LABELS[p.module_key]}: everything`}
-                  />
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="flex flex-col gap-3">
+      {granted.length === 0 && (
+        <p className="text-[13.5px] text-[#6b7785]">No sections yet. Add one to let this agent into the portal.</p>
+      )}
+      {granted.map((row) => (
+        <div
+          key={row.module_key}
+          className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-[#e3e8ee] bg-white px-4 py-3"
+        >
+          <div>
+            <p className="text-[14px] font-semibold text-[#0b1f3a]">{MODULE_LABELS[row.module_key]}</p>
+            <p className="text-[12.5px] text-[#6b7785]">Sections left off this list stay restricted.</p>
+          </div>
+          <select
+            className="h-[40px] rounded-[8px] border border-[#d5dce4] bg-white px-3 text-[14px] text-[#0b1f3a]"
+            value={levelOf(row)}
+            aria-label={`${MODULE_LABELS[row.module_key]} access`}
+            onChange={(event) => setLevel(row.module_key, event.target.value)}
+          >
+            <option value="restricted">Restricted</option>
+            <option value="read">Read</option>
+            <option value="edit">Create and edit</option>
+            <option value="publish">Publish</option>
+            <option value="full">Full access</option>
+          </select>
+        </div>
+      ))}
+      {available.length > 0 && (
+        <select
+          className="h-[42px] max-w-[320px] rounded-[8px] border border-[#d5dce4] bg-white px-3 text-[14px] text-[#0b1f3a]"
+          value=""
+          aria-label="Add a section"
+          onChange={(event) => {
+            const module = event.target.value as ModuleKey;
+            if (module) setLevel(module, "read");
+          }}
+        >
+          <option value="">Add a section</option>
+          {available.map((group) => (
+            <optgroup key={group.label} label={group.label}>
+              {group.modules.map((key) => (
+                <option key={key} value={key}>
+                  {MODULE_LABELS[key]}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      )}
     </div>
   );
+}
+
+function signInText(issued: Issued) {
+  return [
+    "Kenya Shipyards staff portal",
+    "",
+    `Username: ${issued.username}`,
+    `One-time password: ${issued.password}`,
+    "",
+    issued.isNew
+      ? "Sign in and choose your own username and password."
+      : "Sign in with this one-time password and choose a new password.",
+  ].join("\n");
+}
+
+function whatsAppNumber(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("0") && digits.length === 10) return `254${digits.slice(1)}`;
+  if (digits.length === 9 && digits.startsWith("7")) return `254${digits}`;
+  return digits;
 }
 
 function OneTimePasswordBox({ issued, onClose }: { issued: Issued; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
 
+  const details = signInText(issued);
+
   async function copy() {
     try {
-      await navigator.clipboard.writeText(issued.password);
+      await navigator.clipboard.writeText(details);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopied(false);
     }
+  }
+
+  function sendEmail() {
+    const href = `mailto:${issued.email}?subject=${encodeURIComponent("Your Kenya Shipyards portal sign-in")}&body=${encodeURIComponent(details)}`;
+    window.location.href = href;
+  }
+
+  function sendWhatsApp() {
+    const number = whatsAppNumber(issued.phone);
+    const text = encodeURIComponent(details);
+    window.open(number ? `https://wa.me/${number}?text=${text}` : `https://wa.me/?text=${text}`, "_blank", "noopener");
   }
 
   return (
@@ -132,7 +196,7 @@ function OneTimePasswordBox({ issued, onClose }: { issued: Issued; onClose: () =
         {issued.isNew ? "Agent created" : "New one-time password"}
       </h2>
       <p className="mt-1 text-[13.5px] text-[#5b6775]">
-        Give this to the agent. They will choose their own password the first time they sign in.
+        Give this to the agent. {issued.isNew ? "They will choose their own username and password the first time they sign in." : "They will choose a new password the next time they sign in."}
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div className="rounded-[8px] bg-[#f6f8fa] px-4 py-3">
@@ -150,10 +214,16 @@ function OneTimePasswordBox({ issued, onClose }: { issued: Issued; onClose: () =
           </Button>
         </div>
       </div>
-      <p className="mt-3 text-[12.5px] text-[#6b7785]">This password is shown only once. If it is lost, give them a new one.</p>
-      <Button className="mt-4" onClick={onClose}>
-        Done
-      </Button>
+      <p className="mt-3 text-[12.5px] text-[#6b7785]">These details are shown only once. If they are lost, create a new password.</p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button variant="secondary" onClick={sendEmail}>
+          <Mail className="h-4 w-4" /> Send by email
+        </Button>
+        <Button variant="secondary" onClick={sendWhatsApp}>
+          <MessageCircle className="h-4 w-4" /> Send on WhatsApp
+        </Button>
+        <Button onClick={onClose}>Done</Button>
+      </div>
     </section>
   );
 }
@@ -171,6 +241,7 @@ export function StaffManager() {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [permissions, setPermissions] = useState<PermRow[]>(emptyPerms());
 
   const load = useCallback(async () => {
@@ -189,6 +260,7 @@ export function StaffManager() {
     setUsername("");
     setDisplayName("");
     setEmail("");
+    setPhone("");
     setPermissions(emptyPerms());
     setError(null);
     setIssued(null);
@@ -203,24 +275,6 @@ export function StaffManager() {
     setError(null);
     setIssued(null);
     setPanel({ kind: "edit", row });
-  }
-
-  function togglePerm(module: ModuleKey, field: PermField) {
-    setPermissions((prev) =>
-      prev.map((p) => {
-        if (p.module_key !== module) return p;
-        const next = { ...p, [field]: !p[field] };
-        if (field !== "can_view" && next[field]) next.can_view = true;
-        if (field === "can_view" && !next.can_view) return { ...next, can_edit: false, can_publish: false, can_delete: false };
-        return next;
-      })
-    );
-  }
-
-  function setRow(module: ModuleKey, on: boolean) {
-    setPermissions((prev) =>
-      prev.map((p) => (p.module_key === module ? { ...p, can_view: on, can_edit: on, can_publish: on, can_delete: on } : p))
-    );
   }
 
   async function run<T>(task: () => Promise<T>) {
@@ -238,16 +292,25 @@ export function StaffManager() {
 
   async function submitCreate(e: React.FormEvent) {
     e.preventDefault();
-    const name = normalizeUsername(username);
-    const problem = validateUsername(name) ?? validateEmail(email.trim());
+    if (!displayName.trim()) {
+      setError("Write the agent's full name.");
+      return;
+    }
+    const problem = validateEmail(email.trim());
     if (problem) {
       setError(problem);
       return;
     }
-    const data = await run(() => sendJson("/api/staff", "POST", { username: name, displayName, email, permissions }));
+    const data = await run(() => sendJson("/api/staff", "POST", { displayName, email, permissions }));
     if (data) {
       setPanel(null);
-      setIssued({ username: name, password: data.oneTimePassword, isNew: true });
+      setIssued({
+        username: data.username,
+        password: data.oneTimePassword,
+        email: email.trim(),
+        phone: phone.trim(),
+        isNew: true,
+      });
       load();
     }
   }
@@ -284,7 +347,13 @@ export function StaffManager() {
     const data = await run(() => sendJson("/api/staff", "PATCH", { id: row.id, action: "reset_password" }));
     if (data) {
       setPanel(null);
-      setIssued({ username: row.username, password: data.oneTimePassword, isNew: false });
+      setIssued({
+        username: row.username,
+        password: data.oneTimePassword,
+        email: row.contact_email ?? "",
+        phone: "",
+        isNew: false,
+      });
       load();
     }
   }
@@ -333,25 +402,15 @@ export function StaffManager() {
     );
   }
 
-  const accountFields = (
-    <FieldGrid className="lg:grid-cols-3">
-      <Field label="Username" hint="Used to sign in. Lowercase letters and numbers, no spaces.">
-        <Input
-          value={username}
-          onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
-          autoCapitalize="none"
-          spellCheck={false}
-          placeholder="e.g. jkamau"
-          required
-        />
-      </Field>
+  const nameAndEmail = (
+    <>
       <Field label="Full name">
-        <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="e.g. Jane Kamau" />
+        <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="e.g. Jane Kamau" required />
       </Field>
       <Field label="Contact email" optional>
         <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
       </Field>
-    </FieldGrid>
+    </>
   );
 
   return (
@@ -372,11 +431,16 @@ export function StaffManager() {
 
       {panel?.kind === "create" && (
         <form onSubmit={submitCreate}>
-          <FormSection title="New agent" description="A one-time password is created for them when you click Create agent.">
-            {accountFields}
+          <FormSection title="New agent" description="A username and one-time password are created when you click Create agent.">
+            <FieldGrid className="lg:grid-cols-3">
+              {nameAndEmail}
+              <Field label="Mobile number" optional hint="Used if you send the sign-in details on WhatsApp. You can still pick a contact if this is blank.">
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="e.g. 0712 345 678" />
+              </Field>
+            </FieldGrid>
             <div>
               <p className="mb-2 text-[13px] font-semibold text-[#1f2933]">What can this agent do?</p>
-              <PermissionMatrix permissions={permissions} onToggle={togglePerm} onRow={setRow} />
+              <AccessEditor permissions={permissions} onChange={setPermissions} />
             </div>
             <div className="flex gap-2">
               <Button type="submit" disabled={saving}>
@@ -393,10 +457,21 @@ export function StaffManager() {
       {panel?.kind === "edit" && (
         <form onSubmit={submitEdit}>
           <FormSection title={`Edit ${panel.row.display_name || panel.row.username}`}>
-            {accountFields}
+            <FieldGrid className="lg:grid-cols-3">
+              <Field label="Username" hint="Used to sign in. Lowercase letters and numbers, no spaces.">
+                <Input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  required
+                />
+              </Field>
+              {nameAndEmail}
+            </FieldGrid>
             <div>
               <p className="mb-2 text-[13px] font-semibold text-[#1f2933]">What can this agent do?</p>
-              <PermissionMatrix permissions={permissions} onToggle={togglePerm} onRow={setRow} />
+              <AccessEditor permissions={permissions} onChange={setPermissions} />
             </div>
             <div className="flex gap-2">
               <Button type="submit" disabled={saving}>

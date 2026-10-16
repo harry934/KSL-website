@@ -1,6 +1,47 @@
 (function () {
     "use strict";
 
+    var eventsMount = document.getElementById("ksl-home-events");
+    function escapeEvent(value) {
+        return String(value == null ? "" : value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    }
+    if (eventsMount && window.KSL_CONTENT) {
+        var today;
+        try {
+            today = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Nairobi" }).format(new Date());
+        } catch (e) {
+            today = new Date().toISOString().slice(0, 10);
+        }
+        window.KSL_CONTENT.fetchJson("/api/public/events", "data/events.json").then(function (data) {
+            if (!data) return;
+            var upcoming = ((data.upcoming || []).concat(data.past || [])).filter(function (item) {
+                return String(item.date || "") >= today;
+            }).sort(function (a, b) {
+                return String(a.date || "").localeCompare(String(b.date || ""));
+            }).slice(0, 3);
+            if (!upcoming.length) return;
+            eventsMount.innerHTML = upcoming.map(function (item) {
+                var href = "event.html?slug=" + encodeURIComponent(item.slug || "");
+                var when = item.date || "";
+                var place = item.venue ? item.venue + (when ? " · " + when : "") : when;
+                return (
+                    '<article class="news-card news-row ksl-lift-card">' +
+                    '<a class="news-cover" href="' + href + '"><img src="' + escapeEvent(item.image || "img/ksl/yard.jpg") + '" alt=""></a>' +
+                    '<div class="news-card-body">' +
+                    '<p class="news-kicker">Events</p>' +
+                    '<h3><a href="' + href + '">' + escapeEvent(item.title || "") + "</a></h3>" +
+                    (place ? '<p class="news-meta">' + escapeEvent(place) + "</p>" : "") +
+                    '<a class="btn btn-outline-gold" href="' + href + '">Event details</a>' +
+                    "</div></article>"
+                );
+            }).join("");
+        });
+    }
+
     var mount = document.getElementById("ksl-home-news-grid");
     if (!mount) {
         return;

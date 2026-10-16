@@ -4,7 +4,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 
-type Item = { id: string; who: string; text: string; area: string | null; href: string; createdAt: string };
+type Item = {
+  id: string;
+  kind?: "activity" | "message";
+  who: string;
+  text: string;
+  area: string | null;
+  href: string;
+  createdAt: string;
+  unread?: boolean;
+};
 
 const POLL_MS = 60_000;
 
@@ -62,13 +71,23 @@ export function NotificationBell({ userId, canSeeAll }: { userId: string; canSee
     };
   }, [open]);
 
-  const isUnread = (item: Item) => new Date(item.createdAt).getTime() > seenAt;
+  const isUnread = (item: Item) =>
+    item.kind === "message" ? !!item.unread : new Date(item.createdAt).getTime() > seenAt;
   const unread = items.filter(isUnread).length;
 
   function markAllRead() {
     const now = Date.now();
     window.localStorage.setItem(storageKey, String(now));
     setSeenAt(now);
+    if (items.some((item) => item.kind === "message" && item.unread)) {
+      fetch("/api/messages", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      })
+        .then(() => load())
+        .catch(() => undefined);
+    }
   }
 
   function openItem(item: Item) {
@@ -124,7 +143,7 @@ export function NotificationBell({ userId, canSeeAll }: { userId: string; canSee
             {!loaded && <p className="px-4 py-5 text-center text-[13px] text-[#6b7785]">Loading…</p>}
             {loaded && items.length === 0 && (
               <p className="px-4 py-6 text-center text-[13px] text-[#6b7785]">
-                No changes by other staff in the last 30 days.
+                No messages or staff changes to show.
               </p>
             )}
             {items.map((item) => (

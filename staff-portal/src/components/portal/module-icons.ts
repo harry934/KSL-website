@@ -8,6 +8,7 @@ import {
   HelpCircle,
   Image as ImageIcon,
   Megaphone,
+  Mail,
   Newspaper,
   Package,
   Settings,
@@ -31,5 +32,6 @@ export const MODULE_ICONS: Record<ModuleKey, IconType> = {
   organization: Building2,
   press: Megaphone,
   site_settings: Settings,
+  messages: Mail,
   staff: UserCog,
 };

@@ -2351,6 +2351,45 @@ main {
     box-shadow: 0 12px 32px rgba(39, 50, 114, .14) !important;
 }
 
+html[data-ksl-menu="cards"] .dropdown-menu {
+    border-radius: 16px !important;
+    padding: 8px !important;
+    border: 0 !important;
+    box-shadow: 0 16px 40px rgba(11, 31, 58, .16) !important;
+}
+html[data-ksl-menu="cards"] .dropdown-item {
+    border-radius: 10px;
+    margin: 2px 0;
+}
+html[data-ksl-menu="soft"] .dropdown-menu {
+    border-radius: 18px !important;
+    border: 1px solid #e6edf5 !important;
+    box-shadow: 0 10px 28px rgba(11, 31, 58, .08) !important;
+    padding: 6px !important;
+}
+html[data-ksl-menu="soft"] .dropdown-item:hover,
+html[data-ksl-menu="soft"] .dropdown-item:focus {
+    background: #f4f7fb;
+    color: #0b1f3a;
+}
+html[data-ksl-menu="line"] .dropdown-item {
+    border-left: 3px solid transparent;
+    border-radius: 0;
+}
+html[data-ksl-menu="line"] .dropdown-item:hover,
+html[data-ksl-menu="line"] .dropdown-item:focus {
+    border-left-color: #c5a028;
+    background: #fffaf0;
+}
+html[data-ksl-menu="compact"] .dropdown-item {
+    padding-top: 6px;
+    padding-bottom: 6px;
+    font-size: 13px;
+}
+html[data-ksl-menu="compact"] .dropdown-menu {
+    min-width: 180px;
+}
+
 .dropdown-menu.show {
     animation: dropdown-reveal 160ms ease-out both;
 }
@@ -5888,45 +5927,14 @@ html[lang="sw"] .download-button .download::after {
         position: sticky;
         top: 0;
         z-index: 1030;
-        transition: transform .38s cubic-bezier(.22, .61, .36, 1);
-        will-change: transform;
-    }
-
-    /* Topbar and navbar slide by the same distance on the same curve so no gap opens between them. */
-    .topbar-ksl.is-tucked,
-    .navbar.sticky-top.is-tucked {
-        transform: translate3d(0, calc(-1 * var(--ksl-topbar-h, 0px)), 0);
     }
 
     .navbar.sticky-top {
-        transition: transform .38s cubic-bezier(.22, .61, .36, 1), box-shadow .3s ease, margin-bottom .3s ease;
-        will-change: transform;
-        backface-visibility: hidden;
+        z-index: 1020;
     }
 
-    .navbar.sticky-top .navbar-nav .nav-link,
-    .navbar.sticky-top .navbar-brand,
-    .navbar.sticky-top .ksl-logo {
-        transition: padding .3s ease, height .3s ease;
-    }
-
-    .navbar.sticky-top.is-compact .navbar-brand {
-        height: 60px;
-    }
-
-    /* The brand shrinks 80px -> 60px; the margin keeps the page below from jumping. */
-    .navbar.sticky-top.is-compact {
-        margin-bottom: 20px;
+    .navbar.sticky-top.is-stuck {
         box-shadow: 0 4px 16px rgba(9, 41, 108, .08) !important;
-    }
-
-    .navbar.sticky-top.is-compact .navbar-nav .nav-link {
-        padding-top: 14px;
-        padding-bottom: 14px;
-    }
-
-    .navbar.sticky-top.is-compact .ksl-logo {
-        height: 44px;
     }
 }
 
@@ -12879,11 +12887,11 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     content: "";
     position: absolute;
     inset: auto 0 0 0;
-    height: 34px;
+    height: 16px;
     pointer-events: none;
     background: var(--kb-wave);
-    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 34' preserveAspectRatio='none'%3E%3Cpath d='M0 20 Q15 8 30 20 T60 20 T90 20 T120 20 V34 H0Z'/%3E%3C/svg%3E") repeat-x 0 100% / 120px 34px;
-            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 34' preserveAspectRatio='none'%3E%3Cpath d='M0 20 Q15 8 30 20 T60 20 T90 20 T120 20 V34 H0Z'/%3E%3C/svg%3E") repeat-x 0 100% / 120px 34px;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 16' preserveAspectRatio='none'%3E%3Cpath d='M0 10 Q15 4 30 10 T60 10 T90 10 T120 10 V16 H0Z'/%3E%3C/svg%3E") repeat-x 0 100% / 120px 16px;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 16' preserveAspectRatio='none'%3E%3Cpath d='M0 10 Q15 4 30 10 T60 10 T90 10 T120 10 V16 H0Z'/%3E%3C/svg%3E") repeat-x 0 100% / 120px 16px;
     animation: ksl-banner-waves 14s linear infinite;
 }
 /* Soft light sweeping across, once every few seconds */
@@ -12895,7 +12903,7 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     left: -40%;
     width: 30%;
     pointer-events: none;
-    background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.16) 50%, transparent 100%);
+    background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.08) 50%, transparent 100%);
     transform: skewX(-18deg);
     animation: ksl-banner-shine 6.5s ease-in-out 1.2s infinite;
 }
@@ -12903,11 +12911,12 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     position: relative;
     z-index: 1;
     display: flex;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
     max-width: 1320px;
     margin: 0 auto;
-    padding: 14px 56px 14px 24px;
+    padding: 12px 52px 12px 22px;
 }
 .ksl-banner-icon {
     flex: none;
@@ -12922,9 +12931,72 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     animation: ksl-banner-ring 3.2s ease-in-out 1s infinite;
 }
 .ksl-banner.is-gold .ksl-banner-icon,
-.ksl-banner.is-light .ksl-banner-icon {
+.ksl-banner.is-light .ksl-banner-icon,
+.ksl-banner.is-framed .ksl-banner-icon,
+.ksl-banner.is-kenya .ksl-banner-icon {
     background: rgba(11, 31, 58, 0.1);
     color: #0b1f3a;
+}
+.ksl-banner.is-kenya {
+    --kb-bg-1: #0c6b3a;
+    --kb-bg-2: #12824a;
+    --kb-text: #fff;
+    --kb-muted: rgba(255, 255, 255, 0.82);
+    --kb-tag-bg: #bb1e24;
+    --kb-tag-text: #fff;
+    --kb-cta-bg: #111;
+    --kb-cta-text: #fff;
+    --kb-cta-hover: #333;
+    --kb-wave: rgba(255, 255, 255, 0.1);
+}
+.ksl-banner.is-alert {
+    --kb-bg-1: #8d1d24;
+    --kb-bg-2: #c43740;
+    --kb-text: #fff;
+    --kb-muted: rgba(255, 255, 255, 0.82);
+    --kb-tag-bg: #fff;
+    --kb-tag-text: #8d1d24;
+    --kb-cta-bg: #fff;
+    --kb-cta-text: #8d1d24;
+    --kb-cta-hover: #f6e6e7;
+    --kb-wave: rgba(255, 255, 255, 0.12);
+}
+.ksl-banner.is-forest {
+    --kb-bg-1: #14382a;
+    --kb-bg-2: #1f6b48;
+    --kb-text: #fff;
+    --kb-muted: rgba(255, 255, 255, 0.8);
+    --kb-tag-bg: #d7b15a;
+    --kb-tag-text: #14382a;
+    --kb-cta-bg: #d7b15a;
+    --kb-cta-text: #14382a;
+    --kb-cta-hover: #e6c77a;
+    --kb-wave: rgba(255, 255, 255, 0.08);
+}
+.ksl-banner.is-midnight {
+    --kb-bg-1: #070d18;
+    --kb-bg-2: #16243d;
+    --kb-text: #f7f4ea;
+    --kb-muted: rgba(247, 244, 234, 0.72);
+    --kb-tag-bg: #c5a028;
+    --kb-tag-text: #070d18;
+    --kb-cta-bg: #c5a028;
+    --kb-cta-text: #070d18;
+    --kb-cta-hover: #e0bb3f;
+    --kb-wave: rgba(197, 160, 40, 0.16);
+}
+.ksl-banner.is-framed {
+    --kb-bg-1: #fff;
+    --kb-bg-2: #f7f8fb;
+    --kb-text: #0b1f3a;
+    --kb-muted: #4a5868;
+    --kb-tag-bg: #0b1f3a;
+    --kb-tag-text: #fff;
+    --kb-cta-bg: #0b1f3a;
+    --kb-cta-text: #fff;
+    --kb-cta-hover: #163a66;
+    --kb-wave: rgba(11, 31, 58, 0.05);
+    box-shadow: inset 0 0 0 2px #0b1f3a;
 }
 .ksl-banner-icon svg { width: 22px; height: 22px; }
 .ksl-banner-tag {
@@ -12945,9 +13017,10 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 }
 .ksl-banner-text {
     margin: 0;
-    font-size: 1.02rem;
+    font-size: 0.98rem;
     font-weight: 600;
-    line-height: 1.4;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
 }
 .ksl-banner-until {
     display: block;
@@ -13067,18 +13140,16 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 
 @media (max-width: 767.98px) {
     .ksl-banner-inner {
-        flex-wrap: wrap;
-        gap: 8px 12px;
-        padding: 10px 48px 12px 16px;
+        gap: 8px;
+        padding: 10px 44px 10px 14px;
     }
     .ksl-banner-icon,
     .ksl-banner-until { display: none; }
-    .ksl-banner-tag { padding: 4px 10px; font-size: 0.66rem; }
-    .ksl-banner-body { flex-basis: 100%; order: 3; }
-    .ksl-banner-cta { order: 4; padding: 6px 14px; font-size: 0.84rem; box-shadow: none; }
-    .ksl-banner-text { font-size: 0.92rem; }
-    .ksl-banner-close { top: 6px; margin-top: 0; right: 8px; }
-    .ksl-banner.is-ticker .ksl-banner-body { order: 0; flex-basis: auto; flex: 1; }
+    .ksl-banner-tag { padding: 4px 8px; font-size: 0.62rem; letter-spacing: 0.08em; }
+    .ksl-banner-body { min-width: 0; }
+    .ksl-banner-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.88rem; }
+    .ksl-banner-cta { padding: 6px 12px; font-size: 0.8rem; box-shadow: none; }
+    .ksl-banner-close { right: 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

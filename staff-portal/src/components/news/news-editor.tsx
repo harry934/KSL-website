@@ -5,7 +5,6 @@ import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  AdvancedSlug,
   ChoiceField,
   Field,
   FieldGrid,
@@ -160,7 +159,6 @@ export function NewsEditor() {
             <FormSection title="Cover photo">
               <ImageField module="news" value={editing.image_path ?? ""} onChange={(image_path) => set({ image_path })} />
             </FormSection>
-            <AdvancedSlug value={editing.slug ?? ""} onChange={(slug) => set({ slug })} />
           </div>
         </div>
         <SaveBar>

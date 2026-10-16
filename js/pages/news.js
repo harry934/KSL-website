@@ -92,7 +92,14 @@
             };
         }
 
-        var today = new Date().toISOString().slice(0, 10);
+        function todayNairobi() {
+            try {
+                return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Nairobi" }).format(new Date());
+            } catch (e) {
+                return new Date().toISOString().slice(0, 10);
+            }
+        }
+        var today = todayNairobi();
 
         function eventItem(item) {
             var when = item.date ? formatDate(item.date) : "";
@@ -163,8 +170,8 @@
             if (!source.length) {
                 if (pages) pages.innerHTML = "";
                 grid.innerHTML = emptyState(
-                    activeTab === "events" ? "Events are coming soon" : "News is coming soon",
-                    activeTab === "events" ? "There are no listed events yet." : "There are no published news articles yet.",
+                    activeTab === "events" ? "No events available" : "News is coming soon",
+                    activeTab === "events" ? "There are no upcoming events to show." : "There are no published news articles yet.",
                     '<a class="btn btn-outline-primary" href="contact.html">Contact us</a>'
                 );
                 return;
@@ -206,7 +213,9 @@
                 var news = pair[0];
                 var events = pair[1];
                 collections.news = sortByDate((Array.isArray(news.items) ? news.items : []).map(newsItem));
-                collections.events = sortByDate((events.upcoming || []).concat(events.past || []).map(eventItem));
+                collections.events = sortByDate((events.upcoming || []).filter(function (item) {
+                    return String(item.date || "") >= today;
+                }).map(eventItem));
                 renderActive();
             }).catch(function () {
                 if (summary) {

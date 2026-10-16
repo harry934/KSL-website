@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, Loader2, Megaphone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, FieldGrid, FormSection, Notice, Select, Switch } from "@/components/ui/form-bits";
+import { Field, FieldGrid, FormSection, Notice, Switch } from "@/components/ui/form-bits";
 import { RowList } from "@/components/ui/row-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { cn } from "@/lib/cn";
@@ -13,14 +13,28 @@ import {
   DEFAULT_SITE_SETTINGS,
   type AnnouncementSettings,
   type BannerStyle,
+  type MenuStyle,
   type SiteSettingKey,
   type SiteSettings,
 } from "@/lib/site-settings";
 
-const BANNER_STYLES: { value: BannerStyle; label: string }[] = [
-  { value: "navy", label: "Navy blue with gold (recommended)" },
-  { value: "gold", label: "Gold with navy" },
-  { value: "light", label: "Light and calm" },
+const BANNER_STYLES: { value: BannerStyle; label: string; swatch: string }[] = [
+  { value: "navy", label: "Navy with gold", swatch: "linear-gradient(100deg,#0b1f3a,#163a66)" },
+  { value: "gold", label: "Gold with navy", swatch: "linear-gradient(100deg,#b48f1c,#e2bf4b)" },
+  { value: "light", label: "Light and calm", swatch: "linear-gradient(100deg,#f4f7fb,#e6eef8)" },
+  { value: "kenya", label: "Kenya", swatch: "linear-gradient(100deg,#0c6b3a,#bb1e24)" },
+  { value: "alert", label: "Alert", swatch: "linear-gradient(100deg,#8d1d24,#c43740)" },
+  { value: "forest", label: "Forest", swatch: "linear-gradient(100deg,#14382a,#1f6b48)" },
+  { value: "midnight", label: "Midnight", swatch: "linear-gradient(100deg,#070d18,#c5a028)" },
+  { value: "framed", label: "Framed", swatch: "linear-gradient(#fff,#fff)" },
+];
+
+const MENU_STYLES: { value: MenuStyle; label: string; hint: string }[] = [
+  { value: "classic", label: "Classic", hint: "The current menu" },
+  { value: "cards", label: "Cards", hint: "Rounded panels" },
+  { value: "soft", label: "Soft", hint: "Light shadow" },
+  { value: "line", label: "Line", hint: "Gold edge on hover" },
+  { value: "compact", label: "Compact", hint: "Shorter rows" },
 ];
 
 const TAG_SUGGESTIONS = ["Announcement", "Notice", "Tender", "Vacancy", "Event", "New"];
@@ -220,16 +234,34 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
             </datalist>
           </Field>
           <Field label="Colours">
-            <Select
-              value={a.style}
-              onChange={(e) => set("announcement", { style: e.target.value as BannerStyle })}
-            >
-              {BANNER_STYLES.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </Select>
+            <details className="group relative">
+              <summary className="flex h-[42px] cursor-pointer list-none items-center gap-2 rounded-[8px] border border-[#d5dce4] bg-white px-3 text-[14px] text-[#0b1f3a]">
+                <span
+                  className="h-4 w-7 rounded-[4px] border border-[#e3e8ee]"
+                  style={{ background: BANNER_STYLES.find((s) => s.value === a.style)?.swatch }}
+                />
+                {BANNER_STYLES.find((s) => s.value === a.style)?.label ?? "Navy with gold"}
+              </summary>
+              <div className="absolute z-20 mt-1 w-full rounded-[10px] border border-[#e3e8ee] bg-white p-1 shadow-[0_12px_32px_rgba(11,31,58,0.12)]">
+                {BANNER_STYLES.map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-[8px] px-2 py-2 text-left text-[14px] hover:bg-[#f4f6f8]",
+                      a.style === s.value && "bg-[#f4f6f8] font-semibold"
+                    )}
+                    onClick={(event) => {
+                      set("announcement", { style: s.value });
+                      event.currentTarget.closest("details")?.removeAttribute("open");
+                    }}
+                  >
+                    <span className="h-4 w-7 rounded-[4px] border border-[#e3e8ee]" style={{ background: s.swatch }} />
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </details>
           </Field>
           <Field label="Button text" optional hint='For example "Read more" or "Apply now".'>
             <Input
@@ -271,6 +303,26 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
           </div>
         </FieldGrid>
         {saveButton("announcement")}
+      </FormSection>
+
+      <FormSection title="Menu style" description="How the dropdown menus look on the website.">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {MENU_STYLES.map((style) => (
+            <button
+              key={style.value}
+              type="button"
+              onClick={() => set("appearance", { menuStyle: style.value })}
+              className={cn(
+                "rounded-[10px] border px-3 py-3 text-left",
+                settings.appearance.menuStyle === style.value ? "border-[#0b1f3a] bg-[#f4f7fb]" : "border-[#e3e8ee] bg-white"
+              )}
+            >
+              <span className="block text-[14px] font-semibold text-[#0b1f3a]">{style.label}</span>
+              <span className="mt-0.5 block text-[12.5px] text-[#6b7785]">{style.hint}</span>
+            </button>
+          ))}
+        </div>
+        {saveButton("appearance")}
       </FormSection>
 
       <FormSection title="Contact details" description="Shown at the top of every page and in the footer.">

@@ -210,11 +210,17 @@
             return res.json();
         }))
         .then(function (data) {
-            var all = (data.upcoming || []).concat(data.past || []).sort(function (a, b) {
+            var today = (function () {
+                try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Nairobi" }).format(new Date()); }
+                catch (e) { return new Date().toISOString().slice(0, 10); }
+            })();
+            var all = (data.upcoming || []).concat(data.past || []).filter(function (item) {
+                return String(item.date || "") >= today;
+            }).sort(function (a, b) {
                 return String(b.date || "").localeCompare(String(a.date || ""));
             });
             var evt = slug ? all.filter(function (e) { return e.slug === slug; })[0] : all[0];
-            if (evt) {
+            if (evt && String(evt.date || "") >= today) {
                 render(evt, all);
             } else {
                 renderNotFound();

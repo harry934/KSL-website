@@ -21,7 +21,13 @@ export type FooterSettings = {
   locations: LocationEntry[];
 };
 
-export type BannerStyle = "navy" | "gold" | "light";
+export type BannerStyle = "navy" | "gold" | "light" | "kenya" | "alert" | "forest" | "midnight" | "framed";
+
+export type MenuStyle = "classic" | "cards" | "soft" | "line" | "compact";
+
+export type AppearanceSettings = {
+  menuStyle: MenuStyle;
+};
 
 export type AnnouncementSettings = {
   enabled: boolean;
@@ -40,9 +46,10 @@ export type SiteSettings = {
   social: SocialSettings;
   footer: FooterSettings;
   announcement: AnnouncementSettings;
+  appearance: AppearanceSettings;
 };
 
-export const SITE_SETTING_KEYS = ["contact", "social", "footer", "announcement"] as const;
+export const SITE_SETTING_KEYS = ["contact", "social", "footer", "announcement", "appearance"] as const;
 export type SiteSettingKey = (typeof SITE_SETTING_KEYS)[number];
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
@@ -77,6 +84,9 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     style: "navy",
     scroll: false,
     endsOn: "",
+  },
+  appearance: {
+    menuStyle: "classic",
   },
 };
 

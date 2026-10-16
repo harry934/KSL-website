@@ -5,7 +5,6 @@ import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  AdvancedSlug,
   ChoiceField,
   Field,
   FormSection,
@@ -20,10 +19,19 @@ import { RowList } from "@/components/ui/row-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import type { ServiceRow } from "@/lib/services";
-import { keyFrom, moveItem, uniqueSlug } from "@/lib/list-utils";
+import { keyFrom, reorderItem, uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 
 type DocRow = { key: string; title: string; href: string };
+
+function serviceCategories(items: ServiceRow[]) {
+  const names: string[] = [];
+  for (const item of items) {
+    const name = item.category || "General";
+    if (!names.includes(name)) names.push(name);
+  }
+  return names;
+}
 
 function catalogToRows(catalog: Record<string, { title: string; href: string }>): DocRow[] {
   return Object.entries(catalog).map(([key, v]) => ({ key, title: v.title ?? "", href: v.href ?? "" }));
@@ -133,12 +141,14 @@ export function ServicesEditor() {
     }
   }
 
-  async function move(index: number, delta: number) {
-    const next = moveItem(items, index, delta).map((item, i) => ({ ...item, sort_order: i }));
-    const before = new Map(items.map((i) => [i.id, i.sort_order]));
-    setItems(next);
+  async function move(category: string, from: number, to: number) {
+    const group = items.filter((item) => (item.category || "General") === category);
+    const updated = reorderItem(group, from, to).map((item, i) => ({ ...item, sort_order: i }));
+    const before = new Map(group.map((item) => [item.id, item.sort_order]));
+    const byId = new Map(updated.map((item) => [item.id, item]));
+    setItems((list) => list.map((item) => byId.get(item.id) ?? item));
     try {
-      await Promise.all(next.filter((i) => before.get(i.id) !== i.sort_order).map((i) => sendJson("/api/services", "POST", i)));
+      await Promise.all(updated.filter((item) => before.get(item.id) !== item.sort_order).map((item) => sendJson("/api/services", "POST", item)));
     } catch (err) {
       toast((err as Error).message, "error");
       load();
@@ -228,7 +238,6 @@ export function ServicesEditor() {
                 </div>
               )}
             </FormSection>
-            <AdvancedSlug value={editing.slug ?? ""} onChange={(slug) => set({ slug })} />
           </div>
         </div>
         <SaveBar>
@@ -252,14 +261,32 @@ export function ServicesEditor() {
             <Plus className="h-4 w-4" /> New service
           </Button>
         </div>
-        <ItemList
-          showImages
-          items={items.map((i) => ({ id: i.id, title: i.title, subtitle: i.category, image: i.image_path, status: i.status }))}
-          onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
-          onDelete={canDelete ? remove : undefined}
-          onMove={move}
-          emptyText="No services yet. Click New service to add one."
-        />
+        {items.length === 0 ? (
+          <ItemList
+            items={[]}
+            onEdit={() => undefined}
+            emptyText="No services yet. Click New service to add one."
+          />
+        ) : (
+          <div className="space-y-5">
+            {serviceCategories(items).map((category) => {
+              const group = items.filter((item) => (item.category || "General") === category);
+              return (
+                <div key={category}>
+                  <h3 className="mb-2 text-[13px] font-semibold uppercase tracking-[0.06em] text-[#5b6775]">{category}</h3>
+                  <ItemList
+                    showImages
+                    items={group.map((i) => ({ id: i.id, title: i.title, image: i.image_path, status: i.status }))}
+                    onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
+                    onDelete={canDelete ? remove : undefined}
+                    onReorder={(from, to) => move(category, from, to)}
+                    emptyText="No services in this category."
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="grid items-start gap-4 xl:grid-cols-2">

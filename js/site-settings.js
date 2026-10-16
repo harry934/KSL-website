@@ -133,7 +133,8 @@
             if (window.sessionStorage.getItem(key)) return;
         } catch (e) {}
 
-        var style = a.style === "gold" || a.style === "light" ? a.style : "navy";
+        var styles = { navy: 1, gold: 1, light: 1, kenya: 1, alert: 1, forest: 1, midnight: 1, framed: 1 };
+        var style = styles[a.style] ? a.style : "navy";
         var ticker = !!a.scroll;
         var link = safeUrl(a.linkUrl);
         var external = /^https?:\/\//i.test(link) && link.indexOf(window.location.host) === -1;
@@ -185,5 +186,8 @@
         applySocial(data.social);
         applyFooter(data.footer);
         applyAnnouncement(data.announcement);
+        var menus = { classic: 1, cards: 1, soft: 1, line: 1, compact: 1 };
+        var menuStyle = data.appearance && menus[data.appearance.menuStyle] ? data.appearance.menuStyle : "classic";
+        document.documentElement.setAttribute("data-ksl-menu", menuStyle);
     }).catch(function () {});
 })();

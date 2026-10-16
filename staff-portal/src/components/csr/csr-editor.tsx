@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { ImageField } from "@/components/ui/image-field";
 import { ItemList } from "@/components/ui/item-list";
 import { RowList } from "@/components/ui/row-list";
-import { AdvancedSlug, Field, FieldGrid, FormSection, SaveBar, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
+import { Field, FieldGrid, FormSection, SaveBar, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
-import { moveItem, uniqueSlug } from "@/lib/list-utils";
+import { reorderItem, uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import type { CsrImage, CsrProjectRow, CsrSettings, CsrStat } from "@/lib/csr";
 
@@ -113,8 +113,8 @@ export function CsrEditor({ canPublish, canDelete }: { canPublish: boolean; canD
     }
   }
 
-  async function move(index: number, delta: number) {
-    const next = moveItem(items, index, delta).map((item, i) => ({ ...item, sort_order: i }));
+  async function move(from: number, to: number) {
+    const next = reorderItem(items, from, to).map((item, i) => ({ ...item, sort_order: i }));
     const before = new Map(items.map((i) => [i.id, i.sort_order]));
     setItems(next);
     try {
@@ -182,7 +182,6 @@ export function CsrEditor({ canPublish, canDelete }: { canPublish: boolean; canD
                 <Input value={editing.image_alt ?? ""} onChange={(e) => set({ image_alt: e.target.value })} />
               </Field>
             </FormSection>
-            <AdvancedSlug value={editing.slug ?? ""} onChange={(slug) => set({ slug })} />
           </div>
         </div>
         <SaveBar>
@@ -296,7 +295,7 @@ export function CsrEditor({ canPublish, canDelete }: { canPublish: boolean; canD
           items={items.map((i) => ({ id: i.id, title: i.title, subtitle: i.location, image: i.image_path, status: i.status }))}
           onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
           onDelete={canDelete ? remove : undefined}
-          onMove={move}
+          onReorder={move}
           emptyText="No programmes yet. Click New programme to add one."
         />
       </div>

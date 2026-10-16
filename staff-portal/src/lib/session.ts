@@ -16,6 +16,7 @@ export type StaffSession = {
   isSuperAdmin: boolean;
   isActive: boolean;
   mustChangePassword: boolean;
+  mustChangeUsername: boolean;
   avatarUrl: string | null;
   permissions: ModulePermission[];
 };
@@ -27,6 +28,7 @@ type ProfileRow = {
   is_super_admin: boolean;
   is_active: boolean;
   must_change_password: boolean;
+  must_change_username: boolean;
   avatar_path: string | null;
   admin_module_permissions: ModulePermission[] | null;
 };
@@ -41,7 +43,7 @@ export const getStaffSession = cache(async (): Promise<StaffSession | null> => {
   const { data } = await createAdminClient()
     .from("admin_profiles")
     .select(
-      "display_name, username, contact_email, is_super_admin, is_active, must_change_password, avatar_path, admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
+      "display_name, username, contact_email, is_super_admin, is_active, must_change_password, must_change_username, avatar_path, admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -60,6 +62,7 @@ export const getStaffSession = cache(async (): Promise<StaffSession | null> => {
     isSuperAdmin: profile.is_super_admin,
     isActive: profile.is_active,
     mustChangePassword: profile.must_change_password,
+    mustChangeUsername: profile.must_change_username,
     avatarUrl: profile.avatar_path ? avatarUrl(profile.avatar_path) : null,
     permissions: profile.admin_module_permissions ?? [],
   };

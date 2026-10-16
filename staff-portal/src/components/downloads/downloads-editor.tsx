@@ -10,7 +10,7 @@ import { ItemList } from "@/components/ui/item-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { slugify } from "@/lib/news";
-import { keyFrom, moveItem } from "@/lib/list-utils";
+import { keyFrom, reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import type { DownloadItemRow } from "@/lib/downloads";
 
@@ -120,8 +120,8 @@ export function DownloadsEditor() {
     }
   }
 
-  async function move(index: number, delta: number) {
-    const next = moveItem(items, index, delta).map((item, i) => ({ ...item, sort_order: i }));
+  async function move(from: number, to: number) {
+    const next = reorderItem(items, from, to).map((item, i) => ({ ...item, sort_order: i }));
     const before = new Map(items.map((i) => [i.id, i.sort_order]));
     setItems(next);
     try {
@@ -241,7 +241,7 @@ export function DownloadsEditor() {
           if (item) setEditing({ ...item, isNew: false });
         }}
         onDelete={canDelete ? remove : undefined}
-        onMove={move}
+        onReorder={move}
         emptyText="No documents yet. Click New document to add one."
       />
     </div>

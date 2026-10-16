@@ -1,14 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   EmptyState,
   Field,
   FormSection,
-  MoveButtons,
   SaveBar,
   StatusBadge,
   Textarea,
@@ -18,7 +17,7 @@ import { ItemList } from "@/components/ui/item-list";
 import { SearchSelect } from "@/components/ui/search-select";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
-import { keyFrom, moveItem } from "@/lib/list-utils";
+import { keyFrom, reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 
 type FaqGroup = { id: string; title: string; sort_order: number; status: string };
@@ -151,17 +150,17 @@ export function FaqEditor() {
     }
   }
 
-  function moveGroup(index: number, delta: number) {
+  function moveGroup(from: number, to: number) {
     const before = new Map(groups.map((g) => [g.id, g.sort_order]));
-    const updated = moveItem(groups, index, delta).map((g, i) => ({ ...g, sort_order: i }));
+    const updated = reorderItem(groups, from, to).map((g, i) => ({ ...g, sort_order: i }));
     setGroups(updated);
     persistOrder("group", before, updated);
   }
 
-  function moveQuestion(groupId: string, index: number, delta: number) {
+  function moveQuestion(groupId: string, from: number, to: number) {
     const inGroup = items.filter((i) => i.group_id === groupId);
     const before = new Map(inGroup.map((i) => [i.id, i.sort_order]));
-    const updated = moveItem(inGroup, index, delta).map((i, n) => ({ ...i, sort_order: n }));
+    const updated = reorderItem(inGroup, from, to).map((i, n) => ({ ...i, sort_order: n }));
     const byId = new Map(updated.map((i) => [i.id, i]));
     setItems((list) => list.map((i) => byId.get(i.id) ?? i).sort((a, b) => a.sort_order - b.sort_order));
     persistOrder("item", before, updated);
@@ -295,7 +294,7 @@ export function FaqEditor() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[13.5px] text-[#5b6775]">
-          Questions are grouped under headings. Higher in a list is shown first on the website.
+          Questions are grouped under headings. Drag a group or a question. Higher in a list is shown first.
         </p>
         <Button onClick={newGroup}>
           <Plus className="h-4 w-4" /> Add group
@@ -307,19 +306,39 @@ export function FaqEditor() {
       {groups.map((group, index) => {
         const questions = items.filter((i) => i.group_id === group.id);
         return (
-          <FormSection
+          <div
             key={group.id}
+            onDragOver={(event) => {
+              if (groups.length < 2) return;
+              event.preventDefault();
+            }}
+            onDrop={(event) => {
+              const from = Number(event.dataTransfer.getData("application/x-ksl-group"));
+              if (!Number.isInteger(from) || from === index) return;
+              event.preventDefault();
+              moveGroup(from, index);
+            }}
+          >
+          <FormSection
             title={group.title || "Untitled group"}
             description={`${questions.length} question${questions.length === 1 ? "" : "s"}`}
             actions={
               <>
                 {group.status !== "published" && <StatusBadge status={group.status} />}
-                <MoveButtons
-                  onUp={() => moveGroup(index, -1)}
-                  onDown={() => moveGroup(index, 1)}
-                  first={index === 0}
-                  last={index === groups.length - 1}
-                />
+                {groups.length > 1 && (
+                  <span
+                    draggable
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("application/x-ksl-group", String(index));
+                    }}
+                    className="inline-flex h-8 w-6 cursor-grab items-center justify-center text-[#98a3b1] active:cursor-grabbing"
+                    aria-label="Drag to reorder group"
+                    title="Drag to reorder group"
+                  >
+                    <GripVertical className="h-4 w-4" />
+                  </span>
+                )}
                 <Button variant="ghost" size="sm" onClick={() => setEditing({ kind: "group", isNew: false, group })}>
                   <Pencil className="h-3.5 w-3.5" /> Rename
                 </Button>
@@ -349,13 +368,14 @@ export function FaqEditor() {
                 if (item) setEditing({ kind: "item", isNew: false, item });
               }}
               onDelete={canDelete ? removeQuestion : undefined}
-              onMove={(i, delta) => moveQuestion(group.id, i, delta)}
+              onReorder={(from, to) => moveQuestion(group.id, from, to)}
               emptyText="No questions in this group yet."
             />
             <Button variant="secondary" size="sm" onClick={() => newQuestion(group.id)}>
               <Plus className="h-4 w-4" /> Add question
             </Button>
           </FormSection>
+          </div>
         );
       })}
     </div>

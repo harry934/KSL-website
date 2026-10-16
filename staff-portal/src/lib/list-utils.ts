@@ -1,10 +1,11 @@
 import { slugify } from "@/lib/news";
 
-export function moveItem<T>(list: T[], index: number, delta: number): T[] {
-  const target = index + delta;
-  if (target < 0 || target >= list.length) return list;
+/** Move one item to a new index. Items between the two positions shift to make room. */
+export function reorderItem<T>(list: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return list;
   const next = list.slice();
-  [next[index], next[target]] = [next[target], next[index]];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
   return next;
 }
 

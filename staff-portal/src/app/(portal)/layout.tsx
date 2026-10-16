@@ -38,13 +38,18 @@ export default async function PortalLayout({ children }: { children: React.React
     );
   }
 
-  if (session.mustChangePassword) {
+  if (session.mustChangePassword || session.mustChangeUsername) {
+    const firstSignIn = session.mustChangeUsername;
     return (
       <Gate
-        title="Choose your own password"
-        intro="You signed in with a one-time password. Choose a password only you know to continue."
+        title={firstSignIn ? "Choose your sign-in" : "Choose your own password"}
+        intro={
+          firstSignIn
+            ? "This is your first sign-in. Choose your own username and password to continue."
+            : "You signed in with a one-time password. Choose a password only you know to continue."
+        }
       >
-        <ChangePasswordForm forced />
+        <ChangePasswordForm forced changeUsername={firstSignIn} />
         <div className="mt-4 text-center">
           <SignOutButton />
         </div>

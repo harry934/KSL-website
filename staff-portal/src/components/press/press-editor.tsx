@@ -9,7 +9,7 @@ import { FileField } from "@/components/ui/file-field";
 import { ItemList } from "@/components/ui/item-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
-import { moveItem } from "@/lib/list-utils";
+import { reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import { documentOptions, useDocuments } from "@/lib/use-documents";
 import { SearchSelect } from "@/components/ui/search-select";
@@ -133,8 +133,8 @@ export function PressEditor() {
     }
   }
 
-  async function move(index: number, delta: number) {
-    const next = moveItem(assets, index, delta).map((a, i) => ({ ...a, sort_order: i }));
+  async function move(from: number, to: number) {
+    const next = reorderItem(assets, from, to).map((a, i) => ({ ...a, sort_order: i }));
     const before = new Map(assets.map((a) => [a.id, a.sort_order]));
     setAssets(next);
     try {
@@ -270,7 +270,7 @@ export function PressEditor() {
             if (row) setEditing({ ...row, source: sourceOf(row) });
           }}
           onDelete={canDelete ? remove : undefined}
-          onMove={move}
+          onReorder={move}
           emptyText="Nothing in the press kit yet. Click Add item to start."
         />
       </div>

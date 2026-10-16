@@ -37,12 +37,19 @@ function formatWhen(iso: string) {
 function hintFor(key: ModuleKey, row: CountRow | undefined) {
   const hidden = row ? Number(row.draft) : 0;
   if (key === "staff") return hidden ? `${hidden} suspended` : "All active";
+  if (key === "messages") {
+    const unread = row ? Number(row.published) : 0;
+    const read = row ? Number(row.draft) : 0;
+    if (!unread && !read) return "No messages yet";
+    return unread ? `${read} already opened` : "All read";
+  }
   if (key === "site_settings") return "Banner, contact details, footer";
   return hidden ? `${hidden} hidden` : "Nothing hidden";
 }
 
 function countLabel(key: ModuleKey) {
   if (key === "staff") return "people";
+  if (key === "messages") return "unread";
   if (key === "site_settings") return "";
   return "on website";
 }

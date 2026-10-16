@@ -4,18 +4,35 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, FormSection, SaveBar, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
+import { Field, FormSection, SaveBar, Select, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
+import { ImageField } from "@/components/ui/image-field";
 import { SearchSelect } from "@/components/ui/search-select";
 import { ItemList } from "@/components/ui/item-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
-import { moveItem } from "@/lib/list-utils";
+import { reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import { documentOptions, useDocuments } from "@/lib/use-documents";
-import type { LeadershipRow, YardRow } from "@/lib/organization";
+import type { BoardMemberRow, LeadershipRow } from "@/lib/organization";
 
-type Scope = "leadership" | "yard";
-type Draft = { scope: Scope; id?: string; role?: string; name?: string; lead?: string | null; summary: string | null; sort_order: number; status: string };
+type Scope = "leadership" | "board";
+type Draft = {
+  scope: Scope;
+  id?: string;
+  role?: string;
+  full_name?: string;
+  board_group?: string;
+  photo_url?: string | null;
+  summary: string | null;
+  sort_order: number;
+  status: string;
+};
+
+const BOARD_GROUPS = [
+  { value: "defence", label: "Defence" },
+  { value: "ps", label: "Principal Secretaries" },
+  { value: "independent", label: "Independent members" },
+];
 
 export function OrganizationEditor() {
   const { toast, confirm } = useFeedback();
@@ -24,7 +41,7 @@ export function OrganizationEditor() {
   const documents = useDocuments();
   const [chartDownloadId, setChartDownloadId] = useState("");
   const [leadership, setLeadership] = useState<LeadershipRow[]>([]);
-  const [yards, setYards] = useState<YardRow[]>([]);
+  const [board, setBoard] = useState<BoardMemberRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Draft | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -35,7 +52,7 @@ export function OrganizationEditor() {
     if (res.ok) {
       setChartDownloadId(data.settings?.chart_download_id ?? "");
       setLeadership(data.leadership ?? []);
-      setYards(data.yards ?? []);
+      setBoard(data.board ?? []);
     } else {
       toast(data.error ?? "Could not load the organisation page.", "error");
     }
@@ -59,12 +76,13 @@ export function OrganizationEditor() {
   }
 
   function start(scope: Scope) {
-    const list = scope === "yard" ? yards : leadership;
+    const list = scope === "board" ? board : leadership;
     setEditing({
       scope,
       role: "",
-      name: "",
-      lead: "",
+      full_name: "",
+      board_group: "independent",
+      photo_url: "",
       summary: "",
       sort_order: list.length ? Math.max(...list.map((r) => r.sort_order)) + 1 : 0,
       status: canPublish ? "published" : "draft",
@@ -75,9 +93,13 @@ export function OrganizationEditor() {
   async function saveRow(e: React.FormEvent) {
     e.preventDefault();
     if (!editing) return;
-    const name = editing.scope === "yard" ? editing.name : editing.role;
-    if (!name?.trim()) {
-      toast(editing.scope === "yard" ? "Give the shipyard a name." : "Write the role or office name.", "error");
+    if (editing.scope === "board") {
+      if (!editing.full_name?.trim() || !editing.role?.trim()) {
+        toast("Write the member's name and role.", "error");
+        return;
+      }
+    } else if (!editing.role?.trim()) {
+      toast("Write the role or office name.", "error");
       return;
     }
     setSaving("row");
@@ -93,11 +115,11 @@ export function OrganizationEditor() {
     }
   }
 
-  async function move(scope: Scope, index: number, delta: number) {
-    const list: (LeadershipRow | YardRow)[] = scope === "yard" ? yards : leadership;
-    const next = moveItem(list, index, delta).map((row, i) => ({ ...row, sort_order: i }));
+  async function move(scope: Scope, from: number, to: number) {
+    const list: (LeadershipRow | BoardMemberRow)[] = scope === "board" ? board : leadership;
+    const next = reorderItem(list, from, to).map((row, i) => ({ ...row, sort_order: i }));
     const before = new Map(list.map((r) => [r.id, r.sort_order]));
-    if (scope === "yard") setYards(next as YardRow[]);
+    if (scope === "board") setBoard(next as BoardMemberRow[]);
     else setLeadership(next as LeadershipRow[]);
     try {
       await Promise.all(
@@ -112,7 +134,7 @@ export function OrganizationEditor() {
   async function remove(id: string, scope: Scope) {
     const ok = await confirm({
       title: "Delete this entry?",
-      message: "It will be removed from the Organisation page for good.",
+      message: "It will be removed from the website for good.",
       confirmLabel: "Delete",
       danger: true,
     });
@@ -136,18 +158,27 @@ export function OrganizationEditor() {
 
   if (editing) {
     const set = (patch: Partial<Draft>) => setEditing({ ...editing, ...patch });
-    const isYard = editing.scope === "yard";
+    const isBoard = editing.scope === "board";
     return (
       <form onSubmit={saveRow} className="space-y-4">
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <FormSection title={isYard ? (editing.id ? "Edit shipyard" : "New shipyard") : editing.id ? "Edit leadership role" : "New leadership role"}>
-            {isYard ? (
+          <FormSection title={isBoard ? (editing.id ? "Edit board member" : "New board member") : editing.id ? "Edit leadership role" : "New leadership role"}>
+            {isBoard ? (
               <>
-                <Field label="Shipyard name">
-                  <Input value={editing.name ?? ""} onChange={(e) => set({ name: e.target.value })} autoFocus={!editing.id} />
+                <Field label="Full name">
+                  <Input value={editing.full_name ?? ""} onChange={(e) => set({ full_name: e.target.value })} autoFocus={!editing.id} />
                 </Field>
-                <Field label="Led by" optional hint="The division or office in charge.">
-                  <Input value={editing.lead ?? ""} onChange={(e) => set({ lead: e.target.value })} />
+                <Field label="Role">
+                  <Input value={editing.role ?? ""} onChange={(e) => set({ role: e.target.value })} placeholder="e.g. Board member" />
+                </Field>
+                <Field label="Group">
+                  <Select value={editing.board_group ?? "independent"} onChange={(e) => set({ board_group: e.target.value })}>
+                    {BOARD_GROUPS.map((group) => (
+                      <option key={group.value} value={group.value}>
+                        {group.label}
+                      </option>
+                    ))}
+                  </Select>
                 </Field>
               </>
             ) : (
@@ -159,9 +190,16 @@ export function OrganizationEditor() {
               <Textarea className="min-h-[120px]" value={editing.summary ?? ""} onChange={(e) => set({ summary: e.target.value })} />
             </Field>
           </FormSection>
-          <FormSection title="Visibility">
-            <VisibilitySwitch status={editing.status} canPublish={canPublish} onChange={(status) => set({ status })} />
-          </FormSection>
+          <div className="space-y-4">
+            {isBoard && (
+              <FormSection title="Photo" description="Optional. A portrait shown on the KSL Board page.">
+                <ImageField module="organization" value={editing.photo_url ?? ""} onChange={(photo_url) => set({ photo_url })} />
+              </FormSection>
+            )}
+            <FormSection title="Visibility">
+              <VisibilitySwitch status={editing.status} canPublish={canPublish} onChange={(status) => set({ status })} />
+            </FormSection>
+          </div>
         </div>
         <SaveBar>
           <Button variant="secondary" onClick={() => setEditing(null)}>
@@ -174,6 +212,8 @@ export function OrganizationEditor() {
       </form>
     );
   }
+
+  const groupLabel = (value: string) => BOARD_GROUPS.find((group) => group.value === value)?.label ?? value;
 
   return (
     <div className="space-y-5">
@@ -191,27 +231,34 @@ export function OrganizationEditor() {
             if (row) setEditing({ ...row, scope: "leadership" });
           }}
           onDelete={canDelete ? (id) => remove(id, "leadership") : undefined}
-          onMove={(index, delta) => move("leadership", index, delta)}
+          onReorder={(from, to) => move("leadership", from, to)}
           emptyText="No leadership roles yet."
         />
       </div>
 
       <div>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-[15px] font-bold text-[#0b1f3a]">Shipyards</h2>
-          <Button variant="secondary" onClick={() => start("yard")}>
-            <Plus className="h-4 w-4" /> New shipyard
+          <h2 className="text-[15px] font-bold text-[#0b1f3a]">Board members</h2>
+          <Button variant="secondary" onClick={() => start("board")}>
+            <Plus className="h-4 w-4" /> New board member
           </Button>
         </div>
         <ItemList
-          items={yards.map((r) => ({ id: r.id, title: r.name, subtitle: r.lead, status: r.status }))}
+          showImages
+          items={board.map((r) => ({
+            id: r.id,
+            title: r.full_name,
+            subtitle: [r.role, groupLabel(r.board_group)].filter(Boolean).join(" · "),
+            image: r.photo_url,
+            status: r.status,
+          }))}
           onEdit={(id) => {
-            const row = yards.find((r) => r.id === id);
-            if (row) setEditing({ ...row, scope: "yard" });
+            const row = board.find((r) => r.id === id);
+            if (row) setEditing({ ...row, scope: "board" });
           }}
-          onDelete={canDelete ? (id) => remove(id, "yard") : undefined}
-          onMove={(index, delta) => move("yard", index, delta)}
-          emptyText="No shipyards yet."
+          onDelete={canDelete ? (id) => remove(id, "board") : undefined}
+          onReorder={(from, to) => move("board", from, to)}
+          emptyText="No extra board members yet."
         />
       </div>
 

@@ -33,32 +33,19 @@
     var topbar = document.querySelector(".topbar-ksl");
     var stickyNav = document.querySelector(".sticky-top");
     var topbarH = 0;
-    var lastScrollY = window.scrollY;
     var dockTicking = false;
-    var setTucked = function (tucked) {
-        topbar.classList.toggle("is-tucked", tucked);
-        stickyNav.classList.toggle("is-tucked", tucked);
-    };
     var dockNavbar = function () {
         dockTicking = false;
-        if (!stickyNav || !topbarH) return;
-        var y = window.scrollY;
-        var delta = y - lastScrollY;
-        stickyNav.classList.toggle("is-compact", y > topbarH);
-        if (y <= topbarH || delta < -4) {
-            setTucked(false);
-        } else if (delta > 4) {
-            setTucked(true);
-        }
-        if (y <= topbarH || Math.abs(delta) > 4) lastScrollY = y;
+        if (!stickyNav) return;
+        var stuck = window.scrollY > 8;
+        stickyNav.classList.toggle("is-stuck", stuck);
+        if (topbar) topbar.classList.toggle("is-stuck", stuck);
     };
     var measureTopbar = function () {
         topbarH = topbar ? topbar.offsetHeight : 0;
         document.documentElement.style.setProperty("--ksl-topbar-h", topbarH + "px");
-        if (!topbarH && stickyNav) {
-            stickyNav.classList.remove("is-compact", "is-tucked");
-            if (topbar) topbar.classList.remove("is-tucked");
-        }
+        if (stickyNav) stickyNav.classList.remove("is-compact", "is-tucked");
+        if (topbar) topbar.classList.remove("is-tucked");
         dockNavbar();
     };
     measureTopbar();
@@ -1678,7 +1665,12 @@
                     list.push({ title: item.q, href: "faq.html", type: "FAQ", keys: group.title || "" });
                 });
             });
+            var eventToday = (function () {
+                try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Nairobi" }).format(new Date()); }
+                catch (e) { return new Date().toISOString().slice(0, 10); }
+            })();
             ((events && events.upcoming) || []).concat((events && events.past) || []).forEach(function (item) {
+                if (String(item.date || "") < eventToday) return;
                 list.push({ title: item.title, href: item.href || "event.html", type: "Event", keys: (item.venue || "") + " " + (item.theme || "") });
             });
             searchIndex = list;
@@ -1929,27 +1921,57 @@
                 return contactForm.elements[name].value.trim();
             };
             var pref = contactForm.querySelector('input[name="pref"]:checked');
-            var name = [val("first_name"), val("other_name"), val("surname")].filter(Boolean).join(" ");
-            var body = "Name: " + name + "\nEmail: " + val("email") +
-                (pref ? "\nPreferred contact: " + pref.value : "") +
-                "\n\n" + val("message");
-            var href = "mailto:publicaffairs@kenyashipyards.co.ke?subject=" +
-                encodeURIComponent(val("subject")) + "&body=" + encodeURIComponent(body);
-
+            var base = window.KSL_CONTENT ? window.KSL_CONTENT.apiBase() : "";
             var calm = document.documentElement.classList.contains("ksl-no-anim") ||
                 window.matchMedia("(prefers-reduced-motion: reduce)").matches;
             contactBtn.disabled = true;
+            contactError.hidden = true;
             contactForm.classList.remove("is-sailing");
             void contactForm.offsetWidth;
             contactForm.classList.add("is-sailing");
-            window.setTimeout(function () {
-                window.location.href = href;
-                contactOk.hidden = false;
-            }, calm ? 0 : 1400);
-            window.setTimeout(function () {
+
+            var fail = function (text) {
+                contactOk.hidden = true;
+                contactError.hidden = false;
+                contactError.textContent = text;
                 contactBtn.disabled = false;
                 contactForm.classList.remove("is-sailing");
-            }, calm ? 600 : 2600);
+            };
+            if (!base) {
+                fail("The form cannot be sent right now. Email publicaffairs@kenyashipyards.co.ke.");
+                return;
+            }
+            fetch(base + "/api/public/contact", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    firstName: val("first_name"),
+                    otherName: val("other_name"),
+                    surname: val("surname"),
+                    email: val("email"),
+                    subject: val("subject"),
+                    message: val("message"),
+                    preferredContact: pref ? pref.value : ""
+                })
+            }).then(function (res) {
+                return res.json().catch(function () { return {}; }).then(function (data) {
+                    if (!res.ok) throw new Error(data.error || "Could not send the message.");
+                    contactOk.hidden = false;
+                    contactOk.textContent = "Your message has been received. We will get back to you.";
+                    contactForm.reset();
+                    contactFields.forEach(function (field) {
+                        field.classList.remove("is-valid", "is-invalid");
+                        field.removeAttribute("data-touched");
+                    });
+                });
+            }).catch(function (err) {
+                fail(err.message || "We could not send your message. Please try again, or email publicaffairs@kenyashipyards.co.ke.");
+            }).then(function () {
+                window.setTimeout(function () {
+                    contactBtn.disabled = false;
+                    contactForm.classList.remove("is-sailing");
+                }, calm ? 0 : 900);
+            });
         });
     }
 

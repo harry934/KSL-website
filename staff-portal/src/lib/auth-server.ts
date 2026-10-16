@@ -2,7 +2,7 @@ import { randomInt } from "node:crypto";
 import { createClient as createStatelessClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { internalEmailFor } from "@/lib/accounts";
+import { USERNAME_PATTERN, internalEmailFor } from "@/lib/accounts";
 
 const WINDOW_MINUTES = 15;
 const MAX_FAILURES_PER_IDENTIFIER = 5;
@@ -55,6 +55,23 @@ const OTP_LETTERS = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
 const OTP_DIGITS = "23456789";
 
 /** Readable one-time password such as "hT7k-Q4mz-9Rp2": no look-alike characters, always letters and numbers. */
+const USERNAME_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+
+/** A sign-in name from the person's name, plus a short random ending so it is unique. */
+export function suggestUsername(displayName: string) {
+  const words = displayName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  let stem = words.slice(0, 2).join(".").replace(/[^a-z0-9.]/g, "").replace(/^\.+|\.+$/g, "").slice(0, 20);
+  if (stem.length < 3 || !/^[a-z0-9]/.test(stem)) stem = "agent";
+  const suffix = Array.from({ length: 4 }, () => USERNAME_ALPHABET[randomInt(USERNAME_ALPHABET.length)]).join("");
+  const candidate = `${stem}.${suffix}`.slice(0, 32);
+  return USERNAME_PATTERN.test(candidate) ? candidate : `agent.${suffix}`;
+}
+
 export function generateOneTimePassword() {
   const all = OTP_LETTERS + OTP_DIGITS;
   for (;;) {

@@ -11,6 +11,7 @@ export type ModuleKey =
   | "organization"
   | "press"
   | "site_settings"
+  | "messages"
   | "staff";
 
 export type ModulePermission = {
@@ -34,6 +35,7 @@ export const MODULE_ROUTES: Record<ModuleKey, string> = {
   organization: "/organization",
   press: "/press",
   site_settings: "/settings",
+  messages: "/messages",
   staff: "/staff",
 };
 
@@ -50,13 +52,14 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   organization: "Organisation",
   press: "Press kit",
   site_settings: "Site settings",
+  messages: "Messages",
   staff: "Staff",
 };
 
 export const MODULE_GROUPS: { label: string; modules: ModuleKey[] }[] = [
   { label: "Content", modules: ["news", "events", "gallery", "press"] },
   { label: "Company", modules: ["services", "products", "organization", "careers", "csr"] },
-  { label: "Resources", modules: ["faq", "downloads"] },
+  { label: "Resources", modules: ["faq", "downloads", "messages"] },
   { label: "Administration", modules: ["staff", "site_settings"] },
 ];
 

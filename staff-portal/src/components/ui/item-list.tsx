@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ImageIcon, Pencil, Trash2 } from "lucide-react";
+import { GripVertical, ImageIcon, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EmptyState, MoveButtons, StatusBadge } from "@/components/ui/form-bits";
+import { EmptyState, StatusBadge } from "@/components/ui/form-bits";
 import { ListPager, SearchBox, matchesSearch } from "@/components/ui/list-tools";
 import { siteAssetUrl } from "@/lib/site-url";
+import { cn } from "@/lib/cn";
 
 export type ListItem = {
   id: string;
@@ -18,26 +19,29 @@ export type ListItem = {
 const PAGE_SIZE = 25;
 const SEARCH_FROM = 6;
 
-/** The list of items in a section, with search, pages, Edit, Remove and (optionally) up/down arrows. */
+/** The list of items in a section, with search, pages, Edit, Remove and (optionally) drag to reorder. */
 export function ItemList({
   items,
   onEdit,
   onDelete,
-  onMove,
+  onReorder,
   showImages,
   emptyText,
 }: {
   items: ListItem[];
   onEdit: (id: string) => void;
   onDelete?: (id: string) => void;
-  onMove?: (index: number, delta: number) => void;
+  onReorder?: (from: number, to: number) => void;
   showImages?: boolean;
   emptyText: string;
 }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
 
   const searching = query.trim().length > 0;
+  const canDrag = !!onReorder && !searching;
   const matches = useMemo(
     () =>
       items
@@ -56,9 +60,18 @@ export function ItemList({
     setPage(1);
   }
 
+  function dropOn(index: number) {
+    const from = dragFrom;
+    setDragFrom(null);
+    setDragOver(null);
+    if (from == null || from === index) return;
+    onReorder?.(from, index);
+    setPage(Math.floor(index / PAGE_SIZE) + 1);
+  }
+
   return (
     <div className="space-y-3">
-      {(items.length >= SEARCH_FROM || (onMove && items.length > 1)) && (
+      {(items.length >= SEARCH_FROM || (onReorder && items.length > 1)) && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-[13px] text-[#6b7785]">
             {items.length >= SEARCH_FROM
@@ -66,10 +79,10 @@ export function ItemList({
                 ? `${matches.length} of ${items.length} shown`
                 : `${items.length} items`
               : "Order on the website"}
-            {onMove && searching
+            {onReorder && searching
               ? " · clear the search to change the order"
-              : onMove
-                ? " · the top item is shown first"
+              : onReorder
+                ? " · drag a row. The top item is shown first"
                 : ""}
           </p>
           {items.length >= SEARCH_FROM && <SearchBox value={query} onChange={search} placeholder="Search this list" />}
@@ -86,7 +99,43 @@ export function ItemList({
       ) : (
         <ul className="ksl-card divide-y divide-[#eef1f4] overflow-hidden">
           {shown.map(({ item, index }) => (
-            <li key={item.id} className="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-[#fafbfc] sm:flex-nowrap">
+            <li
+              key={item.id}
+              className={cn(
+                "flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-[#fafbfc] sm:flex-nowrap",
+                dragOver === index && dragFrom !== index && "bg-[#f3f6fb]"
+              )}
+              onDragOver={(event) => {
+                if (!canDrag) return;
+                event.preventDefault();
+                event.stopPropagation();
+                setDragOver(index);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                dropOn(index);
+              }}
+            >
+              {canDrag && (
+                <span
+                  draggable
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData("text/plain", String(index));
+                    setDragFrom(index);
+                  }}
+                  onDragEnd={() => {
+                    setDragFrom(null);
+                    setDragOver(null);
+                  }}
+                  className="inline-flex h-8 w-6 shrink-0 cursor-grab items-center justify-center text-[#98a3b1] active:cursor-grabbing"
+                  aria-label="Drag to reorder"
+                  title="Drag to reorder"
+                >
+                  <GripVertical className="h-4 w-4" />
+                </span>
+              )}
               {showImages && (
                 <span className="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-[#f1f4f7] text-[#98a3b1]">
                   {item.image ? (
@@ -103,20 +152,6 @@ export function ItemList({
               </button>
               {item.status && <StatusBadge status={item.status} />}
               <span className="flex shrink-0 items-center gap-1">
-                {onMove && !searching && (
-                  <MoveButtons
-                    onUp={() => {
-                      onMove(index, -1);
-                      setPage(Math.floor((index - 1) / PAGE_SIZE) + 1);
-                    }}
-                    onDown={() => {
-                      onMove(index, 1);
-                      setPage(Math.floor((index + 1) / PAGE_SIZE) + 1);
-                    }}
-                    first={index === 0}
-                    last={index === items.length - 1}
-                  />
-                )}
                 <Button variant="secondary" size="sm" onClick={() => onEdit(item.id)}>
                   <Pencil className="h-3.5 w-3.5" /> Edit
                 </Button>

@@ -7,20 +7,20 @@ export async function GET() {
   if (error) return error;
 
   const admin = createAdminClient();
-  const [settingsRes, leadershipRes, yardsRes] = await Promise.all([
+  const [settingsRes, leadershipRes, boardRes] = await Promise.all([
     admin.from("organization_settings").select("*").eq("id", "default").maybeSingle(),
     admin.from("organization_leadership").select("*").order("sort_order", { ascending: true }),
-    admin.from("organization_yards").select("*").order("sort_order", { ascending: true }),
+    admin.from("organization_board_members").select("*").order("sort_order", { ascending: true }),
   ]);
 
   if (settingsRes.error) return NextResponse.json({ error: settingsRes.error.message }, { status: 500 });
   if (leadershipRes.error) return NextResponse.json({ error: leadershipRes.error.message }, { status: 500 });
-  if (yardsRes.error) return NextResponse.json({ error: yardsRes.error.message }, { status: 500 });
+  if (boardRes.error) return NextResponse.json({ error: boardRes.error.message }, { status: 500 });
 
   return NextResponse.json({
     settings: settingsRes.data,
     leadership: leadershipRes.data ?? [],
-    yards: yardsRes.data ?? [],
+    board: boardRes.data ?? [],
   });
 }
 
@@ -45,14 +45,20 @@ export async function POST(req: NextRequest) {
 
   const id = body.id || crypto.randomUUID();
 
-  if (body.scope === "yard") {
+  if (body.scope === "board") {
+    const name = String(body.full_name ?? "").trim();
+    const role = String(body.role ?? "").trim();
+    if (!name || !role) return NextResponse.json({ error: "A name and a role are required." }, { status: 400 });
+    const group = ["defence", "ps", "independent"].includes(body.board_group) ? body.board_group : "independent";
     const { data, error: upErr } = await admin
-      .from("organization_yards")
+      .from("organization_board_members")
       .upsert({
         id,
-        name: body.name,
-        lead: body.lead ?? null,
+        full_name: name,
+        role,
+        board_group: group,
         summary: body.summary ?? null,
+        photo_url: body.photo_url || null,
         sort_order: body.sort_order ?? 0,
         status: body.status ?? "draft",
         updated_by: session.userId,
@@ -60,7 +66,7 @@ export async function POST(req: NextRequest) {
       .select("id")
       .single();
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
-    await logActivity(session.userId, "organization", "upsert", "organization_yards", data?.id ?? id);
+    await logActivity(session.userId, "organization", "upsert", "organization_board_members", data?.id ?? id);
     return NextResponse.json({ ok: true, id: data?.id });
   }
 
@@ -89,7 +95,7 @@ export async function DELETE(req: NextRequest) {
   const scope = new URL(req.url).searchParams.get("scope");
   if (!id || !scope) return NextResponse.json({ error: "id and scope required" }, { status: 400 });
 
-  const table = scope === "yard" ? "organization_yards" : "organization_leadership";
+  const table = scope === "board" ? "organization_board_members" : "organization_leadership";
   const admin = createAdminClient();
   const { error: delErr } = await admin.from(table).delete().eq("id", id);
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });

@@ -17,14 +17,21 @@ function isAllowedOrigin(origin: string) {
 
 function publicApi(request: NextRequest) {
   const origin = request.headers.get("origin") ?? "";
+  const contactPost = request.nextUrl.pathname === "/api/public/contact";
   const headers = new Headers({ Vary: "Origin" });
   if (origin && isAllowedOrigin(origin)) {
     headers.set("Access-Control-Allow-Origin", origin);
-    headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+    headers.set("Access-Control-Allow-Methods", contactPost ? "POST, OPTIONS" : "GET, OPTIONS");
+    headers.set("Access-Control-Allow-Headers", "Content-Type");
     headers.set("Access-Control-Max-Age", "86400");
   }
   if (request.method === "OPTIONS") {
     return new NextResponse(null, { status: 204, headers });
+  }
+  if (contactPost && request.method === "POST") {
+    const response = NextResponse.next();
+    headers.forEach((value, key) => response.headers.set(key, value));
+    return response;
   }
   if (request.method !== "GET" && request.method !== "HEAD") {
     return NextResponse.json({ error: "Method not allowed" }, { status: 405, headers });

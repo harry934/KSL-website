@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AdvancedSlug, Field, FieldGrid, FormSection, SaveBar, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
+import { Field, FieldGrid, FormSection, SaveBar, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
 import { ImageField } from "@/components/ui/image-field";
 import { ItemList } from "@/components/ui/item-list";
 import { RichText } from "@/components/ui/rich-text";
@@ -159,7 +159,6 @@ export function EventsEditor() {
             <FormSection title="Cover photo">
               <ImageField module="events" value={editing.image_path ?? ""} onChange={(image_path) => set({ image_path })} />
             </FormSection>
-            <AdvancedSlug value={editing.slug ?? ""} onChange={(slug) => set({ slug })} />
           </div>
         </div>
         <SaveBar>

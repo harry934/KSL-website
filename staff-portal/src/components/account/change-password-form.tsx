@@ -4,10 +4,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PasswordHints, PasswordInput } from "@/components/ui/password-input";
 import { Field, Notice } from "@/components/ui/form-bits";
-import { validatePassword } from "@/lib/accounts";
+import { validatePassword, validateUsername, normalizeUsername } from "@/lib/accounts";
+import { Input } from "@/components/ui/input";
 
-export function ChangePasswordForm({ forced = false }: { forced?: boolean }) {
+export function ChangePasswordForm({ forced = false, changeUsername = false }: { forced?: boolean; changeUsername?: boolean }) {
   const [current, setCurrent] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -31,11 +33,23 @@ export function ChangePasswordForm({ forced = false }: { forced?: boolean }) {
       setError(forced ? "Choose a password different from the one-time password." : "Choose a password different from the current one.");
       return;
     }
+    const nextUsername = normalizeUsername(username);
+    if (changeUsername) {
+      const usernameError = validateUsername(nextUsername);
+      if (usernameError) {
+        setError(usernameError);
+        return;
+      }
+    }
     setSaving(true);
     const res = await fetch("/api/account/password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPassword: current, newPassword: password }),
+      body: JSON.stringify({
+        currentPassword: current,
+        newPassword: password,
+        ...(changeUsername ? { newUsername: nextUsername } : {}),
+      }),
     }).catch(() => null);
     const json = res ? await res.json().catch(() => ({})) : {};
     setSaving(false);
@@ -55,6 +69,18 @@ export function ChangePasswordForm({ forced = false }: { forced?: boolean }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      {changeUsername && (
+        <Field label="New username" hint="Lowercase letters and numbers. This replaces the username you were given.">
+          <Input
+            value={username}
+            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
+            autoCapitalize="none"
+            autoComplete="username"
+            spellCheck={false}
+            required
+          />
+        </Field>
+      )}
       <Field label={forced ? "One-time password" : "Current password"} hint={forced ? "The password the administrator gave you." : undefined}>
         <PasswordInput autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
       </Field>
