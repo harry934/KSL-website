@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Pencil, Plus, Star, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { EmptyState, Field, FieldGrid, FormSection, MoveButtons, Select, Switch, Textarea } from "@/components/ui/form-bits";
+import { EmptyState, Field, FieldGrid, FormSection, GridOrder, MoveButtons, Select, Switch, Textarea } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { GALLERY_CATEGORIES, photoSrc, youtubeIdFrom, type GalleryRow, type GalleryVideoRow } from "@/lib/gallery";
@@ -31,6 +31,8 @@ export function GalleryEditor() {
   const [videos, setVideos] = useState<GalleryVideoRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [place, setPlace] = useState("any");
+  const [columns, setColumns] = useState(1);
+  const photoGrid = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [video, setVideo] = useState<VideoDraft | null>(null);
   const [savingVideo, setSavingVideo] = useState(false);
@@ -52,6 +54,19 @@ export function GalleryEditor() {
   }, [load]);
 
   const shown = useMemo(() => (place === "any" ? photos : photos.filter((p) => (p.category || "all") === place)), [photos, place]);
+
+  useEffect(() => {
+    const el = photoGrid.current;
+    if (!el) return;
+    const measure = () => {
+      const count = getComputedStyle(el).gridTemplateColumns.split(" ").filter(Boolean).length;
+      setColumns(Math.max(1, count));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [shown.length, loading, place]);
 
   async function savePhoto(row: GalleryRow, message?: string) {
     try {
@@ -236,7 +251,11 @@ export function GalleryEditor() {
     <div className="space-y-5">
       <FormSection
         title="Photos"
-        description={`${photos.length} photos, ${live} shown on the website. Type in a caption box to change it.`}
+        description={
+          place === "any"
+            ? `${photos.length} photos, ${live} shown on the website. Up and down move a photo to another row. Left and right move it along the row. Photo 1 is shown first.`
+            : `${photos.length} photos, ${live} shown on the website. Choose All places to change the order.`
+        }
         actions={
           <>
             <div className="w-[190px]">
@@ -275,7 +294,7 @@ export function GalleryEditor() {
         {shown.length === 0 ? (
           <EmptyState>No photos here yet. Click Upload photos to add some.</EmptyState>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div ref={photoGrid} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {shown.map((p) => {
               const index = photos.findIndex((x) => x.id === p.id);
               return (
@@ -325,12 +344,7 @@ export function GalleryEditor() {
                       />
                       <span className="flex items-center">
                         {place === "any" && (
-                          <MoveButtons
-                            onUp={() => movePhoto(index, -1)}
-                            onDown={() => movePhoto(index, 1)}
-                            first={index === 0}
-                            last={index === photos.length - 1}
-                          />
+                          <GridOrder index={index} count={photos.length} columns={columns} onMove={movePhoto} />
                         )}
                         {canDelete && (
                           <button
@@ -355,7 +369,7 @@ export function GalleryEditor() {
 
       <FormSection
         title="Videos"
-        description="YouTube videos shown on the Gallery page. The featured video is shown first and on the home page."
+        description="YouTube videos shown on the Gallery page. Higher in the list is shown first. The featured video is also shown on the home page."
         actions={
           !video && (
             <Button onClick={() => startVideo()}>

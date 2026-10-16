@@ -295,7 +295,7 @@ export function FaqEditor() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[13.5px] text-[#5b6775]">
-          Questions are grouped under headings. Use the arrows to change the order.
+          Questions are grouped under headings. Higher in a list is shown first on the website.
         </p>
         <Button onClick={newGroup}>
           <Plus className="h-4 w-4" /> Add group

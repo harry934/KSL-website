@@ -58,13 +58,21 @@ export function ItemList({
 
   return (
     <div className="space-y-3">
-      {items.length >= SEARCH_FROM && (
+      {(items.length >= SEARCH_FROM || (onMove && items.length > 1)) && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-[13px] text-[#6b7785]">
-            {searching ? `${matches.length} of ${items.length} shown` : `${items.length} items`}
-            {onMove && searching && " · clear the search to change the order"}
+            {items.length >= SEARCH_FROM
+              ? searching
+                ? `${matches.length} of ${items.length} shown`
+                : `${items.length} items`
+              : "Order on the website"}
+            {onMove && searching
+              ? " · clear the search to change the order"
+              : onMove
+                ? " · the top item is shown first"
+                : ""}
           </p>
-          <SearchBox value={query} onChange={search} placeholder="Search this list" />
+          {items.length >= SEARCH_FROM && <SearchBox value={query} onChange={search} placeholder="Search this list" />}
         </div>
       )}
 
@@ -97,8 +105,14 @@ export function ItemList({
               <span className="flex shrink-0 items-center gap-1">
                 {onMove && !searching && (
                   <MoveButtons
-                    onUp={() => onMove(index, -1)}
-                    onDown={() => onMove(index, 1)}
+                    onUp={() => {
+                      onMove(index, -1);
+                      setPage(Math.floor((index - 1) / PAGE_SIZE) + 1);
+                    }}
+                    onDown={() => {
+                      onMove(index, 1);
+                      setPage(Math.floor((index + 1) / PAGE_SIZE) + 1);
+                    }}
                     first={index === 0}
                     last={index === items.length - 1}
                   />

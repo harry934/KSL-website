@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/cn";
-import { ArrowDown, ArrowUp, ChevronDown } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown } from "lucide-react";
 import { forwardRef, useId, useState, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { controlClass } from "@/components/ui/input";
 
@@ -258,6 +258,10 @@ export function EmptyState({ children }: { children: React.ReactNode }) {
   );
 }
 
+const orderButtonClass =
+  "inline-flex h-6 w-6 items-center justify-center rounded-[5px] text-[#5b6775] transition-colors hover:bg-[#eef2f6] hover:text-[#0b1f3a] disabled:pointer-events-none disabled:opacity-25";
+
+/** Vertical list order. The top arrow moves the item higher, so it is shown sooner. */
 export function MoveButtons({
   onUp,
   onDown,
@@ -271,16 +275,93 @@ export function MoveButtons({
   last: boolean;
   disabled?: boolean;
 }) {
-  const cls =
-    "inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-[#5b6775] transition-colors hover:bg-[#eef2f6] hover:text-[#0b1f3a] disabled:pointer-events-none disabled:opacity-30";
   return (
-    <span className="inline-flex shrink-0 items-center">
-      <button type="button" className={cls} onClick={onUp} disabled={disabled || first} aria-label="Move up" title="Move up">
-        <ArrowUp className="h-4 w-4" />
+    <span className="inline-flex shrink-0 flex-col" role="group" aria-label="Order in the list">
+      <button
+        type="button"
+        className={orderButtonClass}
+        onClick={onUp}
+        disabled={disabled || first}
+        aria-label="Move higher"
+        title="Move higher. Shown sooner."
+      >
+        <ArrowUp className="h-3.5 w-3.5" />
       </button>
-      <button type="button" className={cls} onClick={onDown} disabled={disabled || last} aria-label="Move down" title="Move down">
-        <ArrowDown className="h-4 w-4" />
+      <button
+        type="button"
+        className={orderButtonClass}
+        onClick={onDown}
+        disabled={disabled || last}
+        aria-label="Move lower"
+        title="Move lower. Shown later."
+      >
+        <ArrowDown className="h-3.5 w-3.5" />
       </button>
+    </span>
+  );
+}
+
+/** Photo-grid order. Up and down change rows. Left and right move along the row. */
+export function GridOrder({
+  index,
+  count,
+  columns,
+  onMove,
+}: {
+  index: number;
+  count: number;
+  columns: number;
+  onMove: (index: number, delta: number) => void;
+}) {
+  const cols = Math.max(1, columns);
+  const column = index % cols;
+  return (
+    <span className="inline-grid grid-cols-3" role="group" aria-label={`Photo ${index + 1} of ${count}`}>
+      <span />
+      <button
+        type="button"
+        className={orderButtonClass}
+        disabled={index < cols}
+        onClick={() => onMove(index, -cols)}
+        aria-label="Move up a row"
+        title="Move up a row"
+      >
+        <ArrowUp className="h-3.5 w-3.5" />
+      </button>
+      <span />
+      <button
+        type="button"
+        className={orderButtonClass}
+        disabled={column === 0}
+        onClick={() => onMove(index, -1)}
+        aria-label="Move left"
+        title="Move left"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+      </button>
+      <span className="flex items-center justify-center text-[10px] font-semibold tabular-nums text-[#8a96a5]">{index + 1}</span>
+      <button
+        type="button"
+        className={orderButtonClass}
+        disabled={column === cols - 1 || index >= count - 1}
+        onClick={() => onMove(index, 1)}
+        aria-label="Move right"
+        title="Move right"
+      >
+        <ArrowRight className="h-3.5 w-3.5" />
+      </button>
+      <span />
+      <button
+        type="button"
+        className={orderButtonClass}
+        disabled={index + cols >= count}
+        onClick={() => onMove(index, cols)}
+        aria-label="Move down a row"
+        title="Move down a row"
+      >
+        <ArrowDown className="h-3.5 w-3.5" />
+      </button>
+      <span />
     </span>
   );
 }
