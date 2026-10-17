@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity } from "@/lib/api-auth";
 import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
-import { authEmailFor, generateOneTimePassword, suggestUsername } from "@/lib/auth-server";
+import { authEmailFor, generateOneTimePassword, usernameChoices } from "@/lib/auth-server";
 import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 import { avatarUrl } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
@@ -72,8 +72,7 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient();
   let username = "";
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    const candidate = suggestUsername(displayName);
+  for (const candidate of usernameChoices(displayName)) {
     const { data: taken } = await admin.from("admin_profiles").select("id").eq("username", candidate).maybeSingle();
     if (!taken) {
       username = candidate;

@@ -168,9 +168,9 @@ function OneTimePasswordBox({ issued, onClose }: { issued: Issued; onClose: () =
 
   const details = signInText(issued);
 
-  async function copy() {
+  async function copyPassword() {
     try {
-      await navigator.clipboard.writeText(details);
+      await navigator.clipboard.writeText(issued.password);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -207,9 +207,9 @@ function OneTimePasswordBox({ issued, onClose }: { issued: Issued; onClose: () =
             <p className="text-[12.5px] text-[#6b7785]">One-time password</p>
             <p className="mt-0.5 select-all font-mono text-[16px] font-semibold tracking-wide text-[#0b1f3a]">{issued.password}</p>
           </div>
-          <Button variant="secondary" size="sm" onClick={copy}>
+          <Button variant="secondary" size="sm" onClick={copyPassword}>
             {copied ? <Check className="h-4 w-4 text-[#1b7a3d]" /> : <Copy className="h-4 w-4" />}
-            {copied ? "Copied" : "Copy"}
+            {copied ? "Copied" : "Copy password"}
           </Button>
         </div>
       </div>

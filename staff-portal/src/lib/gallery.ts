@@ -20,10 +20,15 @@ export type GalleryVideoRow = {
 };
 
 export const GALLERY_CATEGORIES = [
-  { value: "all", label: "General" },
-  { value: "kisumu", label: "Kisumu Shipyard" },
-  { value: "mombasa", label: "Mombasa Shipyard" },
+  { value: "all", label: "General", where: "Shown on the Gallery page in All only." },
+  { value: "kisumu", label: "Kisumu", where: "Shown on the Gallery page under Kisumu, and also in All." },
+  { value: "mombasa", label: "Mombasa", where: "Shown on the Gallery page under Mombasa, and also in All." },
+  { value: "krc", label: "Kenya Railways", where: "Shown on the Gallery page under Kenya Railways, and also in All." },
 ];
+
+export function galleryPlace(value: string | null | undefined) {
+  return GALLERY_CATEGORIES.find((c) => c.value === (value || "all")) ?? GALLERY_CATEGORIES[0];
+}
 
 export function photoSrc(row: Pick<GalleryRow, "public_url" | "storage_path">) {
   return row.public_url || row.storage_path || "";

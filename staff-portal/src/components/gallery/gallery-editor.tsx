@@ -226,7 +226,7 @@ export function GalleryEditor() {
     <div className="space-y-5">
       <FormSection
         title="Photos"
-        description={`${photos.length} photos, ${live} shown on the website.`}
+        description={`${photos.length} photos, ${live} on the Gallery page. The name is the caption under the picture. The place is the button a visitor clicks to find it.`}
         actions={
           <>
             <div className="w-[190px]">
@@ -265,71 +265,83 @@ export function GalleryEditor() {
         {shown.length === 0 ? (
           <EmptyState>No photos here yet. Click Upload photos to add some.</EmptyState>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {shown.map((p) => {
-              return (
-                <div key={p.id} className="overflow-hidden rounded-[10px] border border-[#e3e8ee] bg-white">
-                  <div className="relative aspect-[4/3] bg-[#f1f4f7]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={siteAssetUrl(photoSrc(p))}
-                      alt={p.title ?? ""}
-                      className={cn("h-full w-full object-cover", p.status !== "published" && "opacity-50")}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    {p.status !== "published" && (
-                      <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2 py-0.5 text-[12px] font-semibold text-[#5b6775]">
-                        Hidden
-                      </span>
-                    )}
-                  </div>
-                  <div className="space-y-3 p-3">
-                    <Input
-                      value={p.title ?? ""}
-                      placeholder="Write a caption"
-                      onChange={(e) => patchPhoto(p.id, { title: e.target.value }, false)}
-                      onBlur={(e) => savePhoto({ ...p, title: e.target.value }, "Caption saved.")}
-                      aria-label="Caption"
-                    />
-                    <Select
-                      value={p.category || "all"}
-                      onChange={(e) => patchPhoto(p.id, { category: e.target.value }, true, "Place saved.")}
-                      aria-label="Place"
-                    >
-                      {GALLERY_CATEGORIES.map((c) => (
-                        <option key={c.value} value={c.value}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </Select>
-                    <div className="flex items-center justify-between gap-2">
-                      <Switch
-                        checked={p.status === "published"}
-                        disabled={!canPublish}
-                        onChange={(on) =>
-                          patchPhoto(p.id, { status: on ? "published" : "draft" }, true, on ? "Photo is now on the website." : "Photo hidden.")
-                        }
-                        label={<span className="text-[13px]">On website</span>}
-                      />
-                      <span className="flex items-center">
-                        {canDelete && (
-                          <button
-                            type="button"
-                            onClick={() => removePhoto(p)}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-[#98a3b1] hover:bg-[#fdecea] hover:text-[#b42318]"
-                            aria-label="Remove photo"
-                            title="Remove photo"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </span>
-                    </div>
-                  </div>
+          <div className="space-y-6">
+            {[
+              ...GALLERY_CATEGORIES.filter((placeOption) => shown.some((p) => (p.category || "all") === placeOption.value)),
+              ...[...new Set(shown.map((p) => p.category || "all"))]
+                .filter((value) => !GALLERY_CATEGORIES.some((c) => c.value === value))
+                .map((value) => ({ value, label: value, where: "This place is not one of the buttons on the Gallery page, so the photo only appears in All." })),
+            ].map((placeOption) => (
+              <section key={placeOption.value}>
+                <div className="mb-2">
+                  <h3 className="text-[14px] font-bold text-[#0b1f3a]">{placeOption.label}</h3>
+                  <p className="text-[12.5px] text-[#6b7785]">{placeOption.where}</p>
                 </div>
-              );
-            })}
+                <ul className="divide-y divide-[#eef1f4] overflow-hidden rounded-[10px] border border-[#e3e8ee]">
+                  {shown
+                    .filter((p) => (p.category || "all") === placeOption.value)
+                    .map((p) => (
+                      <li key={p.id} className="flex flex-wrap items-center gap-3 bg-white px-3 py-2.5 sm:flex-nowrap">
+                        <span className="relative h-14 w-20 shrink-0 overflow-hidden rounded-[6px] bg-[#f1f4f7]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={siteAssetUrl(photoSrc(p))}
+                            alt=""
+                            className={cn("h-full w-full object-cover", p.status !== "published" && "opacity-45")}
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </span>
+                        <label className="min-w-[180px] flex-1">
+                          <span className="mb-1 block text-[12px] font-semibold text-[#5b6775]">Name under the photo</span>
+                          <Input
+                            value={p.title ?? ""}
+                            placeholder="e.g. MV Uhuru at Kisumu"
+                            onChange={(e) => patchPhoto(p.id, { title: e.target.value }, false)}
+                            onBlur={(e) => savePhoto({ ...p, title: e.target.value }, "Name saved.")}
+                            aria-label="Name under the photo"
+                          />
+                        </label>
+                        <label className="w-full sm:w-[210px]">
+                          <span className="mb-1 block text-[12px] font-semibold text-[#5b6775]">Where it appears</span>
+                          <Select
+                            value={p.category || "all"}
+                            onChange={(e) => patchPhoto(p.id, { category: e.target.value }, true, "Place saved.")}
+                            aria-label="Where it appears"
+                          >
+                            {GALLERY_CATEGORIES.map((c) => (
+                              <option key={c.value} value={c.value}>
+                                {c.label}
+                              </option>
+                            ))}
+                          </Select>
+                        </label>
+                        <div className="flex items-center gap-1">
+                          <Switch
+                            checked={p.status === "published"}
+                            disabled={!canPublish}
+                            onChange={(on) =>
+                              patchPhoto(p.id, { status: on ? "published" : "draft" }, true, on ? "Photo is now on the website." : "Photo hidden.")
+                            }
+                            label={<span className="text-[13px]">{p.status === "published" ? "On the page" : "Hidden"}</span>}
+                          />
+                          {canDelete && (
+                            <button
+                              type="button"
+                              onClick={() => removePhoto(p)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-[6px] text-[#98a3b1] hover:bg-[#fdecea] hover:text-[#b42318]"
+                              aria-label="Remove photo"
+                              title="Remove photo"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                </ul>
+              </section>
+            ))}
           </div>
         )}
       </FormSection>

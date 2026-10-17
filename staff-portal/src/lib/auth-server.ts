@@ -54,24 +54,34 @@ export function formatClock(date: Date) {
 const OTP_LETTERS = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
 const OTP_DIGITS = "23456789";
 
-/** Readable one-time password such as "hT7k-Q4mz-9Rp2": no look-alike characters, always letters and numbers. */
-const USERNAME_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+function usernameStem(value: string) {
+  const stem = value.replace(/[^a-z0-9.]/g, "").replace(/^\.+|\.+$/g, "").slice(0, 32);
+  return USERNAME_PATTERN.test(stem) ? stem : "";
+}
 
-/** A sign-in name from the person's name, plus a short random ending so it is unique. */
-export function suggestUsername(displayName: string) {
+/** Short sign-in names taken from the person's own name, simplest first. "Jane Kamau" gives jane, then jkamau, then jane.kamau. */
+export function usernameChoices(displayName: string) {
   const words = displayName
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
     .trim()
     .split(/\s+/)
     .filter(Boolean);
-  let stem = words.slice(0, 2).join(".").replace(/[^a-z0-9.]/g, "").replace(/^\.+|\.+$/g, "").slice(0, 20);
-  if (stem.length < 3 || !/^[a-z0-9]/.test(stem)) stem = "agent";
-  const suffix = Array.from({ length: 4 }, () => USERNAME_ALPHABET[randomInt(USERNAME_ALPHABET.length)]).join("");
-  const candidate = `${stem}.${suffix}`.slice(0, 32);
-  return USERNAME_PATTERN.test(candidate) ? candidate : `agent.${suffix}`;
+  const first = words[0] ?? "";
+  const last = words.length > 1 ? words[words.length - 1] : "";
+  const stems = [...new Set([usernameStem(first), last ? usernameStem(first[0] + last) : "", last ? usernameStem(`${first}.${last}`) : ""].filter(Boolean))];
+  const choices: string[] = [];
+  for (const stem of stems) choices.push(stem);
+  for (let n = 2; n <= 30 && choices.length < 40; n += 1) {
+    for (const stem of stems) {
+      const numbered = usernameStem(`${stem}${n}`);
+      if (numbered) choices.push(numbered);
+    }
+  }
+  return choices.length ? choices : ["agent", "agent2", "agent3"];
 }
 
+/** Readable one-time password such as "hT7k-Q4mz-9Rp2": no look-alike characters, always letters and numbers. */
 export function generateOneTimePassword() {
   const all = OTP_LETTERS + OTP_DIGITS;
   for (;;) {
