@@ -1,3 +1,4 @@
+/* Board of directors. */
 (function () {
     "use strict";
 

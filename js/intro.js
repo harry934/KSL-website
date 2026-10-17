@@ -1,3 +1,5 @@
+/* Opening logo on the home page. */
+/* Opening logo on the home page. */
 (function () {
     "use strict";
 

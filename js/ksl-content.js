@@ -1,3 +1,4 @@
+/* Reads published content from the admin portal, then data/*.json if the portal is unreachable. */
 (function (global) {
     "use strict";
 

@@ -1,3 +1,5 @@
+/* Applies the website banner and the other settings saved in the admin portal. */
+/* Applies the website banner and the other settings saved in the admin portal. */
 (function () {
     "use strict";
 

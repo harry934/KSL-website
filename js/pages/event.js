@@ -1,3 +1,4 @@
+/* Events list. */
 (function () {
     "use strict";
 

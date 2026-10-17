@@ -1,3 +1,4 @@
+/* Corporate documents visitors can download. */
 (function () {
     "use strict";
 

@@ -1,3 +1,4 @@
+/* Shared behaviour on every page: menu, search, counters and scroll effects. */
 (function ($) {
     "use strict";
 

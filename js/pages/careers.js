@@ -1,3 +1,4 @@
+/* Jobs and internships. */
 (function () {
     "use strict";
 

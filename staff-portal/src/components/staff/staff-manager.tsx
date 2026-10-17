@@ -14,8 +14,7 @@ import { sendJson } from "@/lib/upload-client";
 import { cn } from "@/lib/cn";
 
 const EDITABLE_MODULES = (Object.keys(MODULE_LABELS) as ModuleKey[]).filter((k) => k !== "staff");
-const PERM_FIELDS = ["can_view", "can_edit", "can_publish", "can_delete"] as const;
-type PermField = (typeof PERM_FIELDS)[number];
+type PermField = "can_view" | "can_edit" | "can_publish" | "can_delete";
 
 type PermRow = { module_key: ModuleKey } & Record<PermField, boolean>;
 type AccessLevel = "read" | "edit" | "publish" | "full";
@@ -124,8 +123,8 @@ function AccessEditor({
           value=""
           aria-label="Add a section"
           onChange={(event) => {
-            const module = event.target.value as ModuleKey;
-            if (module) setLevel(module, "read");
+            const section = event.target.value as ModuleKey;
+            if (section) setLevel(section, "read");
           }}
         >
           <option value="">Add a section</option>

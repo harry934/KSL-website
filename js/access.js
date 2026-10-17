@@ -1,3 +1,4 @@
+/* Text size, contrast and motion choices, remembered in this browser. */
 (function () {
     var KEY = "ksl-a11y";
     var fontStep = 0;

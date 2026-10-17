@@ -1,3 +1,4 @@
+/* Questions and answers. */
 (function () {
     "use strict";
 

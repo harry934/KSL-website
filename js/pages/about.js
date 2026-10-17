@@ -1,3 +1,4 @@
+/* About page: the story, the values and the path graphic. */
 (function () {
     "use strict";
 

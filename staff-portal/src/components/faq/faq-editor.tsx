@@ -14,6 +14,7 @@ import {
   VisibilitySwitch,
 } from "@/components/ui/form-bits";
 import { ItemList } from "@/components/ui/item-list";
+import { DRAG_FROM, useLiveDrag } from "@/components/ui/live-drag";
 import { SearchSelect } from "@/components/ui/search-select";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
@@ -157,6 +158,8 @@ export function FaqEditor() {
     persistOrder("group", before, updated);
   }
 
+  const groupDrag = useLiveDrag(moveGroup);
+
   function moveQuestion(groupId: string, from: number, to: number) {
     const inGroup = items.filter((i) => i.group_id === groupId);
     const before = new Map(inGroup.map((i) => [i.id, i.sort_order]));
@@ -294,7 +297,7 @@ export function FaqEditor() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[13.5px] text-[#5b6775]">
-          Questions are grouped under headings. Drag a group or a question. Higher in a list is shown first.
+          Questions are grouped under headings. Higher in a list is shown first. A long list can be dragged into order.
         </p>
         <Button onClick={newGroup}>
           <Plus className="h-4 w-4" /> Add group
@@ -306,33 +309,17 @@ export function FaqEditor() {
       {groups.map((group, index) => {
         const questions = items.filter((i) => i.group_id === group.id);
         return (
-          <div
-            key={group.id}
-            onDragOver={(event) => {
-              if (groups.length < 2) return;
-              event.preventDefault();
-            }}
-            onDrop={(event) => {
-              const from = Number(event.dataTransfer.getData("application/x-ksl-group"));
-              if (!Number.isInteger(from) || from === index) return;
-              event.preventDefault();
-              moveGroup(from, index);
-            }}
-          >
+          <div key={group.id} ref={groupDrag.itemRef(index)} style={groups.length >= DRAG_FROM ? groupDrag.itemStyle(index) : undefined}>
           <FormSection
             title={group.title || "Untitled group"}
             description={`${questions.length} question${questions.length === 1 ? "" : "s"}`}
             actions={
               <>
                 {group.status !== "published" && <StatusBadge status={group.status} />}
-                {groups.length > 1 && (
+                {groups.length >= DRAG_FROM && (
                   <span
-                    draggable
-                    onDragStart={(event) => {
-                      event.dataTransfer.effectAllowed = "move";
-                      event.dataTransfer.setData("application/x-ksl-group", String(index));
-                    }}
-                    className="inline-flex h-8 w-6 cursor-grab items-center justify-center text-[#98a3b1] active:cursor-grabbing"
+                    onPointerDown={(event) => groupDrag.onGripPointerDown(index, event)}
+                    className="inline-flex h-8 w-6 cursor-grab touch-none items-center justify-center text-[#98a3b1] active:cursor-grabbing"
                     aria-label="Drag to reorder group"
                     title="Drag to reorder group"
                   >

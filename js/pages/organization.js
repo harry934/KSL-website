@@ -1,3 +1,4 @@
+/* Organisation page: yards, leaders and the chart. */
 (function () {
     "use strict";
 

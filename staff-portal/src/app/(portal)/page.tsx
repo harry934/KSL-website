@@ -7,7 +7,6 @@ import { describeActivity } from "@/lib/activity-words";
 import { PageHeader } from "@/components/portal/page-header";
 import { MODULE_ICONS } from "@/components/portal/module-icons";
 
-type CountRow = { module_key: ModuleKey; published: number; draft: number };
 type ActivityRow = {
   id: string;
   module_key: string | null;
@@ -34,46 +33,19 @@ function formatWhen(iso: string) {
   }).format(new Date(iso));
 }
 
-function hintFor(key: ModuleKey, row: CountRow | undefined) {
-  const hidden = row ? Number(row.draft) : 0;
-  if (key === "staff") return hidden ? `${hidden} suspended` : "All active";
-  if (key === "messages") {
-    const unread = row ? Number(row.published) : 0;
-    const read = row ? Number(row.draft) : 0;
-    if (!unread && !read) return "No messages yet";
-    return unread ? `${read} already opened` : "All read";
-  }
-  if (key === "site_settings") return "Banner, contact details, footer";
-  return hidden ? `${hidden} hidden` : "Nothing hidden";
-}
-
-function countLabel(key: ModuleKey) {
-  if (key === "staff") return "people";
-  if (key === "messages") return "unread";
-  if (key === "site_settings") return "";
-  return "on website";
-}
-
 export default async function DashboardPage() {
   const session = await getStaffSession();
   if (!session) return null;
 
-  const visible: ModuleKey[] = session.isSuperAdmin
-    ? (Object.keys(MODULE_ROUTES) as ModuleKey[])
-    : session.permissions.filter((p) => p.can_view && p.module_key !== "staff").map((p) => p.module_key);
-
-  const admin = createAdminClient();
-  let activityQuery = admin
-    .from("activity_log")
-    .select("id, module_key, action, entity_type, metadata, created_at, admin_profiles(display_name, username)")
-    .order("created_at", { ascending: false })
-    .limit(8);
-  if (!session.isSuperAdmin) activityQuery = activityQuery.in("module_key", visible.length ? visible : ["-"]);
-
-  const [countsRes, activityRes] = await Promise.all([admin.rpc("portal_content_counts"), activityQuery]);
-
-  const counts = new Map(((countsRes.data ?? []) as CountRow[]).map((row) => [row.module_key, row]));
-  const activity = (activityRes.data ?? []) as unknown as ActivityRow[];
+  let activity: ActivityRow[] = [];
+  if (session.isSuperAdmin) {
+    const activityRes = await createAdminClient()
+      .from("activity_log")
+      .select("id, module_key, action, entity_type, metadata, created_at, admin_profiles(display_name, username)")
+      .order("created_at", { ascending: false })
+      .limit(8);
+    activity = (activityRes.data ?? []) as unknown as ActivityRow[];
+  }
   const quick = QUICK_ACTIONS.filter((action) => {
     if (session.isSuperAdmin) return true;
     return session.permissions.some((p) => p.module_key === action.module && p.can_edit);
@@ -83,7 +55,7 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-[18px]">
       <PageHeader
         title="Dashboard"
-        description={`Welcome back, ${session.displayName}. Here is what is on the website and what is still hidden.`}
+        description={`Welcome back, ${session.displayName}.`}
       />
 
       {quick.length > 0 && (
@@ -108,41 +80,13 @@ export default async function DashboardPage() {
         </section>
       )}
 
-      <div className="kpi-grid">
-        {visible.map((key) => {
-          const row = counts.get(key);
-          const Icon = MODULE_ICONS[key];
-          const label = countLabel(key);
-          return (
-            <Link key={key} href={MODULE_ROUTES[key]} className="kpi-card">
-              <span className="kpi-icon">
-                <Icon className="h-[18px] w-[18px]" />
-              </span>
-              <span className="min-w-0">
-                <h3>{MODULE_LABELS[key]}</h3>
-                {key === "site_settings" ? (
-                  <strong className="!text-[15px] !leading-[1.6]">Open settings</strong>
-                ) : (
-                  <strong>
-                    {row ? Number(row.published) : 0}
-                    {label && <span className="ml-1.5 text-[12px] font-medium text-[#6b7785]">{label}</span>}
-                  </strong>
-                )}
-                <span className="kpi-hint">{hintFor(key, row)}</span>
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-
+      {session.isSuperAdmin && (
       <section className="ksl-card">
         <div className="flex items-center justify-between gap-3 border-b border-[#eef1f4] px-5 py-4">
           <h2 className="text-[15px] font-bold text-[#0b1f3a]">Recent changes</h2>
-          {session.isSuperAdmin && (
-            <Link href="/activity" className="text-[13px] font-semibold text-[#0b1f3a] underline-offset-2 hover:underline">
-              See everything
-            </Link>
-          )}
+          <Link href="/activity" className="text-[13px] font-semibold text-[#0b1f3a] underline-offset-2 hover:underline">
+            See everything
+          </Link>
         </div>
         {activity.length === 0 ? (
           <p className="px-5 py-6 text-[14px] text-[#6b7785]">No changes yet.</p>
@@ -165,6 +109,7 @@ export default async function DashboardPage() {
           </ul>
         )}
       </section>
+      )}
     </div>
   );
 }

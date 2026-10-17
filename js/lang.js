@@ -1,3 +1,4 @@
+/* English and Kiswahili switch. */
 (function () {
     var KEY = "ksl-lang";
     var sw = {

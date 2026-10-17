@@ -1,3 +1,4 @@
+/* One news story. */
 (function () {
     "use strict";
 

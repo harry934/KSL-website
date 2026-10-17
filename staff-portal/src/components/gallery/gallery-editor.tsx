@@ -8,6 +8,7 @@ import { EmptyState, Field, FieldGrid, FormSection, Select, Switch, Textarea } f
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { GALLERY_CATEGORIES, photoSrc, youtubeIdFrom, type GalleryRow, type GalleryVideoRow } from "@/lib/gallery";
+import { DRAG_FROM, useLiveDrag } from "@/components/ui/live-drag";
 import { reorderItem } from "@/lib/list-utils";
 import { siteAssetUrl } from "@/lib/site-url";
 import { sendJson, uploadFile } from "@/lib/upload-client";
@@ -191,6 +192,8 @@ export function GalleryEditor() {
       load();
     }
   }
+
+  const videoDrag = useLiveDrag(moveVideo);
 
   async function removeVideo(row: GalleryVideoRow) {
     const ok = await confirm({
@@ -406,26 +409,14 @@ export function GalleryEditor() {
             {videos.map((v, index) => (
               <li
                 key={v.id}
-                className="flex flex-wrap items-center gap-4 py-3"
-                onDragOver={(event) => {
-                  if (videos.length < 2) return;
-                  event.preventDefault();
-                }}
-                onDrop={(event) => {
-                  const from = Number(event.dataTransfer.getData("application/x-ksl-video"));
-                  if (!Number.isInteger(from) || from === index) return;
-                  event.preventDefault();
-                  moveVideo(from, index);
-                }}
+                ref={videoDrag.itemRef(index)}
+                style={videos.length >= DRAG_FROM ? videoDrag.itemStyle(index) : undefined}
+                className="flex flex-wrap items-center gap-4 bg-white py-3"
               >
-                {videos.length > 1 && (
+                {videos.length >= DRAG_FROM && (
                   <span
-                    draggable
-                    onDragStart={(event) => {
-                      event.dataTransfer.effectAllowed = "move";
-                      event.dataTransfer.setData("application/x-ksl-video", String(index));
-                    }}
-                    className="inline-flex h-8 w-6 shrink-0 cursor-grab items-center justify-center text-[#98a3b1] active:cursor-grabbing"
+                    onPointerDown={(event) => videoDrag.onGripPointerDown(index, event)}
+                    className="inline-flex h-8 w-6 shrink-0 cursor-grab touch-none items-center justify-center text-[#98a3b1] active:cursor-grabbing"
                     aria-label="Drag to reorder"
                     title="Drag to reorder"
                   >

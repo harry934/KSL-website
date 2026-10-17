@@ -1,3 +1,4 @@
+/* Products. */
 (function () {
     "use strict";
 

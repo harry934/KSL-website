@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 import { GripVertical, ImageIcon, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, StatusBadge } from "@/components/ui/form-bits";
+import { DRAG_FROM, useLiveDrag } from "@/components/ui/live-drag";
 import { ListPager, SearchBox, matchesSearch } from "@/components/ui/list-tools";
 import { siteAssetUrl } from "@/lib/site-url";
-import { cn } from "@/lib/cn";
 
 export type ListItem = {
   id: string;
@@ -37,11 +37,13 @@ export function ItemList({
 }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [dragFrom, setDragFrom] = useState<number | null>(null);
-  const [dragOver, setDragOver] = useState<number | null>(null);
+  const drag = useLiveDrag((from, to) => {
+    onReorder?.(from, to);
+    setPage(Math.floor(to / PAGE_SIZE) + 1);
+  });
 
   const searching = query.trim().length > 0;
-  const canDrag = !!onReorder && !searching;
+  const canDrag = !!onReorder && !searching && items.length >= DRAG_FROM;
   const matches = useMemo(
     () =>
       items
@@ -60,18 +62,9 @@ export function ItemList({
     setPage(1);
   }
 
-  function dropOn(index: number) {
-    const from = dragFrom;
-    setDragFrom(null);
-    setDragOver(null);
-    if (from == null || from === index) return;
-    onReorder?.(from, index);
-    setPage(Math.floor(index / PAGE_SIZE) + 1);
-  }
-
   return (
     <div className="space-y-3">
-      {(items.length >= SEARCH_FROM || (onReorder && items.length > 1)) && (
+      {(items.length >= SEARCH_FROM || canDrag) && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-[13px] text-[#6b7785]">
             {items.length >= SEARCH_FROM
@@ -79,11 +72,7 @@ export function ItemList({
                 ? `${matches.length} of ${items.length} shown`
                 : `${items.length} items`
               : "Order on the website"}
-            {onReorder && searching
-              ? " · clear the search to change the order"
-              : onReorder
-                ? " · drag a row. The top item is shown first"
-                : ""}
+            {canDrag ? " · drag a row and the others slide aside. The top item is shown first" : searching && onReorder ? " · clear the search to change the order" : ""}
           </p>
           {items.length >= SEARCH_FROM && <SearchBox value={query} onChange={search} placeholder="Search this list" />}
         </div>
@@ -97,39 +86,18 @@ export function ItemList({
           </button>
         </EmptyState>
       ) : (
-        <ul className="ksl-card divide-y divide-[#eef1f4] overflow-hidden">
+        <ul className="ksl-card divide-y divide-[#eef1f4]">
           {shown.map(({ item, index }) => (
             <li
               key={item.id}
-              className={cn(
-                "flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-[#fafbfc] sm:flex-nowrap",
-                dragOver === index && dragFrom !== index && "bg-[#f3f6fb]"
-              )}
-              onDragOver={(event) => {
-                if (!canDrag) return;
-                event.preventDefault();
-                event.stopPropagation();
-                setDragOver(index);
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                dropOn(index);
-              }}
+              ref={drag.itemRef(index)}
+              style={canDrag ? drag.itemStyle(index) : undefined}
+              className="flex flex-wrap items-center gap-3 bg-white px-4 py-3 hover:bg-[#fafbfc] sm:flex-nowrap"
             >
               {canDrag && (
                 <span
-                  draggable
-                  onDragStart={(event) => {
-                    event.dataTransfer.effectAllowed = "move";
-                    event.dataTransfer.setData("text/plain", String(index));
-                    setDragFrom(index);
-                  }}
-                  onDragEnd={() => {
-                    setDragFrom(null);
-                    setDragOver(null);
-                  }}
-                  className="inline-flex h-8 w-6 shrink-0 cursor-grab items-center justify-center text-[#98a3b1] active:cursor-grabbing"
+                  onPointerDown={(event) => drag.onGripPointerDown(index, event)}
+                  className="inline-flex h-8 w-6 shrink-0 cursor-grab touch-none items-center justify-center text-[#98a3b1] active:cursor-grabbing"
                   aria-label="Drag to reorder"
                   title="Drag to reorder"
                 >

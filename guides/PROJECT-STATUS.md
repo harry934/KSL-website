@@ -45,6 +45,8 @@ Last updated: October 2026
 | `007_usernames_security.sql` | Usernames, optional contact email, forced password change, login rate limiting |
 | `008_gallery_videos.sql` | Gallery videos (YouTube) |
 | `009_profile_photos.sql` | Staff profile photos (`admin_profiles.avatar_path`, files in `media-public/avatars/`) |
+| `010_board_and_first_login.sql` | Board members edited in the portal, and a first-sign-in username change |
+| `011_messages_module.sql` | Messages section for the website contact form |
 
 ## Security summary
 

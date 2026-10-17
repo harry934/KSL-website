@@ -1,9 +1,11 @@
+"""Pull service text out of the saved services page into tools/scrape/services-extracted.json."""
 import json
 import re
 from pathlib import Path
 
-HTML = Path(__file__).resolve().parents[1] / "data" / "ksl-services-scrape.html"
-OUT = Path(__file__).resolve().parents[1] / "data" / "services-extracted.json"
+SCRAPE = Path(__file__).resolve().parent / "scrape"
+HTML = SCRAPE / "ksl-services-scrape.html"
+OUT = SCRAPE / "services-extracted.json"
 
 POPUP_IDS = [
     "1900", "1903", "1906", "1908", "1912", "1916", "1915",

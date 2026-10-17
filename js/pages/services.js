@@ -1,3 +1,4 @@
+/* Services and the detail shown when a card is opened. */
 (function () {
     "use strict";
 

@@ -14,6 +14,8 @@ import { reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import { documentOptions, useDocuments } from "@/lib/use-documents";
 import type { BoardMemberRow, LeadershipRow } from "@/lib/organization";
+import { WEBSITE_BOARD } from "@/lib/website-board";
+import { siteAssetUrl } from "@/lib/site-url";
 
 type Scope = "leadership" | "board";
 type Draft = {
@@ -243,23 +245,42 @@ export function OrganizationEditor() {
             <Plus className="h-4 w-4" /> New board member
           </Button>
         </div>
-        <ItemList
-          showImages
-          items={board.map((r) => ({
-            id: r.id,
-            title: r.full_name,
-            subtitle: [r.role, groupLabel(r.board_group)].filter(Boolean).join(" · "),
-            image: r.photo_url,
-            status: r.status,
-          }))}
-          onEdit={(id) => {
-            const row = board.find((r) => r.id === id);
-            if (row) setEditing({ ...row, scope: "board" });
-          }}
-          onDelete={canDelete ? (id) => remove(id, "board") : undefined}
-          onReorder={(from, to) => move("board", from, to)}
-          emptyText="No extra board members yet."
-        />
+        <ul className="ksl-card mb-3 divide-y divide-[#eef1f4]">
+          {WEBSITE_BOARD.map((member) => (
+            <li key={member.photo} className="flex items-center gap-3 bg-white px-4 py-3">
+              <span className="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-[#f1f4f7]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={siteAssetUrl(member.photo)} alt="" className="h-full w-full object-cover" loading="lazy" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <p className="truncate text-[14px] font-semibold text-[#0b1f3a]">{member.name}</p>
+                <p className="truncate text-[12.5px] text-[#6b7785]">
+                  {member.role} · {member.group}
+                </p>
+              </span>
+              <span className="shrink-0 rounded-full bg-[#e7f6ee] px-2.5 py-1 text-[12px] font-semibold text-[#067647]">On website</span>
+            </li>
+          ))}
+        </ul>
+        {board.length > 0 && (
+          <ItemList
+            showImages
+            items={board.map((r) => ({
+              id: r.id,
+              title: r.full_name,
+              subtitle: [r.role, groupLabel(r.board_group)].filter(Boolean).join(" · "),
+              image: r.photo_url,
+              status: r.status,
+            }))}
+            onEdit={(id) => {
+              const row = board.find((r) => r.id === id);
+              if (row) setEditing({ ...row, scope: "board" });
+            }}
+            onDelete={canDelete ? (id) => remove(id, "board") : undefined}
+            onReorder={(from, to) => move("board", from, to)}
+            emptyText="No extra board members yet."
+          />
+        )}
       </div>
 
       <FormSection title="Organisation chart document" description="The document visitors download from the Organisation page.">

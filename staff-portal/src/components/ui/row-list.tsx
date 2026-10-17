@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DRAG_FROM, useLiveDrag } from "@/components/ui/live-drag";
 import { reorderItem } from "@/lib/list-utils";
-import { cn } from "@/lib/cn";
 
 /** An editable list of small records: each row can be dragged, removed or changed in place. */
 export function RowList<T>({
@@ -22,19 +21,11 @@ export function RowList<T>({
   addLabel?: string;
   emptyText?: string;
 }) {
-  const [dragFrom, setDragFrom] = useState<number | null>(null);
-  const [dragOver, setDragOver] = useState<number | null>(null);
+  const drag = useLiveDrag((from, to) => onChange(reorderItem(items, from, to)));
+  const canDrag = items.length >= DRAG_FROM;
 
   function update(index: number, patch: Partial<T>) {
     onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
-  }
-
-  function dropOn(index: number) {
-    const from = dragFrom;
-    setDragFrom(null);
-    setDragOver(null);
-    if (from == null || from === index) return;
-    onChange(reorderItem(items, from, index));
   }
 
   return (
@@ -47,33 +38,14 @@ export function RowList<T>({
       {items.map((item, index) => (
         <div
           key={index}
-          className={cn(
-            "flex items-start gap-2 rounded-[8px] border border-[#e3e8ee] bg-[#fafbfc] p-3",
-            dragOver === index && dragFrom !== index && "border-[#0b1f3a]"
-          )}
-          onDragOver={(event) => {
-            if (items.length < 2) return;
-            event.preventDefault();
-            setDragOver(index);
-          }}
-          onDrop={(event) => {
-            event.preventDefault();
-            dropOn(index);
-          }}
+          ref={drag.itemRef(index)}
+          style={canDrag ? drag.itemStyle(index) : undefined}
+          className="flex items-start gap-2 rounded-[8px] border border-[#e3e8ee] bg-[#fafbfc] p-3"
         >
-          {items.length > 1 && (
+          {canDrag && (
             <span
-              draggable
-              onDragStart={(event) => {
-                event.dataTransfer.effectAllowed = "move";
-                event.dataTransfer.setData("text/plain", String(index));
-                setDragFrom(index);
-              }}
-              onDragEnd={() => {
-                setDragFrom(null);
-                setDragOver(null);
-              }}
-              className="mt-1 inline-flex h-7 w-6 shrink-0 cursor-grab items-center justify-center text-[#98a3b1] active:cursor-grabbing"
+              onPointerDown={(event) => drag.onGripPointerDown(index, event)}
+              className="mt-1 inline-flex h-7 w-6 shrink-0 cursor-grab touch-none items-center justify-center text-[#98a3b1] active:cursor-grabbing"
               aria-label="Drag to reorder"
               title="Drag to reorder"
             >

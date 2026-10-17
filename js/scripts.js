@@ -1,3 +1,4 @@
+/* Loads the shared scripts, then the script that belongs to this page. */
 (function () {
     "use strict";
 

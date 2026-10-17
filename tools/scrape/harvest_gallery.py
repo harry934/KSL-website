@@ -1,11 +1,12 @@
+"""Download gallery photos listed in the saved gallery page into img/ksl/gallery and data/gallery.json."""
 import json
 import os
 import re
 import urllib.parse
 import urllib.request
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SCRAPE = os.path.join(ROOT, "data", "ksl-gallery-scrape.html")
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SCRAPE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ksl-gallery-scrape.html")
 OUT_DIR = os.path.join(ROOT, "img", "ksl", "gallery")
 MANIFEST = os.path.join(ROOT, "data", "gallery.json")
 

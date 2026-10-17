@@ -1,3 +1,4 @@
+/* News list. */
 (function () {
     "use strict";
 

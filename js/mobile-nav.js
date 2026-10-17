@@ -1,3 +1,5 @@
+/* Navigation bar shown on a phone. */
+/* Navigation bar shown on a phone. */
 (function () {
     "use strict";
 

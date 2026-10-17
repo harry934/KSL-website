@@ -1,3 +1,4 @@
+/* Community programmes. */
 (function () {
     "use strict";
 

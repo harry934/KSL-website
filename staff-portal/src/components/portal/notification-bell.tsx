@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
+import { readSeen, writeSeen } from "@/lib/notification-seen";
 
 type Item = {
   id: string;
@@ -30,7 +31,6 @@ function timeAgo(iso: string) {
 
 export function NotificationBell({ userId, canSeeAll }: { userId: string; canSeeAll: boolean }) {
   const router = useRouter();
-  const storageKey = `ksl-notifications-seen:${userId}`;
   const [items, setItems] = useState<Item[]>([]);
   const [seenAt, setSeenAt] = useState(0);
   const [open, setOpen] = useState(false);
@@ -47,13 +47,13 @@ export function NotificationBell({ userId, canSeeAll }: { userId: string; canSee
   }, []);
 
   useEffect(() => {
-    setSeenAt(Number(window.localStorage.getItem(storageKey)) || 0);
+    setSeenAt(readSeen(userId));
     load();
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") load();
     }, POLL_MS);
     return () => window.clearInterval(timer);
-  }, [load, storageKey]);
+  }, [load, userId]);
 
   useEffect(() => {
     if (!open) return;
@@ -77,7 +77,7 @@ export function NotificationBell({ userId, canSeeAll }: { userId: string; canSee
 
   function markAllRead() {
     const now = Date.now();
-    window.localStorage.setItem(storageKey, String(now));
+    writeSeen(userId, now);
     setSeenAt(now);
     if (items.some((item) => item.kind === "message" && item.unread)) {
       fetch("/api/messages", {
@@ -143,7 +143,7 @@ export function NotificationBell({ userId, canSeeAll }: { userId: string; canSee
             {!loaded && <p className="px-4 py-5 text-center text-[13px] text-[#6b7785]">Loading…</p>}
             {loaded && items.length === 0 && (
               <p className="px-4 py-6 text-center text-[13px] text-[#6b7785]">
-                No messages or staff changes to show.
+                {canSeeAll ? "No messages or staff changes to show." : "No updates on items you have added."}
               </p>
             )}
             {items.map((item) => (

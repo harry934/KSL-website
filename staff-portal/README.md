@@ -2,7 +2,7 @@
 
 Private admin for Kenya Shipyards website content. **Do not** deploy on a hostname containing `admin`. Use an unguessable URL and do not link from the public site.
 
-**Full deploy guide (two Vercel projects + Supabase):** [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md)
+**Full deploy guide (two Vercel projects + Supabase):** [../guides/DEPLOYMENT.md](../guides/DEPLOYMENT.md)
 
 ## Cursor + Supabase MCP
 
@@ -17,7 +17,7 @@ Optional: `npx skills add supabase/agent-skills` for Supabase-focused agent skil
 ## Setup
 
 1. **Supabase SQL** — In [Supabase Dashboard](https://supabase.com/dashboard) → SQL → New query, run the full script:
-   `../supabase/migrations/001_staff_portal_schema.sql` through `009_profile_photos.sql`
+   `../supabase/migrations/001_staff_portal_schema.sql` through `011_messages_module.sql`
 
 2. **Environment** — Copy `.env.example` to `.env.local` (already configured locally; never commit `.env.local`).
 
@@ -52,7 +52,7 @@ Optional: `npx skills add supabase/agent-skills` for Supabase-focused agent skil
 
 | Status | Module |
 |--------|--------|
-| Live | Dashboard, Staff, News, Events, Gallery, Press kit, Services, Products, Organisation, Careers, Community (CSR), Questions (FAQ), Downloads, Site settings, Activity log, My account |
+| Live | Dashboard, Staff, News, Events, Gallery, Press kit, Services, Products, Organisation, Careers, Community (CSR), Questions (FAQ), Downloads, Messages, Site settings, Activity log, My account |
 
 Production: https://ksl-websitemink.vercel.app/login — sign in with **username and password**.
 

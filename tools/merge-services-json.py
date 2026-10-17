@@ -1,3 +1,4 @@
+"""Copy extracted service text into data/services.json, which the website actually reads."""
 import html
 import json
 import re
@@ -5,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVICES = ROOT / "data" / "services.json"
-EXTRACTED = ROOT / "data" / "services-extracted.json"
+EXTRACTED = ROOT / "tools" / "scrape" / "services-extracted.json"
 
 POPUP_ORDER = [
     "1900", "1903", "1906", "1908", "1912", "1916", "1915",
