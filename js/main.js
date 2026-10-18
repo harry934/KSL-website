@@ -39,38 +39,36 @@
     var scrollAccum = 0;
     var minimized = (window.scrollY || 0) > 40;
     var dockLock = 0;
-    /* Scroll down: fold the contact strip and shorten the bar, pinned to the top.
-       Scroll up: open the full bar again. The lock ignores the scroll jump that
-       the height change itself causes, so the bar does not bounce. */
+    var dockFrame = 0;
+    /* One update per frame. Scroll down folds the contact strip into the bar.
+       Scroll up opens it. A short lock stops the height change from reversing itself. */
     var dockNavbar = function () {
         if (!stickyNav) return;
         var y = window.scrollY || 0;
         var delta = y - lastScrollY;
         lastScrollY = y;
         var next = minimized;
-        if (y <= 8) {
+        if (y <= 4) {
             next = false;
             scrollAccum = 0;
         } else if (Date.now() >= dockLock && delta !== 0) {
             scrollAccum += delta;
-            if (scrollAccum > 10) {
+            if (scrollAccum > 28) {
                 next = true;
                 scrollAccum = 0;
-            } else if (scrollAccum < -10) {
+            } else if (scrollAccum < -36) {
                 next = false;
                 scrollAccum = 0;
             }
         }
         if (next !== minimized) {
             minimized = next;
-            dockLock = Date.now() + 450;
+            dockLock = Date.now() + 280;
         }
         var stuck = y > 8;
-        stickyNav.classList.toggle("is-stuck", stuck);
-        if (topbar) topbar.classList.toggle("is-stuck", stuck);
         if (mast) {
-            mast.classList.toggle("is-min", minimized);
-            mast.classList.toggle("is-stuck", stuck);
+            if (mast.classList.contains("is-min") !== minimized) mast.classList.toggle("is-min", minimized);
+            if (mast.classList.contains("is-stuck") !== stuck) mast.classList.toggle("is-stuck", stuck);
         }
     };
     var measureTopbar = function () {
@@ -81,9 +79,13 @@
         dockNavbar();
     };
     measureTopbar();
-    var onDockScroll = function () { dockNavbar(); };
-    window.addEventListener("scroll", onDockScroll, { passive: true });
-    document.addEventListener("scroll", onDockScroll, { passive: true });
+    window.addEventListener("scroll", function () {
+        if (dockFrame) return;
+        dockFrame = window.requestAnimationFrame(function () {
+            dockFrame = 0;
+            dockNavbar();
+        });
+    }, { passive: true });
     window.addEventListener("resize", measureTopbar);
     window.addEventListener("load", measureTopbar);
     
