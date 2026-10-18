@@ -53,17 +53,17 @@
             scrollAccum = 0;
         } else if (Date.now() >= dockLock && delta !== 0) {
             scrollAccum += delta;
-            if (scrollAccum > 28) {
+            if (scrollAccum > 18) {
                 next = true;
                 scrollAccum = 0;
-            } else if (scrollAccum < -36) {
+            } else if (scrollAccum < -24) {
                 next = false;
                 scrollAccum = 0;
             }
         }
         if (next !== minimized) {
             minimized = next;
-            dockLock = Date.now() + 280;
+            dockLock = Date.now() + 180;
         }
         var stuck = y > 8;
         if (mast) {

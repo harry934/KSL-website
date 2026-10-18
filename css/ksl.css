@@ -5939,7 +5939,9 @@ html[lang="sw"] .download-button .download::after {
     }
 
     .ksl-mast {
-        transition: box-shadow .55s cubic-bezier(.22, 1, .36, 1);
+        --ksl-dock-ease: cubic-bezier(0.4, 0, 0.2, 1);
+        --ksl-dock-time: 1.05s;
+        transition: box-shadow var(--ksl-dock-time) var(--ksl-dock-ease);
     }
 
     .ksl-mast .topbar-ksl {
@@ -5948,12 +5950,20 @@ html[lang="sw"] .download-button .download::after {
         z-index: 2;
         max-height: 56px;
         overflow: hidden;
-        transition: max-height .55s cubic-bezier(.22, 1, .36, 1);
+        transition: max-height var(--ksl-dock-time) var(--ksl-dock-ease);
+    }
+
+    .ksl-mast .topbar-inner {
+        transition: transform var(--ksl-dock-time) var(--ksl-dock-ease);
     }
 
     .ksl-mast.is-min .topbar-ksl {
         max-height: 0;
         pointer-events: none;
+    }
+
+    .ksl-mast.is-min .topbar-inner {
+        transform: translateY(-100%);
     }
 
     .ksl-mast .navbar.sticky-top {
@@ -5965,7 +5975,12 @@ html[lang="sw"] .download-button .download::after {
     .ksl-mast .navbar .ksl-logo,
     .ksl-mast .navbar .navbar-nav .nav-link,
     .ksl-mast .ksl-doodle-note {
-        transition: height .55s cubic-bezier(.22, 1, .36, 1), padding .55s cubic-bezier(.22, 1, .36, 1), max-height .55s cubic-bezier(.22, 1, .36, 1), opacity .4s ease, margin .55s cubic-bezier(.22, 1, .36, 1);
+        transition:
+            height var(--ksl-dock-time) var(--ksl-dock-ease),
+            padding var(--ksl-dock-time) var(--ksl-dock-ease),
+            max-height var(--ksl-dock-time) var(--ksl-dock-ease),
+            opacity 0.7s ease,
+            margin var(--ksl-dock-time) var(--ksl-dock-ease);
     }
 
     .ksl-mast.is-min .navbar.sticky-top::after {
@@ -6000,11 +6015,14 @@ html[lang="sw"] .download-button .download::after {
 }
 
 @media (min-width: 992px) and (prefers-reduced-motion: reduce) {
+    .ksl-mast,
     .ksl-mast .topbar-ksl,
+    .ksl-mast .topbar-inner,
     .ksl-mast .navbar.sticky-top,
     .ksl-mast .navbar .navbar-nav .nav-link,
     .ksl-mast .navbar .navbar-brand,
-    .ksl-mast .navbar .ksl-logo {
+    .ksl-mast .navbar .ksl-logo,
+    .ksl-mast .ksl-doodle-note {
         transition: none;
     }
 }
