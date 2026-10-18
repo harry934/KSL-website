@@ -67,7 +67,7 @@
                 n += 1;
             }
             return '<span class="ksl-intro-word">' + letters + "</span>";
-        }).join("");
+        }).join(" ");
 
         return '<div class="ksl-intro-tagline" aria-hidden="true"><div class="ksl-intro-tagline-depth">' + html + "</div></div>";
     }
