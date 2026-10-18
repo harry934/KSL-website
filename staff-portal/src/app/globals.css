@@ -597,16 +597,32 @@ body {
   padding: 12px 48px 12px 16px;
 }
 .kb-preview-icon {
-  display: none;
+  display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
+  border-radius: 8px;
+  background: rgba(11, 31, 58, 0.06);
   color: inherit;
 }
-.kb-preview-icon:not(:empty) {
-  display: inline-flex;
+.kb-preview.is-picker .kb-preview-icon {
+  width: 24px;
+  height: 24px;
+}
+.kb-preview.is-picker .kb-preview-icon svg {
+  width: 14px;
+  height: 14px;
+}
+.kb-preview.is-picker .kb-preview-close {
+  display: none;
+}
+.kb-preview.is-picker .kb-preview-inner {
+  padding: 8px 10px;
+}
+.kb-preview.is-picker .kb-preview-text {
+  font-size: 12px;
 }
 .kb-preview-stamp {
   display: inline-flex;
@@ -695,6 +711,7 @@ body {
 .kb-preview.is-yard-bell .kb-preview-tag { padding: 3px 8px; background: #0b1f3a; color: #fff; }
 .kb-preview.is-yard-bell .kb-preview-cta { background: #0b1f3a; color: #fff; }
 .kb-preview.is-split-bar .kb-preview-inner { gap: 14px; padding-left: 0; }
+.kb-preview.is-split-bar .kb-preview-icon { align-self: stretch; width: 40px; height: auto; border-radius: 0; background: #0b1f3a; color: #fff; }
 .kb-preview.is-split-bar .kb-preview-tag {
   align-self: stretch;
   display: inline-flex;
@@ -723,18 +740,29 @@ body {
 .kb-preview.is-alert-bar .kb-preview-cta { background: #fff; color: #8d1d24; }
 .kb-preview.is-chapter-head .kb-preview-inner {
   display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas: "tag cta" "text cta";
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: "icon tag cta" "icon text cta";
   align-items: center;
   padding-top: 16px;
   padding-bottom: 16px;
 }
+.kb-preview.is-chapter-head .kb-preview-icon { grid-area: icon; }
 .kb-preview.is-chapter-head .kb-preview-tag { grid-area: tag; color: #99792c; }
 .kb-preview.is-chapter-head .kb-preview-body { grid-area: text; }
 .kb-preview.is-chapter-head .kb-preview-cta { grid-area: cta; background: #0b1f3a; color: #fff; }
 .kb-preview.is-inset-rule .kb-preview-tag { color: #99792c; font-size: 10px; }
 .kb-preview.is-inset-rule .kb-preview-cta { padding: 4px 0 4px 14px; border-left: 1px solid #d5dce4; }
 .kb-preview.is-shipyard-stamp .kb-preview-cta { border-radius: 4px; background: #0a3e95; color: #fff; }
+.kb-preview.is-tide .kb-preview-icon,
+.kb-preview.is-keel-stripe .kb-preview-icon,
+.kb-preview.is-night-watch .kb-preview-icon,
+.kb-preview.is-command-strip .kb-preview-icon,
+.kb-preview.is-alert-bar .kb-preview-icon { background: rgba(255, 255, 255, 0.12); color: #e6c56a; }
+.kb-preview.is-alert-bar .kb-preview-icon { color: #fff; }
+.kb-preview.is-brass-plate .kb-preview-icon { background: rgba(11, 31, 58, 0.12); }
+.kb-preview.is-yard-bell .kb-preview-icon { border-radius: 999px; background: #0b1f3a; color: #fff; }
+.kb-preview.is-dry-dock .kb-preview-icon { border-radius: 2px; background: #fff; }
+.kb-preview.is-shipyard-stamp .kb-preview-icon { background: transparent; }
 .kb-preview.is-tide { background: #0b1f3a; color: #fff; }
 .kb-preview.is-tide .kb-preview-cta { border-radius: 999px; background: #fff; color: #0b1f3a; }
 .kb-preview.is-two-weights .kb-preview-tag { letter-spacing: 0; text-transform: none; font-size: 14px; }

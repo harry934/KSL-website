@@ -12930,15 +12930,17 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     padding: 12px 52px 12px 22px;
 }
 .ksl-banner-icon {
-    display: none;
+    display: inline-flex;
     flex: none;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(11, 31, 58, 0.06);
     color: inherit;
 }
-.ksl-banner-icon svg { width: 22px; height: 22px; }
+.ksl-banner-icon svg { width: 18px; height: 18px; }
 .ksl-banner-stamp {
     display: inline-flex;
     align-items: center;
@@ -13067,7 +13069,7 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 .ksl-banner.is-signal-flag .ksl-banner-cta { padding: 8px 16px; border-radius: 2px; background: #0b1f3a; color: #fff; }
 
 .ksl-banner.is-dry-dock { background: #e7e9ed; }
-.ksl-banner.is-dry-dock .ksl-banner-icon { display: inline-flex; }
+.ksl-banner.is-dry-dock .ksl-banner-icon { border-radius: 2px; background: #fff; }
 .ksl-banner.is-dry-dock .ksl-banner-cta { padding: 8px 16px; background: #0b1f3a; color: #fff; }
 
 .ksl-banner.is-tender-notice { background: #fbf7ef; color: #1a1a1a; box-shadow: inset 0 0 0 1px #e4dcc8; }
@@ -13095,12 +13097,12 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 .ksl-banner.is-night-watch .ksl-banner-cta { padding: 8px 16px; color: #fff; border: 1px solid #c5a028; }
 
 .ksl-banner.is-yard-bell .ksl-banner-inner { padding-top: 8px; padding-bottom: 8px; }
-.ksl-banner.is-yard-bell .ksl-banner-icon { display: inline-flex; width: 22px; height: 22px; }
-.ksl-banner.is-yard-bell .ksl-banner-icon svg { width: 18px; height: 18px; }
+.ksl-banner.is-yard-bell .ksl-banner-icon { width: 26px; height: 26px; border-radius: 50%; background: #0b1f3a; color: #fff; }
 .ksl-banner.is-yard-bell .ksl-banner-tag { padding: 3px 8px; border-radius: 2px; background: #0b1f3a; color: #fff; }
 .ksl-banner.is-yard-bell .ksl-banner-cta { padding: 6px 12px; background: #0b1f3a; color: #fff; }
 
 .ksl-banner.is-split-bar .ksl-banner-inner { gap: 18px; padding-left: 0; }
+.ksl-banner.is-split-bar .ksl-banner-icon { align-self: stretch; width: 54px; height: auto; border-radius: 0; background: #0b1f3a; color: #fff; }
 .ksl-banner.is-split-bar .ksl-banner-tag {
     align-self: stretch;
     display: inline-flex;
@@ -13154,18 +13156,19 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 .ksl-banner.is-sea-glass .ksl-banner-cta { padding: 8px 14px; background: #0b1f3a; color: #fff; }
 
 .ksl-banner.is-alert-bar { background: #8d1d24; color: #fff; }
-.ksl-banner.is-alert-bar .ksl-banner-icon { display: inline-flex; }
+.ksl-banner.is-alert-bar .ksl-banner-icon { background: rgba(255, 255, 255, 0.16); }
 .ksl-banner.is-alert-bar .ksl-banner-cta { padding: 8px 16px; background: #fff; color: #8d1d24; }
 
 .ksl-banner.is-chapter-head .ksl-banner-inner {
     display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-areas: "tag cta" "text cta";
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "icon tag cta" "icon text cta";
     align-items: center;
     row-gap: 2px;
     padding-top: 16px;
     padding-bottom: 16px;
 }
+.ksl-banner.is-chapter-head .ksl-banner-icon { grid-area: icon; }
 .ksl-banner.is-chapter-head .ksl-banner-tag { grid-area: tag; color: #99792c; }
 .ksl-banner.is-chapter-head .ksl-banner-body { grid-area: text; }
 .ksl-banner.is-chapter-head .ksl-banner-cta { grid-area: cta; padding: 8px 16px; background: #0b1f3a; color: #fff; }
@@ -13174,11 +13177,15 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 .ksl-banner.is-inset-rule .ksl-banner-tag { color: #99792c; font-size: 0.68rem; }
 .ksl-banner.is-inset-rule .ksl-banner-cta { margin-left: 8px; padding: 4px 0 4px 16px; border-left: 1px solid #d5dce4; }
 
-.ksl-banner.is-shipyard-stamp .ksl-banner-icon { display: inline-flex; }
+.ksl-banner.is-shipyard-stamp .ksl-banner-icon { background: transparent; }
 .ksl-banner.is-shipyard-stamp .ksl-banner-cta { padding: 8px 16px; border-radius: 4px; background: #0A3E95; color: #fff; }
 
 .ksl-banner.is-tide { background: #0b1f3a; color: #fff; }
-.ksl-banner.is-tide .ksl-banner-icon { display: inline-flex; }
+.ksl-banner.is-tide .ksl-banner-icon,
+.ksl-banner.is-keel-stripe .ksl-banner-icon,
+.ksl-banner.is-night-watch .ksl-banner-icon,
+.ksl-banner.is-command-strip .ksl-banner-icon { background: rgba(255, 255, 255, 0.1); color: #e6c56a; }
+.ksl-banner.is-brass-plate .ksl-banner-icon { background: rgba(11, 31, 58, 0.12); }
 .ksl-banner.is-tide .ksl-banner-cta { padding: 8px 16px; border-radius: 999px; background: #fff; color: #0b1f3a; }
 
 .ksl-banner.is-two-weights .ksl-banner-tag { letter-spacing: 0; text-transform: none; font-size: 0.95rem; }
