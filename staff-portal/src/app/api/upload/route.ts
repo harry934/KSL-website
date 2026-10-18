@@ -10,6 +10,7 @@ const ALLOWED_MODULES = new Set<ModuleKey>([
   "events",
   "services",
   "products",
+  "projects",
   "downloads",
   "csr",
   "press",

@@ -1,0 +1,318 @@
+{
+  "groups": [
+    {
+      "key": "ship-construction",
+      "label": "Ship Construction"
+    },
+    {
+      "key": "maintenance",
+      "label": "Maintenance, Repair and Overhaul"
+    },
+    {
+      "key": "civil-works",
+      "label": "Civil and Modular Works"
+    },
+    {
+      "key": "heavy-engineering",
+      "label": "Heavy Engineering"
+    }
+  ],
+  "items": [
+    {
+      "slug": "mv-uhuru-ii",
+      "title": "MV Uhuru II",
+      "subtitle": "New build",
+      "category": "ship-construction",
+      "categoryLabel": "Ship Construction",
+      "image": "img/ksl/mombasa.webp"
+    },
+    {
+      "slug": "29m-passenger-ferry",
+      "title": "29M Passenger Ferry",
+      "subtitle": "New build",
+      "category": "ship-construction",
+      "categoryLabel": "Ship Construction",
+      "image": "img/ksl/kisumu.webp"
+    },
+    {
+      "slug": "81-passenger-ferry",
+      "title": "81 Passenger Ferry",
+      "subtitle": "New build",
+      "category": "ship-construction",
+      "categoryLabel": "Ship Construction",
+      "image": "img/ksl/linkspan.webp"
+    },
+    {
+      "slug": "grp-boats-kisumu-county",
+      "title": "GRP Boats - Kisumu County",
+      "subtitle": "New build",
+      "category": "ship-construction",
+      "categoryLabel": "Ship Construction",
+      "image": "img/ksl/ferry.jpg"
+    },
+    {
+      "slug": "grp-boats-siaya-county",
+      "title": "GRP Boats - Siaya County",
+      "subtitle": "New build",
+      "category": "ship-construction",
+      "categoryLabel": "Ship Construction",
+      "image": "img/ksl/fishing.jpg"
+    },
+    {
+      "slug": "mv-uhuru-i",
+      "title": "MV Uhuru I",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/ambulance.jpg"
+    },
+    {
+      "slug": "barge-alpha-stone-t",
+      "title": "Barge Alpha Stone T",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/yard.jpg"
+    },
+    {
+      "slug": "uvuvi-i",
+      "title": "Uvuvi I",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/mombasa.webp"
+    },
+    {
+      "slug": "mv-ali-26",
+      "title": "MV Ali 26",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/kisumu.webp"
+    },
+    {
+      "slug": "alpha-3000-barge",
+      "title": "Alpha 3000 Barge",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/linkspan.webp"
+    },
+    {
+      "slug": "fv-kivu",
+      "title": "FV Kivu",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/ferry.jpg"
+    },
+    {
+      "slug": "tug-boat-kiboko",
+      "title": "Tug Boat Kiboko",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/fishing.jpg"
+    },
+    {
+      "slug": "mv-kilimanjaro",
+      "title": "MV Kilimanjaro",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/ambulance.jpg"
+    },
+    {
+      "slug": "kns-imara",
+      "title": "KNS Imara",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/yard.jpg"
+    },
+    {
+      "slug": "pilot-boat-malkia",
+      "title": "Pilot Boat Malkia",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/mombasa.webp"
+    },
+    {
+      "slug": "barge-alpha-stone-town",
+      "title": "Barge Alpha Stone Town",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/kisumu.webp"
+    },
+    {
+      "slug": "mv-nyayo",
+      "title": "MV Nyayo",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/linkspan.webp"
+    },
+    {
+      "slug": "mv-likoni",
+      "title": "MV Likoni",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/ferry.jpg"
+    },
+    {
+      "slug": "kns-shupavu",
+      "title": "KNS Shupavu",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/fishing.jpg"
+    },
+    {
+      "slug": "mv-ikraam-i",
+      "title": "MV Ikraam I",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/ambulance.jpg"
+    },
+    {
+      "slug": "wave-ii-baseterre",
+      "title": "Wave II Baseterre",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/yard.jpg"
+    },
+    {
+      "slug": "mv-chamaunga",
+      "title": "MV Chamaunga",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/mombasa.webp"
+    },
+    {
+      "slug": "pilot-boat-tangulizi-ii",
+      "title": "Pilot Boat Tangulizi II",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/kisumu.webp"
+    },
+    {
+      "slug": "kra-002",
+      "title": "KRA 002",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/linkspan.webp"
+    },
+    {
+      "slug": "fagio-ii",
+      "title": "Fagio II",
+      "subtitle": "Repair and overhaul",
+      "category": "maintenance",
+      "categoryLabel": "Maintenance, Repair and Overhaul",
+      "image": "img/ksl/ferry.jpg"
+    },
+    {
+      "slug": "krc-workshop",
+      "title": "KRC Workshop",
+      "subtitle": "Marine works",
+      "category": "civil-works",
+      "categoryLabel": "Civil and Modular Works",
+      "image": "img/ksl/fishing.jpg"
+    },
+    {
+      "slug": "kpa-homabay-pier",
+      "title": "KPA Homabay Pier",
+      "subtitle": "Marine works",
+      "category": "civil-works",
+      "categoryLabel": "Civil and Modular Works",
+      "image": "img/ksl/ambulance.jpg"
+    },
+    {
+      "slug": "kisumu-port-linkspan",
+      "title": "Kisumu Port Linkspan",
+      "subtitle": "Marine works",
+      "category": "civil-works",
+      "categoryLabel": "Civil and Modular Works",
+      "image": "img/ksl/yard.jpg"
+    },
+    {
+      "slug": "marine-rescue-and-coordination-center",
+      "title": "Marine Rescue and Coordination Center",
+      "subtitle": "Marine works",
+      "category": "civil-works",
+      "categoryLabel": "Civil and Modular Works",
+      "image": "img/ksl/mombasa.webp"
+    },
+    {
+      "slug": "kichinjio-landing-site",
+      "title": "Kichinjio Landing Site",
+      "subtitle": "Marine works",
+      "category": "civil-works",
+      "categoryLabel": "Civil and Modular Works",
+      "image": "img/ksl/kisumu.webp"
+    },
+    {
+      "slug": "nanga-landing-site",
+      "title": "Nanga Landing Site",
+      "subtitle": "Marine works",
+      "category": "civil-works",
+      "categoryLabel": "Civil and Modular Works",
+      "image": "img/ksl/linkspan.webp"
+    },
+    {
+      "slug": "dredging-of-kisumu-port",
+      "title": "Dredging of Kisumu Port",
+      "subtitle": "Marine works",
+      "category": "civil-works",
+      "categoryLabel": "Civil and Modular Works",
+      "image": "img/ksl/ferry.jpg"
+    },
+    {
+      "slug": "upgrade-of-kisumu-shipyard",
+      "title": "Upgrade of Kisumu Shipyard",
+      "subtitle": "Marine works",
+      "category": "civil-works",
+      "categoryLabel": "Civil and Modular Works",
+      "image": "img/ksl/fishing.jpg"
+    },
+    {
+      "slug": "construction-of-mombasa-shipyard",
+      "title": "Construction of Mombasa Shipyard",
+      "subtitle": "Marine works",
+      "category": "civil-works",
+      "categoryLabel": "Civil and Modular Works",
+      "image": "img/ksl/ambulance.jpg"
+    },
+    {
+      "slug": "remanufacture-of-locomotives",
+      "title": "Remanufacture of Locomotives",
+      "subtitle": "Heavy plant",
+      "category": "heavy-engineering",
+      "categoryLabel": "Heavy Engineering",
+      "image": "img/ksl/yard.jpg"
+    },
+    {
+      "slug": "rehabilitation-of-locomotives",
+      "title": "Rehabilitation of Locomotives",
+      "subtitle": "Heavy plant",
+      "category": "heavy-engineering",
+      "categoryLabel": "Heavy Engineering",
+      "image": "img/ksl/mombasa.webp"
+    },
+    {
+      "slug": "rehabilitation-of-battle-tanks",
+      "title": "Rehabilitation of Battle Tanks",
+      "subtitle": "Heavy plant",
+      "category": "heavy-engineering",
+      "categoryLabel": "Heavy Engineering",
+      "image": "img/ksl/kisumu.webp"
+    }
+  ]
+}

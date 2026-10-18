@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
     const role = String(body.role ?? "").trim();
     if (!name || !role) return NextResponse.json({ error: "A name and a role are required." }, { status: 400 });
     const group = ["defence", "ps", "independent"].includes(body.board_group) ? body.board_group : "independent";
+    const section = ["featured", "audit", "risk", "strategy"].includes(body.section) ? body.section : "audit";
     const { data, error: upErr } = await admin
       .from("organization_board_members")
       .upsert({
@@ -57,7 +58,9 @@ export async function POST(req: NextRequest) {
         full_name: name,
         role,
         board_group: group,
+        section,
         summary: body.summary ?? null,
+        bio: body.bio ?? null,
         photo_url: body.photo_url || null,
         sort_order: body.sort_order ?? 0,
         status: body.status ?? "draft",

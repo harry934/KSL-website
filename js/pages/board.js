@@ -98,7 +98,7 @@
         });
     });
 
-    cards.forEach(function (card) {
+    function wireCard(card) {
         var body = card.querySelector(".board-card-body");
         if (body && !body.querySelector(".ksl-more")) {
             var more = document.createElement("span");
@@ -106,6 +106,8 @@
             more.innerHTML = '<span>Read more</span><i aria-hidden="true"><svg viewBox="0 0 16 16"><circle cx="8" cy="2.8" r="1.6"/><path d="M8 4.4V14.2M5 6.6h6M2.6 10.6Q3.6 14.2 8 14.2T13.4 10.6M1.8 11.8l.8-1.2 1.4.9M14.2 11.8l-.8-1.2-1.4.9"/></svg></i>';
             body.appendChild(more);
         }
+        if (card.getAttribute("data-ksl-wired")) return;
+        card.setAttribute("data-ksl-wired", "1");
         card.addEventListener("click", function () { openCard(card); });
         card.addEventListener("keydown", function (event) {
             if (event.key === "Enter" || event.key === " ") {
@@ -113,7 +115,9 @@
                 openCard(card);
             }
         });
-    });
+    }
+
+    cards.forEach(wireCard);
 
     modal.addEventListener("click", function (event) {
         if (event.target.closest("[data-board-close]")) closeCard();
@@ -243,40 +247,90 @@
         return "data:image/svg+xml," + encodeURIComponent(svg);
     }
 
-    var added = document.getElementById("ksl-board-added");
-    var addedGrid = document.getElementById("ksl-board-added-grid");
-    if (added && addedGrid && window.KSL_CONTENT) {
-        window.KSL_CONTENT.fetchJson("/api/public/organization", "data/organization.json").then(function (data) {
-            var members = (data && data.board) || [];
-            if (!members.length) return;
-            addedGrid.innerHTML = members.map(function (member) {
-                var group = member.group === "defence" || member.group === "ps" ? member.group : "independent";
-                return '<div class="col-xl-3 col-md-4 col-6 board-slot">' +
-                    '<article class="board-card" tabindex="0" data-board-group="' + escapeHtml(group) + '">' +
-                    '<div class="board-portrait"><img src="' + escapeHtml(portraitSrc(member)) + '" alt="' + escapeHtml(member.name) + '" loading="lazy" decoding="async"></div>' +
-                    '<div class="board-card-body"><p class="board-role">' + escapeHtml(member.role) + "</p><h3>" + escapeHtml(member.name) + "</h3><p>" + escapeHtml(member.summary) + "</p></div>" +
-                    "</article></div>";
-            }).join("");
-            added.hidden = false;
-            addedGrid.querySelectorAll(".board-card").forEach(function (card) {
-                var body = card.querySelector(".board-card-body");
-                if (body && !body.querySelector(".ksl-more")) {
-                    var more = document.createElement("span");
-                    more.className = "ksl-more";
-                    more.innerHTML = '<span>Read more</span>';
-                    body.appendChild(more);
+    function bioHtml(text) {
+        return String(text || "").split(/\n\s*\n/).map(function (block) {
+            var lines = block.split("\n").map(function (line) { return line.trim(); }).filter(Boolean);
+            if (!lines.length) return "";
+            if (lines.every(function (line) { return line.indexOf("- ") === 0; })) {
+                return "<ul>" + lines.map(function (line) { return "<li>" + escapeHtml(line.slice(2)) + "</li>"; }).join("") + "</ul>";
+            }
+            return "<p>" + escapeHtml(lines.join(" ")) + "</p>";
+        }).join("");
+    }
+
+    function memberCard(member, featured) {
+        var group = member.group === "defence" || member.group === "ps" ? member.group : "independent";
+        var bio = bioHtml(member.bio);
+        return '<article class="board-card' + (featured ? " board-card-featured" : "") + '" tabindex="0" data-board-group="' + escapeHtml(group) + '">' +
+            '<div class="board-portrait"><img src="' + escapeHtml(portraitSrc(member)) + '" alt="' + escapeHtml(member.name) + '" loading="lazy" decoding="async"></div>' +
+            '<div class="board-card-body"><p class="board-role">' + escapeHtml(member.role) + "</p><h3>" + escapeHtml(member.name) + "</h3><p>" + escapeHtml(member.summary) + "</p>" +
+            (bio ? '<template class="board-bio">' + bio + "</template>" : "") +
+            "</div></article>";
+    }
+
+    function paintBoard(members) {
+        var root = document.getElementById("ksl-board-root");
+        if (!root || !members.length || !members.some(function (member) { return member.section; })) return false;
+        var sections = [
+            { key: "featured", featured: true },
+            { key: "audit", title: "Audit", blurb: "Finance, controls, and public accountability." },
+            { key: "risk", title: "Risk", blurb: "Operational readiness and security." },
+            { key: "strategy", title: "Strategy", blurb: "Industrial growth and long term direction." }
+        ];
+        root.innerHTML = sections.map(function (section) {
+            var people = members.filter(function (member) { return (member.section || "audit") === section.key; });
+            if (!people.length) return "";
+            if (section.featured) {
+                return '<section class="board-featured" aria-label="Board leadership">' +
+                    people.map(function (member) { return '<div class="board-slot">' + memberCard(member, true) + "</div>"; }).join("") +
+                    "</section>";
+            }
+            return '<section class="board-committee" aria-labelledby="board-' + section.key + '">' +
+                '<h2 id="board-' + section.key + '">' + escapeHtml(section.title) + "</h2><p>" + escapeHtml(section.blurb) + "</p>" +
+                '<div class="row g-4 board-grid justify-content-center">' +
+                people.map(function (member) {
+                    return '<div class="col-xl-3 col-md-4 col-6 board-slot">' + memberCard(member, false) + "</div>";
+                }).join("") +
+                "</div></section>";
+        }).join("");
+        root.querySelectorAll(".board-card").forEach(function (card) {
+            wireCard(card);
+            var portrait = card.querySelector(".board-portrait");
+            if (portrait && !portrait.querySelector(".board-ring")) {
+                var img = portrait.querySelector("img");
+                if (img && !portrait.querySelector(".board-photo")) {
+                    var clip = document.createElement("span");
+                    clip.className = "board-photo";
+                    portrait.insertBefore(clip, img);
+                    clip.appendChild(img);
                 }
-                card.addEventListener("click", function () { openCard(card); });
-                card.addEventListener("keydown", function (event) {
-                    if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        openCard(card);
-                    }
-                });
-                card.classList.add("is-in");
-            });
-            var pressed = document.querySelector(".board-filter[aria-pressed='true']");
-            applyFilter(pressed ? pressed.getAttribute("data-filter") || "all" : "all");
+                var ring = document.createElementNS(svgNs, "svg");
+                ring.setAttribute("class", "board-ring");
+                ring.setAttribute("viewBox", "0 0 100 100");
+                ring.setAttribute("aria-hidden", "true");
+                var circle = document.createElementNS(svgNs, "circle");
+                circle.setAttribute("cx", "50");
+                circle.setAttribute("cy", "50");
+                circle.setAttribute("r", "46");
+                ring.appendChild(circle);
+                portrait.appendChild(ring);
+            }
+            if (motionQuery.matches) card.classList.add("is-in");
         });
+        if (!motionQuery.matches && revealObserver) {
+            root.querySelectorAll(".board-featured, .board-grid").forEach(function (row) {
+                revealObserver.observe(row);
+            });
+        }
+        var pressed = document.querySelector(".board-filter[aria-pressed='true']");
+        applyFilter(pressed ? pressed.getAttribute("data-filter") || "all" : "all");
+        queueEqualize();
+        return true;
+    }
+
+    if (window.KSL_CONTENT) {
+        window.KSL_CONTENT.fetchJson("/api/public/organization", "data/organization.json").then(function (data) {
+            paintBoard((data && data.board) || []);
+        }).catch(function () {});
     }
 })();

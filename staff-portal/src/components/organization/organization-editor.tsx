@@ -14,9 +14,6 @@ import { reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import { documentOptions, useDocuments } from "@/lib/use-documents";
 import type { BoardMemberRow, LeadershipRow } from "@/lib/organization";
-import { WEBSITE_BOARD } from "@/lib/website-board";
-import { siteAssetUrl } from "@/lib/site-url";
-
 type Scope = "leadership" | "board";
 type Draft = {
   scope: Scope;
@@ -24,8 +21,10 @@ type Draft = {
   role?: string;
   full_name?: string;
   board_group?: string;
+  section?: string;
   photo_url?: string | null;
   summary: string | null;
+  bio?: string | null;
   sort_order: number;
   status: string;
 };
@@ -34,6 +33,13 @@ const BOARD_GROUPS = [
   { value: "defence", label: "Defence" },
   { value: "ps", label: "Principal Secretaries" },
   { value: "independent", label: "Independent members" },
+];
+
+const BOARD_SECTIONS = [
+  { value: "featured", label: "Leadership" },
+  { value: "audit", label: "Audit" },
+  { value: "risk", label: "Risk" },
+  { value: "strategy", label: "Strategy" },
 ];
 
 export function OrganizationEditor() {
@@ -84,8 +90,10 @@ export function OrganizationEditor() {
       role: "",
       full_name: "",
       board_group: "independent",
+      section: "audit",
       photo_url: "",
       summary: "",
+      bio: "",
       sort_order: list.length ? Math.max(...list.map((r) => r.sort_order)) + 1 : 0,
       status: canPublish ? "published" : "draft",
     });
@@ -182,15 +190,29 @@ export function OrganizationEditor() {
                     ))}
                   </Select>
                 </Field>
+                <Field label="Where they appear">
+                  <Select value={editing.section ?? "audit"} onChange={(e) => set({ section: e.target.value })}>
+                    {BOARD_SECTIONS.map((section) => (
+                      <option key={section.value} value={section.value}>
+                        {section.label}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
               </>
             ) : (
               <Field label="Role or office">
                 <Input value={editing.role ?? ""} onChange={(e) => set({ role: e.target.value })} autoFocus={!editing.id} placeholder="e.g. Managing Director" />
               </Field>
             )}
-            <Field label="Description">
-              <Textarea className="min-h-[120px]" value={editing.summary ?? ""} onChange={(e) => set({ summary: e.target.value })} />
+            <Field label="Short line" hint="The sentence on the card.">
+              <Textarea className="min-h-[90px]" value={editing.summary ?? ""} onChange={(e) => set({ summary: e.target.value })} />
             </Field>
+            {isBoard && (
+              <Field label="Full biography" hint="Leave a blank line between paragraphs. Start a line with - for a list.">
+                <Textarea className="min-h-[180px]" value={editing.bio ?? ""} onChange={(e) => set({ bio: e.target.value })} />
+              </Field>
+            )}
           </FormSection>
           <div className="space-y-4">
             {isBoard && (
@@ -245,42 +267,23 @@ export function OrganizationEditor() {
             <Plus className="h-4 w-4" /> New board member
           </Button>
         </div>
-        <ul className="ksl-card mb-3 divide-y divide-[#eef1f4]">
-          {WEBSITE_BOARD.map((member) => (
-            <li key={member.photo} className="flex items-center gap-3 bg-white px-4 py-3">
-              <span className="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-[#f1f4f7]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={siteAssetUrl(member.photo)} alt="" className="h-full w-full object-cover" loading="lazy" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <p className="truncate text-[14px] font-semibold text-[#0b1f3a]">{member.name}</p>
-                <p className="truncate text-[12.5px] text-[#6b7785]">
-                  {member.role} · {member.group}
-                </p>
-              </span>
-              <span className="shrink-0 rounded-full bg-[#e7f6ee] px-2.5 py-1 text-[12px] font-semibold text-[#067647]">On website</span>
-            </li>
-          ))}
-        </ul>
-        {board.length > 0 && (
-          <ItemList
-            showImages
-            items={board.map((r) => ({
-              id: r.id,
-              title: r.full_name,
-              subtitle: [r.role, groupLabel(r.board_group)].filter(Boolean).join(" · "),
-              image: r.photo_url,
-              status: r.status,
-            }))}
-            onEdit={(id) => {
-              const row = board.find((r) => r.id === id);
-              if (row) setEditing({ ...row, scope: "board" });
-            }}
-            onDelete={canDelete ? (id) => remove(id, "board") : undefined}
-            onReorder={(from, to) => move("board", from, to)}
-            emptyText="No extra board members yet."
-          />
-        )}
+        <ItemList
+          showImages
+          items={board.map((r) => ({
+            id: r.id,
+            title: r.full_name,
+            subtitle: [r.role, groupLabel(r.board_group), BOARD_SECTIONS.find((section) => section.value === r.section)?.label].filter(Boolean).join(" · "),
+            image: r.photo_url,
+            status: r.status,
+          }))}
+          onEdit={(id) => {
+            const row = board.find((r) => r.id === id);
+            if (row) setEditing({ ...row, scope: "board" });
+          }}
+          onDelete={canDelete ? (id) => remove(id, "board") : undefined}
+          onReorder={(from, to) => move("board", from, to)}
+          emptyText="No board members yet."
+        />
       </div>
 
       <FormSection title="Organisation chart document" description="The document visitors download from the Organisation page.">

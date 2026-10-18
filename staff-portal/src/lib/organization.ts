@@ -11,7 +11,9 @@ export type BoardMemberRow = {
   full_name: string;
   role: string;
   board_group: string;
+  section: string;
   summary: string | null;
+  bio: string | null;
   photo_url: string | null;
   sort_order: number;
   status: string;
@@ -34,7 +36,9 @@ export function toPublicOrganization(
       name: r.full_name,
       role: r.role,
       group: r.board_group,
+      section: r.section || "audit",
       summary: r.summary ?? "",
+      bio: r.bio ?? "",
       photo: r.photo_url ?? "",
     }));
 

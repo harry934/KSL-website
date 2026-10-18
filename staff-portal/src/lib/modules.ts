@@ -4,6 +4,7 @@ export type ModuleKey =
   | "gallery"
   | "services"
   | "products"
+  | "projects"
   | "careers"
   | "faq"
   | "csr"
@@ -28,6 +29,7 @@ export const MODULE_ROUTES: Record<ModuleKey, string> = {
   gallery: "/gallery",
   services: "/services",
   products: "/products",
+  projects: "/projects",
   careers: "/careers",
   faq: "/faq",
   csr: "/csr",
@@ -45,6 +47,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   gallery: "Gallery",
   services: "Services",
   products: "Products",
+  projects: "Projects",
   careers: "Careers",
   faq: "Questions (FAQ)",
   csr: "Community (CSR)",
@@ -58,7 +61,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
 
 export const MODULE_GROUPS: { label: string; modules: ModuleKey[] }[] = [
   { label: "Content", modules: ["news", "events", "gallery", "press"] },
-  { label: "Company", modules: ["services", "products", "organization", "careers", "csr"] },
+  { label: "Company", modules: ["services", "products", "projects", "organization", "careers", "csr"] },
   { label: "Resources", modules: ["faq", "downloads", "messages"] },
   { label: "Administration", modules: ["staff", "site_settings"] },
 ];

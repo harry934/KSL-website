@@ -20,6 +20,8 @@ const THING_WORDS: Record<string, string> = {
   service_item: "a service",
   products_settings: "the Products page text",
   product: "a boat",
+  project: "a project",
+  organization_board_members: "a board member",
   press_settings: "the press kit details",
   press_asset: "a press kit file",
   organization_settings: "the Organisation page",
