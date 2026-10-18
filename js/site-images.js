@@ -44,18 +44,28 @@
         scope.querySelectorAll("[data-ksl-image]").forEach(paint);
     }
 
-    function take(data) {
-        var images = data && data.images;
-        if (!images || typeof images !== "object") return;
-        Object.keys(images).forEach(function (id) {
-            var url = safeUrl(images[id]);
-            if (url) overrides[id] = url;
-        });
-        apply(document);
+    function ready() {
+        document.documentElement.classList.add("ksl-photos-ready");
     }
 
+    function take(data) {
+        var images = data && data.images;
+        if (images && typeof images === "object") {
+            Object.keys(images).forEach(function (id) {
+                var url = safeUrl(images[id]);
+                if (url) overrides[id] = url;
+            });
+            apply(document);
+        }
+        ready();
+    }
+
+    setTimeout(ready, 4000);
+
     if (window.KSL_CONTENT) {
-        window.KSL_CONTENT.fetchJson("/api/public/site-images", "data/site-images.json").then(take).catch(function () {});
+        window.KSL_CONTENT.fetchJson("/api/public/site-images", "data/site-images.json").then(take).catch(ready);
+    } else {
+        ready();
     }
 
     var observer = new MutationObserver(function (records) {

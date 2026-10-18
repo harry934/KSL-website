@@ -110,7 +110,13 @@
         }
     }
 
+    function showPhotos() {
+        grid.classList.remove("is-waiting");
+    }
+
     window.KSL_CONTENT.fetchJson("/api/public/products", "data/products.json").then(function (data) {
         if (data) render(data);
-    }).catch(function () {});
+        showPhotos();
+    }).catch(showPhotos);
+    setTimeout(showPhotos, 4000);
 })();

@@ -104,6 +104,18 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
     width: auto;
 }
 
+html:not(.ksl-photos-ready) img[data-ksl-image]:not([data-ksl-image="brand.logo"]) {
+    visibility: hidden;
+}
+
+html:not(.ksl-photos-ready) .page-header::before {
+    visibility: hidden;
+}
+
+html:not(.ksl-photos-ready) .ksl-hero {
+    background-image: none;
+}
+
 .page-header {
     position: relative;
     overflow: hidden;
@@ -2130,7 +2142,6 @@ main {
 
 .ksl-services-page-grid,
 .ksl-project-grid,
-.product-grid,
 .ksl-impact-grid,
 #ksl-news-grid,
 #ksl-home-news-grid {
@@ -2636,13 +2647,40 @@ main {
 }
 
 .product-grid {
-    --bs-gutter-x: 24px;
-    --bs-gutter-y: 24px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+    margin-left: 0;
+    margin-right: 0;
     align-items: stretch;
 }
 
 .product-grid > [data-cat] {
     display: flex;
+    width: auto;
+    max-width: none;
+    margin-top: 0;
+    padding: 0;
+}
+
+.product-grid > [data-cat][hidden] {
+    display: none;
+}
+
+.product-grid.is-waiting .product-media img {
+    visibility: hidden;
+}
+
+@media (max-width: 991.98px) {
+    .product-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575.98px) {
+    .product-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .ksl-career-card {
