@@ -63,7 +63,7 @@
         }
         if (next !== minimized) {
             minimized = next;
-            dockLock = Date.now() + 320;
+            dockLock = Date.now() + 200;
         }
         var stuck = y > 8;
         if (mast) {
