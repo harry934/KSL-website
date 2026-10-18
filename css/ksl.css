@@ -8365,7 +8365,7 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     color: #09296C;
     font-family: Poppins, sans-serif;
     font-weight: 700;
-    font-size: clamp(12px, 1.35vw, 20px);
+    font-size: clamp(11px, 1.12vw, 16px);
     line-height: 1;
     white-space: nowrap;
     text-align: center;
@@ -8380,14 +8380,14 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
 .ksl-intro-tagline-depth {
     display: flex;
     justify-content: center;
-    gap: .62em;
-    perspective: 820px;
+    gap: .9em;
+    perspective: 640px;
     transform-style: preserve-3d;
 }
 
 .ksl-intro-word {
     display: inline-flex;
-    gap: .2em;
+    gap: .38em;
     transform-style: preserve-3d;
 }
 
@@ -8399,9 +8399,10 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     display: inline-block;
     color: #09296C;
     opacity: 0;
-    filter: blur(8px);
-    transform: translate3d(0, -12px, 80px) scale(1.35);
+    filter: blur(12px);
+    transform: translate3d(var(--x), -20px, 180px) scale(1.8);
     transform-origin: center bottom;
+    transform-style: preserve-3d;
     will-change: transform, filter;
 }
 
@@ -8410,20 +8411,28 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
 }
 
 .ksl-intro.show-tagline .ksl-intro-letter {
-    animation: kslLetterFlight .38s cubic-bezier(.16, .8, .2, 1) forwards;
-    animation-delay: calc(var(--i) * 28ms);
+    animation: kslLetterFlight .5s linear forwards;
+    animation-delay: calc(var(--i) * 72ms);
 }
 
 @keyframes kslLetterFlight {
     0% {
         opacity: 0;
-        filter: blur(8px);
-        transform: translate3d(0, -14px, 90px) scale(1.4);
+        filter: blur(14px);
+        transform: translate3d(var(--x), -24px, 200px) scale(1.9);
     }
-    70% {
+    22% {
         opacity: 1;
-        filter: blur(2px);
-        transform: translate3d(0, 2px, 0) scale(.98);
+        filter: blur(7px);
+        transform: translate3d(calc(var(--x) * .6), -14px, 120px) scale(1.42);
+    }
+    68% {
+        filter: blur(3px);
+        transform: translate3d(calc(var(--x) * .15), -4px, 28px) scale(1.08);
+    }
+    84% {
+        filter: blur(0);
+        transform: translate3d(0, 3px, 0) scale(.94);
     }
     100% {
         opacity: 1;
@@ -8679,8 +8688,8 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
         letter-spacing: .08em;
     }
 
-    .ksl-intro-word { gap: .12em; }
-    .ksl-intro-tagline-depth { gap: .4em; }
+    .ksl-intro-word { gap: .22em; }
+    .ksl-intro-tagline-depth { gap: .55em; }
 }
 
 @media (prefers-reduced-motion: reduce) {
