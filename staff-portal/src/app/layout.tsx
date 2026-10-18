@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   title: "KSL Admin portal",
   description: "Kenya Shipyards Limited staff content management",
   robots: { index: false, follow: false },
+  icons: { icon: [{ url: "/favicon.png", type: "image/png" }] },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
