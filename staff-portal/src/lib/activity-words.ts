@@ -15,6 +15,7 @@ const THING_WORDS: Record<string, string> = {
   faq_group: "a question group",
   faq_item: "a question",
   site_setting: "the site settings",
+  site_image: "a website photo",
   services_settings: "the Services page introduction",
   service_item: "a service",
   products_settings: "the Products page text",

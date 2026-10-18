@@ -11,13 +11,20 @@ export type DownloadItemRow = {
   anchor: string | null;
   alias_of: string | null;
   external_href: string | null;
+  source: "standard" | "storage" | null;
   sort_order: number;
   status: string;
 };
 
+export function downloadSource(row: Pick<DownloadItemRow, "source" | "external_href">): "standard" | "storage" {
+  if (row.source === "storage" || row.source === "standard") return row.source;
+  return row.external_href?.trim() ? "storage" : "standard";
+}
+
 export function toPublicDownloadItem(row: DownloadItemRow, baseUrl: string) {
   const file = row.file_name ?? "";
-  const href = row.external_href || (file && baseUrl ? baseUrl + file : undefined);
+  const stored = row.external_href?.trim() || "";
+  const href = downloadSource(row) === "storage" ? stored || undefined : file && baseUrl ? baseUrl + file : undefined;
   const item: Record<string, string | undefined> = {
     id: row.id,
     title: row.title,

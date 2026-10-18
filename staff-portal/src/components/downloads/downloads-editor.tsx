@@ -12,7 +12,7 @@ import { useCan } from "@/components/portal/session-context";
 import { slugify } from "@/lib/news";
 import { keyFrom, reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
-import type { DownloadItemRow } from "@/lib/downloads";
+import { downloadSource, type DownloadItemRow } from "@/lib/downloads";
 
 type Draft = Partial<DownloadItemRow> & { isNew?: boolean };
 
@@ -64,12 +64,6 @@ export function DownloadsEditor() {
     return map;
   }, [items]);
 
-  function fileHref(item: Partial<DownloadItemRow>) {
-    if (item.external_href) return item.external_href;
-    if (item.file_name) return baseUrl + item.file_name;
-    return "";
-  }
-
   function startNew() {
     const [label, section] = sections.entries().next().value ?? ["", { key: "", anchor: null }];
     setEditing({
@@ -84,6 +78,7 @@ export function DownloadsEditor() {
       file_type: "PDF",
       file_name: "",
       external_href: "",
+      source: "standard",
       sort_order: items.length ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0,
       status: canPublish ? "published" : "draft",
     });
@@ -101,8 +96,13 @@ export function DownloadsEditor() {
       toast("Choose which part of the Downloads page it belongs in.", "error");
       return;
     }
-    if (!fileHref(editing)) {
-      toast("Upload the file, or paste a link to it.", "error");
+    const source = downloadSource(editing as DownloadItemRow);
+    if (source === "storage" && !editing.external_href?.trim()) {
+      toast("Upload the file into storage.", "error");
+      return;
+    }
+    if (source === "standard" && !editing.file_name?.trim()) {
+      toast("Enter the file name in the docs folder.", "error");
       return;
     }
     setSaving(true);
@@ -170,13 +170,71 @@ export function DownloadsEditor() {
             <Field label="Short description" optional>
               <Input value={editing.subtitle ?? ""} onChange={(e) => set({ subtitle: e.target.value })} />
             </Field>
-            <Field label="File">
-              <FileField
-                module="downloads"
-                value={fileHref(editing)}
-                onChange={(href) => set({ external_href: href, file_name: href ? baseName(href) : "", file_type: fileTypeFor(href) ?? editing.file_type })}
-              />
+            <Field label="Where the file is kept">
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Where the file is kept">
+                {(
+                  [
+                    ["standard", "Standard"],
+                    ["storage", "Storage"],
+                  ] as const
+                ).map(([value, label]) => {
+                  const selected = downloadSource(editing as DownloadItemRow) === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => set({ source: value })}
+                      className={
+                        selected
+                          ? "rounded-full border border-[#0b1f3a] bg-[#0b1f3a] px-4 py-2 text-[13px] font-semibold text-white"
+                          : "rounded-full border border-[#d5dde6] bg-white px-4 py-2 text-[13px] font-semibold text-[#0b1f3a]"
+                      }
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[12.5px] text-[#6b7785]">
+                {downloadSource(editing as DownloadItemRow) === "storage"
+                  ? "The file is uploaded and can be reused on the website."
+                  : `The file stays in the docs folder (${baseUrl || "docs/"}). Enter its file name only.`}
+              </p>
             </Field>
+            {downloadSource(editing as DownloadItemRow) === "storage" ? (
+              <Field label="File">
+                <FileField
+                  module="downloads"
+                  allowLink={false}
+                  value={editing.external_href || ""}
+                  onChange={(href) =>
+                    set({
+                      source: "storage",
+                      external_href: href,
+                      file_name: href ? baseName(href) : "",
+                      file_type: fileTypeFor(href) ?? editing.file_type,
+                    })
+                  }
+                />
+              </Field>
+            ) : (
+              <Field label="File name">
+                <Input
+                  value={editing.file_name ?? ""}
+                  onChange={(e) =>
+                    set({
+                      source: "standard",
+                      external_href: "",
+                      file_name: e.target.value.trim(),
+                      file_type: fileTypeFor(e.target.value) ?? editing.file_type,
+                    })
+                  }
+                  placeholder="Service-Delivery-Charter.pdf"
+                />
+              </Field>
+            )}
           </FormSection>
           <div className="space-y-4">
             <FormSection title="Visibility">
@@ -233,7 +291,7 @@ export function DownloadsEditor() {
         items={items.map((i) => ({
           id: i.id,
           title: i.title,
-          subtitle: [i.category_label, i.language, i.file_type].filter(Boolean).join(" · "),
+          subtitle: [i.category_label, downloadSource(i) === "storage" ? "Storage" : "Standard", i.file_type].filter(Boolean).join(" · "),
           status: i.status,
         }))}
         onEdit={(id) => {

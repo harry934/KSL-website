@@ -5,6 +5,10 @@
     --bs-secondary: #99792c;
     --bs-light: #F7F9FB;
     --bs-dark: #273272;
+    --ksl-photo-home-hero: url("../img/ksl/mombasa.webp");
+    --ksl-photo-page-header: url("../img/ksl/yard.jpg");
+    --ksl-photo-flag: url("../img/ksl/kenya-flag-strip.png");
+    --ksl-photo-banner-mombasa: url("../img/ksl/mombasa.webp");
 }
 
 #spinner {
@@ -125,7 +129,7 @@ main {
     height: 136%;
     background:
         linear-gradient(rgba(39, 50, 114, .62), rgba(9, 41, 108, .62)),
-        url(../img/ksl/yard.jpg) center center / cover no-repeat;
+        var(--ksl-photo-page-header) center center / cover no-repeat;
     transform: translate3d(0, var(--ksl-header-y, 0px), 0);
     z-index: 0;
     will-change: transform;
@@ -4333,7 +4337,7 @@ body {
     height: auto;
     min-height: clamp(820px, 100vh, 1180px);
     overflow: hidden;
-    background: #09296C url("../img/ksl/mombasa.webp") center 42% / cover no-repeat;
+    background: #09296C var(--ksl-photo-home-hero) center 42% / cover no-repeat;
 }
 
 .ksl-hero-shade {
@@ -13114,7 +13118,7 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     z-index: 1;
     width: 54px;
     margin: 0;
-    background: url("../img/ksl/kenya-flag-strip.png") center / cover no-repeat;
+    background: var(--ksl-photo-flag) center / cover no-repeat;
     box-shadow: none;
 }
 .ksl-banner.is-flag::after { content: none; }
@@ -13187,7 +13191,7 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     width: min(280px, 28vw);
     background:
         linear-gradient(90deg, transparent 62%, #09296C),
-        url("../img/ksl/mombasa.webp") center 42% / cover no-repeat;
+        var(--ksl-photo-banner-mombasa) center 42% / cover no-repeat;
 }
 .ksl-banner.is-quay .ksl-banner-inner { padding-left: calc(min(280px, 28vw) + 22px); }
 .ksl-banner.is-quay .ksl-banner-tag { color: #e6c56a; }
@@ -13203,7 +13207,7 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     width: min(280px, 28vw);
     background:
         linear-gradient(270deg, transparent 62%, #09296C),
-        url("../img/ksl/mombasa.webp") center 42% / cover no-repeat;
+        var(--ksl-photo-banner-mombasa) center 42% / cover no-repeat;
 }
 .ksl-banner.is-berth .ksl-banner-inner { padding-right: calc(min(280px, 28vw) + 22px); }
 .ksl-banner.is-berth .ksl-banner-tag { color: #e6c56a; }
@@ -13212,7 +13216,7 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 
 .ksl-banner.is-channel {
     color: #fff;
-    background: url("../img/ksl/mombasa.webp") center 40% / cover no-repeat;
+    background: var(--ksl-photo-banner-mombasa) center 40% / cover no-repeat;
 }
 .ksl-banner.is-channel::before {
     content: "";

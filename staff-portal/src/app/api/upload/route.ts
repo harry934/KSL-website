@@ -14,6 +14,7 @@ const ALLOWED_MODULES = new Set<ModuleKey>([
   "press",
   "careers",
   "organization",
+  "site_settings",
 ]);
 
 const MAX_BYTES = 8 * 1024 * 1024;

@@ -99,7 +99,7 @@
         var past = daysUntil(evt.date) < 0;
         return (
             '<a class="ksl-story-card" href="' + eventHref(evt) + '">' +
-            '<span class="ksl-story-photo"><img src="' + escapeHtml(evt.image || "img/ksl/yard.jpg") + '" alt="" loading="lazy" decoding="async"></span>' +
+            '<span class="ksl-story-photo"><img' + (evt.image ? "" : ' data-ksl-image="content.missing-photo"') + ' src="' + escapeHtml(evt.image || "img/ksl/yard.jpg") + '" alt="" loading="lazy" decoding="async"></span>' +
             '<span class="ksl-story-body">' +
             '<span class="ksl-story-kicker">' + (past ? "Past event" : "Upcoming") + (evt.venue ? " \u00b7 " + escapeHtml(evt.venue) : "") + "</span>" +
             '<span class="ksl-story-title">' + escapeHtml(evt.title) + "</span>" +
@@ -131,6 +131,7 @@
         document.title = evt.title + " | Kenya Shipyards Limited";
         var cover = byId("kslEventCover");
         cover.src = evt.image || "img/ksl/yard.jpg";
+        if (!evt.image) cover.setAttribute("data-ksl-image", "content.missing-photo");
         cover.alt = evt.title;
         byId("kslEventKicker").textContent = past ? "Past event" : "Upcoming event";
         byId("kslEventTitle").textContent = evt.title;

@@ -6,7 +6,7 @@ import kslLogo from "../../../public/ksl-logo.png";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { History, LayoutDashboard } from "lucide-react";
+import { History, ImageIcon, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { MODULE_GROUPS, MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import type { StaffSession } from "@/lib/session";
@@ -112,6 +112,9 @@ export function Sidebar({ session }: { session: StaffSession }) {
                   count={badges[key] ?? 0}
                 />
               ))}
+              {group.label === "Administration" && canSee(session, "site_settings") && (
+                <NavLink href="/images" label="Website images" icon={ImageIcon} active={isActive("/images")} />
+              )}
               {showActivity && (
                 <NavLink href="/activity" label="Activity log" icon={History} active={isActive("/activity")} />
               )}

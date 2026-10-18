@@ -29,9 +29,11 @@
                 var href = "event.html?slug=" + encodeURIComponent(item.slug || "");
                 var when = item.date || "";
                 var place = item.venue ? item.venue + (when ? " · " + when : "") : when;
+                var photo = item.image || "img/ksl/yard.jpg";
+                var standIn = item.image ? "" : ' data-ksl-image="content.missing-photo"';
                 return (
                     '<article class="news-card news-row ksl-lift-card">' +
-                    '<a class="news-cover" href="' + href + '"><img src="' + escapeEvent(item.image || "img/ksl/yard.jpg") + '" alt=""></a>' +
+                    '<a class="news-cover" href="' + href + '"><img' + standIn + ' src="' + escapeEvent(photo) + '" alt=""></a>' +
                     '<div class="news-card-body">' +
                     '<p class="news-kicker">Events</p>' +
                     '<h3><a href="' + href + '">' + escapeEvent(item.title || "") + "</a></h3>" +

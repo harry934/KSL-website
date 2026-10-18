@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261018-28";
+    var ASSET_V = "20261018-29";
 
     var BUNDLES = {
         wow: [
@@ -22,6 +22,7 @@
 
     var TAIL = [
         "js/ksl-content.js",
+        "js/site-images.js",
         "js/site-settings.js",
         "js/access.js",
         "js/lang.js",

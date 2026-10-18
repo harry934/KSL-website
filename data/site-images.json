@@ -1,0 +1,1233 @@
+{
+  "slots": [
+    {
+      "id": "brand.logo",
+      "page": "Every page",
+      "label": "Logo",
+      "src": "img/ksl/logo.png",
+      "kind": "img"
+    },
+    {
+      "id": "chrome.home-hero",
+      "page": "Home",
+      "label": "Home hero photo",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "css",
+      "variable": "--ksl-photo-home-hero"
+    },
+    {
+      "id": "chrome.page-header",
+      "page": "Every page",
+      "label": "Page header photo",
+      "src": "img/ksl/yard.jpg",
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
+    },
+    {
+      "id": "chrome.flag",
+      "page": "Banner",
+      "label": "Kenyan flag",
+      "src": "img/ksl/kenya-flag-strip.png",
+      "kind": "css",
+      "variable": "--ksl-photo-flag"
+    },
+    {
+      "id": "chrome.banner-mombasa",
+      "page": "Banner",
+      "label": "Banner yard photo",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "css",
+      "variable": "--ksl-photo-banner-mombasa"
+    },
+    {
+      "id": "content.missing-photo",
+      "page": "News and events",
+      "label": "Stand-in photo when a story has none",
+      "src": "img/ksl/yard.jpg",
+      "kind": "fallback"
+    },
+    {
+      "id": "about.1-mombasa-shipyard-aerial-view",
+      "page": "About",
+      "label": "Mombasa Shipyard aerial view",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "about.2-marine-infrastructure-by-ksl",
+      "page": "About",
+      "label": "Marine infrastructure by KSL",
+      "src": "img/ksl/linkspan.webp",
+      "kind": "img"
+    },
+    {
+      "id": "about.3-passenger-vessel-built-by-ksl",
+      "page": "About",
+      "label": "Passenger vessel built by KSL",
+      "src": "img/ksl/ferry.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "about.4-passenger-vessel-built-by-kenya-shipyards-limite",
+      "page": "About",
+      "label": "Passenger vessel built by Kenya Shipyards Limited",
+      "src": "img/ksl/ferry.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "about.5-work-under-way-in-the-shipyard",
+      "page": "About",
+      "label": "Work under way in the shipyard",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "about.6-marine-infrastructure-built-by-kenya-shipyards-l",
+      "page": "About",
+      "label": "Marine infrastructure built by Kenya Shipyards Limited",
+      "src": "img/ksl/linkspan.webp",
+      "kind": "img"
+    },
+    {
+      "id": "about.7-mombasa-shipyard-aerial-view",
+      "page": "About",
+      "label": "Mombasa Shipyard aerial view",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "about.8-shipyard-work",
+      "page": "About",
+      "label": "Shipyard work",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "about.9-kisumu-shipyard",
+      "page": "About",
+      "label": "Kisumu Shipyard",
+      "src": "img/ksl/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "about.10-passenger-vessel",
+      "page": "About",
+      "label": "Passenger vessel",
+      "src": "img/ksl/ferry.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "about.11-mombasa-shipyard",
+      "page": "About",
+      "label": "Mombasa Shipyard",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "about.12-heavy-engineering-works",
+      "page": "About",
+      "label": "Heavy engineering works",
+      "src": "img/ksl/linkspan.webp",
+      "kind": "img"
+    },
+    {
+      "id": "about.13-mv-uhuru-ii-programme",
+      "page": "About",
+      "label": "MV Uhuru II programme",
+      "src": "img/ksl/ferry.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "about.14-mombasa-shipyard",
+      "page": "About",
+      "label": "Mombasa Shipyard",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "about.15-kisumu-shipyard",
+      "page": "About",
+      "label": "Kisumu Shipyard",
+      "src": "img/ksl/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "article.1-yard",
+      "page": "News story",
+      "label": "yard",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "board.1-gen-c-m-kahariri",
+      "page": "Board",
+      "label": "Gen C M Kahariri",
+      "src": "img/ksl/board/gen-kahariri.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "board.2-maj-gen-s-m-farah",
+      "page": "Board",
+      "label": "Maj Gen S M Farah",
+      "src": "img/ksl/board/maj-gen-farah.png",
+      "kind": "img"
+    },
+    {
+      "id": "board.3-dr-patrick-mariru",
+      "page": "Board",
+      "label": "Dr Patrick Mariru",
+      "src": "img/ksl/board/dr-patrick-mariru.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "board.4-dr-chris-kiptoo",
+      "page": "Board",
+      "label": "Dr Chris Kiptoo",
+      "src": "img/ksl/board/dr-chris-kiptoo.jpeg",
+      "kind": "img"
+    },
+    {
+      "id": "board.5-mr-simon-mwachia",
+      "page": "Board",
+      "label": "Mr Simon Mwachia",
+      "src": "img/ksl/board/simon-mwachia.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "board.6-lt-gen-j-m-omenda",
+      "page": "Board",
+      "label": "Lt Gen J M Omenda",
+      "src": "img/ksl/board/lt-gen-omenda.png",
+      "kind": "img"
+    },
+    {
+      "id": "board.7-lt-gen-d-k-ketter",
+      "page": "Board",
+      "label": "Lt Gen D K Ketter",
+      "src": "img/ksl/board/lt-gen-ketter.jpeg",
+      "kind": "img"
+    },
+    {
+      "id": "board.8-maj-gen-b-waliaula",
+      "page": "Board",
+      "label": "Maj Gen B Waliaula",
+      "src": "img/ksl/board/maj-gen-waliaula.jpeg",
+      "kind": "img"
+    },
+    {
+      "id": "board.9-maj-gen-paul-o-otieno",
+      "page": "Board",
+      "label": "Maj Gen Paul O Otieno",
+      "src": "img/ksl/board/maj-gen-otieno.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "board.10-dr-juma-mukhwana",
+      "page": "Board",
+      "label": "Dr Juma Mukhwana",
+      "src": "img/ksl/board/dr-juma-mukhwana.jpeg",
+      "kind": "img"
+    },
+    {
+      "id": "board.11-major-general-faustino-lobaly",
+      "page": "Board",
+      "label": "Major General Faustino Lobaly",
+      "src": "img/ksl/board/maj-gen-faustino-lobaly.jpeg",
+      "kind": "img"
+    },
+    {
+      "id": "board.12-ms-maryanne-karanja",
+      "page": "Board",
+      "label": "Ms Maryanne Karanja",
+      "src": "img/ksl/board/maryanne-karanja.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "csr.1-csr-activity-with-community-members",
+      "page": "Community",
+      "label": "CSR activity with community members",
+      "src": "img/ksl/gallery/dsc_5591-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "csr.2-medical-camp-outreach",
+      "page": "Community",
+      "label": "Medical camp outreach",
+      "src": "img/ksl/gallery/dsc_5805-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "csr.3-community-engagement-at-the-coast",
+      "page": "Community",
+      "label": "Community engagement at the coast",
+      "src": "img/ksl/gallery/20220509_172713.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "csr.4-tree-planting-programme",
+      "page": "Community",
+      "label": "Tree planting programme",
+      "src": "img/ksl/gallery/dsc_5580-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "csr.5-medical-camp",
+      "page": "Community",
+      "label": "Medical camp",
+      "src": "img/ksl/gallery/dsc_5806-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "csr.6-charity-run",
+      "page": "Community",
+      "label": "Charity run",
+      "src": "img/ksl/gallery/dsc_5812-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "csr.7-visit-to-vulnerable-community",
+      "page": "Community",
+      "label": "Visit to vulnerable community",
+      "src": "img/ksl/gallery/dsc_5833-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "csr.8-coastal-cleanup",
+      "page": "Community",
+      "label": "Coastal cleanup",
+      "src": "img/ksl/gallery/dji_0505.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "csr.9-hse-training-session",
+      "page": "Community",
+      "label": "HSE training session",
+      "src": "img/ksl/gallery/dsc_5686-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "event.1-yard",
+      "page": "Event",
+      "label": "yard",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "index.1-aerial-view-of-mombasa-shipyard-at-mtongwe",
+      "page": "Home",
+      "label": "Aerial view of Mombasa Shipyard at Mtongwe",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.2-naval-vessel-on-the-slipway-at-the-mombasa-shipy",
+      "page": "Home",
+      "label": "Naval vessel on the slipway at the Mombasa Shipyard repair hall",
+      "src": "img/ksl/gallery/repair-1.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "index.3-kisumu-shipyard-on-lake-victoria",
+      "page": "Home",
+      "label": "Kisumu Shipyard on Lake Victoria",
+      "src": "img/ksl/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.4-mv-uhuru-under-refit-at-kisumu-shipyard",
+      "page": "Home",
+      "label": "MV Uhuru under refit at Kisumu Shipyard",
+      "src": "img/ksl/gallery/mv-uhuru-2-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "index.5-linkspan-engineered-by-kenya-shipyards-limited",
+      "page": "Home",
+      "label": "Linkspan engineered by Kenya Shipyards Limited",
+      "src": "img/ksl/linkspan.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.6-patrol-vessel-stern-and-propellers-in-the-mombas",
+      "page": "Home",
+      "label": "Patrol vessel stern and propellers in the Mombasa Shipyard construction hall",
+      "src": "img/ksl/gallery/dsc_5580-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "index.7-kenya-shipyards-limited-crew-working-alongside-a",
+      "page": "Home",
+      "label": "Kenya Shipyards Limited crew working alongside a vessel on Lake Victoria",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "index.8-aerial-view-of-a-vessel-hull-under-construction-",
+      "page": "Home",
+      "label": "Aerial view of a vessel hull under construction at Kenya Shipyards",
+      "src": "img/ksl/gallery/dji_0505.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "index.9-ship-construction",
+      "page": "Home",
+      "label": "Ship construction",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "index.10-civil-and-modular-works",
+      "page": "Home",
+      "label": "Civil and modular works",
+      "src": "img/ksl/linkspan.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.11-heavy-engineering",
+      "page": "Home",
+      "label": "Heavy engineering",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.12-maintenance-repair-and-overhaul",
+      "page": "Home",
+      "label": "Maintenance repair and overhaul",
+      "src": "img/ksl/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.13-grp-boats",
+      "page": "Home",
+      "label": "GRP boats",
+      "src": "img/ksl/fishing.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "index.14-mombasa-shipyard-aerial-view",
+      "page": "Home",
+      "label": "Mombasa shipyard aerial view",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.15-kisumu-shipyard",
+      "page": "Home",
+      "label": "Kisumu Shipyard",
+      "src": "img/ksl/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.16-mombasa-shipyard",
+      "page": "Home",
+      "label": "Mombasa Shipyard",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.17-siaya",
+      "page": "Home",
+      "label": "Siaya",
+      "src": "img/ksl/clients/siaya.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.18-migori",
+      "page": "Home",
+      "label": "Migori",
+      "src": "img/ksl/clients/migori.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.19-kplc",
+      "page": "Home",
+      "label": "KPLC",
+      "src": "img/ksl/clients/kplc.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.20-homa-bay",
+      "page": "Home",
+      "label": "Homa Bay",
+      "src": "img/ksl/clients/homabay.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.21-busia",
+      "page": "Home",
+      "label": "Busia",
+      "src": "img/ksl/clients/busia.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.22-bandari",
+      "page": "Home",
+      "label": "Bandari",
+      "src": "img/ksl/clients/bandari.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.23-azam",
+      "page": "Home",
+      "label": "Azam",
+      "src": "img/ksl/clients/azam.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.24-kenya-navy",
+      "page": "Home",
+      "label": "Kenya Navy",
+      "src": "img/ksl/clients/navy.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.25-kcgs",
+      "page": "Home",
+      "label": "KCGS",
+      "src": "img/ksl/clients/kcgs.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.26-kpa",
+      "page": "Home",
+      "label": "KPA",
+      "src": "img/ksl/clients/kpa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.27-kaa",
+      "page": "Home",
+      "label": "KAA",
+      "src": "img/ksl/clients/kaa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.28-kfs",
+      "page": "Home",
+      "label": "KFS",
+      "src": "img/ksl/clients/kfs.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.29-kmfri",
+      "page": "Home",
+      "label": "KMFRI",
+      "src": "img/ksl/clients/kmfri.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.30-knsl",
+      "page": "Home",
+      "label": "KNSL",
+      "src": "img/ksl/clients/knsl.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.31-police",
+      "page": "Home",
+      "label": "Police",
+      "src": "img/ksl/clients/police.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.32-kra",
+      "page": "Home",
+      "label": "KRA",
+      "src": "img/ksl/clients/kra.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.33-krc",
+      "page": "Home",
+      "label": "KRC",
+      "src": "img/ksl/clients/krc.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.34-kws",
+      "page": "Home",
+      "label": "KWS",
+      "src": "img/ksl/clients/kws.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.35-nia",
+      "page": "Home",
+      "label": "NIA",
+      "src": "img/ksl/clients/nia.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.36-kisumu",
+      "page": "Home",
+      "label": "Kisumu",
+      "src": "img/ksl/clients/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.37-siaya",
+      "page": "Home",
+      "label": "siaya",
+      "src": "img/ksl/clients/siaya.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.38-migori",
+      "page": "Home",
+      "label": "migori",
+      "src": "img/ksl/clients/migori.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.39-kplc",
+      "page": "Home",
+      "label": "kplc",
+      "src": "img/ksl/clients/kplc.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.40-homabay",
+      "page": "Home",
+      "label": "homabay",
+      "src": "img/ksl/clients/homabay.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.41-busia",
+      "page": "Home",
+      "label": "busia",
+      "src": "img/ksl/clients/busia.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.42-bandari",
+      "page": "Home",
+      "label": "bandari",
+      "src": "img/ksl/clients/bandari.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.43-azam",
+      "page": "Home",
+      "label": "azam",
+      "src": "img/ksl/clients/azam.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.44-navy",
+      "page": "Home",
+      "label": "navy",
+      "src": "img/ksl/clients/navy.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.45-kcgs",
+      "page": "Home",
+      "label": "kcgs",
+      "src": "img/ksl/clients/kcgs.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.46-kpa",
+      "page": "Home",
+      "label": "kpa",
+      "src": "img/ksl/clients/kpa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.47-kaa",
+      "page": "Home",
+      "label": "kaa",
+      "src": "img/ksl/clients/kaa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.48-kfs",
+      "page": "Home",
+      "label": "kfs",
+      "src": "img/ksl/clients/kfs.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.49-kmfri",
+      "page": "Home",
+      "label": "kmfri",
+      "src": "img/ksl/clients/kmfri.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.50-knsl",
+      "page": "Home",
+      "label": "knsl",
+      "src": "img/ksl/clients/knsl.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.51-police",
+      "page": "Home",
+      "label": "police",
+      "src": "img/ksl/clients/police.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.52-kra",
+      "page": "Home",
+      "label": "kra",
+      "src": "img/ksl/clients/kra.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.53-krc",
+      "page": "Home",
+      "label": "krc",
+      "src": "img/ksl/clients/krc.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.54-kws",
+      "page": "Home",
+      "label": "kws",
+      "src": "img/ksl/clients/kws.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.55-nia",
+      "page": "Home",
+      "label": "nia",
+      "src": "img/ksl/clients/nia.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.56-kisumu",
+      "page": "Home",
+      "label": "kisumu",
+      "src": "img/ksl/clients/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.57-national-treasury",
+      "page": "Home",
+      "label": "National Treasury",
+      "src": "img/ksl/partners/treasury.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.58-damen",
+      "page": "Home",
+      "label": "Damen",
+      "src": "img/ksl/partners/damen.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.59-baku",
+      "page": "Home",
+      "label": "Baku",
+      "src": "img/ksl/partners/baku.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.60-karnafuli",
+      "page": "Home",
+      "label": "Karnafuli",
+      "src": "img/ksl/partners/karnafuli.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.61-seco",
+      "page": "Home",
+      "label": "SECO",
+      "src": "img/ksl/partners/seco.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.62-smh",
+      "page": "Home",
+      "label": "SMH",
+      "src": "img/ksl/partners/smh.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.63-tuco",
+      "page": "Home",
+      "label": "Tuco",
+      "src": "img/ksl/partners/tuco.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.64-treasury",
+      "page": "Home",
+      "label": "treasury",
+      "src": "img/ksl/partners/treasury.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.65-damen",
+      "page": "Home",
+      "label": "damen",
+      "src": "img/ksl/partners/damen.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.66-baku",
+      "page": "Home",
+      "label": "baku",
+      "src": "img/ksl/partners/baku.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.67-karnafuli",
+      "page": "Home",
+      "label": "karnafuli",
+      "src": "img/ksl/partners/karnafuli.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.68-seco",
+      "page": "Home",
+      "label": "seco",
+      "src": "img/ksl/partners/seco.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.69-smh",
+      "page": "Home",
+      "label": "smh",
+      "src": "img/ksl/partners/smh.webp",
+      "kind": "img"
+    },
+    {
+      "id": "index.70-tuco",
+      "page": "Home",
+      "label": "tuco",
+      "src": "img/ksl/partners/tuco.webp",
+      "kind": "img"
+    },
+    {
+      "id": "products.1-7-05-metre-ambulance-boat",
+      "page": "Products",
+      "label": "7.05 metre ambulance boat",
+      "src": "img/ksl/ambulance.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "products.2-15-ton-medium-scale-fishing-vessel",
+      "page": "Products",
+      "label": "15 ton medium-scale fishing vessel",
+      "src": "img/ksl/fishing.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "products.3-16-metre-passenger-boat",
+      "page": "Products",
+      "label": "16 metre passenger boat",
+      "src": "img/ksl/ferry.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.1-mv-uhuru-ii",
+      "page": "Projects",
+      "label": "MV Uhuru II",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.2-29m-passenger-ferry",
+      "page": "Projects",
+      "label": "29M Passenger Ferry",
+      "src": "img/ksl/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.3-81-passenger-ferry",
+      "page": "Projects",
+      "label": "81 Passenger Ferry",
+      "src": "img/ksl/linkspan.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.4-grp-boats-kisumu-county",
+      "page": "Projects",
+      "label": "GRP Boats - Kisumu County",
+      "src": "img/ksl/ferry.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.5-grp-boats-siaya-county",
+      "page": "Projects",
+      "label": "GRP Boats - Siaya County",
+      "src": "img/ksl/fishing.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.6-mv-uhuru-i",
+      "page": "Projects",
+      "label": "MV Uhuru I",
+      "src": "img/ksl/ambulance.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.7-barge-alpha-stone-t",
+      "page": "Projects",
+      "label": "Barge Alpha Stone T",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.8-uvuvi-i",
+      "page": "Projects",
+      "label": "Uvuvi I",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.9-mv-ali-26",
+      "page": "Projects",
+      "label": "MV Ali 26",
+      "src": "img/ksl/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.10-alpha-3000-barge",
+      "page": "Projects",
+      "label": "Alpha 3000 Barge",
+      "src": "img/ksl/linkspan.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.11-fv-kivu",
+      "page": "Projects",
+      "label": "FV Kivu",
+      "src": "img/ksl/ferry.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.12-tug-boat-kiboko",
+      "page": "Projects",
+      "label": "Tug Boat Kiboko",
+      "src": "img/ksl/fishing.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.13-mv-kilimanjaro",
+      "page": "Projects",
+      "label": "MV Kilimanjaro",
+      "src": "img/ksl/ambulance.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.14-kns-imara",
+      "page": "Projects",
+      "label": "KNS Imara",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.15-pilot-boat-malkia",
+      "page": "Projects",
+      "label": "Pilot Boat Malkia",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.16-barge-alpha-stone-town",
+      "page": "Projects",
+      "label": "Barge Alpha Stone Town",
+      "src": "img/ksl/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.17-mv-nyayo",
+      "page": "Projects",
+      "label": "MV Nyayo",
+      "src": "img/ksl/linkspan.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.18-mv-likoni",
+      "page": "Projects",
+      "label": "MV Likoni",
+      "src": "img/ksl/ferry.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.19-kns-shupavu",
+      "page": "Projects",
+      "label": "KNS Shupavu",
+      "src": "img/ksl/fishing.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.20-mv-ikraam-i",
+      "page": "Projects",
+      "label": "MV Ikraam I",
+      "src": "img/ksl/ambulance.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.21-wave-ii-baseterre",
+      "page": "Projects",
+      "label": "Wave II Baseterre",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.22-mv-chamaunga",
+      "page": "Projects",
+      "label": "MV Chamaunga",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.23-pilot-boat-tangulizi-ii",
+      "page": "Projects",
+      "label": "Pilot Boat Tangulizi II",
+      "src": "img/ksl/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.24-kra-002",
+      "page": "Projects",
+      "label": "KRA 002",
+      "src": "img/ksl/linkspan.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.25-fagio-ii",
+      "page": "Projects",
+      "label": "Fagio II",
+      "src": "img/ksl/ferry.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.26-krc-workshop",
+      "page": "Projects",
+      "label": "KRC Workshop",
+      "src": "img/ksl/fishing.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.27-kpa-homabay-pier",
+      "page": "Projects",
+      "label": "KPA Homabay Pier",
+      "src": "img/ksl/ambulance.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.28-kisumu-port-linkspan",
+      "page": "Projects",
+      "label": "Kisumu Port Linkspan",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.29-marine-rescue-and-coordination-center",
+      "page": "Projects",
+      "label": "Marine Rescue and Coordination Center",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.30-kichinjio-landing-site",
+      "page": "Projects",
+      "label": "Kichinjio Landing Site",
+      "src": "img/ksl/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.31-nanga-landing-site",
+      "page": "Projects",
+      "label": "Nanga Landing Site",
+      "src": "img/ksl/linkspan.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.32-dredging-of-kisumu-port",
+      "page": "Projects",
+      "label": "Dredging of Kisumu Port",
+      "src": "img/ksl/ferry.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.33-upgrade-of-kisumu-shipyard",
+      "page": "Projects",
+      "label": "Upgrade of Kisumu Shipyard",
+      "src": "img/ksl/fishing.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.34-construction-of-mombasa-shipyard",
+      "page": "Projects",
+      "label": "Construction of Mombasa Shipyard",
+      "src": "img/ksl/ambulance.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.35-remanufacture-of-locomotives",
+      "page": "Projects",
+      "label": "Remanufacture of Locomotives",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "project.36-rehabilitation-of-locomotives",
+      "page": "Projects",
+      "label": "Rehabilitation of Locomotives",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "project.37-rehabilitation-of-battle-tanks",
+      "page": "Projects",
+      "label": "Rehabilitation of Battle Tanks",
+      "src": "img/ksl/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "service.1-repair-of-offshore-patrol-boats",
+      "page": "Services",
+      "label": "Repair of offshore patrol boats",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "service.2-repair-and-maintenance-of-tug-boats",
+      "page": "Services",
+      "label": "Repair and maintenance of tug boats",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "service.3-repair-and-maintenance-of-research-vessels",
+      "page": "Services",
+      "label": "Repair and maintenance of research vessels",
+      "src": "img/ksl/ferry.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "service.4-repair-and-maintenance-of-cargo-vessels",
+      "page": "Services",
+      "label": "Repair and maintenance of cargo vessels",
+      "src": "img/ksl/ambulance.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "service.5-repair-and-maintenance-of-passenger-vessels",
+      "page": "Services",
+      "label": "Repair and maintenance of passenger vessels",
+      "src": "img/ksl/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "service.6-dry-docking-services",
+      "page": "Services",
+      "label": "Dry docking services",
+      "src": "img/ksl/ferry.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "service.7-upgrade-and-maintenance-of-shipyards",
+      "page": "Services",
+      "label": "Upgrade and maintenance of shipyards",
+      "src": "img/ksl/linkspan.webp",
+      "kind": "img"
+    },
+    {
+      "id": "service.8-repair-and-maintenance-of-linkspans",
+      "page": "Services",
+      "label": "Repair and maintenance of linkspans",
+      "src": "img/ksl/fishing.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "service.9-dredging-of-waterways",
+      "page": "Services",
+      "label": "Dredging of waterways",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "service.10-rehabilitation-of-workshops",
+      "page": "Services",
+      "label": "Rehabilitation of workshops",
+      "src": "img/ksl/mombasa.webp",
+      "kind": "img"
+    },
+    {
+      "id": "service.11-remanufacture-and-rehabilitation-of-locomotives",
+      "page": "Services",
+      "label": "Remanufacture and rehabilitation of locomotives",
+      "src": "img/ksl/kisumu.webp",
+      "kind": "img"
+    },
+    {
+      "id": "service.12-leasing-services",
+      "page": "Services",
+      "label": "Leasing services",
+      "src": "img/ksl/linkspan.webp",
+      "kind": "img"
+    },
+    {
+      "id": "sustainability.1-aerial-view-of-kenya-shipyards-operations",
+      "page": "Sustainability",
+      "label": "Aerial view of Kenya Shipyards operations",
+      "src": "img/ksl/gallery/dji_0500-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "sustainability.2-mv-uhuru-ii-on-the-water",
+      "page": "Sustainability",
+      "label": "MV Uhuru II on the water",
+      "src": "img/ksl/gallery/mv-uhuru-ii-scaled-2.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "sustainability.3-mv-uhuru-at-kisumu-shipyard",
+      "page": "Sustainability",
+      "label": "MV Uhuru at Kisumu Shipyard",
+      "src": "img/ksl/gallery/mv-uhuru-kisumu-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "sustainability.4-work-at-the-shipyard",
+      "page": "Sustainability",
+      "label": "Work at the shipyard",
+      "src": "img/ksl/gallery/img_4265-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "sustainability.5-team-and-training-at-ksl",
+      "page": "Sustainability",
+      "label": "Team and training at KSL",
+      "src": "img/ksl/gallery/img_4115.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "sustainability.6-community-environmental-programme",
+      "page": "Sustainability",
+      "label": "Community environmental programme",
+      "src": "img/ksl/gallery/dsc_5580-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "sustainability.7-slipway-and-yard-infrastructure",
+      "page": "Sustainability",
+      "label": "Slipway and yard infrastructure",
+      "src": "img/ksl/gallery/ksl-slipway.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "sustainability.8-support-vessel-built-by-ksl",
+      "page": "Sustainability",
+      "label": "Support vessel built by KSL",
+      "src": "img/ksl/gallery/mv-sea-spirit-30.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "sustainability.9-kenya-shipyards-limited",
+      "page": "Sustainability",
+      "label": "Kenya Shipyards Limited",
+      "src": "img/ksl/gallery/wallpaper-005.jpg",
+      "kind": "img"
+    }
+  ]
+}

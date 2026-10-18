@@ -43,6 +43,14 @@ export async function POST(req: NextRequest) {
   const id = (body.id || "").trim();
   if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
+  const source = body.source === "storage" ? "storage" : "standard";
+  if (source === "storage" && !String(body.external_href || "").trim()) {
+    return NextResponse.json({ error: "Upload the file into storage." }, { status: 400 });
+  }
+  if (source === "standard" && !String(body.file_name || "").trim()) {
+    return NextResponse.json({ error: "Enter the file name in the docs folder." }, { status: 400 });
+  }
+
   const row = {
     id,
     title: body.title,
@@ -55,7 +63,8 @@ export async function POST(req: NextRequest) {
     file_name: body.file_name ?? null,
     anchor: body.anchor ?? null,
     alias_of: body.alias_of ?? null,
-    external_href: body.external_href ?? null,
+    external_href: source === "storage" ? String(body.external_href).trim() : null,
+    source,
     sort_order: body.sort_order ?? 0,
     status: body.status ?? "draft",
     updated_by: session.userId,

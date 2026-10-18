@@ -20,11 +20,13 @@ export function FileField({
   value,
   onChange,
   allowImages,
+  allowLink = true,
 }: {
   module: ModuleKey;
   value: string;
   onChange: (href: string) => void;
   allowImages?: boolean;
+  allowLink?: boolean;
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,14 +83,16 @@ export function FileField({
             }}
           />
         </label>
-        <button
-          type="button"
-          onClick={() => setPasting((v) => !v)}
-          className="inline-flex h-[34px] items-center gap-1.5 rounded-[6px] px-2 text-[13px] font-semibold text-[#5b6775] hover:bg-[#eef2f6] hover:text-[#0b1f3a]"
-        >
-          <Link2 className="h-4 w-4" />
-          {pasting ? "Done" : "Paste a link instead"}
-        </button>
+        {allowLink && (
+          <button
+            type="button"
+            onClick={() => setPasting((v) => !v)}
+            className="inline-flex h-[34px] items-center gap-1.5 rounded-[6px] px-2 text-[13px] font-semibold text-[#5b6775] hover:bg-[#eef2f6] hover:text-[#0b1f3a]"
+          >
+            <Link2 className="h-4 w-4" />
+            {pasting ? "Done" : "Paste a link instead"}
+          </button>
+        )}
       </div>
       <p className="text-[12px] text-[#6b7785]">{allowImages ? "PDF, Word or an image (JPG, PNG, WebP)." : "PDF or Word, up to 25 MB."}</p>
       {error && <p className="text-[12.5px] text-[#b42318]">{error}</p>}

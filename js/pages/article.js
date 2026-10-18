@@ -118,6 +118,7 @@
 
         var cover = byId("kslArticleCover");
         cover.src = item.image || "img/ksl/yard.jpg";
+        if (!item.image) cover.setAttribute("data-ksl-image", "content.missing-photo");
         cover.alt = item.title;
         byId("kslArticleKicker").textContent = item.category || "News";
         byId("kslArticleTitle").textContent = item.title;

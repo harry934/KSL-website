@@ -25,7 +25,7 @@
     function feedCard(item) {
         return (
             '<a class="ksl-feed-card" href="' + escapeHtml(item.href) + '">' +
-            '<span class="ksl-feed-photo"><img src="' + escapeHtml(item.image) + '" alt="" loading="lazy" decoding="async"></span>' +
+            '<span class="ksl-feed-photo"><img' + (item.standIn ? ' data-ksl-image="content.missing-photo"' : '') + ' src="' + escapeHtml(item.image) + '" alt="" loading="lazy" decoding="async"></span>' +
             '<span class="ksl-feed-body">' +
             '<span class="ksl-feed-top"><span class="ksl-feed-pill">' + escapeHtml(item.label) + "</span>" + arrow + "</span>" +
             '<span class="ksl-feed-name">' + escapeHtml(item.title) + "</span>" +
@@ -85,6 +85,7 @@
             return {
                 href: "article.html?slug=" + encodeURIComponent(item.slug),
                 image: item.image || "img/ksl/yard.jpg",
+                standIn: !item.image,
                 label: item.category || "News",
                 title: item.title,
                 meta: formatDate(item.date),
@@ -113,6 +114,7 @@
             return {
                 href: "event.html?slug=" + encodeURIComponent(item.slug),
                 image: item.image || "img/ksl/yard.jpg",
+                standIn: !item.image,
                 label: String(item.date || "") >= today ? "Event" : "Past event",
                 title: item.title,
                 meta: when || item.summary || "",
