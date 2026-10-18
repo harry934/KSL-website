@@ -812,60 +812,55 @@ body {
 .kb-preview.is-nav-line .kb-preview-cta { padding: 0 0 1px; color: #09296C; border-bottom: 1px solid #09296C; }
 .kb-preview.is-corner {
   display: flex;
-  width: min(240px, 92%);
+  width: min(320px, 100%);
   overflow: hidden;
-  background: #f7f4ee;
+  background: #fff;
   border-radius: 0;
-  box-shadow: 0 10px 28px rgba(9, 41, 108, 0.18);
+  box-shadow: 0 10px 28px rgba(9, 41, 108, 0.16);
 }
 .kb-preview.is-corner .kb-preview-photo {
-  flex: none;
-  align-self: stretch;
-  width: 100%;
-  height: 64px;
-  min-height: 64px;
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  width: 84px;
+  height: 100%;
+  min-height: 108px;
   background: url("https://ksl-website.vercel.app/img/ksl/yard.jpg") center / cover no-repeat;
 }
 .kb-preview.is-corner .kb-preview-inner {
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 2px;
   align-items: stretch;
-  gap: 4px;
   width: 100%;
-  padding: 0 0 10px;
+  padding: 10px 22px 10px 0;
 }
 .kb-preview.is-corner .kb-preview-tag,
 .kb-preview.is-corner .kb-preview-body,
-.kb-preview.is-corner .kb-preview-cta { margin-right: 22px; margin-left: 10px; }
-.kb-preview.is-corner .kb-preview-tag { margin-top: 8px; color: #8a6a24; }
+.kb-preview.is-corner .kb-preview-cta { grid-column: 2; margin: 0; }
+.kb-preview.is-corner .kb-preview-tag { color: #8a6a24; }
 .kb-preview.is-corner .kb-preview-text { font-weight: 500; white-space: normal; }
-.kb-preview.is-corner .kb-preview-cta { padding: 0 0 1px; background: transparent; color: #09296C; border-bottom: 1px solid #09296C; }
+.kb-preview.is-corner .kb-preview-cta { justify-self: start; padding: 0 0 1px; background: transparent; color: #09296C; border-bottom: 1px solid #09296C; }
 .kb-preview.is-launch {
-  width: min(260px, 88%);
+  width: min(260px, 92%);
   color: #0b1f3a;
-  background: #f7f4ee;
-  border-radius: 0;
-}
-.kb-preview.is-launch::before {
-  content: "";
-  display: block;
-  height: 72px;
   background:
-    linear-gradient(180deg, transparent 58%, #f7f4ee),
-    url("https://ksl-website.vercel.app/img/ksl/mombasa.webp") center 40% / cover no-repeat;
+    linear-gradient(180deg, rgba(247, 244, 238, 0.92), rgba(247, 244, 238, 0.96)),
+    url("https://ksl-website.vercel.app/img/ksl/mombasa.webp") center 42% / cover no-repeat;
+  border-radius: 0;
 }
 .kb-preview.is-launch .kb-preview-inner {
   flex-direction: column;
-  align-items: flex-start;
-  padding: 32px 14px 12px;
+  align-items: center;
+  padding: 16px 14px 14px;
+  text-align: center;
 }
 .kb-preview.is-launch .kb-preview-crest {
-  position: absolute;
-  top: -18px;
-  left: 14px;
-  width: 36px;
+  position: static;
+  width: 40px;
   height: auto;
-  padding: 2px;
-  background: #fff;
+  padding: 0;
+  background: transparent;
 }
 .kb-preview.is-launch .kb-preview-tag { color: #8a6a24; }
 .kb-preview.is-launch .kb-preview-text { white-space: normal; font-weight: 500; }

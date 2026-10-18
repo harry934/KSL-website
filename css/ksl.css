@@ -13288,39 +13288,41 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     bottom: 78px;
     z-index: 2147482000;
     display: flex;
-    width: min(300px, calc(100vw - 32px));
+    width: min(420px, calc(100vw - 32px));
     overflow: hidden;
-    background: #f7f4ee;
+    background: #fff;
     border-radius: 0;
-    box-shadow: 0 14px 36px rgba(9, 41, 108, 0.18);
+    box-shadow: 0 18px 44px rgba(9, 41, 108, 0.16);
     animation: none;
 }
 .ksl-banner.is-corner .ksl-banner-photo {
-    flex: none;
-    align-self: stretch;
-    width: 100%;
-    height: 112px;
-    min-height: 112px;
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    width: 132px;
+    height: 100%;
+    min-height: 148px;
     background: url("../img/ksl/yard.jpg") center / cover no-repeat;
 }
 .ksl-banner.is-corner .ksl-banner-inner {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    column-gap: 16px;
+    row-gap: 4px;
     align-items: stretch;
-    gap: 6px;
     max-width: none;
     width: 100%;
     margin: 0;
-    padding: 0 0 14px;
+    padding: 16px 40px 16px 0;
 }
 .ksl-banner.is-corner .ksl-banner-tag,
 .ksl-banner.is-corner .ksl-banner-body,
-.ksl-banner.is-corner .ksl-banner-cta { margin-right: 36px; margin-left: 14px; }
-.ksl-banner.is-corner .ksl-banner-tag { margin-top: 12px; color: #8a6a24; }
+.ksl-banner.is-corner .ksl-banner-cta { grid-column: 2; margin: 0; }
+.ksl-banner.is-corner .ksl-banner-tag { color: #8a6a24; }
 .ksl-banner.is-corner .ksl-banner-body { display: flex; flex-direction: column; }
 .ksl-banner.is-corner .ksl-banner-text { font-weight: 500; white-space: normal; }
 .ksl-banner.is-corner .ksl-banner-cta {
-    align-self: flex-start;
-    margin-top: 4px;
+    justify-self: start;
+    margin-top: 6px;
     padding: 0 0 1px;
     background: transparent;
     color: #09296C;
@@ -13328,54 +13330,54 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 }
 .ksl-banner.is-corner .ksl-banner-close {
     top: 8px;
+    right: 8px;
     margin-top: 0;
-    color: #fff;
-    background: rgba(9, 41, 108, 0.45);
+    color: #0b1f3a;
+    background: transparent;
 }
 .ksl-banner.is-corner.is-closing { opacity: 0; transition: opacity 0.25s ease; }
 
 .ksl-banner.is-launch {
     position: relative;
-    width: min(420px, 100%);
+    width: min(400px, 100%);
     overflow: hidden;
     color: #0b1f3a;
-    background: #f7f4ee;
-    border-radius: 0;
-    box-shadow: 0 22px 54px rgba(9, 41, 108, 0.28);
-    animation: none;
-}
-.ksl-banner.is-launch::before {
-    content: "";
-    display: block;
-    height: 148px;
     background:
-        linear-gradient(180deg, transparent 58%, #f7f4ee),
-        url("../img/ksl/mombasa.webp") center 40% / cover no-repeat;
+        linear-gradient(180deg, rgba(247, 244, 238, 0.92), rgba(247, 244, 238, 0.96)),
+        url("../img/ksl/mombasa.webp") center 42% / cover no-repeat;
+    border-radius: 0;
+    box-shadow: 0 24px 60px rgba(9, 41, 108, 0.22);
+    animation: none;
 }
 .ksl-banner.is-launch .ksl-banner-inner {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     max-width: none;
     margin: 0;
-    padding: 52px 28px 24px;
+    padding: 36px 32px 28px;
+    text-align: center;
 }
 .ksl-banner.is-launch .ksl-banner-crest {
-    position: absolute;
-    top: -36px;
-    left: 24px;
-    width: 68px;
+    position: static;
+    width: 76px;
     height: auto;
-    padding: 4px;
-    background: #fff;
+    padding: 0;
+    background: transparent;
 }
 .ksl-banner.is-launch .ksl-banner-tag { color: #8a6a24; }
-.ksl-banner.is-launch .ksl-banner-text { font-size: 1.2rem; font-weight: 500; line-height: 1.4; white-space: normal; }
-.ksl-banner.is-launch .ksl-banner-cta { margin-top: 6px; padding: 10px 18px; background: #09296C; color: #fff; }
+.ksl-banner.is-launch .ksl-banner-text {
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 1.45;
+    white-space: normal;
+}
+.ksl-banner.is-launch .ksl-banner-cta { margin-top: 8px; padding: 10px 18px; background: #09296C; color: #fff; }
 .ksl-banner.is-launch .ksl-banner-close {
-    top: 10px;
+    top: 12px;
+    right: 12px;
     margin-top: 0;
-    color: #fff;
-    background: rgba(9, 41, 108, 0.45);
+    color: #0b1f3a;
+    background: transparent;
 }
 
 /* Ticker mode: the message runs the full width of the bar */
@@ -13505,9 +13507,11 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     .ksl-banner.is-yard::before { left: 12px; width: 44px; height: 44px; margin-top: -22px; }
     .ksl-banner.is-yard .ksl-banner-inner,
     .ksl-banner.is-ticker.is-yard .ksl-banner-inner { padding-left: 68px; }
-    .ksl-banner.is-corner { right: 12px; bottom: 72px; }
-    .ksl-banner.is-launch::before { height: 120px; }
-    .ksl-banner.is-launch .ksl-banner-crest { top: -28px; width: 56px; }
+    .ksl-banner.is-corner { right: 12px; bottom: 72px; width: min(420px, calc(100vw - 24px)); }
+    .ksl-banner.is-corner .ksl-banner-photo { width: 96px; min-height: 132px; }
+    .ksl-banner.is-corner .ksl-banner-inner { grid-template-columns: 96px minmax(0, 1fr); padding-right: 36px; }
+    .ksl-banner.is-launch .ksl-banner-inner { padding: 28px 22px 22px; }
+    .ksl-banner.is-launch .ksl-banner-crest { position: static; top: auto; width: 60px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
