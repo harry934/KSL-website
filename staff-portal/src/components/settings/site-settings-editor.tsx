@@ -12,23 +12,45 @@ import { sendJson } from "@/lib/upload-client";
 import {
   DEFAULT_SITE_SETTINGS,
   bannerDesign,
+  bannerPlacement,
   type AnnouncementSettings,
   type BannerDesign,
   type SiteSettingKey,
   type SiteSettings,
 } from "@/lib/site-settings";
 
-const BANNER_DESIGNS: { value: BannerDesign; label: string }[] = [
-  { value: "notice", label: "Notice" },
-  { value: "navy", label: "Navy" },
-  { value: "tide", label: "Tide" },
-  { value: "flag", label: "Flag" },
-  { value: "split", label: "Split" },
-  { value: "pennant", label: "Pennant" },
-  { value: "plate", label: "Plate" },
-  { value: "night", label: "Night" },
-  { value: "tender", label: "Tender" },
-  { value: "alert", label: "Alert" },
+const BANNER_GROUPS: { label: string; designs: { value: BannerDesign; label: string }[] }[] = [
+  {
+    label: "On the menu",
+    designs: [
+      { value: "notice", label: "Notice" },
+      { value: "navy", label: "Navy" },
+      { value: "tide", label: "Tide" },
+      { value: "flag", label: "Flag" },
+      { value: "split", label: "Split" },
+      { value: "pennant", label: "Pennant" },
+      { value: "plate", label: "Plate" },
+      { value: "night", label: "Night" },
+      { value: "tender", label: "Tender" },
+      { value: "alert", label: "Alert" },
+      { value: "nav-line", label: "Nav line" },
+    ],
+  },
+  {
+    label: "With a yard photo",
+    designs: [
+      { value: "quay", label: "Quay" },
+      { value: "lake", label: "Lake" },
+      { value: "yard", label: "Yard" },
+    ],
+  },
+  {
+    label: "Popup",
+    designs: [
+      { value: "corner", label: "Corner" },
+      { value: "launch", label: "Launch" },
+    ],
+  },
 ];
 
 const BANNER_PAGES = [
@@ -84,17 +106,21 @@ function BannerMark({ design }: { design: BannerDesign }) {
 function BannerPreview({ a, picker = false }: { a: AnnouncementSettings; picker?: boolean }) {
   const text = a.text.trim() || "Your message will appear here.";
   const design = bannerDesign(a.style);
+  const place = bannerPlacement(design);
   const label = a.linkLabel.trim();
   const showButton = Boolean(label && a.linkUrl.trim());
+  const moving = a.scroll && place === "bar";
   return (
-    <div className={cn("kb-preview", `is-${design}`, a.scroll && "is-ticker", picker && "is-picker")}>
+    <div className={cn("kb-preview", `is-${design}`, moving && "is-ticker", picker && "is-picker")}>
       <div className="kb-preview-inner">
+        {design === "corner" && <span className="kb-preview-photo" aria-hidden />}
+        {design === "launch" && <img className="kb-preview-crest" src="/ksl-logo.png" alt="" />}
         <span className="kb-preview-icon">
           <BannerMark design={design} />
         </span>
         <span className="kb-preview-tag">{a.label.trim() || "Announcement"}</span>
         <div className="kb-preview-body">
-          {a.scroll ? (
+          {moving ? (
             <div className="kb-preview-track">
               {[0, 1].map((copy) => (
                 <p className="kb-preview-text" key={copy} aria-hidden={copy === 1 || undefined}>
@@ -208,25 +234,42 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
 
       <FormSection
         title="Website banner"
-        description="A strip at the top of every page, above the menu. Use it for tenders, vacancies, events or important notices. The preview updates as you edit. The public site changes when you save."
+        description="A notice on every page. Some designs sit above the menu, one sits inside the menu, and two open as a card. The preview updates as you edit. The public site changes when you save."
       >
         <div className="space-y-2">
           <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-[#8a96a5]">Preview</p>
-          <div className="overflow-hidden rounded-[10px] border border-[#e3e8ee] bg-white">
+          <div className="relative overflow-hidden rounded-[10px] border border-[#e3e8ee] bg-white">
             <div className="flex items-center gap-2 border-b border-[#eef1f4] px-4 py-2.5">
               <span className="h-2.5 w-2.5 rounded-full bg-[#e3e8ee]" />
               <span className="h-2.5 w-2.5 rounded-full bg-[#e3e8ee]" />
               <span className="h-2.5 w-2.5 rounded-full bg-[#e3e8ee]" />
               <span className="ml-3 text-[12px] font-semibold text-[#0b1f3a]">Kenya Shipyards Limited</span>
-              <span className="ml-auto hidden gap-4 text-[11.5px] text-[#6b7785] sm:flex">
-                <span>Home</span>
-                <span>About</span>
-                <span>Services</span>
-                <span>Contact</span>
-              </span>
+              {bannerPlacement(bannerDesign(a.style)) === "nav" ? (
+                <span className="ml-auto max-w-[46%]">
+                  <BannerPreview a={a} />
+                </span>
+              ) : (
+                <span className="ml-auto hidden gap-4 text-[11.5px] text-[#6b7785] sm:flex">
+                  <span>Home</span>
+                  <span>About</span>
+                  <span>Services</span>
+                  <span>Contact</span>
+                </span>
+              )}
             </div>
-            <BannerPreview a={a} />
-            <div className="h-10 bg-[linear-gradient(180deg,#f4f6f9,#fff)]" />
+            {bannerPlacement(bannerDesign(a.style)) === "bar" && <BannerPreview a={a} />}
+            <div className="relative h-28 bg-[linear-gradient(180deg,#f4f6f9,#fff)]">
+              {bannerPlacement(bannerDesign(a.style)) === "popup" && bannerDesign(a.style) === "corner" && (
+                <div className="absolute bottom-3 right-3">
+                  <BannerPreview a={a} />
+                </div>
+              )}
+              {bannerPlacement(bannerDesign(a.style)) === "popup" && bannerDesign(a.style) === "launch" && (
+                <div className="absolute inset-0 flex items-center justify-center bg-[rgba(8,18,40,0.45)]">
+                  <BannerPreview a={a} />
+                </div>
+              )}
+            </div>
           </div>
           {!a.enabled && (
             <p className="text-[12.5px] text-[#6b7785]">The banner is switched off, so visitors will not see it.</p>
@@ -238,28 +281,32 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
           )}
         </div>
 
-        <div className="space-y-2">
-          <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-[#8a96a5]">Design</p>
-          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Banner design">
-            {BANNER_DESIGNS.map((design) => {
-              const selected = bannerDesign(a.style) === design.value;
-              return (
-                <button
-                  key={design.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => set("announcement", { style: design.value })}
-                  className={cn(
-                    "rounded-full border px-4 py-2 text-[13px] font-semibold",
-                    selected ? "border-[#0b1f3a] bg-[#0b1f3a] text-white" : "border-[#d5dde6] bg-white text-[#0b1f3a] hover:border-[#0b1f3a]"
-                  )}
-                >
-                  {design.label}
-                </button>
-              );
-            })}
-          </div>
+        <div className="space-y-4">
+          {BANNER_GROUPS.map((group) => (
+            <div key={group.label} className="space-y-2">
+              <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-[#8a96a5]">{group.label}</p>
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={group.label}>
+                {group.designs.map((design) => {
+                  const selected = bannerDesign(a.style) === design.value;
+                  return (
+                    <button
+                      key={design.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => set("announcement", { style: design.value })}
+                      className={cn(
+                        "rounded-full border px-4 py-2 text-[13px] font-semibold",
+                        selected ? "border-[#0b1f3a] bg-[#0b1f3a] text-white" : "border-[#d5dde6] bg-white text-[#0b1f3a] hover:border-[#0b1f3a]"
+                      )}
+                    >
+                      {design.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         <Switch

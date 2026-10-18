@@ -13184,6 +13184,135 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 .ksl-banner.is-tide .ksl-banner-icon { color: #e6c56a; }
 .ksl-banner.is-tide .ksl-banner-cta { padding: 8px 16px; border-radius: 999px; background: #fff; color: #0b1f3a; }
 
+.ksl-banner.is-quay {
+    color: #fff;
+    background:
+        linear-gradient(90deg, rgba(11, 31, 58, 0.9), rgba(11, 31, 58, 0.72)),
+        url("../img/ksl/mombasa.webp") center / cover no-repeat;
+}
+.ksl-banner.is-quay .ksl-banner-tag { color: #e6c56a; }
+.ksl-banner.is-quay .ksl-banner-cta { padding: 0 0 1px; color: #fff; border-bottom: 1px solid #fff; }
+
+.ksl-banner.is-lake { background: #e7eef6; }
+.ksl-banner.is-lake .ksl-banner-inner {
+    width: calc(100% - 28px);
+    margin: 8px auto;
+    padding: 12px 48px 12px 18px;
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.86)),
+        url("../img/ksl/kisumu.webp") center / cover no-repeat;
+    border-radius: 10px;
+}
+.ksl-banner.is-lake .ksl-banner-tag { color: #0A3E95; }
+.ksl-banner.is-lake .ksl-banner-cta { padding: 8px 14px; background: #0b1f3a; color: #fff; }
+
+.ksl-banner.is-yard {
+    color: #0b1f3a;
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.84)),
+        url("../img/ksl/yard.jpg") center / cover no-repeat;
+    box-shadow: inset 0 -3px 0 #0b1f3a;
+}
+.ksl-banner.is-yard .ksl-banner-cta { padding: 0 0 1px; border-bottom: 1px solid currentColor; }
+
+.ksl-banner.is-nav-line {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    flex: 0 1 auto;
+    width: auto;
+    max-width: min(460px, 36vw);
+    margin-left: auto;
+    padding-right: 8px;
+    background: transparent;
+    color: #0b1f3a;
+    animation: none;
+    box-shadow: none;
+}
+.ksl-banner.is-nav-line .ksl-banner-inner {
+    max-width: none;
+    width: auto;
+    margin: 0;
+    padding: 8px 28px 8px 0;
+    gap: 8px;
+}
+.ksl-banner.is-nav-line .ksl-banner-tag { color: #0A3E95; font-size: 0.62rem; }
+.ksl-banner.is-nav-line .ksl-banner-text {
+    font-size: 0.86rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.ksl-banner.is-nav-line .ksl-banner-cta { padding: 0 0 1px; border-bottom: 1px solid #0A3E95; color: #0A3E95; }
+.ksl-banner.is-nav-line .ksl-banner-close { right: 0; }
+
+.ksl-banner-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 2147482000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(8, 18, 40, 0.45);
+}
+.ksl-banner-scrim.is-closing { opacity: 0; transition: opacity 0.25s ease; pointer-events: none; }
+
+.ksl-banner.is-corner {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 2147482000;
+    display: flex;
+    width: min(380px, calc(100vw - 32px));
+    overflow: hidden;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(8, 18, 40, 0.22);
+    animation: none;
+}
+.ksl-banner.is-corner .ksl-banner-photo {
+    flex: none;
+    align-self: stretch;
+    width: 112px;
+    min-height: 96px;
+    background: url("../img/ksl/yard.jpg") center / cover no-repeat;
+}
+.ksl-banner.is-corner .ksl-banner-inner {
+    max-width: none;
+    margin: 0;
+    padding: 14px 40px 14px 14px;
+}
+.ksl-banner.is-corner .ksl-banner-body { display: flex; flex-direction: column; }
+.ksl-banner.is-corner .ksl-banner-text { white-space: normal; }
+.ksl-banner.is-corner .ksl-banner-cta { align-self: flex-start; margin-top: 8px; padding: 7px 12px; background: #0b1f3a; color: #fff; }
+.ksl-banner.is-corner.is-closing { opacity: 0; transition: opacity 0.25s ease; }
+
+.ksl-banner.is-launch {
+    position: relative;
+    width: min(440px, 100%);
+    overflow: hidden;
+    color: #fff;
+    background:
+        linear-gradient(180deg, rgba(7, 17, 31, 0.78), rgba(7, 17, 31, 0.9)),
+        url("../img/ksl/mombasa.webp") center / cover no-repeat;
+    border-radius: 16px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    animation: none;
+}
+.ksl-banner.is-launch .ksl-banner-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: none;
+    margin: 0;
+    padding: 28px 24px 22px;
+}
+.ksl-banner.is-launch .ksl-banner-crest { width: 72px; height: auto; }
+.ksl-banner.is-launch .ksl-banner-tag { color: #e6c56a; }
+.ksl-banner.is-launch .ksl-banner-text { font-size: 1.15rem; font-weight: 500; white-space: normal; }
+.ksl-banner.is-launch .ksl-banner-cta { margin-top: 8px; padding: 9px 16px; background: #c5a028; color: #0b1f3a; }
+.ksl-banner.is-launch .ksl-banner-close { color: #fff; }
+
 /* Ticker mode: the message runs the full width of the bar */
 .ksl-banner.is-ticker .ksl-banner-inner {
     display: flex;
@@ -13290,6 +13419,17 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     .ksl-banner.is-ticker .ksl-banner-text { overflow: visible; text-overflow: unset; }
     .ksl-banner-cta { padding: 6px 12px; font-size: 0.8rem; box-shadow: none; }
     .ksl-banner-close { right: 8px; }
+    .ksl-banner.is-nav-line {
+        flex: 1 0 100%;
+        order: 3;
+        max-width: none;
+        margin-left: 0;
+        padding: 0 14px;
+        border-top: 1px solid #e4e9ef;
+    }
+    .ksl-banner.is-nav-line .ksl-banner-text { white-space: normal; }
+    .ksl-banner.is-corner { right: 12px; bottom: 12px; }
+    .ksl-banner.is-corner .ksl-banner-photo { width: 84px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

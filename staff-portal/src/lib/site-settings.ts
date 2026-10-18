@@ -21,7 +21,24 @@ export type FooterSettings = {
   locations: LocationEntry[];
 };
 
-export const BANNER_DESIGNS = ["notice", "navy", "tide", "flag", "split", "pennant", "plate", "night", "tender", "alert"] as const;
+export const BANNER_DESIGNS = [
+  "notice",
+  "navy",
+  "tide",
+  "flag",
+  "split",
+  "pennant",
+  "plate",
+  "night",
+  "tender",
+  "alert",
+  "nav-line",
+  "quay",
+  "lake",
+  "yard",
+  "corner",
+  "launch",
+] as const;
 
 export type BannerDesign = (typeof BANNER_DESIGNS)[number];
 
@@ -90,10 +107,23 @@ const BANNER_ALIASES: Record<string, BannerDesign> = {
   "tender-notice": "tender",
   alert: "alert",
   "alert-bar": "alert",
+  "nav-line": "nav-line",
+  quay: "quay",
+  lake: "lake",
+  yard: "yard",
+  corner: "corner",
+  launch: "launch",
 };
 
 export function bannerDesign(value: unknown): BannerDesign {
   return BANNER_ALIASES[String(value)] || "navy";
+}
+
+/** Where a design is drawn. The id decides this; nothing extra is stored. */
+export function bannerPlacement(design: BannerDesign): "bar" | "nav" | "popup" {
+  if (design === "nav-line") return "nav";
+  if (design === "corner" || design === "launch") return "popup";
+  return "bar";
 }
 
 export type MenuStyle = "classic" | "cards" | "soft" | "line" | "compact";

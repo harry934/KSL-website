@@ -120,8 +120,16 @@
         plate: "plate", "brass-plate": "plate",
         night: "night", "night-watch": "night", midnight: "night",
         tender: "tender", "tender-notice": "tender",
-        alert: "alert", "alert-bar": "alert"
+        alert: "alert", "alert-bar": "alert",
+        "nav-line": "nav-line",
+        quay: "quay", lake: "lake", yard: "yard",
+        corner: "corner", launch: "launch"
     };
+    function bannerPlacement(style) {
+        if (style === "nav-line") return "nav";
+        if (style === "corner" || style === "launch") return "popup";
+        return "bar";
+    }
     var ICON_ARROW =
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
         '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
@@ -155,8 +163,9 @@
         } catch (e) {}
 
         var style = DESIGN_ALIASES[a.style] || "navy";
+        var place = bannerPlacement(style);
         var icon = YARD_ICONS[style] || "";
-        var ticker = !!a.scroll;
+        var ticker = !!a.scroll && place === "bar";
         var link = safeUrl(a.linkUrl);
         var external = /^https?:\/\//i.test(link) && link.indexOf(window.location.host) === -1;
         var text = '<p class="ksl-banner-text">' + escapeHtml(a.text) + "</p>";
@@ -173,6 +182,8 @@
         bar.setAttribute("aria-label", "Announcement");
         bar.innerHTML =
             '<div class="ksl-banner-inner">' +
+            (style === "corner" ? '<span class="ksl-banner-photo" aria-hidden="true"></span>' : "") +
+            (style === "launch" ? '<img class="ksl-banner-crest" src="img/ksl/logo.png" alt="">' : "") +
             '<span class="ksl-banner-icon">' + icon + "</span>" +
             '<span class="ksl-banner-tag">' + escapeHtml(a.label || "Announcement") + "</span>" +
             '<div class="ksl-banner-body">' +
@@ -190,18 +201,45 @@
             bar.style.setProperty("--kb-ticker-duration", Math.min(48, Math.max(26, a.text.length * 0.18)) + "s");
         }
 
-        bar.querySelector(".ksl-banner-close").addEventListener("click", function () {
+        var scrim = null;
+        if (style === "launch") {
+            scrim = document.createElement("div");
+            scrim.className = "ksl-banner-scrim";
+            scrim.appendChild(bar);
+        }
+        var host = scrim || bar;
+
+        function dismiss() {
             try { window.sessionStorage.setItem(key, "1"); } catch (e) {}
+            if (place === "popup") {
+                host.classList.add("is-closing");
+                window.setTimeout(function () { host.remove(); }, 280);
+                return;
+            }
             bar.style.maxHeight = bar.offsetHeight + "px";
             void bar.offsetHeight;
             bar.classList.add("is-closing");
             bar.style.maxHeight = "0px";
             window.setTimeout(function () { bar.remove(); }, 380);
+        }
+
+        bar.querySelector(".ksl-banner-close").addEventListener("click", function (event) {
+            event.stopPropagation();
+            dismiss();
         });
+        if (scrim) {
+            scrim.addEventListener("click", function (event) {
+                if (event.target === scrim) dismiss();
+            });
+        }
 
         var nav = document.querySelector("nav.navbar");
         var mast = nav && nav.closest(".ksl-mast");
-        if (mast) {
+        if (place === "popup") {
+            document.body.appendChild(host);
+        } else if (place === "nav" && nav) {
+            nav.appendChild(bar);
+        } else if (mast) {
             mast.insertBefore(bar, mast.firstChild);
         } else if (nav && nav.parentNode) {
             nav.parentNode.insertBefore(bar, nav);
