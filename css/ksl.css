@@ -8197,9 +8197,10 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     cursor: pointer;
     background: #061a45;
     transform: translate3d(0, 0, 0);
+    transform-style: preserve-3d;
     backface-visibility: hidden;
     transition: opacity .9s cubic-bezier(.22, 1, .36, 1);
-    contain: layout style paint;
+    contain: layout style;
 }
 
 .ksl-intro.is-leaving {
@@ -8360,13 +8361,12 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     top: calc(var(--ksl-ship-top) + var(--ksl-ship-width) * 0.20625);
     left: 50%;
     z-index: 3;
-    width: min(92vw, calc(var(--ksl-ship-width) * 0.72));
-    color: #09296C;
+    width: min(96vw, calc(var(--ksl-ship-width) * 0.98));
+    color: #f4f8ff;
     font-family: Poppins, sans-serif;
     font-weight: 700;
-    font-size: min(calc(var(--ksl-logo-w) * 0.078), 4.2vw);
+    font-size: clamp(12px, 1.35vw, 20px);
     line-height: 1;
-    letter-spacing: .12em;
     white-space: nowrap;
     text-align: center;
     text-transform: uppercase;
@@ -8374,62 +8374,112 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     pointer-events: none;
     transform: translate3d(-50%, -50%, 0);
     transform-style: preserve-3d;
-    transition: opacity .2s linear;
+    transition: opacity .15s linear;
 }
 
-.ksl-intro-tagline-depth {
-    display: flex;
-    justify-content: center;
-    gap: .45em;
-    perspective: 460px;
-    transform-style: preserve-3d;
+.ksl-intro-tagline::after {
+    content: "";
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    bottom: -.42em;
+    height: .42em;
+    background: radial-gradient(ellipse at center, rgba(255, 214, 120, .7), rgba(120, 170, 255, .15) 42%, transparent 72%);
+    filter: blur(5px);
+    opacity: 0;
+    transform: scaleX(.35);
+    pointer-events: none;
 }
 
 .ksl-intro.show-tagline .ksl-intro-tagline {
     opacity: 1;
 }
 
+.ksl-intro.show-tagline .ksl-intro-tagline::after {
+    animation: kslHullGlow .7s ease forwards;
+    animation-delay: 2.15s;
+}
+
+.ksl-intro-tagline-depth {
+    display: flex;
+    justify-content: center;
+    gap: .62em;
+    perspective: 820px;
+    transform-style: preserve-3d;
+}
+
 .ksl-intro-word {
+    display: inline-flex;
+    gap: .2em;
+    transform-style: preserve-3d;
+}
+
+.ksl-intro-letter {
+    --glow: rgba(150, 196, 255, .55);
     display: inline-block;
+    position: relative;
+    color: #eef5ff;
+    background-image: linear-gradient(165deg, #ffffff 0%, #d7e7ff 34%, #6f9ae6 58%, #f5f9ff 78%, #8eb4ef 100%);
+    background-size: 220% 100%;
+    background-position: 0% 50%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
     opacity: 0;
-    filter: blur(18px);
-    transform: translate3d(0, -14vh, 280px) scale(2);
+    filter: blur(10px);
+    transform: translate3d(var(--dx), var(--dy), 24px) rotateX(var(--rx)) rotateY(var(--ry)) rotateZ(var(--rz)) scale(.42);
     transform-origin: center bottom;
-    text-shadow: 0 26px 34px rgba(4, 16, 48, .28);
-    will-change: transform, filter, opacity;
+    transform-style: preserve-3d;
+    will-change: transform, filter, background-position;
 }
 
-.ksl-intro.show-tagline .ksl-intro-word {
-    animation: kslIntroWord 1.05s cubic-bezier(.16, .84, .22, 1) forwards;
-    animation-delay: calc(var(--i) * .3s);
+.ksl-intro-letter.is-gold {
+    --glow: rgba(255, 198, 72, .72);
+    color: #ffe7a3;
+    background-image: linear-gradient(165deg, #fff9e6 0%, #ffe08a 24%, #e7a328 48%, #fff6cf 68%, #c4841a 100%);
 }
 
-.ksl-intro-word.is-gold {
-    color: #C9A95C;
+.ksl-intro.show-tagline .ksl-intro-letter {
+    animation: kslLetterFlight .96s linear forwards;
+    animation-delay: var(--d);
 }
 
-@keyframes kslIntroWord {
+@keyframes kslLetterFlight {
     0% {
         opacity: 0;
-        filter: blur(22px);
-        transform: translate3d(0, -16vh, 320px) scale(2.15);
-        text-shadow: 0 34px 40px rgba(4, 16, 48, .16);
+        background-position: 0% 50%;
+        filter: blur(11px);
+        transform: translate3d(var(--dx), var(--dy), 28px) rotateX(var(--rx)) rotateY(var(--ry)) rotateZ(var(--rz)) scale(.4);
     }
-    20% {
+    16% {
         opacity: 1;
-        filter: blur(12px);
+        filter: blur(2px) drop-shadow(0 18px 16px var(--glow));
+        transform: translate3d(calc(var(--dx) * 1.15), calc(var(--dy) * .35), 230px) rotateX(calc(var(--rx) * .35)) rotateY(calc(var(--ry) * 1.2)) rotateZ(calc(var(--rz) * .6)) scale(1.72);
     }
-    76% {
-        filter: blur(2px);
-        transform: translate3d(0, 7px, 16px) scale(1.05);
-        text-shadow: 0 12px 18px rgba(4, 16, 48, .24);
+    48% {
+        background-position: 80% 50%;
+        filter: blur(7px) drop-shadow(0 22px 18px var(--glow));
+        transform: translate3d(calc(var(--dx) * .28), calc(var(--dy) * .12), 120px) rotateX(calc(var(--rx) * .12)) rotateY(calc(var(--ry) * .35)) rotateZ(0deg) scale(1.22);
+    }
+    78% {
+        filter: blur(.6px) drop-shadow(0 8px 10px var(--glow));
+        transform: translate3d(0, -11px, 22px) rotateX(-8deg) rotateY(0deg) rotateZ(0deg) scale(1.06);
+    }
+    88% {
+        filter: blur(0) drop-shadow(0 2px 0 rgba(5, 16, 40, .45));
+        transform: translate3d(0, 3px, 0) rotateX(4deg) scale(.96);
     }
     100% {
         opacity: 1;
-        filter: blur(0);
-        transform: translate3d(0, 0, 0) scale(1);
-        text-shadow: 0 1px 0 rgba(4, 16, 48, .14);
+        background-position: 100% 50%;
+        filter: blur(0) drop-shadow(0 1px 0 rgba(255, 255, 255, .45)) drop-shadow(0 7px 10px var(--glow));
+        transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1);
     }
+}
+
+@keyframes kslHullGlow {
+    0% { opacity: 0; transform: scaleX(.3); }
+    100% { opacity: .85; transform: scaleX(1); }
 }
 
 .ksl-intro-flight-logo {
@@ -8678,6 +8728,9 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     .ksl-intro-name {
         letter-spacing: .08em;
     }
+
+    .ksl-intro-word { gap: .12em; }
+    .ksl-intro-tagline-depth { gap: .4em; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -8691,10 +8744,11 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
         transition-duration: .3s !important;
     }
 
-    .ksl-intro-word {
+    .ksl-intro-letter {
         opacity: 1;
         filter: none;
         transform: none;
+        -webkit-text-fill-color: currentColor;
     }
 }
 
