@@ -8360,46 +8360,62 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     top: calc(var(--ksl-ship-top) + var(--ksl-ship-width) * 0.20625);
     left: 50%;
     z-index: 3;
-    width: min(90vw, calc(var(--ksl-ship-width) * 0.64));
+    display: flex;
+    justify-content: center;
+    gap: .45em;
+    width: min(92vw, calc(var(--ksl-ship-width) * 0.72));
     color: #09296C;
     font-family: Poppins, sans-serif;
     font-weight: 700;
-    font-size: min(calc(var(--ksl-logo-w) * 0.074), 4vw);
+    font-size: min(calc(var(--ksl-logo-w) * 0.078), 4.2vw);
     line-height: 1;
-    letter-spacing: .1em;
+    letter-spacing: .12em;
     white-space: nowrap;
     text-align: center;
     text-transform: uppercase;
+    perspective: 700px;
     opacity: 0;
     pointer-events: none;
-    transform: translate3d(-50%, calc(-50% + 12px), 0);
-    transition: opacity .01s linear, transform .55s cubic-bezier(.22, 1, .36, 1);
+    transform: translate3d(-50%, -50%, 0);
+    transition: opacity .2s linear;
 }
 
 .ksl-intro.show-tagline .ksl-intro-tagline {
     opacity: 1;
-    transform: translate3d(-50%, -50%, 0);
 }
 
-.ksl-intro-letter {
+.ksl-intro-word {
     display: inline-block;
     opacity: 0;
-    transform: translate3d(0, .35em, 0);
+    filter: blur(14px);
+    transform: translate3d(0, 16px, 120px) scale(1.28);
+    transform-origin: center center;
+    will-change: transform, filter, opacity;
 }
 
-.ksl-intro.show-tagline .ksl-intro-letter {
-    animation: kslIntroLetter .36s cubic-bezier(.22, 1, .36, 1) forwards;
-    animation-delay: calc(var(--i) * 26ms);
+.ksl-intro.show-tagline .ksl-intro-word {
+    animation: kslIntroWord .78s cubic-bezier(.16, 1, .3, 1) forwards;
+    animation-delay: calc(.05s + var(--i) * .24s);
 }
 
-.ksl-intro-letter.is-gold {
+.ksl-intro-word.is-gold {
     color: #C9A95C;
 }
 
-@keyframes kslIntroLetter {
-    to {
+@keyframes kslIntroWord {
+    0% {
+        opacity: 0;
+        filter: blur(16px);
+        transform: translate3d(0, 18px, 140px) scale(1.34);
+    }
+    45% {
         opacity: 1;
-        transform: translate3d(0, 0, 0);
+        filter: blur(5px);
+    }
+    100% {
+        opacity: 1;
+        filter: blur(0);
+        transform: translate3d(0, 0, 0) scale(1);
     }
 }
 
@@ -8660,6 +8676,12 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
         animation-delay: 0s !important;
         animation-iteration-count: 1 !important;
         transition-duration: .3s !important;
+    }
+
+    .ksl-intro-word {
+        opacity: 1;
+        filter: none;
+        transform: none;
     }
 }
 
@@ -13050,151 +13072,49 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     transition: max-height 0.35s ease, opacity 0.25s ease;
 }
 
-.ksl-banner.is-harbour-line { box-shadow: inset 0 3px 0 #0b1f3a; }
-.ksl-banner.is-harbour-line .ksl-banner-tag { color: #99792c; }
-.ksl-banner.is-harbour-line .ksl-banner-cta { padding: 0 0 2px; border-bottom: 1px solid #0b1f3a; }
 
-.ksl-banner.is-keel-stripe { background: #0b1f3a; color: #fff; box-shadow: inset 0 -1px 0 #c5a028; }
-.ksl-banner.is-keel-stripe .ksl-banner-cta { padding: 8px 16px; color: #c5a028; border: 1px solid #c5a028; }
+.ksl-banner-icon { display: none; }
+.ksl-banner.is-tide .ksl-banner-icon,
+.ksl-banner.is-alert .ksl-banner-icon {
+    display: inline-flex;
+    width: 22px;
+    height: 22px;
+    border-radius: 0;
+    background: transparent;
+}
 
-.ksl-banner.is-signal-flag::after {
+.ksl-banner.is-notice { background: #fff; box-shadow: inset 0 -1px 0 #e4e9ef; }
+.ksl-banner.is-notice .ksl-banner-tag { color: #0A3E95; }
+.ksl-banner.is-notice .ksl-banner-cta { padding: 0 0 1px; border-bottom: 1px solid currentColor; }
+
+.ksl-banner.is-navy { background: #0b1f3a; color: #fff; }
+.ksl-banner.is-navy .ksl-banner-tag { color: #e6c56a; }
+.ksl-banner.is-navy .ksl-banner-cta { padding: 0 0 1px; color: #e6c56a; border-bottom: 1px solid #e6c56a; }
+
+.ksl-banner.is-flag::after {
     content: "";
     position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 8px;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
     background: linear-gradient(#111 0 33%, #bb1e24 33% 66%, #0c6b3a 66%);
 }
-.ksl-banner.is-signal-flag .ksl-banner-inner { padding-left: 28px; }
-.ksl-banner.is-signal-flag .ksl-banner-tag { padding: 4px 10px; border-radius: 2px; background: #0b1f3a; color: #fff; }
-.ksl-banner.is-signal-flag .ksl-banner-cta { padding: 8px 16px; border-radius: 2px; background: #0b1f3a; color: #fff; }
+.ksl-banner.is-flag .ksl-banner-inner { padding-left: 22px; }
+.ksl-banner.is-flag .ksl-banner-tag { color: #0b1f3a; }
+.ksl-banner.is-flag .ksl-banner-cta { padding: 0 0 1px; border-bottom: 1px solid #0b1f3a; }
 
-.ksl-banner.is-dry-dock { background: #e7e9ed; }
-.ksl-banner.is-dry-dock .ksl-banner-icon { border-radius: 2px; background: #fff; }
-.ksl-banner.is-dry-dock .ksl-banner-cta { padding: 8px 16px; background: #0b1f3a; color: #fff; }
+.ksl-banner.is-tender { background: #f7f4ee; color: #1c1915; }
+.ksl-banner.is-tender .ksl-banner-tag { color: #9a3412; }
+.ksl-banner.is-tender .ksl-banner-text { font-weight: 500; }
+.ksl-banner.is-tender .ksl-banner-cta { padding: 0 0 1px; border-bottom: 1px solid currentColor; }
 
-.ksl-banner.is-tender-notice { background: #fbf7ef; color: #1a1a1a; box-shadow: inset 0 0 0 1px #e4dcc8; }
-.ksl-banner.is-tender-notice .ksl-banner-tag {
-    padding: 4px 8px;
-    color: #b42318;
-    border: 2px solid #b42318;
-    transform: rotate(-6deg);
-}
-.ksl-banner.is-tender-notice .ksl-banner-cta { padding: 7px 14px; border: 1px solid #1a1a1a; }
-
-.ksl-banner.is-quiet-gold { background: #f8f1de; box-shadow: inset 4px 0 0 #c5a028; }
-.ksl-banner.is-quiet-gold .ksl-banner-cta { padding: 0; }
-
-.ksl-banner.is-night-watch { background: #07111f; color: #fff; }
-.ksl-banner.is-night-watch .ksl-banner-tag { color: #c5a028; }
-.ksl-banner.is-night-watch .ksl-banner-tag::before {
-    content: "";
-    display: inline-block;
-    width: 6px; height: 6px;
-    margin-right: 8px;
-    border-radius: 50%;
-    background: #c5a028;
-}
-.ksl-banner.is-night-watch .ksl-banner-cta { padding: 8px 16px; color: #fff; border: 1px solid #c5a028; }
-
-.ksl-banner.is-yard-bell .ksl-banner-inner { padding-top: 8px; padding-bottom: 8px; }
-.ksl-banner.is-yard-bell .ksl-banner-icon { width: 26px; height: 26px; border-radius: 50%; background: #0b1f3a; color: #fff; }
-.ksl-banner.is-yard-bell .ksl-banner-tag { padding: 3px 8px; border-radius: 2px; background: #0b1f3a; color: #fff; }
-.ksl-banner.is-yard-bell .ksl-banner-cta { padding: 6px 12px; background: #0b1f3a; color: #fff; }
-
-.ksl-banner.is-split-bar .ksl-banner-inner { gap: 18px; padding-left: 0; }
-.ksl-banner.is-split-bar .ksl-banner-icon { align-self: stretch; width: 54px; height: auto; border-radius: 0; background: #0b1f3a; color: #fff; }
-.ksl-banner.is-split-bar .ksl-banner-tag {
-    align-self: stretch;
-    display: inline-flex;
-    align-items: center;
-    min-width: 28%;
-    padding: 12px 22px;
-    background: #0b1f3a;
-    color: #fff;
-}
-.ksl-banner.is-split-bar .ksl-banner-cta { padding: 8px 16px; background: #0b1f3a; color: #fff; }
-
-.ksl-banner.is-brass-plate { background: #c5a028; animation: none; }
-.ksl-banner.is-brass-plate .ksl-banner-cta { padding: 8px 16px; background: #0b1f3a; color: #fff; }
-
-.ksl-banner.is-log-entry { background: #f7f6f3; color: #1c1c1c; font-family: ui-monospace, Consolas, monospace; }
-.ksl-banner.is-log-entry .ksl-banner-tag {
-    padding: 3px 7px;
-    letter-spacing: 0;
-    text-transform: none;
-    font-weight: 600;
-    border: 1px solid #c8c4bc;
-}
-.ksl-banner.is-log-entry .ksl-banner-text { font-weight: 400; }
-.ksl-banner.is-log-entry .ksl-banner-cta { padding: 0; text-decoration: underline; font-weight: 500; }
-
-.ksl-banner.is-mast-pennant .ksl-banner-tag {
-    padding: 8px 12px 10px;
-    background: #0b1f3a;
-    color: #fff;
-    border-radius: 0 0 10px 0;
-}
-.ksl-banner.is-mast-pennant .ksl-banner-text { font-size: 1.05rem; }
-.ksl-banner.is-mast-pennant .ksl-banner-cta {
-    width: 36px; height: 36px;
-    padding: 0;
-    justify-content: center;
-    border-radius: 50%;
-    background: #0b1f3a;
-    color: #fff;
-}
-
-.ksl-banner.is-sea-glass { background: #d5ebe6; }
-.ksl-banner.is-sea-glass .ksl-banner-inner {
-    width: calc(100% - 28px);
-    margin: 8px auto;
-    padding: 10px 16px;
-    background: #fff;
-    border-radius: 8px;
-}
-.ksl-banner.is-sea-glass .ksl-banner-tag { padding: 3px 8px; border-radius: 2px; background: #0b1f3a; color: #fff; }
-.ksl-banner.is-sea-glass .ksl-banner-cta { padding: 8px 14px; background: #0b1f3a; color: #fff; }
-
-.ksl-banner.is-alert-bar { background: #8d1d24; color: #fff; }
-.ksl-banner.is-alert-bar .ksl-banner-icon { background: rgba(255, 255, 255, 0.16); }
-.ksl-banner.is-alert-bar .ksl-banner-cta { padding: 8px 16px; background: #fff; color: #8d1d24; }
-
-.ksl-banner.is-chapter-head .ksl-banner-inner {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    grid-template-areas: "icon tag cta" "icon text cta";
-    align-items: center;
-    row-gap: 2px;
-    padding-top: 16px;
-    padding-bottom: 16px;
-}
-.ksl-banner.is-chapter-head .ksl-banner-icon { grid-area: icon; }
-.ksl-banner.is-chapter-head .ksl-banner-tag { grid-area: tag; color: #99792c; }
-.ksl-banner.is-chapter-head .ksl-banner-body { grid-area: text; }
-.ksl-banner.is-chapter-head .ksl-banner-cta { grid-area: cta; padding: 8px 16px; background: #0b1f3a; color: #fff; }
-.ksl-banner.is-chapter-head .ksl-banner-text { font-size: 1.05rem; font-weight: 500; }
-
-.ksl-banner.is-inset-rule .ksl-banner-tag { color: #99792c; font-size: 0.68rem; }
-.ksl-banner.is-inset-rule .ksl-banner-cta { margin-left: 8px; padding: 4px 0 4px 16px; border-left: 1px solid #d5dce4; }
-
-.ksl-banner.is-shipyard-stamp .ksl-banner-icon { background: transparent; }
-.ksl-banner.is-shipyard-stamp .ksl-banner-cta { padding: 8px 16px; border-radius: 4px; background: #0A3E95; color: #fff; }
+.ksl-banner.is-alert { background: #8d1d24; color: #fff; }
+.ksl-banner.is-alert .ksl-banner-cta { padding: 7px 14px; background: #fff; color: #8d1d24; }
 
 .ksl-banner.is-tide { background: #0b1f3a; color: #fff; }
-.ksl-banner.is-tide .ksl-banner-icon,
-.ksl-banner.is-keel-stripe .ksl-banner-icon,
-.ksl-banner.is-night-watch .ksl-banner-icon,
-.ksl-banner.is-command-strip .ksl-banner-icon { background: rgba(255, 255, 255, 0.1); color: #e6c56a; }
-.ksl-banner.is-brass-plate .ksl-banner-icon { background: rgba(11, 31, 58, 0.12); }
+.ksl-banner.is-tide .ksl-banner-icon { color: #e6c56a; }
 .ksl-banner.is-tide .ksl-banner-cta { padding: 8px 16px; border-radius: 999px; background: #fff; color: #0b1f3a; }
-
-.ksl-banner.is-two-weights .ksl-banner-tag { letter-spacing: 0; text-transform: none; font-size: 0.95rem; }
-.ksl-banner.is-two-weights .ksl-banner-text { color: #6b7785; font-weight: 400; }
-.ksl-banner.is-two-weights .ksl-banner-cta { padding: 0; color: #99792c; }
-
-.ksl-banner.is-command-strip { background: #0b1f3a; color: #fff; }
-.ksl-banner.is-command-strip .ksl-banner-tag { padding: 5px 10px; background: #c5a028; color: #0b1f3a; }
-.ksl-banner.is-command-strip .ksl-banner-cta { padding: 8px 16px; background: #c5a028; color: #0b1f3a; }
 
 /* Ticker mode: the message runs the full width of the bar */
 .ksl-banner.is-ticker .ksl-banner-inner {

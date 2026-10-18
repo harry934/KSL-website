@@ -53,20 +53,14 @@
     }
 
     function taglineMarkup() {
-        var text = "Catalyzing Shipbuilding Industry";
-        var gold = "Shipbuilding";
-        var goldStart = text.indexOf(gold);
-        var html = "";
-        var i;
-
-        for (i = 0; i < text.length; i++) {
-            var ch = text.charAt(i);
-            var cls = "ksl-intro-letter";
-            if (i >= goldStart && i < goldStart + gold.length) {
-                cls += " is-gold";
-            }
-            html += '<span class="' + cls + '" style="--i:' + i + '">' + (ch === " " ? "&nbsp;" : ch) + "</span>";
-        }
+        var words = [
+            { text: "Catalyzing", gold: false },
+            { text: "Shipbuilding", gold: true },
+            { text: "Industry", gold: false }
+        ];
+        var html = words.map(function (word, index) {
+            return '<span class="ksl-intro-word' + (word.gold ? " is-gold" : "") + '" style="--i:' + index + '">' + word.text + "</span>";
+        }).join("");
 
         return '<div class="ksl-intro-tagline" aria-hidden="true">' + html + "</div>";
     }

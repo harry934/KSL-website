@@ -21,38 +21,75 @@ export type FooterSettings = {
   locations: LocationEntry[];
 };
 
-export const BANNER_DESIGNS = [
-  "harbour-line",
-  "keel-stripe",
-  "signal-flag",
-  "dry-dock",
-  "tender-notice",
-  "quiet-gold",
-  "night-watch",
-  "yard-bell",
-  "split-bar",
-  "brass-plate",
-  "log-entry",
-  "mast-pennant",
-  "sea-glass",
-  "alert-bar",
-  "chapter-head",
-  "inset-rule",
-  "shipyard-stamp",
-  "tide",
-  "two-weights",
-  "command-strip",
-] as const;
+export const BANNER_DESIGNS = ["notice", "navy", "tide", "flag", "tender", "alert"] as const;
 
 export type BannerDesign = (typeof BANNER_DESIGNS)[number];
 
-/** Older saved colour names still stored in the database. They display as Command strip. */
-export type BannerStyle = BannerDesign | "navy" | "gold" | "light" | "kenya" | "alert" | "forest" | "midnight" | "framed";
+/** Older saved names still stored in the database. */
+export type BannerStyle =
+  | BannerDesign
+  | "harbour-line"
+  | "keel-stripe"
+  | "signal-flag"
+  | "dry-dock"
+  | "tender-notice"
+  | "quiet-gold"
+  | "night-watch"
+  | "yard-bell"
+  | "split-bar"
+  | "brass-plate"
+  | "log-entry"
+  | "mast-pennant"
+  | "sea-glass"
+  | "alert-bar"
+  | "chapter-head"
+  | "inset-rule"
+  | "shipyard-stamp"
+  | "two-weights"
+  | "command-strip"
+  | "gold"
+  | "light"
+  | "kenya"
+  | "forest"
+  | "midnight"
+  | "framed";
+
+const BANNER_ALIASES: Record<string, BannerDesign> = {
+  notice: "notice",
+  "harbour-line": "notice",
+  "quiet-gold": "notice",
+  "log-entry": "notice",
+  "chapter-head": "notice",
+  "inset-rule": "notice",
+  "two-weights": "notice",
+  "sea-glass": "notice",
+  light: "notice",
+  framed: "notice",
+  navy: "navy",
+  "keel-stripe": "navy",
+  "night-watch": "navy",
+  "yard-bell": "navy",
+  "brass-plate": "navy",
+  "shipyard-stamp": "navy",
+  "command-strip": "navy",
+  "dry-dock": "navy",
+  gold: "navy",
+  forest: "navy",
+  midnight: "navy",
+  tide: "tide",
+  flag: "flag",
+  "signal-flag": "flag",
+  "split-bar": "flag",
+  "mast-pennant": "flag",
+  kenya: "flag",
+  tender: "tender",
+  "tender-notice": "tender",
+  alert: "alert",
+  "alert-bar": "alert",
+};
 
 export function bannerDesign(value: unknown): BannerDesign {
-  return (BANNER_DESIGNS as readonly string[]).includes(String(value))
-    ? (value as BannerDesign)
-    : "command-strip";
+  return BANNER_ALIASES[String(value)] || "navy";
 }
 
 export type MenuStyle = "classic" | "cards" | "soft" | "line" | "compact";

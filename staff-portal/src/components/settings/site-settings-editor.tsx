@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { ArrowRight, Loader2, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldGrid, FormSection, Notice, Select, Switch } from "@/components/ui/form-bits";
@@ -19,26 +19,12 @@ import {
 } from "@/lib/site-settings";
 
 const BANNER_DESIGNS: { value: BannerDesign; label: string }[] = [
-  { value: "harbour-line", label: "Harbour line" },
-  { value: "keel-stripe", label: "Keel stripe" },
-  { value: "signal-flag", label: "Signal flag" },
-  { value: "dry-dock", label: "Dry dock" },
-  { value: "tender-notice", label: "Tender notice" },
-  { value: "quiet-gold", label: "Quiet gold" },
-  { value: "night-watch", label: "Night watch" },
-  { value: "yard-bell", label: "Yard bell" },
-  { value: "split-bar", label: "Split bar" },
-  { value: "brass-plate", label: "Brass plate" },
-  { value: "log-entry", label: "Log entry" },
-  { value: "mast-pennant", label: "Mast pennant" },
-  { value: "sea-glass", label: "Sea glass" },
-  { value: "alert-bar", label: "Alert bar" },
-  { value: "chapter-head", label: "Chapter head" },
-  { value: "inset-rule", label: "Inset rule" },
-  { value: "shipyard-stamp", label: "Shipyard stamp" },
+  { value: "notice", label: "Notice" },
+  { value: "navy", label: "Navy" },
   { value: "tide", label: "Tide" },
-  { value: "two-weights", label: "Two weights" },
-  { value: "command-strip", label: "Command strip" },
+  { value: "flag", label: "Flag" },
+  { value: "tender", label: "Tender" },
+  { value: "alert", label: "Alert" },
 ];
 
 const BANNER_PAGES = [
@@ -59,7 +45,6 @@ const BANNER_PAGES = [
   { value: "contact.html", label: "Contact" },
 ];
 
-const ARROW_DESIGNS = new Set<BannerDesign>(["quiet-gold", "mast-pennant"]);
 
 const TAG_SUGGESTIONS = ["Announcement", "Notice", "Tender", "Vacancy", "Event", "New"];
 
@@ -73,76 +58,23 @@ function formatDay(iso: string) {
   );
 }
 
-function YardIcon({ d }: { d: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]" aria-hidden>
-      <path d={d} />
-    </svg>
-  );
-}
-
 function BannerMark({ design }: { design: BannerDesign }) {
-  if (design === "shipyard-stamp") return <span className="kb-preview-stamp">KSL</span>;
-  const marks: Record<BannerDesign, ReactNode> = {
-    "harbour-line": (
-      <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
-        <path d="M8 21h8M9 21V10h6v11M8 10h8M12 10V7M9 8c2 1.2 4 1.2 6 0" />
-      </svg>
-    ),
-    "keel-stripe": <YardIcon d="M3 15c2.2 3.2 5.4 5 9 5s6.8-1.8 9-5M3 15h18M12 7v8M12 7l5-2" />,
-    "signal-flag": <YardIcon d="M5 21V3M5 4h8l-2 3 2 3H5M14 21V8M14 9h7l-2 3 2 3h-7" />,
-    "dry-dock": <YardIcon d="M3 18h18M5 18l2-6h10l2 6M8 12V8h8v4M12 8V5M4 21h16" />,
-    "tender-notice": <YardIcon d="M7 3h7l4 4v14H7zM14 3v4h4M9 12h6M9 16h4" />,
-    "quiet-gold": (
-      <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-        <circle cx="12" cy="12" r="8" />
-        <path d="m15.2 8.8-1.4 4.6-4.6 1.4 1.4-4.6z" />
-      </svg>
-    ),
-    "night-watch": <YardIcon d="M10 5h4M12 5v3M9 8h6l1 5H8zM10 13v5h4v-5M9 18h6" />,
-    "yard-bell": <YardIcon d="M6 16a6 6 0 0 1 12 0M5 16h14M10 19a2 2 0 0 0 4 0M12 5v2" />,
-    "split-bar": <YardIcon d="M4 20h16M7 20V7h3v13M10 9h9M19 9v5M17 14h4" />,
-    "brass-plate": (
-      <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-        <circle cx="12" cy="12" r="5" />
-        <circle cx="12" cy="12" r="2" />
-        <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
-      </svg>
-    ),
-    "log-entry": <YardIcon d="M8 4h8v3H8zM8 6H6v14h12V6h-2M9 12h6M9 16h4" />,
-    "mast-pennant": <YardIcon d="M6 3v18M6 4h11l-3.5 4L17 12H6" />,
-    "sea-glass": <YardIcon d="M3 9c2 2 4 2 6 0s4-2 6 0 4 2 6 0M3 15c2 2 4 2 6 0s4-2 6 0 4 2 6 0" />,
-    "alert-bar": <YardIcon d="M12 4 3 19h18zM12 9v5M12 17h.01" />,
-    "chapter-head": (
-      <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-        <path d="M5 18h14M7 18 12 6l5 12" />
-        <circle cx="12" cy="8" r="1.4" />
-      </svg>
-    ),
-    "inset-rule": <YardIcon d="M4 12h16M7 8 4 12l3 4M17 8l3 4-3 4M12 8v8" />,
-    "shipyard-stamp": null,
-    tide: (
+  if (design === "tide") {
+    return (
       <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
         <path d="M12 21V9M5 13H3a9 9 0 0 0 18 0h-2" />
         <circle cx="12" cy="6" r="2.4" />
       </svg>
-    ),
-    "two-weights": (
+    );
+  }
+  if (design === "alert") {
+    return (
       <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-        <circle cx="8" cy="14" r="3" />
-        <circle cx="16" cy="14" r="3" />
-        <path d="M11 14h2M9 11l1.5-5h3L15 11" />
+        <path d="M12 4 3 19h18zM12 9v5M12 17h.01" />
       </svg>
-    ),
-    "command-strip": (
-      <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-        <circle cx="12" cy="12" r="3" />
-        <circle cx="12" cy="12" r="8" />
-        <path d="M12 4v5M12 15v5M4 12h5M15 12h5" />
-      </svg>
-    ),
-  };
-  return marks[design];
+    );
+  }
+  return null;
 }
 
 function BannerPreview({ a, picker = false }: { a: AnnouncementSettings; picker?: boolean }) {
@@ -150,7 +82,6 @@ function BannerPreview({ a, picker = false }: { a: AnnouncementSettings; picker?
   const design = bannerDesign(a.style);
   const label = a.linkLabel.trim();
   const showButton = Boolean(label && a.linkUrl.trim());
-  const circle = design === "mast-pennant";
   return (
     <div className={cn("kb-preview", `is-${design}`, a.scroll && "is-ticker", picker && "is-picker")}>
       <div className="kb-preview-inner">
@@ -176,8 +107,7 @@ function BannerPreview({ a, picker = false }: { a: AnnouncementSettings; picker?
         </div>
         {showButton && (
           <span className="kb-preview-cta">
-            {circle ? <span className="sr-only">{label}</span> : label}
-            {ARROW_DESIGNS.has(design) && <ArrowRight className="h-4 w-4" />}
+            {label}
           </span>
         )}
       </div>
@@ -305,37 +235,23 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
         </div>
 
         <div className="space-y-2">
-          <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-[#8a96a5]">Designs</p>
-          <p className="text-[12.5px] text-[#6b7785]">
-            Click one to try it in the preview above. Each has its own yard mark. Save when you are ready.
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-[#8a96a5]">Design</p>
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Banner design">
             {BANNER_DESIGNS.map((design) => {
               const selected = bannerDesign(a.style) === design.value;
               return (
                 <button
                   key={design.value}
                   type="button"
-                  aria-pressed={selected}
+                  role="radio"
+                  aria-checked={selected}
                   onClick={() => set("announcement", { style: design.value })}
                   className={cn(
-                    "overflow-hidden rounded-[10px] border bg-white text-left",
-                    selected ? "border-[#0b1f3a] ring-2 ring-[#0b1f3a]" : "border-[#e3e8ee] hover:border-[#9aabbd]"
+                    "rounded-full border px-4 py-2 text-[13px] font-semibold",
+                    selected ? "border-[#0b1f3a] bg-[#0b1f3a] text-white" : "border-[#d5dde6] bg-white text-[#0b1f3a] hover:border-[#0b1f3a]"
                   )}
                 >
-                  <BannerPreview
-                    picker
-                    a={{
-                      ...a,
-                      style: design.value,
-                      scroll: false,
-                      linkLabel: a.linkLabel.trim() || "Open",
-                      linkUrl: a.linkUrl.trim() || "index.html",
-                    }}
-                  />
-                  <span className="block border-t border-[#eef1f4] px-3 py-2 text-[13px] font-semibold text-[#0b1f3a]">
-                    {design.label}
-                  </span>
+                  {design.label}
                 </button>
               );
             })}
