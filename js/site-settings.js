@@ -163,6 +163,8 @@
         var ctaLabel = style === "mast-pennant"
             ? '<span class="ksl-banner-cta-label">' + escapeHtml(a.linkLabel) + "</span>"
             : escapeHtml(a.linkLabel);
+        var line = '<p class="ksl-banner-text"><span class="ksl-banner-tag">' + escapeHtml(a.label || "Announcement") + "</span><span>" + escapeHtml(a.text) + "</span></p>";
+        var lineHidden = line.replace("<p ", '<p aria-hidden="true" ');
 
         var bar = document.createElement("section");
         bar.className = "ksl-banner is-" + style + (ticker ? " is-ticker" : "");
@@ -170,9 +172,9 @@
         bar.innerHTML =
             '<div class="ksl-banner-inner">' +
             '<span class="ksl-banner-icon">' + icon + "</span>" +
-            '<span class="ksl-banner-tag">' + escapeHtml(a.label || "Announcement") + "</span>" +
+            (ticker ? "" : '<span class="ksl-banner-tag">' + escapeHtml(a.label || "Announcement") + "</span>") +
             '<div class="ksl-banner-body">' +
-            (ticker ? '<div class="ksl-banner-track">' + text + text.replace("<p ", '<p aria-hidden="true" ') + "</div>" : text + until) +
+            (ticker ? '<div class="ksl-banner-track">' + line + lineHidden + "</div>" : text + until) +
             "</div>" +
             (link && a.linkLabel
                 ? '<a class="ksl-banner-cta" href="' + escapeHtml(link) + '"' +
@@ -183,7 +185,7 @@
             '<button type="button" class="ksl-banner-close" aria-label="Close announcement">' + ICON_CLOSE + "</button>";
 
         if (ticker) {
-            bar.style.setProperty("--kb-ticker-duration", Math.min(60, Math.max(16, a.text.length * 0.28)) + "s");
+            bar.style.setProperty("--kb-ticker-duration", Math.min(48, Math.max(26, a.text.length * 0.18)) + "s");
         }
 
         bar.querySelector(".ksl-banner-close").addEventListener("click", function () {

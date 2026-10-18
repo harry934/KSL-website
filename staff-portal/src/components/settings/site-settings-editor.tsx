@@ -96,14 +96,16 @@ function BannerPreview({ a }: { a: AnnouncementSettings }) {
             <BannerMark design={design} />
           </span>
         ) : null}
-        <span className="kb-preview-tag">{a.label.trim() || "Announcement"}</span>
+        {!a.scroll && <span className="kb-preview-tag">{a.label.trim() || "Announcement"}</span>}
         <div className="kb-preview-body">
           {a.scroll ? (
             <div className="kb-preview-track">
-              <p className="kb-preview-text">{text}</p>
-              <p className="kb-preview-text" aria-hidden>
-                {text}
-              </p>
+              {[0, 1].map((copy) => (
+                <p className="kb-preview-text" key={copy} aria-hidden={copy === 1 || undefined}>
+                  <span className="kb-preview-tag">{a.label.trim() || "Announcement"}</span>
+                  <span>{text}</span>
+                </p>
+              ))}
             </div>
           ) : (
             <>
@@ -345,7 +347,7 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
               checked={a.scroll}
               onChange={(on) => set("announcement", { scroll: on })}
               label="Moving text"
-              hint="The message glides across like a news ticker."
+              hint="The message travels the full width of the banner."
             />
           </div>
         </FieldGrid>
