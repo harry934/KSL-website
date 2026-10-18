@@ -8360,9 +8360,6 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     top: calc(var(--ksl-ship-top) + var(--ksl-ship-width) * 0.20625);
     left: 50%;
     z-index: 3;
-    display: flex;
-    justify-content: center;
-    gap: .45em;
     width: min(92vw, calc(var(--ksl-ship-width) * 0.72));
     color: #09296C;
     font-family: Poppins, sans-serif;
@@ -8373,11 +8370,19 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     white-space: nowrap;
     text-align: center;
     text-transform: uppercase;
-    perspective: 700px;
     opacity: 0;
     pointer-events: none;
     transform: translate3d(-50%, -50%, 0);
+    transform-style: preserve-3d;
     transition: opacity .2s linear;
+}
+
+.ksl-intro-tagline-depth {
+    display: flex;
+    justify-content: center;
+    gap: .45em;
+    perspective: 460px;
+    transform-style: preserve-3d;
 }
 
 .ksl-intro.show-tagline .ksl-intro-tagline {
@@ -8387,15 +8392,16 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
 .ksl-intro-word {
     display: inline-block;
     opacity: 0;
-    filter: blur(14px);
-    transform: translate3d(0, 16px, 120px) scale(1.28);
-    transform-origin: center center;
+    filter: blur(18px);
+    transform: translate3d(0, -14vh, 280px) scale(2);
+    transform-origin: center bottom;
+    text-shadow: 0 26px 34px rgba(4, 16, 48, .28);
     will-change: transform, filter, opacity;
 }
 
 .ksl-intro.show-tagline .ksl-intro-word {
-    animation: kslIntroWord .78s cubic-bezier(.16, 1, .3, 1) forwards;
-    animation-delay: calc(.05s + var(--i) * .24s);
+    animation: kslIntroWord 1.05s cubic-bezier(.16, .84, .22, 1) forwards;
+    animation-delay: calc(var(--i) * .3s);
 }
 
 .ksl-intro-word.is-gold {
@@ -8405,17 +8411,24 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
 @keyframes kslIntroWord {
     0% {
         opacity: 0;
-        filter: blur(16px);
-        transform: translate3d(0, 18px, 140px) scale(1.34);
+        filter: blur(22px);
+        transform: translate3d(0, -16vh, 320px) scale(2.15);
+        text-shadow: 0 34px 40px rgba(4, 16, 48, .16);
     }
-    45% {
+    20% {
         opacity: 1;
-        filter: blur(5px);
+        filter: blur(12px);
+    }
+    76% {
+        filter: blur(2px);
+        transform: translate3d(0, 7px, 16px) scale(1.05);
+        text-shadow: 0 12px 18px rgba(4, 16, 48, .24);
     }
     100% {
         opacity: 1;
         filter: blur(0);
         transform: translate3d(0, 0, 0) scale(1);
+        text-shadow: 0 1px 0 rgba(4, 16, 48, .14);
     }
 }
 

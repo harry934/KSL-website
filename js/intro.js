@@ -62,7 +62,7 @@
             return '<span class="ksl-intro-word' + (word.gold ? " is-gold" : "") + '" style="--i:' + index + '">' + word.text + "</span>";
         }).join("");
 
-        return '<div class="ksl-intro-tagline" aria-hidden="true">' + html + "</div>";
+        return '<div class="ksl-intro-tagline" aria-hidden="true"><div class="ksl-intro-tagline-depth">' + html + "</div></div>";
     }
 
     function playKslIntro() {
@@ -249,7 +249,7 @@
                 intro.classList.toggle("show-ship", remaining <= 2.5);
                 intro.classList.toggle("show-logo-depth", remaining <= 2.1);
                 intro.classList.toggle("show-ripples", remaining <= 1.85);
-                intro.classList.toggle("show-tagline", remaining <= 1.45);
+                intro.classList.toggle("show-tagline", remaining <= 2.4);
             });
             video.addEventListener("ended", function () {
                 finish(true);
