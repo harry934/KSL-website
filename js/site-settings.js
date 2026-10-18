@@ -122,7 +122,8 @@
         tender: "tender", "tender-notice": "tender",
         alert: "alert", "alert-bar": "alert",
         "nav-line": "nav-line",
-        quay: "quay", lake: "lake", yard: "yard",
+        quay: "quay", berth: "berth", channel: "channel",
+        lake: "lake", shore: "shore", reed: "reed", yard: "quay",
         corner: "corner", launch: "launch"
     };
     function bannerPlacement(style) {

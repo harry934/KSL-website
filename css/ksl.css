@@ -13108,26 +13108,16 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 .ksl-banner.is-flag::before {
     content: "";
     position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    z-index: 1;
-    width: 84px;
-    background: linear-gradient(to bottom, #000 0 28%, #fff 28% 33%, #bb0000 33% 61%, #fff 61% 66%, #006600 66% 100%);
-}
-.ksl-banner.is-flag::after {
-    content: "";
-    position: absolute;
-    left: 31px;
+    left: 14px;
     top: 50%;
-    z-index: 2;
-    width: 22px;
-    height: 30px;
-    margin-top: -15px;
-    border-radius: 46% 46% 50% 50%;
-    background: linear-gradient(90deg, #111 0 16%, #fff 16% 34%, #bb0000 34% 66%, #fff 66% 84%, #111 84% 100%);
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+    z-index: 1;
+    width: 72px;
+    height: 48px;
+    margin-top: -24px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 60'%3E%3Crect width='90' height='60' fill='%23fff'/%3E%3Crect width='90' height='18' fill='%23000'/%3E%3Crect y='21' width='90' height='18' fill='%23bb0000'/%3E%3Crect y='42' width='90' height='18' fill='%23006600'/%3E%3Cpath d='M24 46 66 14M24 14 66 46' fill='none' stroke='%23fff' stroke-width='1.6'/%3E%3Cpath d='M45 15c5.2 0 8.4 4.2 8.4 10.4 0 7.2-3.6 14.4-8.4 18.6-4.8-4.2-8.4-11.4-8.4-18.6 0-6.2 3.2-10.4 8.4-10.4z' fill='%23000'/%3E%3Cpath d='M45 18.4c3.4 0 5.4 3 5.4 7.4 0 5.2-2.4 10.4-5.4 13.6-3-3.2-5.4-8.4-5.4-13.6 0-4.4 2-7.4 5.4-7.4z' fill='%23fff'/%3E%3Cpath d='M45 21.6c1.8 0 3 1.8 3 4.8 0 3.6-1.4 7-3 9.2-1.6-2.2-3-5.6-3-9.2 0-3 1.2-4.8 3-4.8z' fill='%23bb0000'/%3E%3Cpath d='M45 24.6c.8 0 1.3 1 1.3 2.6S45.8 30 45 32.2c-.8-2.2-1.3-3.4-1.3-5S44.2 24.6 45 24.6z' fill='%23000'/%3E%3C/svg%3E") center / cover no-repeat;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
 }
+.ksl-banner.is-flag::after { content: none; }
 .ksl-banner.is-flag .ksl-banner-inner { padding-left: 100px; }
 .ksl-banner.is-flag .ksl-banner-tag { color: #0b1f3a; }
 .ksl-banner.is-flag .ksl-banner-cta { padding: 8px 14px; background: #0b1f3a; color: #fff; }
@@ -13216,23 +13206,64 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 .ksl-banner.is-lake .ksl-banner-tag { color: #8a6a24; }
 .ksl-banner.is-lake .ksl-banner-cta { padding: 8px 14px; background: #09296C; color: #fff; }
 
-.ksl-banner.is-yard {
-    color: #1c1915;
-    background: #f7f4ee;
-}
-.ksl-banner.is-yard::before {
+.ksl-banner.is-berth { color: #fff; background: #09296C; }
+.ksl-banner.is-berth::before {
     content: "";
     position: absolute;
-    top: 50%;
-    left: 18px;
-    width: 58px;
-    height: 58px;
-    margin-top: -29px;
-    background: url("../img/ksl/yard.jpg") center / cover no-repeat;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(280px, 28vw);
+    background:
+        linear-gradient(270deg, transparent 62%, #09296C),
+        url("../img/ksl/mombasa.webp") center 42% / cover no-repeat;
 }
-.ksl-banner.is-yard .ksl-banner-inner { padding-left: 96px; }
-.ksl-banner.is-yard .ksl-banner-tag { color: #8a6a24; }
-.ksl-banner.is-yard .ksl-banner-cta { padding: 0 0 1px; border-bottom: 1px solid currentColor; }
+.ksl-banner.is-berth .ksl-banner-inner { padding-right: calc(min(280px, 28vw) + 22px); }
+.ksl-banner.is-berth .ksl-banner-tag { color: #e6c56a; }
+.ksl-banner.is-berth .ksl-banner-cta { padding: 0 0 1px; color: #e6c56a; border-bottom: 1px solid #e6c56a; }
+.ksl-banner.is-berth .ksl-banner-close { right: calc(min(280px, 28vw) + 8px); color: #fff; }
+
+.ksl-banner.is-channel {
+    color: #fff;
+    background: url("../img/ksl/mombasa.webp") center 40% / cover no-repeat;
+}
+.ksl-banner.is-channel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(9, 41, 108, 0.94) 0 34%, rgba(9, 41, 108, 0.55) 58%, rgba(9, 41, 108, 0.12) 100%);
+}
+.ksl-banner.is-channel .ksl-banner-tag { color: #e6c56a; }
+.ksl-banner.is-channel .ksl-banner-cta { padding: 0 0 1px; color: #e6c56a; border-bottom: 1px solid #e6c56a; }
+
+.ksl-banner.is-shore { background: #f6f3ec; }
+.ksl-banner.is-shore::after {
+    content: "";
+    display: block;
+    height: 46px;
+    background:
+        linear-gradient(0deg, rgba(246, 243, 236, 0) 55%, #f6f3ec),
+        url("../img/ksl/kisumu.webp") center 62% / cover no-repeat;
+}
+.ksl-banner.is-shore .ksl-banner-inner { padding-top: 14px; padding-bottom: 8px; }
+.ksl-banner.is-shore .ksl-banner-tag { color: #8a6a24; }
+.ksl-banner.is-shore .ksl-banner-cta { padding: 8px 14px; background: #09296C; color: #fff; }
+
+.ksl-banner.is-reed { background: #f6f3ec; color: #0b1f3a; }
+.ksl-banner.is-reed::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(240px, 26vw);
+    background:
+        linear-gradient(90deg, transparent 68%, #f6f3ec),
+        url("../img/ksl/kisumu.webp") center 40% / cover no-repeat;
+}
+.ksl-banner.is-reed .ksl-banner-inner { padding-left: calc(min(240px, 26vw) + 18px); }
+.ksl-banner.is-reed .ksl-banner-tag { color: #8a6a24; }
+.ksl-banner.is-reed .ksl-banner-cta { padding: 8px 14px; background: #09296C; color: #fff; }
 
 .ksl-banner.is-nav-line {
     position: relative;
@@ -13391,7 +13422,9 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 .ksl-banner.is-ticker.is-flag .ksl-banner-inner { padding-left: 100px; }
 .ksl-banner.is-ticker.is-split .ksl-banner-inner { padding-left: 0; }
 .ksl-banner.is-ticker.is-quay .ksl-banner-inner { padding-left: calc(min(280px, 28vw) + 22px); }
-.ksl-banner.is-ticker.is-yard .ksl-banner-inner { padding-left: 96px; }
+.ksl-banner.is-ticker.is-berth .ksl-banner-inner { padding-right: calc(min(280px, 28vw) + 22px); }
+.ksl-banner.is-ticker.is-berth .ksl-banner-cta { right: calc(min(280px, 28vw) + 48px); }
+.ksl-banner.is-ticker.is-reed .ksl-banner-inner { padding-left: calc(min(240px, 26vw) + 18px); }
 .ksl-banner.is-ticker.is-chapter-head .ksl-banner-inner,
 .ksl-banner.is-ticker.is-split-bar .ksl-banner-inner {
     display: flex;
@@ -13487,10 +13520,9 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
         gap: 8px;
         padding: 10px 44px 10px 14px;
     }
-    .ksl-banner.is-flag::before { width: 54px; }
-    .ksl-banner.is-flag::after { left: 18px; width: 16px; height: 22px; margin-top: -11px; }
+    .ksl-banner.is-flag::before { left: 10px; width: 54px; height: 36px; margin-top: -18px; }
     .ksl-banner.is-flag .ksl-banner-inner,
-    .ksl-banner.is-ticker.is-flag .ksl-banner-inner { padding-left: 64px; }
+    .ksl-banner.is-ticker.is-flag .ksl-banner-inner { padding-left: 74px; }
     .ksl-banner.is-split .ksl-banner-tag { min-width: 0; padding: 0 10px; }
     .ksl-banner-icon,
     .ksl-banner-until { display: none; }
@@ -13503,10 +13535,16 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     .ksl-banner.is-quay::before { width: 92px; }
     .ksl-banner.is-quay .ksl-banner-inner,
     .ksl-banner.is-ticker.is-quay .ksl-banner-inner { padding-left: 108px; }
-    .ksl-banner.is-lake::before { height: 36px; }
-    .ksl-banner.is-yard::before { left: 12px; width: 44px; height: 44px; margin-top: -22px; }
-    .ksl-banner.is-yard .ksl-banner-inner,
-    .ksl-banner.is-ticker.is-yard .ksl-banner-inner { padding-left: 68px; }
+    .ksl-banner.is-lake::before,
+    .ksl-banner.is-shore::after { height: 36px; }
+    .ksl-banner.is-berth::before { width: 92px; }
+    .ksl-banner.is-berth .ksl-banner-inner,
+    .ksl-banner.is-ticker.is-berth .ksl-banner-inner { padding-right: 108px; }
+    .ksl-banner.is-berth .ksl-banner-close { right: 100px; }
+    .ksl-banner.is-ticker.is-berth .ksl-banner-cta { right: 148px; }
+    .ksl-banner.is-reed::before { width: 88px; }
+    .ksl-banner.is-reed .ksl-banner-inner,
+    .ksl-banner.is-ticker.is-reed .ksl-banner-inner { padding-left: 100px; }
     .ksl-banner.is-corner { right: 12px; bottom: 72px; width: min(420px, calc(100vw - 24px)); }
     .ksl-banner.is-corner .ksl-banner-photo { width: 96px; min-height: 132px; }
     .ksl-banner.is-corner .ksl-banner-inner { grid-template-columns: 96px minmax(0, 1fr); padding-right: 36px; }

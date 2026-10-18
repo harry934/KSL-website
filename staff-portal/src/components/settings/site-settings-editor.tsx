@@ -40,8 +40,11 @@ const BANNER_GROUPS: { label: string; designs: { value: BannerDesign; label: str
     label: "With a yard photo",
     designs: [
       { value: "quay", label: "Quay" },
+      { value: "berth", label: "Berth" },
+      { value: "channel", label: "Channel" },
       { value: "lake", label: "Lake" },
-      { value: "yard", label: "Yard" },
+      { value: "shore", label: "Shore" },
+      { value: "reed", label: "Reed" },
     ],
   },
   {

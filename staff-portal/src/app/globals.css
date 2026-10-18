@@ -692,25 +692,17 @@ body {
 .kb-preview.is-flag::before {
   content: "";
   position: absolute;
-  left: 0; top: 0; bottom: 0;
-  z-index: 1;
-  width: 64px;
-  background: linear-gradient(to bottom, #000 0 28%, #fff 28% 33%, #bb0000 33% 61%, #fff 61% 66%, #006600 66% 100%);
-}
-.kb-preview.is-flag::after {
-  content: "";
-  position: absolute;
-  left: 22px;
+  left: 10px;
   top: 50%;
-  z-index: 2;
-  width: 16px;
-  height: 22px;
-  margin-top: -11px;
-  border-radius: 46% 46% 50% 50%;
-  background: linear-gradient(90deg, #111 0 16%, #fff 16% 34%, #bb0000 34% 66%, #fff 66% 84%, #111 84% 100%);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  z-index: 1;
+  width: 66px;
+  height: 44px;
+  margin-top: -22px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 60'%3E%3Crect width='90' height='60' fill='%23fff'/%3E%3Crect width='90' height='18' fill='%23000'/%3E%3Crect y='21' width='90' height='18' fill='%23bb0000'/%3E%3Crect y='42' width='90' height='18' fill='%23006600'/%3E%3Cpath d='M24 46 66 14M24 14 66 46' fill='none' stroke='%23fff' stroke-width='1.6'/%3E%3Cpath d='M45 15c5.2 0 8.4 4.2 8.4 10.4 0 7.2-3.6 14.4-8.4 18.6-4.8-4.2-8.4-11.4-8.4-18.6 0-6.2 3.2-10.4 8.4-10.4z' fill='%23000'/%3E%3Cpath d='M45 18.4c3.4 0 5.4 3 5.4 7.4 0 5.2-2.4 10.4-5.4 13.6-3-3.2-5.4-8.4-5.4-13.6 0-4.4 2-7.4 5.4-7.4z' fill='%23fff'/%3E%3Cpath d='M45 21.6c1.8 0 3 1.8 3 4.8 0 3.6-1.4 7-3 9.2-1.6-2.2-3-5.6-3-9.2 0-3 1.2-4.8 3-4.8z' fill='%23bb0000'/%3E%3Cpath d='M45 24.6c.8 0 1.3 1 1.3 2.6S45.8 30 45 32.2c-.8-2.2-1.3-3.4-1.3-5S44.2 24.6 45 24.6z' fill='%23000'/%3E%3C/svg%3E") center / cover no-repeat;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
 }
-.kb-preview.is-flag .kb-preview-inner { padding-left: 76px; }
+.kb-preview.is-flag::after { content: none; }
+.kb-preview.is-flag .kb-preview-inner { padding-left: 86px; }
 .kb-preview.is-flag .kb-preview-tag { color: #0b1f3a; }
 .kb-preview.is-flag .kb-preview-cta { padding: 6px 12px; background: #0b1f3a; color: #fff; border-bottom: 0; }
 .kb-preview.is-split .kb-preview-inner { gap: 12px; padding-left: 0; }
@@ -782,23 +774,59 @@ body {
 .kb-preview.is-lake .kb-preview-inner { padding-top: 6px; }
 .kb-preview.is-lake .kb-preview-tag { color: #8a6a24; }
 .kb-preview.is-lake .kb-preview-cta { background: #09296C; color: #fff; }
-.kb-preview.is-yard {
-  color: #1c1915;
-  background: #f7f4ee;
-}
-.kb-preview.is-yard::before {
+.kb-preview.is-berth { color: #fff; background: #09296C; }
+.kb-preview.is-berth::before {
   content: "";
   position: absolute;
-  top: 50%;
-  left: 12px;
-  width: 40px;
-  height: 40px;
-  margin-top: -20px;
-  background: url("https://ksl-website.vercel.app/img/ksl/yard.jpg") center / cover no-repeat;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 110px;
+  background:
+    linear-gradient(270deg, transparent 62%, #09296C),
+    url("https://ksl-website.vercel.app/img/ksl/mombasa.webp") center 42% / cover no-repeat;
 }
-.kb-preview.is-yard .kb-preview-inner { padding-left: 64px; }
-.kb-preview.is-yard .kb-preview-tag { color: #8a6a24; }
-.kb-preview.is-yard .kb-preview-cta { padding: 0 0 1px; border-bottom: 1px solid currentColor; }
+.kb-preview.is-berth .kb-preview-inner { padding-right: 124px; }
+.kb-preview.is-berth .kb-preview-tag { color: #e6c56a; }
+.kb-preview.is-berth .kb-preview-cta { padding: 0 0 1px; color: #e6c56a; border-bottom: 1px solid #e6c56a; }
+.kb-preview.is-channel {
+  color: #fff;
+  background: url("https://ksl-website.vercel.app/img/ksl/mombasa.webp") center 40% / cover no-repeat;
+}
+.kb-preview.is-channel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(9, 41, 108, 0.94) 0 34%, rgba(9, 41, 108, 0.55) 58%, rgba(9, 41, 108, 0.12) 100%);
+}
+.kb-preview.is-channel .kb-preview-tag { color: #e6c56a; }
+.kb-preview.is-channel .kb-preview-cta { padding: 0 0 1px; color: #e6c56a; border-bottom: 1px solid #e6c56a; }
+.kb-preview.is-shore { background: #f6f3ec; }
+.kb-preview.is-shore::after {
+  content: "";
+  display: block;
+  height: 32px;
+  background:
+    linear-gradient(0deg, rgba(246, 243, 236, 0) 55%, #f6f3ec),
+    url("https://ksl-website.vercel.app/img/ksl/kisumu.webp") center 62% / cover no-repeat;
+}
+.kb-preview.is-shore .kb-preview-tag { color: #8a6a24; }
+.kb-preview.is-shore .kb-preview-cta { background: #09296C; color: #fff; }
+.kb-preview.is-reed { background: #f6f3ec; color: #0b1f3a; }
+.kb-preview.is-reed::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 110px;
+  background:
+    linear-gradient(90deg, transparent 68%, #f6f3ec),
+    url("https://ksl-website.vercel.app/img/ksl/kisumu.webp") center 40% / cover no-repeat;
+}
+.kb-preview.is-reed .kb-preview-inner { padding-left: 122px; }
+.kb-preview.is-reed .kb-preview-tag { color: #8a6a24; }
+.kb-preview.is-reed .kb-preview-cta { background: #09296C; color: #fff; }
 .kb-preview.is-nav-line {
   background: transparent;
   color: #0b1f3a;
@@ -1039,10 +1067,11 @@ body {
   padding-left: 16px;
   padding-right: 0;
 }
-.kb-preview.is-ticker.is-flag .kb-preview-inner { padding-left: 76px; }
+.kb-preview.is-ticker.is-flag .kb-preview-inner { padding-left: 86px; }
 .kb-preview.is-ticker.is-split .kb-preview-inner { padding-left: 0; }
 .kb-preview.is-ticker.is-quay .kb-preview-inner { padding-left: 136px; }
-.kb-preview.is-ticker.is-yard .kb-preview-inner { padding-left: 64px; }
+.kb-preview.is-ticker.is-berth .kb-preview-inner { padding-right: 124px; }
+.kb-preview.is-ticker.is-reed .kb-preview-inner { padding-left: 122px; }
 .kb-preview.is-ticker .kb-preview-tag {
   min-width: 0;
   align-self: center;
