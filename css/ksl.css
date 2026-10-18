@@ -2366,45 +2366,6 @@ main {
     box-shadow: 0 12px 32px rgba(39, 50, 114, .14) !important;
 }
 
-html[data-ksl-menu="cards"] .dropdown-menu {
-    border-radius: 16px !important;
-    padding: 8px !important;
-    border: 0 !important;
-    box-shadow: 0 16px 40px rgba(11, 31, 58, .16) !important;
-}
-html[data-ksl-menu="cards"] .dropdown-item {
-    border-radius: 10px;
-    margin: 2px 0;
-}
-html[data-ksl-menu="soft"] .dropdown-menu {
-    border-radius: 18px !important;
-    border: 1px solid #e6edf5 !important;
-    box-shadow: 0 10px 28px rgba(11, 31, 58, .08) !important;
-    padding: 6px !important;
-}
-html[data-ksl-menu="soft"] .dropdown-item:hover,
-html[data-ksl-menu="soft"] .dropdown-item:focus {
-    background: #f4f7fb;
-    color: #0b1f3a;
-}
-html[data-ksl-menu="line"] .dropdown-item {
-    border-left: 3px solid transparent;
-    border-radius: 0;
-}
-html[data-ksl-menu="line"] .dropdown-item:hover,
-html[data-ksl-menu="line"] .dropdown-item:focus {
-    border-left-color: #c5a028;
-    background: #fffaf0;
-}
-html[data-ksl-menu="compact"] .dropdown-item {
-    padding-top: 6px;
-    padding-bottom: 6px;
-    font-size: 13px;
-}
-html[data-ksl-menu="compact"] .dropdown-menu {
-    min-width: 180px;
-}
-
 .dropdown-menu.show {
     animation: dropdown-reveal 160ms ease-out both;
 }
@@ -12939,75 +12900,23 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 
 /* Portal-managed site announcement: full-width banner above the navigation */
 .ksl-banner {
-    --kb-bg-1: #0b1f3a;
-    --kb-bg-2: #163a66;
-    --kb-text: #fff;
-    --kb-muted: rgba(255, 255, 255, 0.78);
-    --kb-tag-bg: #c5a028;
-    --kb-tag-text: #0b1f3a;
-    --kb-cta-bg: #c5a028;
-    --kb-cta-text: #0b1f3a;
-    --kb-cta-hover: #e0bb3f;
-    --kb-wave: rgba(255, 255, 255, 0.07);
     position: relative;
     z-index: 1019;
     overflow: hidden;
-    color: var(--kb-text);
-    background:
-        radial-gradient(120% 180% at 100% 0%, rgba(197, 160, 40, 0.22) 0%, transparent 55%),
-        linear-gradient(100deg, var(--kb-bg-1) 0%, var(--kb-bg-2) 100%);
-    box-shadow: 0 8px 22px rgba(11, 31, 58, 0.18);
+    color: #0b1f3a;
+    background: #fff;
     animation: ksl-banner-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.ksl-banner.is-gold {
-    --kb-bg-1: #b48f1c;
-    --kb-bg-2: #e2bf4b;
-    --kb-text: #0b1f3a;
-    --kb-muted: rgba(11, 31, 58, 0.78);
-    --kb-tag-bg: #0b1f3a;
-    --kb-tag-text: #f1d27a;
-    --kb-cta-bg: #0b1f3a;
-    --kb-cta-text: #fff;
-    --kb-cta-hover: #163a66;
-    --kb-wave: rgba(11, 31, 58, 0.08);
-}
-.ksl-banner.is-light {
-    --kb-bg-1: #f4f7fb;
-    --kb-bg-2: #e6eef8;
-    --kb-text: #0b1f3a;
-    --kb-muted: #4a5868;
-    --kb-tag-bg: #0b1f3a;
-    --kb-tag-text: #fff;
-    --kb-cta-bg: #0b1f3a;
-    --kb-cta-text: #fff;
-    --kb-cta-hover: #163a66;
-    --kb-wave: rgba(11, 31, 58, 0.06);
-    box-shadow: 0 6px 18px rgba(11, 31, 58, 0.08);
-}
-/* Rolling sea along the bottom of the banner */
-.ksl-banner::before {
+.ksl-banner.is-tide::before {
     content: "";
     position: absolute;
     inset: auto 0 0 0;
     height: 16px;
     pointer-events: none;
-    background: var(--kb-wave);
+    background: rgba(255, 255, 255, 0.14);
     -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 16' preserveAspectRatio='none'%3E%3Cpath d='M0 10 Q15 4 30 10 T60 10 T90 10 T120 10 V16 H0Z'/%3E%3C/svg%3E") repeat-x 0 100% / 120px 16px;
             mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 16' preserveAspectRatio='none'%3E%3Cpath d='M0 10 Q15 4 30 10 T60 10 T90 10 T120 10 V16 H0Z'/%3E%3C/svg%3E") repeat-x 0 100% / 120px 16px;
     animation: ksl-banner-waves 14s linear infinite;
-}
-/* Soft light sweeping across, once every few seconds */
-.ksl-banner::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: -40%;
-    width: 30%;
-    pointer-events: none;
-    background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.08) 50%, transparent 100%);
-    transform: skewX(-18deg);
-    animation: ksl-banner-shine 6.5s ease-in-out 1.2s infinite;
 }
 .ksl-banner-inner {
     position: relative;
@@ -13021,92 +12930,29 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     padding: 12px 52px 12px 22px;
 }
 .ksl-banner-icon {
+    display: none;
     flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    color: inherit;
+}
+.ksl-banner-icon svg { width: 22px; height: 22px; }
+.ksl-banner-stamp {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
+    width: 36px;
+    height: 36px;
+    border: 2px solid currentColor;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.12);
-    color: var(--kb-tag-bg);
-    animation: ksl-banner-ring 3.2s ease-in-out 1s infinite;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
 }
-.ksl-banner.is-gold .ksl-banner-icon,
-.ksl-banner.is-light .ksl-banner-icon,
-.ksl-banner.is-framed .ksl-banner-icon,
-.ksl-banner.is-kenya .ksl-banner-icon {
-    background: rgba(11, 31, 58, 0.1);
-    color: #0b1f3a;
-}
-.ksl-banner.is-kenya {
-    --kb-bg-1: #0c6b3a;
-    --kb-bg-2: #12824a;
-    --kb-text: #fff;
-    --kb-muted: rgba(255, 255, 255, 0.82);
-    --kb-tag-bg: #bb1e24;
-    --kb-tag-text: #fff;
-    --kb-cta-bg: #111;
-    --kb-cta-text: #fff;
-    --kb-cta-hover: #333;
-    --kb-wave: rgba(255, 255, 255, 0.1);
-}
-.ksl-banner.is-alert {
-    --kb-bg-1: #8d1d24;
-    --kb-bg-2: #c43740;
-    --kb-text: #fff;
-    --kb-muted: rgba(255, 255, 255, 0.82);
-    --kb-tag-bg: #fff;
-    --kb-tag-text: #8d1d24;
-    --kb-cta-bg: #fff;
-    --kb-cta-text: #8d1d24;
-    --kb-cta-hover: #f6e6e7;
-    --kb-wave: rgba(255, 255, 255, 0.12);
-}
-.ksl-banner.is-forest {
-    --kb-bg-1: #14382a;
-    --kb-bg-2: #1f6b48;
-    --kb-text: #fff;
-    --kb-muted: rgba(255, 255, 255, 0.8);
-    --kb-tag-bg: #d7b15a;
-    --kb-tag-text: #14382a;
-    --kb-cta-bg: #d7b15a;
-    --kb-cta-text: #14382a;
-    --kb-cta-hover: #e6c77a;
-    --kb-wave: rgba(255, 255, 255, 0.08);
-}
-.ksl-banner.is-midnight {
-    --kb-bg-1: #070d18;
-    --kb-bg-2: #16243d;
-    --kb-text: #f7f4ea;
-    --kb-muted: rgba(247, 244, 234, 0.72);
-    --kb-tag-bg: #c5a028;
-    --kb-tag-text: #070d18;
-    --kb-cta-bg: #c5a028;
-    --kb-cta-text: #070d18;
-    --kb-cta-hover: #e0bb3f;
-    --kb-wave: rgba(197, 160, 40, 0.16);
-}
-.ksl-banner.is-framed {
-    --kb-bg-1: #fff;
-    --kb-bg-2: #f7f8fb;
-    --kb-text: #0b1f3a;
-    --kb-muted: #4a5868;
-    --kb-tag-bg: #0b1f3a;
-    --kb-tag-text: #fff;
-    --kb-cta-bg: #0b1f3a;
-    --kb-cta-text: #fff;
-    --kb-cta-hover: #163a66;
-    --kb-wave: rgba(11, 31, 58, 0.05);
-    box-shadow: inset 0 0 0 2px #0b1f3a;
-}
-.ksl-banner-icon svg { width: 22px; height: 22px; }
 .ksl-banner-tag {
     flex: none;
-    padding: 5px 12px;
-    border-radius: 999px;
-    background: var(--kb-tag-bg);
-    color: var(--kb-tag-text);
     font-size: 0.72rem;
     font-weight: 800;
     letter-spacing: 0.12em;
@@ -13127,7 +12973,8 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 .ksl-banner-until {
     display: block;
     margin-top: 2px;
-    color: var(--kb-muted);
+    color: inherit;
+    opacity: 0.72;
     font-size: 0.82rem;
     font-weight: 400;
 }
@@ -13136,23 +12983,20 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 20px;
-    border-radius: 999px;
-    background: var(--kb-cta-bg);
-    color: var(--kb-cta-text);
+    padding: 8px 16px;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
     font-size: 0.92rem;
     font-weight: 700;
     text-decoration: none;
     white-space: nowrap;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
-    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: none;
 }
 .ksl-banner-cta:hover,
 .ksl-banner-cta:focus-visible {
-    background: var(--kb-cta-hover);
-    color: var(--kb-cta-text);
-    transform: translateY(-1px);
-    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
+    color: inherit;
+    text-decoration: none;
 }
 .ksl-banner-cta svg {
     width: 16px;
@@ -13174,7 +13018,7 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     border: 0;
     border-radius: 50%;
     background: transparent;
-    color: var(--kb-text);
+    color: inherit;
     opacity: 0.8;
     cursor: pointer;
     transition: background-color 0.2s ease, opacity 0.2s ease;
@@ -13184,14 +13028,166 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     opacity: 1;
     background: rgba(255, 255, 255, 0.16);
 }
-.ksl-banner.is-gold .ksl-banner-close:hover,
-.ksl-banner.is-light .ksl-banner-close:hover { background: rgba(11, 31, 58, 0.1); }
+.ksl-banner-close:hover,
+.ksl-banner-close:focus-visible { background: rgba(127, 127, 127, 0.16); }
 .ksl-banner-close svg { width: 16px; height: 16px; }
+.ksl-banner-cta-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
 .ksl-banner.is-closing {
     animation: none;
     opacity: 0;
     transition: max-height 0.35s ease, opacity 0.25s ease;
 }
+
+.ksl-banner.is-harbour-line { box-shadow: inset 0 3px 0 #0b1f3a; }
+.ksl-banner.is-harbour-line .ksl-banner-tag { color: #99792c; }
+.ksl-banner.is-harbour-line .ksl-banner-cta { padding: 0 0 2px; border-bottom: 1px solid #0b1f3a; }
+
+.ksl-banner.is-keel-stripe { background: #0b1f3a; color: #fff; box-shadow: inset 0 -1px 0 #c5a028; }
+.ksl-banner.is-keel-stripe .ksl-banner-cta { padding: 8px 16px; color: #c5a028; border: 1px solid #c5a028; }
+
+.ksl-banner.is-signal-flag::after {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 8px;
+    background: linear-gradient(#111 0 33%, #bb1e24 33% 66%, #0c6b3a 66%);
+}
+.ksl-banner.is-signal-flag .ksl-banner-inner { padding-left: 28px; }
+.ksl-banner.is-signal-flag .ksl-banner-tag { padding: 4px 10px; border-radius: 2px; background: #0b1f3a; color: #fff; }
+.ksl-banner.is-signal-flag .ksl-banner-cta { padding: 8px 16px; border-radius: 2px; background: #0b1f3a; color: #fff; }
+
+.ksl-banner.is-dry-dock { background: #e7e9ed; }
+.ksl-banner.is-dry-dock .ksl-banner-icon { display: inline-flex; }
+.ksl-banner.is-dry-dock .ksl-banner-cta { padding: 8px 16px; background: #0b1f3a; color: #fff; }
+
+.ksl-banner.is-tender-notice { background: #fbf7ef; color: #1a1a1a; box-shadow: inset 0 0 0 1px #e4dcc8; }
+.ksl-banner.is-tender-notice .ksl-banner-tag {
+    padding: 4px 8px;
+    color: #b42318;
+    border: 2px solid #b42318;
+    transform: rotate(-6deg);
+}
+.ksl-banner.is-tender-notice .ksl-banner-cta { padding: 7px 14px; border: 1px solid #1a1a1a; }
+
+.ksl-banner.is-quiet-gold { background: #f8f1de; box-shadow: inset 4px 0 0 #c5a028; }
+.ksl-banner.is-quiet-gold .ksl-banner-cta { padding: 0; }
+
+.ksl-banner.is-night-watch { background: #07111f; color: #fff; }
+.ksl-banner.is-night-watch .ksl-banner-tag { color: #c5a028; }
+.ksl-banner.is-night-watch .ksl-banner-tag::before {
+    content: "";
+    display: inline-block;
+    width: 6px; height: 6px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: #c5a028;
+}
+.ksl-banner.is-night-watch .ksl-banner-cta { padding: 8px 16px; color: #fff; border: 1px solid #c5a028; }
+
+.ksl-banner.is-yard-bell .ksl-banner-inner { padding-top: 8px; padding-bottom: 8px; }
+.ksl-banner.is-yard-bell .ksl-banner-icon { display: inline-flex; width: 22px; height: 22px; }
+.ksl-banner.is-yard-bell .ksl-banner-icon svg { width: 18px; height: 18px; }
+.ksl-banner.is-yard-bell .ksl-banner-tag { padding: 3px 8px; border-radius: 2px; background: #0b1f3a; color: #fff; }
+.ksl-banner.is-yard-bell .ksl-banner-cta { padding: 6px 12px; background: #0b1f3a; color: #fff; }
+
+.ksl-banner.is-split-bar .ksl-banner-inner { gap: 18px; padding-left: 0; }
+.ksl-banner.is-split-bar .ksl-banner-tag {
+    align-self: stretch;
+    display: inline-flex;
+    align-items: center;
+    min-width: 28%;
+    padding: 12px 22px;
+    background: #0b1f3a;
+    color: #fff;
+}
+.ksl-banner.is-split-bar .ksl-banner-cta { padding: 8px 16px; background: #0b1f3a; color: #fff; }
+
+.ksl-banner.is-brass-plate { background: #c5a028; animation: none; }
+.ksl-banner.is-brass-plate .ksl-banner-cta { padding: 8px 16px; background: #0b1f3a; color: #fff; }
+
+.ksl-banner.is-log-entry { background: #f7f6f3; color: #1c1c1c; font-family: ui-monospace, Consolas, monospace; }
+.ksl-banner.is-log-entry .ksl-banner-tag {
+    padding: 3px 7px;
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 600;
+    border: 1px solid #c8c4bc;
+}
+.ksl-banner.is-log-entry .ksl-banner-text { font-weight: 400; }
+.ksl-banner.is-log-entry .ksl-banner-cta { padding: 0; text-decoration: underline; font-weight: 500; }
+
+.ksl-banner.is-mast-pennant .ksl-banner-tag {
+    padding: 8px 12px 10px;
+    background: #0b1f3a;
+    color: #fff;
+    border-radius: 0 0 10px 0;
+}
+.ksl-banner.is-mast-pennant .ksl-banner-text { font-size: 1.05rem; }
+.ksl-banner.is-mast-pennant .ksl-banner-cta {
+    width: 36px; height: 36px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    background: #0b1f3a;
+    color: #fff;
+}
+
+.ksl-banner.is-sea-glass { background: #d5ebe6; }
+.ksl-banner.is-sea-glass .ksl-banner-inner {
+    width: calc(100% - 28px);
+    margin: 8px auto;
+    padding: 10px 16px;
+    background: #fff;
+    border-radius: 8px;
+}
+.ksl-banner.is-sea-glass .ksl-banner-tag { padding: 3px 8px; border-radius: 2px; background: #0b1f3a; color: #fff; }
+.ksl-banner.is-sea-glass .ksl-banner-cta { padding: 8px 14px; background: #0b1f3a; color: #fff; }
+
+.ksl-banner.is-alert-bar { background: #8d1d24; color: #fff; }
+.ksl-banner.is-alert-bar .ksl-banner-icon { display: inline-flex; }
+.ksl-banner.is-alert-bar .ksl-banner-cta { padding: 8px 16px; background: #fff; color: #8d1d24; }
+
+.ksl-banner.is-chapter-head .ksl-banner-inner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "tag cta" "text cta";
+    align-items: center;
+    row-gap: 2px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+.ksl-banner.is-chapter-head .ksl-banner-tag { grid-area: tag; color: #99792c; }
+.ksl-banner.is-chapter-head .ksl-banner-body { grid-area: text; }
+.ksl-banner.is-chapter-head .ksl-banner-cta { grid-area: cta; padding: 8px 16px; background: #0b1f3a; color: #fff; }
+.ksl-banner.is-chapter-head .ksl-banner-text { font-size: 1.05rem; font-weight: 500; }
+
+.ksl-banner.is-inset-rule .ksl-banner-tag { color: #99792c; font-size: 0.68rem; }
+.ksl-banner.is-inset-rule .ksl-banner-cta { margin-left: 8px; padding: 4px 0 4px 16px; border-left: 1px solid #d5dce4; }
+
+.ksl-banner.is-shipyard-stamp .ksl-banner-icon { display: inline-flex; }
+.ksl-banner.is-shipyard-stamp .ksl-banner-cta { padding: 8px 16px; border-radius: 4px; background: #0A3E95; color: #fff; }
+
+.ksl-banner.is-tide { background: #0b1f3a; color: #fff; }
+.ksl-banner.is-tide .ksl-banner-icon { display: inline-flex; }
+.ksl-banner.is-tide .ksl-banner-cta { padding: 8px 16px; border-radius: 999px; background: #fff; color: #0b1f3a; }
+
+.ksl-banner.is-two-weights .ksl-banner-tag { letter-spacing: 0; text-transform: none; font-size: 0.95rem; }
+.ksl-banner.is-two-weights .ksl-banner-text { color: #6b7785; font-weight: 400; }
+.ksl-banner.is-two-weights .ksl-banner-cta { padding: 0; color: #99792c; }
+
+.ksl-banner.is-command-strip { background: #0b1f3a; color: #fff; }
+.ksl-banner.is-command-strip .ksl-banner-tag { padding: 5px 10px; background: #c5a028; color: #0b1f3a; }
+.ksl-banner.is-command-strip .ksl-banner-cta { padding: 8px 16px; background: #c5a028; color: #0b1f3a; }
 
 /* Ticker mode: the message glides across like a news ticker */
 .ksl-banner.is-ticker .ksl-banner-body {
@@ -13257,10 +13253,8 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 @media (prefers-reduced-motion: reduce) {
     .ksl-banner,
     .ksl-banner::before,
-    .ksl-banner::after,
     .ksl-banner-icon,
     .ksl-banner.is-ticker .ksl-banner-track { animation: none; }
-    .ksl-banner::after { display: none; }
     .ksl-banner.is-ticker .ksl-banner-track { white-space: normal; display: block; }
     .ksl-banner.is-ticker .ksl-banner-text + .ksl-banner-text { display: none; }
     .ksl-banner.is-ticker .ksl-banner-text::after { content: none; }

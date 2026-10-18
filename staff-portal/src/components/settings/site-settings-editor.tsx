@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, Loader2, Megaphone, X } from "lucide-react";
+import { Anchor, ArrowRight, Bell, Loader2, Ship, TriangleAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, FieldGrid, FormSection, Notice, Switch } from "@/components/ui/form-bits";
+import { Field, FieldGrid, FormSection, Notice, Select, Switch } from "@/components/ui/form-bits";
 import { RowList } from "@/components/ui/row-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { cn } from "@/lib/cn";
@@ -12,30 +12,53 @@ import { sendJson } from "@/lib/upload-client";
 import {
   DEFAULT_SITE_SETTINGS,
   type AnnouncementSettings,
-  type BannerStyle,
-  type MenuStyle,
+  type BannerDesign,
   type SiteSettingKey,
   type SiteSettings,
 } from "@/lib/site-settings";
 
-const BANNER_STYLES: { value: BannerStyle; label: string; swatch: string }[] = [
-  { value: "navy", label: "Navy with gold", swatch: "linear-gradient(100deg,#0b1f3a,#163a66)" },
-  { value: "gold", label: "Gold with navy", swatch: "linear-gradient(100deg,#b48f1c,#e2bf4b)" },
-  { value: "light", label: "Light and calm", swatch: "linear-gradient(100deg,#f4f7fb,#e6eef8)" },
-  { value: "kenya", label: "Kenya", swatch: "linear-gradient(100deg,#0c6b3a,#bb1e24)" },
-  { value: "alert", label: "Alert", swatch: "linear-gradient(100deg,#8d1d24,#c43740)" },
-  { value: "forest", label: "Forest", swatch: "linear-gradient(100deg,#14382a,#1f6b48)" },
-  { value: "midnight", label: "Midnight", swatch: "linear-gradient(100deg,#070d18,#c5a028)" },
-  { value: "framed", label: "Framed", swatch: "linear-gradient(#fff,#fff)" },
+const BANNER_DESIGNS: { value: BannerDesign; label: string }[] = [
+  { value: "harbour-line", label: "Harbour line" },
+  { value: "keel-stripe", label: "Keel stripe" },
+  { value: "signal-flag", label: "Signal flag" },
+  { value: "dry-dock", label: "Dry dock" },
+  { value: "tender-notice", label: "Tender notice" },
+  { value: "quiet-gold", label: "Quiet gold" },
+  { value: "night-watch", label: "Night watch" },
+  { value: "yard-bell", label: "Yard bell" },
+  { value: "split-bar", label: "Split bar" },
+  { value: "brass-plate", label: "Brass plate" },
+  { value: "log-entry", label: "Log entry" },
+  { value: "mast-pennant", label: "Mast pennant" },
+  { value: "sea-glass", label: "Sea glass" },
+  { value: "alert-bar", label: "Alert bar" },
+  { value: "chapter-head", label: "Chapter head" },
+  { value: "inset-rule", label: "Inset rule" },
+  { value: "shipyard-stamp", label: "Shipyard stamp" },
+  { value: "tide", label: "Tide" },
+  { value: "two-weights", label: "Two weights" },
+  { value: "command-strip", label: "Command strip" },
 ];
 
-const MENU_STYLES: { value: MenuStyle; label: string; hint: string }[] = [
-  { value: "classic", label: "Classic", hint: "The current menu" },
-  { value: "cards", label: "Cards", hint: "Rounded panels" },
-  { value: "soft", label: "Soft", hint: "Light shadow" },
-  { value: "line", label: "Line", hint: "Gold edge on hover" },
-  { value: "compact", label: "Compact", hint: "Shorter rows" },
+const BANNER_PAGES = [
+  { value: "index.html", label: "Home" },
+  { value: "about.html", label: "About" },
+  { value: "board.html", label: "Board" },
+  { value: "organization.html", label: "Organization" },
+  { value: "service.html", label: "Services" },
+  { value: "products.html", label: "Products" },
+  { value: "project.html", label: "Projects" },
+  { value: "news.html", label: "News" },
+  { value: "videos.html", label: "Gallery" },
+  { value: "downloads.html", label: "Downloads" },
+  { value: "careers.html", label: "Careers" },
+  { value: "csr.html", label: "CSR" },
+  { value: "sustainability.html", label: "Sustainability" },
+  { value: "faq.html", label: "FAQ" },
+  { value: "contact.html", label: "Contact" },
 ];
+
+const ARROW_DESIGNS = new Set<BannerDesign>(["quiet-gold", "mast-pennant"]);
 
 const TAG_SUGGESTIONS = ["Announcement", "Notice", "Tender", "Vacancy", "Event", "New"];
 
@@ -49,14 +72,29 @@ function formatDay(iso: string) {
   );
 }
 
+function BannerMark({ design }: { design: BannerDesign }) {
+  if (design === "dry-dock") return <Ship className="h-5 w-5" />;
+  if (design === "yard-bell") return <Bell className="h-5 w-5" />;
+  if (design === "alert-bar") return <TriangleAlert className="h-5 w-5" />;
+  if (design === "tide") return <Anchor className="h-5 w-5" />;
+  if (design === "shipyard-stamp") return <span className="kb-preview-stamp">KSL</span>;
+  return null;
+}
+
 function BannerPreview({ a }: { a: AnnouncementSettings }) {
   const text = a.text.trim() || "Your message will appear here.";
+  const design = BANNER_DESIGNS.some((d) => d.value === a.style) ? a.style : "command-strip";
+  const label = a.linkLabel.trim();
+  const showButton = Boolean(label && a.linkUrl.trim());
+  const circle = design === "mast-pennant";
   return (
-    <div className={cn("kb-preview", `is-${a.style}`, a.scroll && "is-ticker")}>
+    <div className={cn("kb-preview", `is-${design}`, a.scroll && "is-ticker")}>
       <div className="kb-preview-inner">
-        <span className="kb-preview-icon">
-          <Megaphone className="h-5 w-5" />
-        </span>
+        {design === "dry-dock" || design === "yard-bell" || design === "alert-bar" || design === "tide" || design === "shipyard-stamp" ? (
+          <span className="kb-preview-icon">
+            <BannerMark design={design} />
+          </span>
+        ) : null}
         <span className="kb-preview-tag">{a.label.trim() || "Announcement"}</span>
         <div className="kb-preview-body">
           {a.scroll ? (
@@ -73,10 +111,10 @@ function BannerPreview({ a }: { a: AnnouncementSettings }) {
             </>
           )}
         </div>
-        {a.linkLabel.trim() && a.linkUrl.trim() && (
+        {showButton && (
           <span className="kb-preview-cta">
-            {a.linkLabel.trim()}
-            <ArrowRight className="h-4 w-4" />
+            {circle ? <span className="sr-only">{label}</span> : label}
+            {ARROW_DESIGNS.has(design) && <ArrowRight className="h-4 w-4" />}
           </span>
         )}
       </div>
@@ -93,6 +131,7 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState<SiteSettingKey | null>(null);
+  const [customLink, setCustomLink] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -172,7 +211,7 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
 
       <FormSection
         title="Website banner"
-        description="A wide strip just under the menu on every page. Use it for tenders, vacancies, events or important notices."
+        description="A strip at the top of every page, above the menu. Use it for tenders, vacancies, events or important notices. The preview updates as you edit. The public site changes when you save."
       >
         <div className="space-y-2">
           <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-[#8a96a5]">Preview</p>
@@ -233,35 +272,14 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
               ))}
             </datalist>
           </Field>
-          <Field label="Colours">
-            <details className="group relative">
-              <summary className="flex h-[42px] cursor-pointer list-none items-center gap-2 rounded-[8px] border border-[#d5dce4] bg-white px-3 text-[14px] text-[#0b1f3a]">
-                <span
-                  className="h-4 w-7 rounded-[4px] border border-[#e3e8ee]"
-                  style={{ background: BANNER_STYLES.find((s) => s.value === a.style)?.swatch }}
-                />
-                {BANNER_STYLES.find((s) => s.value === a.style)?.label ?? "Navy with gold"}
-              </summary>
-              <div className="absolute z-20 mt-1 w-full rounded-[10px] border border-[#e3e8ee] bg-white p-1 shadow-[0_12px_32px_rgba(11,31,58,0.12)]">
-                {BANNER_STYLES.map((s) => (
-                  <button
-                    key={s.value}
-                    type="button"
-                    className={cn(
-                      "flex w-full items-center gap-2 rounded-[8px] px-2 py-2 text-left text-[14px] hover:bg-[#f4f6f8]",
-                      a.style === s.value && "bg-[#f4f6f8] font-semibold"
-                    )}
-                    onClick={(event) => {
-                      set("announcement", { style: s.value });
-                      event.currentTarget.closest("details")?.removeAttribute("open");
-                    }}
-                  >
-                    <span className="h-4 w-7 rounded-[4px] border border-[#e3e8ee]" style={{ background: s.swatch }} />
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            </details>
+          <Field label="Design" hint="Choosing a design updates the preview above. Save to put it on the website.">
+            <Select value={a.style} onChange={(e) => set("announcement", { style: e.target.value as BannerDesign })}>
+              {BANNER_DESIGNS.map((d) => (
+                <option key={d.value} value={d.value}>
+                  {d.label}
+                </option>
+              ))}
+            </Select>
           </Field>
           <Field label="Button text" optional hint='For example "Read more" or "Apply now".'>
             <Input
@@ -270,14 +288,42 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
               onChange={(e) => set("announcement", { linkLabel: e.target.value })}
             />
           </Field>
-          <Field label="Button opens" optional hint="A web address, or a page on this site such as careers.html.">
-            <Input
-              value={a.linkUrl}
-              autoCapitalize="none"
-              spellCheck={false}
-              placeholder="https://… or careers.html"
-              onChange={(e) => set("announcement", { linkUrl: e.target.value.trim() })}
-            />
+          <Field label="Button opens" optional hint="Pick a page on this site, or a web address of your own.">
+            <Select
+              value={
+                customLink || (a.linkUrl && !BANNER_PAGES.some((p) => p.value === a.linkUrl))
+                  ? "custom"
+                  : a.linkUrl
+              }
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === "custom") {
+                  setCustomLink(true);
+                  if (BANNER_PAGES.some((p) => p.value === a.linkUrl)) set("announcement", { linkUrl: "" });
+                  return;
+                }
+                setCustomLink(false);
+                set("announcement", { linkUrl: value });
+              }}
+            >
+              <option value="">Choose a page</option>
+              {BANNER_PAGES.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+              <option value="custom">Custom web address</option>
+            </Select>
+            {(customLink || (a.linkUrl && !BANNER_PAGES.some((p) => p.value === a.linkUrl))) && (
+              <Input
+                className="mt-2"
+                value={a.linkUrl}
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder="https://"
+                onChange={(e) => set("announcement", { linkUrl: e.target.value.trim() })}
+              />
+            )}
           </Field>
           <Field label="Stop showing after" optional hint="The banner hides itself after this day. Leave empty to keep it up.">
             <div className="flex gap-2">
@@ -303,26 +349,6 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
           </div>
         </FieldGrid>
         {saveButton("announcement")}
-      </FormSection>
-
-      <FormSection title="Menu style" description="How the dropdown menus look on the website.">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {MENU_STYLES.map((style) => (
-            <button
-              key={style.value}
-              type="button"
-              onClick={() => set("appearance", { menuStyle: style.value })}
-              className={cn(
-                "rounded-[10px] border px-3 py-3 text-left",
-                settings.appearance.menuStyle === style.value ? "border-[#0b1f3a] bg-[#f4f7fb]" : "border-[#e3e8ee] bg-white"
-              )}
-            >
-              <span className="block text-[14px] font-semibold text-[#0b1f3a]">{style.label}</span>
-              <span className="mt-0.5 block text-[12.5px] text-[#6b7785]">{style.hint}</span>
-            </button>
-          ))}
-        </div>
-        {saveButton("appearance")}
       </FormSection>
 
       <FormSection title="Contact details" description="Shown at the top of every page and in the footer.">

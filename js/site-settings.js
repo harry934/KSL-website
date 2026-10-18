@@ -100,9 +100,19 @@
         });
     }
 
-    var ICON_MEGAPHONE =
+    var ICON_SHIP =
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-        '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>';
+        '<path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>' +
+        '<path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76"/><path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6"/><path d="M12 10v4"/><path d="M12 2v3"/></svg>';
+    var ICON_BELL =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>';
+    var ICON_ALERT =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+    var ICON_ANCHOR =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M12 22V8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/><circle cx="12" cy="5" r="3"/></svg>';
     var ICON_ARROW =
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
         '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
@@ -135,20 +145,31 @@
             if (window.sessionStorage.getItem(key)) return;
         } catch (e) {}
 
-        var styles = { navy: 1, gold: 1, light: 1, kenya: 1, alert: 1, forest: 1, midnight: 1, framed: 1 };
-        var style = styles[a.style] ? a.style : "navy";
+        var designs = {
+            "harbour-line": 1, "keel-stripe": 1, "signal-flag": 1, "dry-dock": 1, "tender-notice": 1,
+            "quiet-gold": 1, "night-watch": 1, "yard-bell": 1, "split-bar": 1, "brass-plate": 1,
+            "log-entry": 1, "mast-pennant": 1, "sea-glass": 1, "alert-bar": 1, "chapter-head": 1,
+            "inset-rule": 1, "shipyard-stamp": 1, tide: 1, "two-weights": 1, "command-strip": 1
+        };
+        var style = designs[a.style] ? a.style : "command-strip";
+        var icons = { "dry-dock": ICON_SHIP, "yard-bell": ICON_BELL, "alert-bar": ICON_ALERT, tide: ICON_ANCHOR };
+        var icon = style === "shipyard-stamp" ? '<span class="ksl-banner-stamp">KSL</span>' : (icons[style] || "");
         var ticker = !!a.scroll;
         var link = safeUrl(a.linkUrl);
         var external = /^https?:\/\//i.test(link) && link.indexOf(window.location.host) === -1;
         var text = '<p class="ksl-banner-text">' + escapeHtml(a.text) + "</p>";
         var until = endsOn && !ticker ? '<span class="ksl-banner-until">Until ' + escapeHtml(formatEndDate(endsOn)) + "</span>" : "";
+        var withArrow = style === "quiet-gold" || style === "mast-pennant";
+        var ctaLabel = style === "mast-pennant"
+            ? '<span class="ksl-banner-cta-label">' + escapeHtml(a.linkLabel) + "</span>"
+            : escapeHtml(a.linkLabel);
 
         var bar = document.createElement("section");
         bar.className = "ksl-banner is-" + style + (ticker ? " is-ticker" : "");
         bar.setAttribute("aria-label", "Announcement");
         bar.innerHTML =
             '<div class="ksl-banner-inner">' +
-            '<span class="ksl-banner-icon">' + ICON_MEGAPHONE + "</span>" +
+            '<span class="ksl-banner-icon">' + icon + "</span>" +
             '<span class="ksl-banner-tag">' + escapeHtml(a.label || "Announcement") + "</span>" +
             '<div class="ksl-banner-body">' +
             (ticker ? '<div class="ksl-banner-track">' + text + text.replace("<p ", '<p aria-hidden="true" ') + "</div>" : text + until) +
@@ -156,7 +177,7 @@
             (link && a.linkLabel
                 ? '<a class="ksl-banner-cta" href="' + escapeHtml(link) + '"' +
                   (external ? ' target="_blank" rel="noopener"' : "") + ">" +
-                  escapeHtml(a.linkLabel) + ICON_ARROW + "</a>"
+                  ctaLabel + (withArrow ? ICON_ARROW : "") + "</a>"
                 : "") +
             "</div>" +
             '<button type="button" class="ksl-banner-close" aria-label="Close announcement">' + ICON_CLOSE + "</button>";
@@ -191,8 +212,5 @@
         applySocial(data.social);
         applyFooter(data.footer);
         applyAnnouncement(data.announcement);
-        var menus = { classic: 1, cards: 1, soft: 1, line: 1, compact: 1 };
-        var menuStyle = data.appearance && menus[data.appearance.menuStyle] ? data.appearance.menuStyle : "classic";
-        document.documentElement.setAttribute("data-ksl-menu", menuStyle);
     }).catch(function () {});
 })();

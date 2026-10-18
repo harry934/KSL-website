@@ -21,7 +21,41 @@ export type FooterSettings = {
   locations: LocationEntry[];
 };
 
-export type BannerStyle = "navy" | "gold" | "light" | "kenya" | "alert" | "forest" | "midnight" | "framed";
+export const BANNER_DESIGNS = [
+  "harbour-line",
+  "keel-stripe",
+  "signal-flag",
+  "dry-dock",
+  "tender-notice",
+  "quiet-gold",
+  "night-watch",
+  "yard-bell",
+  "split-bar",
+  "brass-plate",
+  "log-entry",
+  "mast-pennant",
+  "sea-glass",
+  "alert-bar",
+  "chapter-head",
+  "inset-rule",
+  "shipyard-stamp",
+  "tide",
+  "two-weights",
+  "command-strip",
+] as const;
+
+export type BannerDesign = (typeof BANNER_DESIGNS)[number];
+
+/** Older saved colour names still stored in the database. They display as Command strip. */
+const LEGACY_BANNER_STYLES = ["navy", "gold", "light", "kenya", "alert", "forest", "midnight", "framed"];
+
+export function bannerDesign(value: unknown): BannerDesign {
+  return (BANNER_DESIGNS as readonly string[]).includes(String(value))
+    ? (value as BannerDesign)
+    : "command-strip";
+}
+
+export type BannerStyle = BannerDesign | (typeof LEGACY_BANNER_STYLES)[number];
 
 export type MenuStyle = "classic" | "cards" | "soft" | "line" | "compact";
 
@@ -81,7 +115,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     text: "",
     linkLabel: "",
     linkUrl: "",
-    style: "navy",
+    style: "command-strip",
     scroll: false,
     endsOn: "",
   },
@@ -97,5 +131,6 @@ export function mergeSiteSettings(rows: { key: string; value: unknown }[]): Site
     const key = row.key as SiteSettingKey;
     merged[key] = { ...merged[key], ...(row.value as object) } as never;
   }
+  merged.announcement.style = bannerDesign(merged.announcement.style);
   return merged;
 }
