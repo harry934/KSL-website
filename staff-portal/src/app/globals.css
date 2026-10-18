@@ -696,13 +696,13 @@ body {
   top: 0;
   bottom: 0;
   z-index: 1;
-  width: 58px;
+  width: 42px;
   margin: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 48'%3E%3Crect width='20' height='48' fill='%23000'/%3E%3Crect x='20' width='4' height='48' fill='%23fff'/%3E%3Crect x='24' width='24' height='48' fill='%23bb0000'/%3E%3Crect x='48' width='4' height='48' fill='%23fff'/%3E%3Crect x='52' width='20' height='48' fill='%23006600'/%3E%3Cg transform='translate(36 24)'%3E%3Cpath d='M-26-13 26 13M-26 13 26-13' stroke='%23fff' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3CclipPath id='s'%3E%3Cellipse cx='0' cy='0' rx='16' ry='9'/%3E%3C/clipPath%3E%3Cg clip-path='url(%23s)'%3E%3Crect x='-18' y='-12' width='36' height='24' fill='%23bb0000'/%3E%3Cellipse cx='-11' cy='0' rx='7' ry='9' fill='%23111'/%3E%3Cellipse cx='11' cy='0' rx='7' ry='9' fill='%23111'/%3E%3Crect x='-6' y='-1' width='12' height='2' fill='%23fff'/%3E%3Ccircle r='2.7' fill='%23fff'/%3E%3Ccircle r='1.15' fill='%23111'/%3E%3C/g%3E%3Cellipse cx='0' cy='0' rx='16' ry='9' fill='none' stroke='%23fff' stroke-width='1'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  background: url("https://ksl-website.vercel.app/img/ksl/kenya-flag-strip.png") center / cover no-repeat;
   box-shadow: none;
 }
 .kb-preview.is-flag::after { content: none; }
-.kb-preview.is-flag .kb-preview-inner { padding-left: 70px; }
+.kb-preview.is-flag .kb-preview-inner { padding-left: 52px; }
 .kb-preview.is-flag .kb-preview-tag { color: #0b1f3a; }
 .kb-preview.is-flag .kb-preview-cta { padding: 6px 12px; background: #0b1f3a; color: #fff; border-bottom: 0; }
 .kb-preview.is-split .kb-preview-inner { gap: 12px; padding-left: 0; }
@@ -1067,7 +1067,7 @@ body {
   padding-left: 16px;
   padding-right: 0;
 }
-.kb-preview.is-ticker.is-flag .kb-preview-inner { padding-left: 70px; }
+.kb-preview.is-ticker.is-flag .kb-preview-inner { padding-left: 52px; }
 .kb-preview.is-ticker.is-split .kb-preview-inner { padding-left: 0; }
 .kb-preview.is-ticker.is-quay .kb-preview-inner { padding-left: 136px; }
 .kb-preview.is-ticker.is-berth .kb-preview-inner { padding-right: 124px; }
