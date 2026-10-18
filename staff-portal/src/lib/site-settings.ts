@@ -21,7 +21,7 @@ export type FooterSettings = {
   locations: LocationEntry[];
 };
 
-export const BANNER_DESIGNS = ["notice", "navy", "tide", "flag", "tender", "alert"] as const;
+export const BANNER_DESIGNS = ["notice", "navy", "tide", "flag", "split", "pennant", "plate", "night", "tender", "alert"] as const;
 
 export type BannerDesign = (typeof BANNER_DESIGNS)[number];
 
@@ -67,21 +67,25 @@ const BANNER_ALIASES: Record<string, BannerDesign> = {
   framed: "notice",
   navy: "navy",
   "keel-stripe": "navy",
-  "night-watch": "navy",
   "yard-bell": "navy",
-  "brass-plate": "navy",
   "shipyard-stamp": "navy",
   "command-strip": "navy",
   "dry-dock": "navy",
   gold: "navy",
   forest: "navy",
-  midnight: "navy",
   tide: "tide",
   flag: "flag",
   "signal-flag": "flag",
-  "split-bar": "flag",
-  "mast-pennant": "flag",
   kenya: "flag",
+  split: "split",
+  "split-bar": "split",
+  pennant: "pennant",
+  "mast-pennant": "pennant",
+  plate: "plate",
+  "brass-plate": "plate",
+  night: "night",
+  "night-watch": "night",
+  midnight: "night",
   tender: "tender",
   "tender-notice": "tender",
   alert: "alert",

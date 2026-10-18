@@ -23,6 +23,10 @@ const BANNER_DESIGNS: { value: BannerDesign; label: string }[] = [
   { value: "navy", label: "Navy" },
   { value: "tide", label: "Tide" },
   { value: "flag", label: "Flag" },
+  { value: "split", label: "Split" },
+  { value: "pennant", label: "Pennant" },
+  { value: "plate", label: "Plate" },
+  { value: "night", label: "Night" },
   { value: "tender", label: "Tender" },
   { value: "alert", label: "Alert" },
 ];

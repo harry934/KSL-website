@@ -13105,18 +13105,72 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 .ksl-banner.is-navy .ksl-banner-tag { color: #e6c56a; }
 .ksl-banner.is-navy .ksl-banner-cta { padding: 0 0 1px; color: #e6c56a; border-bottom: 1px solid #e6c56a; }
 
-.ksl-banner.is-flag::after {
+.ksl-banner.is-flag::before {
     content: "";
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
-    width: 5px;
-    background: linear-gradient(#111 0 33%, #bb1e24 33% 66%, #0c6b3a 66%);
+    z-index: 1;
+    width: 84px;
+    background: linear-gradient(to bottom, #000 0 28%, #fff 28% 33%, #bb0000 33% 61%, #fff 61% 66%, #006600 66% 100%);
 }
-.ksl-banner.is-flag .ksl-banner-inner { padding-left: 22px; }
+.ksl-banner.is-flag::after {
+    content: "";
+    position: absolute;
+    left: 31px;
+    top: 50%;
+    z-index: 2;
+    width: 22px;
+    height: 30px;
+    margin-top: -15px;
+    border-radius: 46% 46% 50% 50%;
+    background: linear-gradient(90deg, #111 0 16%, #fff 16% 34%, #bb0000 34% 66%, #fff 66% 84%, #111 84% 100%);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+.ksl-banner.is-flag .ksl-banner-inner { padding-left: 100px; }
 .ksl-banner.is-flag .ksl-banner-tag { color: #0b1f3a; }
-.ksl-banner.is-flag .ksl-banner-cta { padding: 0 0 1px; border-bottom: 1px solid #0b1f3a; }
+.ksl-banner.is-flag .ksl-banner-cta { padding: 8px 14px; background: #0b1f3a; color: #fff; }
+
+.ksl-banner.is-split .ksl-banner-inner { gap: 18px; padding-left: 0; }
+.ksl-banner.is-split .ksl-banner-tag {
+    align-self: stretch;
+    display: inline-flex;
+    align-items: center;
+    min-width: 168px;
+    margin-left: 0;
+    padding: 0 22px;
+    background: #0b1f3a;
+    color: #fff;
+}
+.ksl-banner.is-split .ksl-banner-cta { padding: 8px 14px; background: #0b1f3a; color: #fff; }
+
+.ksl-banner.is-pennant { background: #f4f7fb; }
+.ksl-banner.is-pennant .ksl-banner-tag {
+    padding: 8px 22px 8px 14px;
+    background: #0A3E95;
+    color: #fff;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
+}
+.ksl-banner.is-pennant .ksl-banner-text { font-size: 1.05rem; font-weight: 500; }
+.ksl-banner.is-pennant .ksl-banner-cta { padding: 8px 14px; background: #0A3E95; color: #fff; }
+
+.ksl-banner.is-plate { background: #c5a028; color: #0b1f3a; }
+.ksl-banner.is-plate .ksl-banner-tag { color: #0b1f3a; }
+.ksl-banner.is-plate .ksl-banner-cta { padding: 8px 14px; background: #0b1f3a; color: #fff; }
+
+.ksl-banner.is-night { background: #07111f; color: #fff; }
+.ksl-banner.is-night .ksl-banner-tag { color: #e6c56a; }
+.ksl-banner.is-night .ksl-banner-tag::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: #e6c56a;
+}
+.ksl-banner.is-night .ksl-banner-cta { padding: 7px 14px; color: #e6c56a; border: 1px solid #e6c56a; }
 
 .ksl-banner.is-tender { background: #f7f4ee; color: #1c1915; }
 .ksl-banner.is-tender .ksl-banner-tag { color: #9a3412; }
@@ -13138,6 +13192,8 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     padding-left: 22px;
     padding-right: 0;
 }
+.ksl-banner.is-ticker.is-flag .ksl-banner-inner { padding-left: 100px; }
+.ksl-banner.is-ticker.is-split .ksl-banner-inner { padding-left: 0; }
 .ksl-banner.is-ticker.is-chapter-head .ksl-banner-inner,
 .ksl-banner.is-ticker.is-split-bar .ksl-banner-inner {
     display: flex;
@@ -13221,6 +13277,11 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
         gap: 8px;
         padding: 10px 44px 10px 14px;
     }
+    .ksl-banner.is-flag::before { width: 54px; }
+    .ksl-banner.is-flag::after { left: 18px; width: 16px; height: 22px; margin-top: -11px; }
+    .ksl-banner.is-flag .ksl-banner-inner,
+    .ksl-banner.is-ticker.is-flag .ksl-banner-inner { padding-left: 64px; }
+    .ksl-banner.is-split .ksl-banner-tag { min-width: 0; padding: 0 10px; }
     .ksl-banner-icon,
     .ksl-banner-until { display: none; }
     .ksl-banner-tag { padding: 4px 8px; font-size: 0.62rem; letter-spacing: 0.08em; }

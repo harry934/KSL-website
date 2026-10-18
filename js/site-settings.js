@@ -111,10 +111,14 @@
         notice: "notice", "harbour-line": "notice", "quiet-gold": "notice", "log-entry": "notice",
         "chapter-head": "notice", "inset-rule": "notice", "two-weights": "notice", "sea-glass": "notice",
         light: "notice", framed: "notice",
-        navy: "navy", "keel-stripe": "navy", "night-watch": "navy", "yard-bell": "navy", "brass-plate": "navy",
-        "shipyard-stamp": "navy", "command-strip": "navy", "dry-dock": "navy", gold: "navy", forest: "navy", midnight: "navy",
+        navy: "navy", "keel-stripe": "navy", "yard-bell": "navy", "shipyard-stamp": "navy",
+        "command-strip": "navy", "dry-dock": "navy", gold: "navy", forest: "navy",
         tide: "tide",
-        flag: "flag", "signal-flag": "flag", "split-bar": "flag", "mast-pennant": "flag", kenya: "flag",
+        flag: "flag", "signal-flag": "flag", kenya: "flag",
+        split: "split", "split-bar": "split",
+        pennant: "pennant", "mast-pennant": "pennant",
+        plate: "plate", "brass-plate": "plate",
+        night: "night", "night-watch": "night", midnight: "night",
         tender: "tender", "tender-notice": "tender",
         alert: "alert", "alert-bar": "alert"
     };

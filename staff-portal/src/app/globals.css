@@ -689,15 +689,63 @@ body {
 .kb-preview.is-navy { background: #0b1f3a; color: #fff; }
 .kb-preview.is-navy .kb-preview-tag { color: #e6c56a; }
 .kb-preview.is-navy .kb-preview-cta { padding: 0 0 1px; color: #e6c56a; border-bottom: 1px solid #e6c56a; }
-.kb-preview.is-flag::after {
+.kb-preview.is-flag::before {
   content: "";
   position: absolute;
   left: 0; top: 0; bottom: 0;
-  width: 5px;
-  background: linear-gradient(#111 0 33%, #bb1e24 33% 66%, #0c6b3a 66%);
+  z-index: 1;
+  width: 64px;
+  background: linear-gradient(to bottom, #000 0 28%, #fff 28% 33%, #bb0000 33% 61%, #fff 61% 66%, #006600 66% 100%);
 }
+.kb-preview.is-flag::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  z-index: 2;
+  width: 16px;
+  height: 22px;
+  margin-top: -11px;
+  border-radius: 46% 46% 50% 50%;
+  background: linear-gradient(90deg, #111 0 16%, #fff 16% 34%, #bb0000 34% 66%, #fff 66% 84%, #111 84% 100%);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+.kb-preview.is-flag .kb-preview-inner { padding-left: 76px; }
 .kb-preview.is-flag .kb-preview-tag { color: #0b1f3a; }
-.kb-preview.is-flag .kb-preview-cta { padding: 0 0 1px; border-bottom: 1px solid #0b1f3a; }
+.kb-preview.is-flag .kb-preview-cta { padding: 6px 12px; background: #0b1f3a; color: #fff; border-bottom: 0; }
+.kb-preview.is-split .kb-preview-inner { gap: 12px; padding-left: 0; }
+.kb-preview.is-split .kb-preview-tag {
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  min-width: 108px;
+  padding: 0 12px;
+  background: #0b1f3a;
+  color: #fff;
+}
+.kb-preview.is-split .kb-preview-cta { padding: 6px 12px; background: #0b1f3a; color: #fff; }
+.kb-preview.is-pennant { background: #f4f7fb; }
+.kb-preview.is-pennant .kb-preview-tag {
+  padding: 6px 16px 6px 10px;
+  background: #0A3E95;
+  color: #fff;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);
+}
+.kb-preview.is-pennant .kb-preview-cta { padding: 6px 12px; background: #0A3E95; color: #fff; }
+.kb-preview.is-plate { background: #c5a028; color: #0b1f3a; }
+.kb-preview.is-plate .kb-preview-cta { padding: 6px 12px; background: #0b1f3a; color: #fff; }
+.kb-preview.is-night { background: #07111f; color: #fff; }
+.kb-preview.is-night .kb-preview-tag { color: #e6c56a; }
+.kb-preview.is-night .kb-preview-tag::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #e6c56a;
+}
+.kb-preview.is-night .kb-preview-cta { padding: 6px 12px; color: #e6c56a; border: 1px solid #e6c56a; }
 .kb-preview.is-tender { background: #f7f4ee; color: #1c1915; }
 .kb-preview.is-tender .kb-preview-tag { color: #9a3412; }
 .kb-preview.is-tender .kb-preview-text { font-weight: 500; }
@@ -881,6 +929,8 @@ body {
   padding-left: 16px;
   padding-right: 0;
 }
+.kb-preview.is-ticker.is-flag .kb-preview-inner { padding-left: 76px; }
+.kb-preview.is-ticker.is-split .kb-preview-inner { padding-left: 0; }
 .kb-preview.is-ticker .kb-preview-tag {
   min-width: 0;
   align-self: center;
