@@ -11,6 +11,7 @@ import { cn } from "@/lib/cn";
 import { sendJson } from "@/lib/upload-client";
 import {
   DEFAULT_SITE_SETTINGS,
+  bannerDesign,
   type AnnouncementSettings,
   type BannerDesign,
   type SiteSettingKey,
@@ -83,7 +84,7 @@ function BannerMark({ design }: { design: BannerDesign }) {
 
 function BannerPreview({ a }: { a: AnnouncementSettings }) {
   const text = a.text.trim() || "Your message will appear here.";
-  const design = BANNER_DESIGNS.some((d) => d.value === a.style) ? a.style : "command-strip";
+  const design = bannerDesign(a.style);
   const label = a.linkLabel.trim();
   const showButton = Boolean(label && a.linkUrl.trim());
   const circle = design === "mast-pennant";

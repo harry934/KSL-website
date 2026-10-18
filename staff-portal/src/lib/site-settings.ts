@@ -47,15 +47,13 @@ export const BANNER_DESIGNS = [
 export type BannerDesign = (typeof BANNER_DESIGNS)[number];
 
 /** Older saved colour names still stored in the database. They display as Command strip. */
-const LEGACY_BANNER_STYLES = ["navy", "gold", "light", "kenya", "alert", "forest", "midnight", "framed"];
+export type BannerStyle = BannerDesign | "navy" | "gold" | "light" | "kenya" | "alert" | "forest" | "midnight" | "framed";
 
 export function bannerDesign(value: unknown): BannerDesign {
   return (BANNER_DESIGNS as readonly string[]).includes(String(value))
     ? (value as BannerDesign)
     : "command-strip";
 }
-
-export type BannerStyle = BannerDesign | (typeof LEGACY_BANNER_STYLES)[number];
 
 export type MenuStyle = "classic" | "cards" | "soft" | "line" | "compact";
 
