@@ -1,13 +1,6 @@
 {
   "slots": [
     {
-      "id": "brand.logo",
-      "page": "Every page",
-      "label": "Logo",
-      "src": "img/ksl/logo.png",
-      "kind": "img"
-    },
-    {
       "id": "chrome.home-hero",
       "page": "Home",
       "label": "Home hero photo",
@@ -16,35 +9,124 @@
       "variable": "--ksl-photo-home-hero"
     },
     {
-      "id": "chrome.page-header",
-      "page": "Every page",
-      "label": "Page header photo",
+      "id": "header.about",
+      "page": "About",
+      "label": "Page header",
       "src": "img/ksl/yard.jpg",
       "kind": "css",
       "variable": "--ksl-photo-page-header"
     },
     {
-      "id": "chrome.flag",
-      "page": "Banner",
-      "label": "Kenyan flag",
-      "src": "img/ksl/kenya-flag-strip.png",
-      "kind": "css",
-      "variable": "--ksl-photo-flag"
-    },
-    {
-      "id": "chrome.banner-mombasa",
-      "page": "Banner",
-      "label": "Banner yard photo",
-      "src": "img/ksl/mombasa.webp",
-      "kind": "css",
-      "variable": "--ksl-photo-banner-mombasa"
-    },
-    {
-      "id": "content.missing-photo",
-      "page": "News and events",
-      "label": "Stand-in photo when a story has none",
+      "id": "header.board",
+      "page": "Board",
+      "label": "Page header",
       "src": "img/ksl/yard.jpg",
-      "kind": "fallback"
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
+    },
+    {
+      "id": "header.organization",
+      "page": "Organization",
+      "label": "Page header",
+      "src": "img/ksl/yard.jpg",
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
+    },
+    {
+      "id": "header.services",
+      "page": "Services",
+      "label": "Page header",
+      "src": "img/ksl/yard.jpg",
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
+    },
+    {
+      "id": "header.products",
+      "page": "Products",
+      "label": "Page header",
+      "src": "img/ksl/yard.jpg",
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
+    },
+    {
+      "id": "header.projects",
+      "page": "Projects",
+      "label": "Page header",
+      "src": "img/ksl/yard.jpg",
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
+    },
+    {
+      "id": "header.news",
+      "page": "News",
+      "label": "Page header",
+      "src": "img/ksl/yard.jpg",
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
+    },
+    {
+      "id": "header.gallery",
+      "page": "Gallery",
+      "label": "Page header",
+      "src": "img/ksl/yard.jpg",
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
+    },
+    {
+      "id": "header.downloads",
+      "page": "Downloads",
+      "label": "Page header",
+      "src": "img/ksl/yard.jpg",
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
+    },
+    {
+      "id": "header.careers",
+      "page": "Careers",
+      "label": "Page header",
+      "src": "img/ksl/yard.jpg",
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
+    },
+    {
+      "id": "header.community",
+      "page": "Community",
+      "label": "Page header",
+      "src": "img/ksl/yard.jpg",
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
+    },
+    {
+      "id": "header.sustainability",
+      "page": "Sustainability",
+      "label": "Page header",
+      "src": "img/ksl/yard.jpg",
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
+    },
+    {
+      "id": "header.faq",
+      "page": "FAQ",
+      "label": "Page header",
+      "src": "img/ksl/yard.jpg",
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
+    },
+    {
+      "id": "header.contact",
+      "page": "Contact",
+      "label": "Page header",
+      "src": "img/ksl/yard.jpg",
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
+    },
+    {
+      "id": "header.missing",
+      "page": "Missing page",
+      "label": "Page header",
+      "src": "img/ksl/yard.jpg",
+      "kind": "css",
+      "variable": "--ksl-photo-page-header"
     },
     {
       "id": "about.1-mombasa-shipyard-aerial-view",
@@ -149,167 +231,6 @@
       "page": "About",
       "label": "Kisumu Shipyard",
       "src": "img/ksl/kisumu.webp",
-      "kind": "img"
-    },
-    {
-      "id": "article.1-yard",
-      "page": "News story",
-      "label": "yard",
-      "src": "img/ksl/yard.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "board.1-gen-c-m-kahariri",
-      "page": "Board",
-      "label": "Gen C M Kahariri",
-      "src": "img/ksl/board/gen-kahariri.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "board.2-maj-gen-s-m-farah",
-      "page": "Board",
-      "label": "Maj Gen S M Farah",
-      "src": "img/ksl/board/maj-gen-farah.png",
-      "kind": "img"
-    },
-    {
-      "id": "board.3-dr-patrick-mariru",
-      "page": "Board",
-      "label": "Dr Patrick Mariru",
-      "src": "img/ksl/board/dr-patrick-mariru.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "board.4-dr-chris-kiptoo",
-      "page": "Board",
-      "label": "Dr Chris Kiptoo",
-      "src": "img/ksl/board/dr-chris-kiptoo.jpeg",
-      "kind": "img"
-    },
-    {
-      "id": "board.5-mr-simon-mwachia",
-      "page": "Board",
-      "label": "Mr Simon Mwachia",
-      "src": "img/ksl/board/simon-mwachia.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "board.6-lt-gen-j-m-omenda",
-      "page": "Board",
-      "label": "Lt Gen J M Omenda",
-      "src": "img/ksl/board/lt-gen-omenda.png",
-      "kind": "img"
-    },
-    {
-      "id": "board.7-lt-gen-d-k-ketter",
-      "page": "Board",
-      "label": "Lt Gen D K Ketter",
-      "src": "img/ksl/board/lt-gen-ketter.jpeg",
-      "kind": "img"
-    },
-    {
-      "id": "board.8-maj-gen-b-waliaula",
-      "page": "Board",
-      "label": "Maj Gen B Waliaula",
-      "src": "img/ksl/board/maj-gen-waliaula.jpeg",
-      "kind": "img"
-    },
-    {
-      "id": "board.9-maj-gen-paul-o-otieno",
-      "page": "Board",
-      "label": "Maj Gen Paul O Otieno",
-      "src": "img/ksl/board/maj-gen-otieno.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "board.10-dr-juma-mukhwana",
-      "page": "Board",
-      "label": "Dr Juma Mukhwana",
-      "src": "img/ksl/board/dr-juma-mukhwana.jpeg",
-      "kind": "img"
-    },
-    {
-      "id": "board.11-major-general-faustino-lobaly",
-      "page": "Board",
-      "label": "Major General Faustino Lobaly",
-      "src": "img/ksl/board/maj-gen-faustino-lobaly.jpeg",
-      "kind": "img"
-    },
-    {
-      "id": "board.12-ms-maryanne-karanja",
-      "page": "Board",
-      "label": "Ms Maryanne Karanja",
-      "src": "img/ksl/board/maryanne-karanja.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "csr.1-csr-activity-with-community-members",
-      "page": "Community",
-      "label": "CSR activity with community members",
-      "src": "img/ksl/gallery/dsc_5591-scaled.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "csr.2-medical-camp-outreach",
-      "page": "Community",
-      "label": "Medical camp outreach",
-      "src": "img/ksl/gallery/dsc_5805-scaled.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "csr.3-community-engagement-at-the-coast",
-      "page": "Community",
-      "label": "Community engagement at the coast",
-      "src": "img/ksl/gallery/20220509_172713.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "csr.4-tree-planting-programme",
-      "page": "Community",
-      "label": "Tree planting programme",
-      "src": "img/ksl/gallery/dsc_5580-scaled.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "csr.5-medical-camp",
-      "page": "Community",
-      "label": "Medical camp",
-      "src": "img/ksl/gallery/dsc_5806-scaled.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "csr.6-charity-run",
-      "page": "Community",
-      "label": "Charity run",
-      "src": "img/ksl/gallery/dsc_5812-scaled.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "csr.7-visit-to-vulnerable-community",
-      "page": "Community",
-      "label": "Visit to vulnerable community",
-      "src": "img/ksl/gallery/dsc_5833-scaled.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "csr.8-coastal-cleanup",
-      "page": "Community",
-      "label": "Coastal cleanup",
-      "src": "img/ksl/gallery/dji_0505.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "csr.9-hse-training-session",
-      "page": "Community",
-      "label": "HSE training session",
-      "src": "img/ksl/gallery/dsc_5686-scaled.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "event.1-yard",
-      "page": "Event",
-      "label": "yard",
-      "src": "img/ksl/yard.jpg",
       "kind": "img"
     },
     {
@@ -422,405 +343,6 @@
       "page": "Home",
       "label": "Mombasa Shipyard",
       "src": "img/ksl/mombasa.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.17-siaya",
-      "page": "Home",
-      "label": "Siaya",
-      "src": "img/ksl/clients/siaya.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.18-migori",
-      "page": "Home",
-      "label": "Migori",
-      "src": "img/ksl/clients/migori.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.19-kplc",
-      "page": "Home",
-      "label": "KPLC",
-      "src": "img/ksl/clients/kplc.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.20-homa-bay",
-      "page": "Home",
-      "label": "Homa Bay",
-      "src": "img/ksl/clients/homabay.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.21-busia",
-      "page": "Home",
-      "label": "Busia",
-      "src": "img/ksl/clients/busia.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.22-bandari",
-      "page": "Home",
-      "label": "Bandari",
-      "src": "img/ksl/clients/bandari.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.23-azam",
-      "page": "Home",
-      "label": "Azam",
-      "src": "img/ksl/clients/azam.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.24-kenya-navy",
-      "page": "Home",
-      "label": "Kenya Navy",
-      "src": "img/ksl/clients/navy.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.25-kcgs",
-      "page": "Home",
-      "label": "KCGS",
-      "src": "img/ksl/clients/kcgs.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.26-kpa",
-      "page": "Home",
-      "label": "KPA",
-      "src": "img/ksl/clients/kpa.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.27-kaa",
-      "page": "Home",
-      "label": "KAA",
-      "src": "img/ksl/clients/kaa.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.28-kfs",
-      "page": "Home",
-      "label": "KFS",
-      "src": "img/ksl/clients/kfs.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.29-kmfri",
-      "page": "Home",
-      "label": "KMFRI",
-      "src": "img/ksl/clients/kmfri.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.30-knsl",
-      "page": "Home",
-      "label": "KNSL",
-      "src": "img/ksl/clients/knsl.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.31-police",
-      "page": "Home",
-      "label": "Police",
-      "src": "img/ksl/clients/police.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.32-kra",
-      "page": "Home",
-      "label": "KRA",
-      "src": "img/ksl/clients/kra.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.33-krc",
-      "page": "Home",
-      "label": "KRC",
-      "src": "img/ksl/clients/krc.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.34-kws",
-      "page": "Home",
-      "label": "KWS",
-      "src": "img/ksl/clients/kws.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.35-nia",
-      "page": "Home",
-      "label": "NIA",
-      "src": "img/ksl/clients/nia.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.36-kisumu",
-      "page": "Home",
-      "label": "Kisumu",
-      "src": "img/ksl/clients/kisumu.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.37-siaya",
-      "page": "Home",
-      "label": "siaya",
-      "src": "img/ksl/clients/siaya.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.38-migori",
-      "page": "Home",
-      "label": "migori",
-      "src": "img/ksl/clients/migori.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.39-kplc",
-      "page": "Home",
-      "label": "kplc",
-      "src": "img/ksl/clients/kplc.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.40-homabay",
-      "page": "Home",
-      "label": "homabay",
-      "src": "img/ksl/clients/homabay.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.41-busia",
-      "page": "Home",
-      "label": "busia",
-      "src": "img/ksl/clients/busia.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.42-bandari",
-      "page": "Home",
-      "label": "bandari",
-      "src": "img/ksl/clients/bandari.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.43-azam",
-      "page": "Home",
-      "label": "azam",
-      "src": "img/ksl/clients/azam.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.44-navy",
-      "page": "Home",
-      "label": "navy",
-      "src": "img/ksl/clients/navy.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.45-kcgs",
-      "page": "Home",
-      "label": "kcgs",
-      "src": "img/ksl/clients/kcgs.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.46-kpa",
-      "page": "Home",
-      "label": "kpa",
-      "src": "img/ksl/clients/kpa.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.47-kaa",
-      "page": "Home",
-      "label": "kaa",
-      "src": "img/ksl/clients/kaa.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.48-kfs",
-      "page": "Home",
-      "label": "kfs",
-      "src": "img/ksl/clients/kfs.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.49-kmfri",
-      "page": "Home",
-      "label": "kmfri",
-      "src": "img/ksl/clients/kmfri.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.50-knsl",
-      "page": "Home",
-      "label": "knsl",
-      "src": "img/ksl/clients/knsl.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.51-police",
-      "page": "Home",
-      "label": "police",
-      "src": "img/ksl/clients/police.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.52-kra",
-      "page": "Home",
-      "label": "kra",
-      "src": "img/ksl/clients/kra.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.53-krc",
-      "page": "Home",
-      "label": "krc",
-      "src": "img/ksl/clients/krc.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.54-kws",
-      "page": "Home",
-      "label": "kws",
-      "src": "img/ksl/clients/kws.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.55-nia",
-      "page": "Home",
-      "label": "nia",
-      "src": "img/ksl/clients/nia.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.56-kisumu",
-      "page": "Home",
-      "label": "kisumu",
-      "src": "img/ksl/clients/kisumu.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.57-national-treasury",
-      "page": "Home",
-      "label": "National Treasury",
-      "src": "img/ksl/partners/treasury.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.58-damen",
-      "page": "Home",
-      "label": "Damen",
-      "src": "img/ksl/partners/damen.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.59-baku",
-      "page": "Home",
-      "label": "Baku",
-      "src": "img/ksl/partners/baku.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.60-karnafuli",
-      "page": "Home",
-      "label": "Karnafuli",
-      "src": "img/ksl/partners/karnafuli.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.61-seco",
-      "page": "Home",
-      "label": "SECO",
-      "src": "img/ksl/partners/seco.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.62-smh",
-      "page": "Home",
-      "label": "SMH",
-      "src": "img/ksl/partners/smh.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.63-tuco",
-      "page": "Home",
-      "label": "Tuco",
-      "src": "img/ksl/partners/tuco.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.64-treasury",
-      "page": "Home",
-      "label": "treasury",
-      "src": "img/ksl/partners/treasury.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.65-damen",
-      "page": "Home",
-      "label": "damen",
-      "src": "img/ksl/partners/damen.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.66-baku",
-      "page": "Home",
-      "label": "baku",
-      "src": "img/ksl/partners/baku.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.67-karnafuli",
-      "page": "Home",
-      "label": "karnafuli",
-      "src": "img/ksl/partners/karnafuli.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.68-seco",
-      "page": "Home",
-      "label": "seco",
-      "src": "img/ksl/partners/seco.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.69-smh",
-      "page": "Home",
-      "label": "smh",
-      "src": "img/ksl/partners/smh.webp",
-      "kind": "img"
-    },
-    {
-      "id": "index.70-tuco",
-      "page": "Home",
-      "label": "tuco",
-      "src": "img/ksl/partners/tuco.webp",
-      "kind": "img"
-    },
-    {
-      "id": "products.1-7-05-metre-ambulance-boat",
-      "page": "Products",
-      "label": "7.05 metre ambulance boat",
-      "src": "img/ksl/ambulance.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "products.2-15-ton-medium-scale-fishing-vessel",
-      "page": "Products",
-      "label": "15 ton medium-scale fishing vessel",
-      "src": "img/ksl/fishing.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "products.3-16-metre-passenger-boat",
-      "page": "Products",
-      "label": "16 metre passenger boat",
-      "src": "img/ksl/ferry.jpg",
       "kind": "img"
     },
     {
@@ -1080,90 +602,6 @@
       "page": "Projects",
       "label": "Rehabilitation of Battle Tanks",
       "src": "img/ksl/kisumu.webp",
-      "kind": "img"
-    },
-    {
-      "id": "service.1-repair-of-offshore-patrol-boats",
-      "page": "Services",
-      "label": "Repair of offshore patrol boats",
-      "src": "img/ksl/yard.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "service.2-repair-and-maintenance-of-tug-boats",
-      "page": "Services",
-      "label": "Repair and maintenance of tug boats",
-      "src": "img/ksl/mombasa.webp",
-      "kind": "img"
-    },
-    {
-      "id": "service.3-repair-and-maintenance-of-research-vessels",
-      "page": "Services",
-      "label": "Repair and maintenance of research vessels",
-      "src": "img/ksl/ferry.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "service.4-repair-and-maintenance-of-cargo-vessels",
-      "page": "Services",
-      "label": "Repair and maintenance of cargo vessels",
-      "src": "img/ksl/ambulance.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "service.5-repair-and-maintenance-of-passenger-vessels",
-      "page": "Services",
-      "label": "Repair and maintenance of passenger vessels",
-      "src": "img/ksl/kisumu.webp",
-      "kind": "img"
-    },
-    {
-      "id": "service.6-dry-docking-services",
-      "page": "Services",
-      "label": "Dry docking services",
-      "src": "img/ksl/ferry.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "service.7-upgrade-and-maintenance-of-shipyards",
-      "page": "Services",
-      "label": "Upgrade and maintenance of shipyards",
-      "src": "img/ksl/linkspan.webp",
-      "kind": "img"
-    },
-    {
-      "id": "service.8-repair-and-maintenance-of-linkspans",
-      "page": "Services",
-      "label": "Repair and maintenance of linkspans",
-      "src": "img/ksl/fishing.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "service.9-dredging-of-waterways",
-      "page": "Services",
-      "label": "Dredging of waterways",
-      "src": "img/ksl/yard.jpg",
-      "kind": "img"
-    },
-    {
-      "id": "service.10-rehabilitation-of-workshops",
-      "page": "Services",
-      "label": "Rehabilitation of workshops",
-      "src": "img/ksl/mombasa.webp",
-      "kind": "img"
-    },
-    {
-      "id": "service.11-remanufacture-and-rehabilitation-of-locomotives",
-      "page": "Services",
-      "label": "Remanufacture and rehabilitation of locomotives",
-      "src": "img/ksl/kisumu.webp",
-      "kind": "img"
-    },
-    {
-      "id": "service.12-leasing-services",
-      "page": "Services",
-      "label": "Leasing services",
-      "src": "img/ksl/linkspan.webp",
       "kind": "img"
     },
     {

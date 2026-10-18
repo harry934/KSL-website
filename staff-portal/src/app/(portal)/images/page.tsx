@@ -16,7 +16,7 @@ export default async function SiteImagesPage() {
     <>
       <PageHeader
         title="Website images"
-        description="Every photo on the public site. Upload a new one, or choose an image already in storage. Standard keeps the photo that ships with the website."
+        description="Card photos and page headers. Each page has its own header. Choose a photo from the gallery, including the pictures already on the site."
       />
       <SiteImagesEditor canEdit={canEdit} />
     </>

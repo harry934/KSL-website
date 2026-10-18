@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
-import { sendJson, uploadFile } from "@/lib/upload-client";
+import { sendJson } from "@/lib/upload-client";
 import { siteAssetUrl } from "@/lib/site-url";
 import type { SiteImageSlot } from "@/lib/site-images";
 
@@ -19,16 +19,18 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   const [library, setLibrary] = useState<LibraryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [page, setPage] = useState("Every page");
+  const [page, setPage] = useState("");
   const [picking, setPicking] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       const data = await sendJson("/api/site-images", "GET");
-      setSlots(data.slots ?? []);
+      const nextSlots: SiteImageSlot[] = data.slots ?? [];
+      setSlots(nextSlots);
       setOverrides(data.overrides ?? []);
       setLibrary(data.library ?? []);
+      setPage((current) => (nextSlots.some((slot) => slot.page === current) ? current : nextSlots[0]?.page || ""));
     } catch (err) {
       setLoadError((err as Error).message);
     }
@@ -50,33 +52,22 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   const visible = slots.filter((slot) => slot.page === page);
   const overrideFor = (id: string) => overrides.find((row) => row.slot_id === id && row.source === "storage" && row.public_url);
 
-  async function save(slotId: string, source: "standard" | "storage", image?: LibraryImage) {
+  async function save(slotId: string, image: LibraryImage) {
     setBusy(slotId);
     try {
       await sendJson("/api/site-images", "POST", {
         slotId,
-        source,
-        publicUrl: image?.url,
-        storagePath: image?.storagePath,
+        source: "storage",
+        publicUrl: image.url,
+        storagePath: image.storagePath,
       });
-      toast(source === "storage" ? "Photo updated on the website." : "The shipped photo is restored.");
+      toast("Photo updated on the website.");
       setPicking(null);
       await load();
     } catch (err) {
       toast((err as Error).message, "error");
     }
     setBusy(null);
-  }
-
-  async function upload(slot: SiteImageSlot, file: File) {
-    setBusy(slot.id);
-    try {
-      const uploaded = await uploadFile("site_settings", file);
-      await save(slot.id, "storage", { url: uploaded.public_url, storagePath: uploaded.storage_path, label: file.name });
-    } catch (err) {
-      toast((err as Error).message, "error");
-      setBusy(null);
-    }
   }
 
   if (loading) {
@@ -116,34 +107,12 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
               <img src={siteAssetUrl(current)} alt="" className="h-16 w-28 bg-[#f4f6f8] object-cover" />
               <div className="min-w-0 flex-1">
                 <p className="m-0 text-[14px] font-semibold text-[#0b1f3a]">{slot.label}</p>
-                <p className="m-0 text-[12.5px] text-[#6b7785]">{stored ? "Storage" : "Standard"}</p>
               </div>
               {canEdit && (
-                <div className="flex flex-wrap gap-2">
-                  <label className="inline-flex h-9 cursor-pointer items-center gap-2 border border-[#d5dce4] bg-white px-3 text-[13px] font-semibold text-[#0b1f3a]">
-                    {busy === slot.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    Upload
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="sr-only"
-                      disabled={busy !== null}
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        event.target.value = "";
-                        if (file) upload(slot, file);
-                      }}
-                    />
-                  </label>
-                  <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => setPicking(slot.id)}>
-                    Choose stored
-                  </Button>
-                  {stored && (
-                    <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => save(slot.id, "standard")}>
-                      Use shipped photo
-                    </Button>
-                  )}
-                </div>
+                <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => setPicking(slot.id)}>
+                  {busy === slot.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Choose from gallery
+                </Button>
               )}
             </article>
           );
@@ -154,19 +123,19 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(39,50,114,0.38)] p-4">
           <div className="flex max-h-[80vh] w-full max-w-3xl flex-col bg-white">
             <div className="flex items-center justify-between border-b border-[#eef1f4] px-4 py-3">
-              <p className="m-0 text-[15px] font-semibold text-[#0b1f3a]">Choose a stored image</p>
+              <p className="m-0 text-[15px] font-semibold text-[#0b1f3a]">Choose from the gallery</p>
               <button type="button" aria-label="Close" onClick={() => setPicking(null)} className="text-[#0b1f3a]">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3 overflow-y-auto p-4 sm:grid-cols-4">
-              {library.length === 0 && <p className="col-span-full text-[13px] text-[#6b7785]">No stored images yet. Upload one instead.</p>}
+              {library.length === 0 && <p className="col-span-full text-[13px] text-[#6b7785]">No gallery photos yet. Add them on the Gallery page.</p>}
               {library.map((image) => (
                 <button
                   key={image.url}
                   type="button"
                   disabled={busy !== null}
-                  onClick={() => save(picking, "storage", image)}
+                  onClick={() => save(picking, image)}
                   className="border border-[#e3e8ee] bg-[#f6f8fa] text-left"
                 >
                   <img src={image.url} alt="" className="h-24 w-full object-cover" />

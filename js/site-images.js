@@ -4,7 +4,6 @@
 
     var CSS_SLOTS = {
         "chrome.home-hero": "--ksl-photo-home-hero",
-        "chrome.page-header": "--ksl-photo-page-header",
         "chrome.flag": "--ksl-photo-flag",
         "chrome.banner-mombasa": "--ksl-photo-banner-mombasa"
     };
@@ -18,7 +17,12 @@
     function paint(el) {
         var id = el.getAttribute("data-ksl-image");
         var url = id && overrides[id];
-        if (!url || el.getAttribute("src") === url) return;
+        if (!url) return;
+        if (el.classList && el.classList.contains("page-header")) {
+            el.style.setProperty("--ksl-photo-page-header", 'url("' + url + '")');
+            return;
+        }
+        if (el.tagName !== "IMG" || el.getAttribute("src") === url) return;
         if (el.tagName === "IMG") {
             el.src = url;
             var parent = el.parentElement;
