@@ -175,8 +175,11 @@
         });
 
         var nav = document.querySelector("nav.navbar");
-        if (nav && nav.parentNode) {
-            nav.parentNode.insertBefore(bar, nav.nextSibling);
+        var mast = nav && nav.closest(".ksl-mast");
+        if (mast) {
+            mast.insertBefore(bar, mast.firstChild);
+        } else if (nav && nav.parentNode) {
+            nav.parentNode.insertBefore(bar, nav);
         } else {
             document.body.insertBefore(bar, document.body.firstChild);
         }

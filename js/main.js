@@ -33,14 +33,45 @@
 
     var topbar = document.querySelector(".topbar-ksl");
     var stickyNav = document.querySelector(".sticky-top");
+    var mast = document.querySelector(".ksl-mast");
     var topbarH = 0;
-    var dockTicking = false;
+    var lastScrollY = window.scrollY || 0;
+    var scrollAccum = 0;
+    var minimized = (window.scrollY || 0) > 40;
+    var dockLock = 0;
+    /* Scroll down: fold the contact strip and shorten the bar, pinned to the top.
+       Scroll up: open the full bar again. The lock ignores the scroll jump that
+       the height change itself causes, so the bar does not bounce. */
     var dockNavbar = function () {
-        dockTicking = false;
         if (!stickyNav) return;
-        var stuck = window.scrollY > 8;
+        var y = window.scrollY || 0;
+        var delta = y - lastScrollY;
+        lastScrollY = y;
+        var next = minimized;
+        if (y <= 8) {
+            next = false;
+            scrollAccum = 0;
+        } else if (Date.now() >= dockLock && delta !== 0) {
+            scrollAccum += delta;
+            if (scrollAccum > 10) {
+                next = true;
+                scrollAccum = 0;
+            } else if (scrollAccum < -10) {
+                next = false;
+                scrollAccum = 0;
+            }
+        }
+        if (next !== minimized) {
+            minimized = next;
+            dockLock = Date.now() + 450;
+        }
+        var stuck = y > 8;
         stickyNav.classList.toggle("is-stuck", stuck);
         if (topbar) topbar.classList.toggle("is-stuck", stuck);
+        if (mast) {
+            mast.classList.toggle("is-min", minimized);
+            mast.classList.toggle("is-stuck", stuck);
+        }
     };
     var measureTopbar = function () {
         topbarH = topbar ? topbar.offsetHeight : 0;
@@ -50,12 +81,9 @@
         dockNavbar();
     };
     measureTopbar();
-    window.addEventListener("scroll", function () {
-        if (!dockTicking) {
-            dockTicking = true;
-            window.requestAnimationFrame(dockNavbar);
-        }
-    }, { passive: true });
+    var onDockScroll = function () { dockNavbar(); };
+    window.addEventListener("scroll", onDockScroll, { passive: true });
+    document.addEventListener("scroll", onDockScroll, { passive: true });
     window.addEventListener("resize", measureTopbar);
     window.addEventListener("load", measureTopbar);
     

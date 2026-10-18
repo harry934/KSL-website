@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261016-1";
+    var ASSET_V = "20261018-5";
 
     var BUNDLES = {
         wow: [
@@ -25,6 +25,7 @@
         "js/site-settings.js",
         "js/access.js",
         "js/lang.js",
+        "js/doodles.js",
         "js/main.js?v=" + ASSET_V,
         "js/mobile-nav.js?v=" + ASSET_V
     ];

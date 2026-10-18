@@ -1696,6 +1696,18 @@ main {
         display: none !important;
     }
 }
+.ksl-mast {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    background: #fff;
+}
+.ksl-mast .navbar.sticky-top {
+    position: relative;
+    top: auto;
+    border-bottom: 0;
+    box-shadow: none !important;
+}
 .navbar.sticky-top {
     top: var(--ksl-topbar-h, 0px);
     border-bottom: 0;
@@ -5925,28 +5937,106 @@ html[lang="sw"] .download-button .download::after {
         display: none !important;
     }
 
-    .topbar-ksl {
-        position: sticky;
+    .ksl-mast .topbar-ksl {
+        position: relative;
+        top: auto;
+        z-index: 2;
+        max-height: 72px;
+        overflow: hidden;
+        opacity: 1;
+        transition: max-height .34s cubic-bezier(.22, .61, .36, 1), opacity .24s ease;
+    }
+
+    .ksl-mast.is-min .topbar-ksl {
+        max-height: 0;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .ksl-mast .navbar.sticky-top {
+        z-index: 3;
+        transition: box-shadow .3s ease;
+    }
+
+    .ksl-mast .navbar .navbar-brand,
+    .ksl-mast .navbar .ksl-logo,
+    .ksl-mast .navbar .navbar-nav .nav-link {
+        transition: height .3s ease, padding .3s ease;
+    }
+
+    .ksl-mast.is-min .navbar.sticky-top::after {
         top: 0;
-        z-index: 1030;
+        bottom: auto;
+        height: 2px;
     }
 
-    .navbar.sticky-top {
-        z-index: 1020;
+    .ksl-mast.is-min .navbar .navbar-brand {
+        height: 60px;
     }
 
-    .navbar.sticky-top.is-stuck {
-        box-shadow: 0 4px 16px rgba(9, 41, 108, .08) !important;
+    .ksl-mast.is-min .navbar .ksl-logo {
+        height: 40px;
+    }
+
+    .ksl-mast.is-min .navbar .navbar-nav .nav-link {
+        padding-top: 16px;
+        padding-bottom: 16px;
+    }
+
+    .ksl-mast.is-min .ksl-doodle-note {
+        display: none;
+    }
+
+    .ksl-mast.is-stuck .navbar.sticky-top {
+        box-shadow: 0 8px 22px rgba(9, 41, 108, .1) !important;
     }
 }
 
 @media (min-width: 992px) and (prefers-reduced-motion: reduce) {
-    .topbar-ksl,
-    .navbar.sticky-top,
-    .navbar.sticky-top .navbar-nav .nav-link,
-    .navbar.sticky-top .navbar-brand,
-    .navbar.sticky-top .ksl-logo {
+    .ksl-mast .topbar-ksl,
+    .ksl-mast .navbar.sticky-top,
+    .ksl-mast .navbar .navbar-nav .nav-link,
+    .ksl-mast .navbar .navbar-brand,
+    .ksl-mast .navbar .ksl-logo {
         transition: none;
+    }
+}
+
+.ksl-brand-copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-left: 10px;
+    min-width: 0;
+}
+
+.ksl-brand-copy .ksl-wordmark {
+    margin-left: 0;
+}
+
+.ksl-doodle-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 1px;
+    color: #99792c;
+    font-family: Manrope, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.ksl-doodle-mark {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+    display: block;
+}
+
+@media (max-width: 991.98px) {
+    .ksl-doodle-note {
+        display: none;
     }
 }
 
@@ -12829,7 +12919,7 @@ body[data-ksl-motif-2="gauge"] { --ksl-motif-2: var(--ksl-draw-gauge); --ksl-mot
 body[data-ksl-motif-2="dividers"] { --ksl-motif-2: var(--ksl-draw-dividers); --ksl-motif-2-ratio: 160 / 220; --ksl-motif-2-w: 240px; }
 body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl-motif-2-ratio: 140 / 200; --ksl-motif-2-w: 230px; }
 
-/* Portal-managed site announcement: full-width banner under the navigation bar */
+/* Portal-managed site announcement: full-width banner above the navigation */
 .ksl-banner {
     --kb-bg-1: #0b1f3a;
     --kb-bg-2: #163a66;
