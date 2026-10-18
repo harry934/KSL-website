@@ -13108,17 +13108,17 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 .ksl-banner.is-flag::before {
     content: "";
     position: absolute;
-    left: 14px;
-    top: 50%;
+    left: 0;
+    top: 0;
+    bottom: 0;
     z-index: 1;
-    width: 72px;
-    height: 48px;
-    margin-top: -24px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 60'%3E%3Crect width='90' height='60' fill='%23fff'/%3E%3Crect width='90' height='18' fill='%23000'/%3E%3Crect y='21' width='90' height='18' fill='%23bb0000'/%3E%3Crect y='42' width='90' height='18' fill='%23006600'/%3E%3Cpath d='M24 46 66 14M24 14 66 46' fill='none' stroke='%23fff' stroke-width='1.6'/%3E%3Cpath d='M45 15c5.2 0 8.4 4.2 8.4 10.4 0 7.2-3.6 14.4-8.4 18.6-4.8-4.2-8.4-11.4-8.4-18.6 0-6.2 3.2-10.4 8.4-10.4z' fill='%23000'/%3E%3Cpath d='M45 18.4c3.4 0 5.4 3 5.4 7.4 0 5.2-2.4 10.4-5.4 13.6-3-3.2-5.4-8.4-5.4-13.6 0-4.4 2-7.4 5.4-7.4z' fill='%23fff'/%3E%3Cpath d='M45 21.6c1.8 0 3 1.8 3 4.8 0 3.6-1.4 7-3 9.2-1.6-2.2-3-5.6-3-9.2 0-3 1.2-4.8 3-4.8z' fill='%23bb0000'/%3E%3Cpath d='M45 24.6c.8 0 1.3 1 1.3 2.6S45.8 30 45 32.2c-.8-2.2-1.3-3.4-1.3-5S44.2 24.6 45 24.6z' fill='%23000'/%3E%3C/svg%3E") center / cover no-repeat;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+    width: 78px;
+    margin: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 48'%3E%3Crect width='20' height='48' fill='%23000'/%3E%3Crect x='20' width='4' height='48' fill='%23fff'/%3E%3Crect x='24' width='24' height='48' fill='%23bb0000'/%3E%3Crect x='48' width='4' height='48' fill='%23fff'/%3E%3Crect x='52' width='20' height='48' fill='%23006600'/%3E%3Cg transform='translate(36 24)'%3E%3Cpath d='M-26-13 26 13M-26 13 26-13' stroke='%23fff' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3CclipPath id='s'%3E%3Cellipse cx='0' cy='0' rx='16' ry='9'/%3E%3C/clipPath%3E%3Cg clip-path='url(%23s)'%3E%3Crect x='-18' y='-12' width='36' height='24' fill='%23bb0000'/%3E%3Cellipse cx='-11' cy='0' rx='7' ry='9' fill='%23111'/%3E%3Cellipse cx='11' cy='0' rx='7' ry='9' fill='%23111'/%3E%3Crect x='-6' y='-1' width='12' height='2' fill='%23fff'/%3E%3Ccircle r='2.7' fill='%23fff'/%3E%3Ccircle r='1.15' fill='%23111'/%3E%3C/g%3E%3Cellipse cx='0' cy='0' rx='16' ry='9' fill='none' stroke='%23fff' stroke-width='1'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
+    box-shadow: none;
 }
 .ksl-banner.is-flag::after { content: none; }
-.ksl-banner.is-flag .ksl-banner-inner { padding-left: 100px; }
+.ksl-banner.is-flag .ksl-banner-inner { padding-left: 94px; }
 .ksl-banner.is-flag .ksl-banner-tag { color: #0b1f3a; }
 .ksl-banner.is-flag .ksl-banner-cta { padding: 8px 14px; background: #0b1f3a; color: #fff; }
 
@@ -13419,7 +13419,7 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     padding-left: 22px;
     padding-right: 0;
 }
-.ksl-banner.is-ticker.is-flag .ksl-banner-inner { padding-left: 100px; }
+.ksl-banner.is-ticker.is-flag .ksl-banner-inner { padding-left: 94px; }
 .ksl-banner.is-ticker.is-split .ksl-banner-inner { padding-left: 0; }
 .ksl-banner.is-ticker.is-quay .ksl-banner-inner { padding-left: calc(min(280px, 28vw) + 22px); }
 .ksl-banner.is-ticker.is-berth .ksl-banner-inner { padding-right: calc(min(280px, 28vw) + 22px); }
@@ -13520,9 +13520,9 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
         gap: 8px;
         padding: 10px 44px 10px 14px;
     }
-    .ksl-banner.is-flag::before { left: 10px; width: 54px; height: 36px; margin-top: -18px; }
+    .ksl-banner.is-flag::before { left: 0; top: 0; bottom: 0; width: 58px; height: auto; margin: 0; }
     .ksl-banner.is-flag .ksl-banner-inner,
-    .ksl-banner.is-ticker.is-flag .ksl-banner-inner { padding-left: 74px; }
+    .ksl-banner.is-ticker.is-flag .ksl-banner-inner { padding-left: 70px; }
     .ksl-banner.is-split .ksl-banner-tag { min-width: 0; padding: 0 10px; }
     .ksl-banner-icon,
     .ksl-banner-until { display: none; }
