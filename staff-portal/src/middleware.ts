@@ -42,8 +42,12 @@ function publicApi(request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
-  if (request.nextUrl.pathname.startsWith("/api/public/")) {
+  const pathname = request.nextUrl.pathname;
+  if (pathname.startsWith("/api/public/")) {
     return publicApi(request);
+  }
+  if (pathname === "/api/auth/sign-in") {
+    return NextResponse.next();
   }
 
   let response = NextResponse.next({
@@ -76,6 +80,9 @@ export async function middleware(request: NextRequest) {
   const isLogin = request.nextUrl.pathname === "/login";
 
   if (!user && !isLogin) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -92,5 +99,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/public/:path*", "/((?!_next/static|_next/image|favicon.ico|api).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

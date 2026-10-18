@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPublicServicesPayload, type ServiceRow, type ServicesSettings } from "@/lib/services";
+import { signPayload } from "@/lib/stored-file";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -12,9 +13,9 @@ export async function GET() {
   if (settingsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
   if (itemsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
-  const payload = toPublicServicesPayload(
-    settingsRes.data as ServicesSettings | null,
-    (itemsRes.data ?? []) as ServiceRow[]
+  const payload = await signPayload(
+    admin,
+    toPublicServicesPayload(settingsRes.data as ServicesSettings | null, (itemsRes.data ?? []) as ServiceRow[])
   );
 
   return NextResponse.json(payload, {

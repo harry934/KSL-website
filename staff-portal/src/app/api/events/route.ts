@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { slugify } from "@/lib/events";
+import { sanitizeRichHtml } from "@/lib/sanitize-html";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
     description: body.description ?? null,
     summary: body.summary ?? null,
     image_path: body.image_path ?? null,
-    body_html: body.body_html ?? null,
+    body_html: body.body_html ? sanitizeRichHtml(body.body_html) : null,
     status,
     published_at: status === "published" ? new Date().toISOString() : null,
     updated_by: session.userId,

@@ -9839,6 +9839,14 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
 }
 
 /* ── Contact form ── */
+.ksl-hp {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
 .ksl-contact-form .form-floating > .form-control {
     border-color: #C9D6EE;
     border-radius: 8px;

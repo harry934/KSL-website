@@ -134,6 +134,8 @@
         byId("kslArticleDek").textContent = isBrief || repeatsLead ? "" : (item.excerpt || "");
         if (isBrief) {
             body = "<p>" + escapeHtml(item.excerpt || "") + "</p>";
+        } else if (window.KSL_SANITIZE) {
+            body = window.KSL_SANITIZE(body);
         }
         byId("kslArticleMeta").innerHTML =
             '<time datetime="' + escapeHtml(item.date) + '">' + escapeHtml(formatDate(item.date)) + "</time>" +

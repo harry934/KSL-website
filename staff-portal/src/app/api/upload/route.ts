@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, dbError } from "@/lib/api-auth";
+import { privateRef } from "@/lib/stored-file";
 import type { ModuleKey } from "@/lib/modules";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -61,14 +62,25 @@ export async function POST(req: NextRequest) {
   const path = `${moduleKey}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const admin = createAdminClient();
   const buffer = Buffer.from(await file.arrayBuffer());
-  const { error: upErr } = await admin.storage.from("media-public").upload(path, buffer, {
+  const image = IMAGE_EXTS.has(ext);
+  const bucket = image ? "media-public" : "downloads";
+  const { error: upErr } = await admin.storage.from(bucket).upload(path, buffer, {
     contentType: file.type,
-    cacheControl: "31536000",
+    cacheControl: image ? "31536000" : "3600",
     upsert: false,
   });
 
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
 
-  const { data: pub } = admin.storage.from("media-public").getPublicUrl(path);
-  return NextResponse.json({ storage_path: path, public_url: pub.publicUrl });
+  if (!image) {
+    const { data: signed } = await admin.storage.from(bucket).createSignedUrl(path, 3600);
+    return NextResponse.json({
+      storage_path: path,
+      public_url: privateRef(path),
+      preview_url: signed?.signedUrl ?? "",
+    });
+  }
+
+  const { data: pub } = admin.storage.from(bucket).getPublicUrl(path);
+  return NextResponse.json({ storage_path: path, public_url: pub.publicUrl, preview_url: pub.publicUrl });
 }

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPublicProductsPayload, type ProductRow, type ProductsSettings } from "@/lib/products";
+import { signPayload } from "@/lib/stored-file";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -12,9 +13,9 @@ export async function GET() {
     return NextResponse.json({ error: "Unavailable" }, { status: 500 });
   }
 
-  const payload = toPublicProductsPayload(
-    settingsRes.data as ProductsSettings | null,
-    (itemsRes.data ?? []) as ProductRow[]
+  const payload = await signPayload(
+    admin,
+    toPublicProductsPayload(settingsRes.data as ProductsSettings | null, (itemsRes.data ?? []) as ProductRow[])
   );
   return NextResponse.json(payload, {
     headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },

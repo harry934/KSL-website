@@ -13,7 +13,10 @@ export async function withBusy<T>(message: string, work: () => Promise<T>): Prom
   }
 }
 
-export async function uploadFile(module: ModuleKey, file: File): Promise<{ public_url: string; storage_path: string }> {
+export async function uploadFile(
+  module: ModuleKey,
+  file: File
+): Promise<{ public_url: string; storage_path: string; preview_url?: string }> {
   const fd = new FormData();
   fd.append("file", file);
   return withBusy("Uploading…", async () => {

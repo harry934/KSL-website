@@ -1,6 +1,23 @@
 # Production security review
 
-Reviewed 18 October 2026 against the staff portal, Supabase migrations, and the public website. This report does not change any security settings. Nothing here has been applied.
+Reviewed 18 October 2026 against the staff portal, Supabase migrations, and the public website.
+
+## Applied after approval
+
+These fixes are in the project and in the database. They reach the live sites when this version is published.
+
+- New PDF and Word uploads go into the private `downloads` bucket. The public site receives a link that expires after one hour. Images stay on the public image bucket. Documents uploaded before this change keep their old public address until they are uploaded again.
+- News and event text is cleaned on save and again when it is published. Only the editor’s headings, lists, quotes, and ordinary links remain. The public pages clean the text once more before showing it.
+- The contact form accepts five messages an hour from one address. A hidden field catches simple automated posts.
+- The anon key can no longer read the settings tables directly. The public site still reads them through its own API.
+- Storage now has a read policy for public images only. There is still no policy that lets visitors upload or delete files.
+- Staff API routes now require a signed-in session. The public API and the sign-in route stay open.
+- The public site sends `nosniff`, a frame policy, a referrer policy, and a content security policy that still allows the fonts, jQuery, Bootstrap, YouTube, and Google Translate.
+
+Two production steps stay in the dashboards, because they are not code:
+
+- Turn on Supabase daily backups, and keep a second admin account.
+- Point `kenyashipyards.co.ke` at the public Vercel project and put the staff portal on its own hostname, such as `admin.kenyashipyards.co.ke`.
 
 ## How to go to production
 
@@ -78,10 +95,10 @@ Confirm in the Supabase dashboard that anon and authenticated users cannot inser
 
 ## Suggested order once you approve fixes
 
-1. Confirm storage policies in the Supabase dashboard, and turn on backups.
-2. Attach the custom domain and the admin hostname. Set production env vars.
-3. Move new documents to the private bucket.
-4. Sanitise published HTML.
-5. Limit the contact form.
-6. Add security headers on the public site.
-7. Narrow the anon read policies that ignore draft status.
+1. Confirm storage policies in the Supabase dashboard, and turn on backups. The read policy for public images is in the database. Backups are still a dashboard switch.
+2. Attach the custom domain and the admin hostname. Set production env vars. This is still a dashboard step.
+3. Move new documents to the private bucket. Applied.
+4. Sanitise published HTML. Applied.
+5. Limit the contact form. Applied.
+6. Add security headers on the public site. Applied.
+7. Narrow the anon read policies that ignore draft status. Applied for the settings tables.

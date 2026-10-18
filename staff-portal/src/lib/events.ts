@@ -1,4 +1,5 @@
 import { slugify } from "@/lib/news";
+import { sanitizeRichHtml } from "@/lib/sanitize-html";
 
 export type EventRow = {
   id: string;
@@ -34,7 +35,7 @@ export function toPublicEvent(row: EventRow) {
   if (row.description) item.description = row.description;
   if (row.summary) item.summary = row.summary;
   if (row.image_path) item.image = row.image_path;
-  if (row.body_html) item.body = row.body_html;
+  if (row.body_html) item.body = sanitizeRichHtml(row.body_html);
   return item;
 }
 

@@ -174,6 +174,7 @@
         byId("kslEventActions").innerHTML = actions;
 
         var body = evt.body || "<p>" + escapeHtml(evt.description || evt.summary || "") + "</p>";
+        if (evt.body && window.KSL_SANITIZE) body = window.KSL_SANITIZE(body);
         main.innerHTML =
             '<div class="ksl-article-prose">' + body + "</div>" +
             (past

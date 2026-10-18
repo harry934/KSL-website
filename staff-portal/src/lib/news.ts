@@ -1,3 +1,5 @@
+import { sanitizeRichHtml } from "@/lib/sanitize-html";
+
 export type NewsRow = {
   id: string;
   slug: string;
@@ -24,7 +26,7 @@ export function toPublicNewsItem(row: NewsRow) {
     author: row.author ?? undefined,
     location: row.location ?? undefined,
   };
-  if (row.body_html) item.body = row.body_html;
+  if (row.body_html) item.body = sanitizeRichHtml(row.body_html);
   return item;
 }
 

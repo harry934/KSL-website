@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FileText, Link2, Loader2, Upload } from "lucide-react";
 import type { ModuleKey } from "@/lib/modules";
 import { uploadFile } from "@/lib/upload-client";
@@ -31,6 +31,24 @@ export function FileField({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pasting, setPasting] = useState(false);
+  const [openHref, setOpenHref] = useState(value);
+
+  useEffect(() => {
+    if (!value.startsWith("private:")) {
+      setOpenHref(value);
+      return;
+    }
+    let cancel = false;
+    fetch(`/api/stored-file?ref=${encodeURIComponent(value)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancel && data.url) setOpenHref(data.url);
+      })
+      .catch(() => {});
+    return () => {
+      cancel = true;
+    };
+  }, [value]);
 
   async function upload(file: File) {
     setUploading(true);
@@ -38,6 +56,7 @@ export function FileField({
     try {
       const data = await uploadFile(module, file);
       onChange(data.public_url);
+      if (data.preview_url) setOpenHref(data.preview_url);
       setPasting(false);
     } catch (e) {
       setError((e as Error).message);
@@ -50,7 +69,7 @@ export function FileField({
     <div className="min-w-0 space-y-2">
       {value && !pasting && (
         <a
-          href={siteAssetUrl(value)}
+          href={siteAssetUrl(openHref)}
           target="_blank"
           rel="noreferrer"
           className="flex min-w-0 items-center gap-2 rounded-[6px] border border-[#e3e8ee] bg-[#f6f8fa] px-3 py-2 text-[13px] text-[#0b1f3a] hover:bg-white"

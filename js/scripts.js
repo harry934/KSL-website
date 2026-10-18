@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261018-29";
+    var ASSET_V = "20261018-30";
 
     var BUNDLES = {
         wow: [
@@ -21,6 +21,7 @@
     ];
 
     var TAIL = [
+        "js/sanitize.js",
         "js/ksl-content.js",
         "js/site-images.js",
         "js/site-settings.js",
@@ -50,7 +51,9 @@
     }
 
     function loadSequential(list) {
-        return Promise.all(list.map(loadScript));
+        return list.reduce(function (chain, src) {
+            return chain.then(function () { return loadScript(src); });
+        }, Promise.resolve());
     }
 
     function preloadPages() {

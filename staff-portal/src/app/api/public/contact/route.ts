@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { clientIp } from "@/lib/auth-server";
 import { NextRequest, NextResponse } from "next/server";
 
 const PREFERRED = new Set(["Phone Call", "Email", "Message / WhatsApp", ""]);
@@ -30,8 +31,24 @@ export async function POST(req: NextRequest) {
   if (!PREFERRED.has(preferred)) {
     return NextResponse.json({ error: "Choose a preferred way of communication." }, { status: 400 });
   }
+  if (clip(body.website, 200)) {
+    return NextResponse.json({ ok: true });
+  }
 
-  const { error } = await createAdminClient().from("website_messages").insert({
+  const admin = createAdminClient();
+  const ip = clientIp(req).slice(0, 80);
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count } = await admin
+    .from("contact_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("ip", ip)
+    .gte("created_at", since);
+  if ((count ?? 0) >= 5) {
+    return NextResponse.json({ error: "Please wait a while before sending another message." }, { status: 429 });
+  }
+  await admin.from("contact_attempts").insert({ ip });
+
+  const { error } = await admin.from("website_messages").insert({
     first_name: firstName,
     other_name: otherName || null,
     surname,

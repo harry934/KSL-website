@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPublicPress, type PressAssetRow, type PressSettings } from "@/lib/press";
+import { signPayload } from "@/lib/stored-file";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -12,7 +13,10 @@ export async function GET() {
   if (settingsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
   if (assetsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
-  const payload = toPublicPress(settingsRes.data as PressSettings | null, (assetsRes.data ?? []) as PressAssetRow[]);
+  const payload = await signPayload(
+    admin,
+    toPublicPress(settingsRes.data as PressSettings | null, (assetsRes.data ?? []) as PressAssetRow[])
+  );
 
   return NextResponse.json(payload, {
     headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPublicDownloadsPayload, type DownloadItemRow } from "@/lib/downloads";
+import { signPayload } from "@/lib/stored-file";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -12,9 +13,9 @@ export async function GET() {
   if (settingsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
   if (itemsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
-  const payload = toPublicDownloadsPayload(
-    settingsRes.data?.base_url ?? null,
-    (itemsRes.data ?? []) as DownloadItemRow[]
+  const payload = await signPayload(
+    admin,
+    toPublicDownloadsPayload(settingsRes.data?.base_url ?? null, (itemsRes.data ?? []) as DownloadItemRow[])
   );
 
   return NextResponse.json(payload, {
