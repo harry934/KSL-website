@@ -63,9 +63,7 @@
             var letters = "";
             var i;
             for (i = 0; i < word.text.length; i++) {
-                var side = n % 2 === 0 ? -1 : 1;
-                var x = side * (8 + (n % 3) * 5);
-                letters += '<span class="ksl-intro-letter' + (word.gold ? " is-gold" : "") + '" style="--i:' + n + ";--x:" + x + 'px">' + word.text.charAt(i) + "</span>";
+                letters += '<span class="ksl-intro-letter' + (word.gold ? " is-gold" : "") + '" style="--i:' + n + '">' + word.text.charAt(i) + "</span>";
                 n += 1;
             }
             return '<span class="ksl-intro-word">' + letters + "</span>";
@@ -258,12 +256,10 @@
                 intro.classList.toggle("show-ship", remaining <= 2.5);
                 intro.classList.toggle("show-logo-depth", remaining <= 2.1);
                 intro.classList.toggle("show-ripples", remaining <= 1.85);
-                intro.classList.toggle("show-tagline", remaining <= 2.45);
+                intro.classList.toggle("show-tagline", remaining <= 1.9);
             });
             video.addEventListener("ended", function () {
-                window.setTimeout(function () {
-                    finish(true);
-                }, 500);
+                finish(true);
             }, { once: true });
             video.addEventListener("error", finish, { once: true });
 

@@ -8361,12 +8361,13 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     top: calc(var(--ksl-ship-top) + var(--ksl-ship-width) * 0.20625);
     left: 50%;
     z-index: 3;
-    width: min(96vw, calc(var(--ksl-ship-width) * 0.98));
+    width: min(92vw, calc(var(--ksl-ship-width) * 0.72));
     color: #09296C;
     font-family: Poppins, sans-serif;
     font-weight: 700;
-    font-size: clamp(11px, 1.12vw, 16px);
+    font-size: min(calc(var(--ksl-logo-w) * 0.07), 3.4vw);
     line-height: 1;
+    letter-spacing: .08em;
     white-space: nowrap;
     text-align: center;
     text-transform: uppercase;
@@ -8380,14 +8381,14 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
 .ksl-intro-tagline-depth {
     display: flex;
     justify-content: center;
-    gap: .9em;
-    perspective: 640px;
+    gap: .28em;
+    perspective: 420px;
     transform-style: preserve-3d;
 }
 
 .ksl-intro-word {
-    display: inline-flex;
-    gap: .38em;
+    display: inline-block;
+    letter-spacing: .08em;
     transform-style: preserve-3d;
 }
 
@@ -8399,9 +8400,9 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     display: inline-block;
     color: #09296C;
     opacity: 0;
-    filter: blur(12px);
-    transform: translate3d(var(--x), -20px, 180px) scale(1.8);
-    transform-origin: center bottom;
+    filter: blur(5px);
+    transform: translate3d(0, 0, 250px) scale(1.45);
+    transform-origin: center center;
     transform-style: preserve-3d;
     will-change: transform, filter;
 }
@@ -8411,28 +8412,24 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
 }
 
 .ksl-intro.show-tagline .ksl-intro-letter {
-    animation: kslLetterFlight .5s linear forwards;
-    animation-delay: calc(var(--i) * 72ms);
+    animation: kslLetterFlight .4s cubic-bezier(.2, .75, .25, 1) forwards;
+    animation-delay: calc(var(--i) * 48ms);
 }
 
 @keyframes kslLetterFlight {
     0% {
-        opacity: 0;
-        filter: blur(14px);
-        transform: translate3d(var(--x), -24px, 200px) scale(1.9);
+        opacity: .72;
+        filter: blur(5px);
+        transform: translate3d(0, 0, 260px) scale(1.55);
     }
-    22% {
+    45% {
         opacity: 1;
-        filter: blur(7px);
-        transform: translate3d(calc(var(--x) * .6), -14px, 120px) scale(1.42);
+        filter: blur(2px);
+        transform: translate3d(0, 0, 90px) scale(1.12);
     }
-    68% {
-        filter: blur(3px);
-        transform: translate3d(calc(var(--x) * .15), -4px, 28px) scale(1.08);
-    }
-    84% {
+    82% {
         filter: blur(0);
-        transform: translate3d(0, 3px, 0) scale(.94);
+        transform: translate3d(0, 2px, 0) scale(.97);
     }
     100% {
         opacity: 1;
@@ -8688,8 +8685,8 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
         letter-spacing: .08em;
     }
 
-    .ksl-intro-word { gap: .22em; }
-    .ksl-intro-tagline-depth { gap: .55em; }
+    .ksl-intro-word { letter-spacing: .06em; }
+    .ksl-intro-tagline-depth { gap: .22em; }
 }
 
 @media (prefers-reduced-motion: reduce) {
