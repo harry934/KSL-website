@@ -36,11 +36,6 @@ export const BANNER_DESIGNS = [
   "quay",
   "berth",
   "channel",
-  "lake",
-  "shore",
-  "reed",
-  "corner",
-  "launch",
 ] as const;
 
 export type BannerDesign = (typeof BANNER_DESIGNS)[number];
@@ -114,12 +109,12 @@ const BANNER_ALIASES: Record<string, BannerDesign> = {
   quay: "quay",
   berth: "berth",
   channel: "channel",
-  lake: "lake",
-  shore: "shore",
-  reed: "reed",
+  lake: "quay",
+  shore: "quay",
+  reed: "quay",
   yard: "quay",
-  corner: "corner",
-  launch: "launch",
+  corner: "navy",
+  launch: "navy",
 };
 
 export function bannerDesign(value: unknown): BannerDesign {
@@ -127,9 +122,8 @@ export function bannerDesign(value: unknown): BannerDesign {
 }
 
 /** Where a design is drawn. The id decides this; nothing extra is stored. */
-export function bannerPlacement(design: BannerDesign): "bar" | "nav" | "popup" {
+export function bannerPlacement(design: BannerDesign): "bar" | "nav" {
   if (design === "nav-line") return "nav";
-  if (design === "corner" || design === "launch") return "popup";
   return "bar";
 }
 

@@ -13193,19 +13193,6 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 .ksl-banner.is-quay .ksl-banner-tag { color: #e6c56a; }
 .ksl-banner.is-quay .ksl-banner-cta { padding: 0 0 1px; color: #e6c56a; border-bottom: 1px solid #e6c56a; }
 
-.ksl-banner.is-lake { background: #f6f3ec; }
-.ksl-banner.is-lake::before {
-    content: "";
-    display: block;
-    height: 46px;
-    background:
-        linear-gradient(180deg, rgba(246, 243, 236, 0) 55%, #f6f3ec),
-        url("../img/ksl/kisumu.webp") center 38% / cover no-repeat;
-}
-.ksl-banner.is-lake .ksl-banner-inner { padding-top: 8px; padding-bottom: 14px; }
-.ksl-banner.is-lake .ksl-banner-tag { color: #8a6a24; }
-.ksl-banner.is-lake .ksl-banner-cta { padding: 8px 14px; background: #09296C; color: #fff; }
-
 .ksl-banner.is-berth { color: #fff; background: #09296C; }
 .ksl-banner.is-berth::before {
     content: "";
@@ -13235,35 +13222,6 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 }
 .ksl-banner.is-channel .ksl-banner-tag { color: #e6c56a; }
 .ksl-banner.is-channel .ksl-banner-cta { padding: 0 0 1px; color: #e6c56a; border-bottom: 1px solid #e6c56a; }
-
-.ksl-banner.is-shore { background: #f6f3ec; }
-.ksl-banner.is-shore::after {
-    content: "";
-    display: block;
-    height: 46px;
-    background:
-        linear-gradient(0deg, rgba(246, 243, 236, 0) 55%, #f6f3ec),
-        url("../img/ksl/kisumu.webp") center 62% / cover no-repeat;
-}
-.ksl-banner.is-shore .ksl-banner-inner { padding-top: 14px; padding-bottom: 8px; }
-.ksl-banner.is-shore .ksl-banner-tag { color: #8a6a24; }
-.ksl-banner.is-shore .ksl-banner-cta { padding: 8px 14px; background: #09296C; color: #fff; }
-
-.ksl-banner.is-reed { background: #f6f3ec; color: #0b1f3a; }
-.ksl-banner.is-reed::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: min(240px, 26vw);
-    background:
-        linear-gradient(90deg, transparent 68%, #f6f3ec),
-        url("../img/ksl/kisumu.webp") center 40% / cover no-repeat;
-}
-.ksl-banner.is-reed .ksl-banner-inner { padding-left: calc(min(240px, 26vw) + 18px); }
-.ksl-banner.is-reed .ksl-banner-tag { color: #8a6a24; }
-.ksl-banner.is-reed .ksl-banner-cta { padding: 8px 14px; background: #09296C; color: #fff; }
 
 .ksl-banner.is-nav-line {
     position: relative;
@@ -13301,116 +13259,6 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 .ksl-banner.is-nav-line .ksl-banner-cta { padding: 0 0 1px; border-bottom: 1px solid #09296C; color: #09296C; }
 .ksl-banner.is-nav-line .ksl-banner-close { right: 2px; color: #0b1f3a; }
 
-.ksl-banner-scrim {
-    position: fixed;
-    inset: 0;
-    z-index: 2147482000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    background: rgba(39, 50, 114, 0.38);
-}
-.ksl-banner-scrim.is-closing { opacity: 0; transition: opacity 0.25s ease; pointer-events: none; }
-
-.ksl-banner.is-corner {
-    position: fixed;
-    right: 20px;
-    bottom: 78px;
-    z-index: 2147482000;
-    display: flex;
-    width: min(420px, calc(100vw - 32px));
-    overflow: hidden;
-    background: #fff;
-    border-radius: 0;
-    box-shadow: 0 18px 44px rgba(9, 41, 108, 0.16);
-    animation: none;
-}
-.ksl-banner.is-corner .ksl-banner-photo {
-    grid-column: 1;
-    grid-row: 1 / span 3;
-    width: 132px;
-    height: 100%;
-    min-height: 148px;
-    background: url("../img/ksl/yard.jpg") center / cover no-repeat;
-}
-.ksl-banner.is-corner .ksl-banner-inner {
-    display: grid;
-    grid-template-columns: 132px minmax(0, 1fr);
-    column-gap: 16px;
-    row-gap: 4px;
-    align-items: stretch;
-    max-width: none;
-    width: 100%;
-    margin: 0;
-    padding: 16px 40px 16px 0;
-}
-.ksl-banner.is-corner .ksl-banner-tag,
-.ksl-banner.is-corner .ksl-banner-body,
-.ksl-banner.is-corner .ksl-banner-cta { grid-column: 2; margin: 0; }
-.ksl-banner.is-corner .ksl-banner-tag { color: #8a6a24; }
-.ksl-banner.is-corner .ksl-banner-body { display: flex; flex-direction: column; }
-.ksl-banner.is-corner .ksl-banner-text { font-weight: 500; white-space: normal; }
-.ksl-banner.is-corner .ksl-banner-cta {
-    justify-self: start;
-    margin-top: 6px;
-    padding: 0 0 1px;
-    background: transparent;
-    color: #09296C;
-    border-bottom: 1px solid #09296C;
-}
-.ksl-banner.is-corner .ksl-banner-close {
-    top: 8px;
-    right: 8px;
-    margin-top: 0;
-    color: #0b1f3a;
-    background: transparent;
-}
-.ksl-banner.is-corner.is-closing { opacity: 0; transition: opacity 0.25s ease; }
-
-.ksl-banner.is-launch {
-    position: relative;
-    width: min(400px, 100%);
-    overflow: hidden;
-    color: #0b1f3a;
-    background:
-        linear-gradient(180deg, rgba(247, 244, 238, 0.92), rgba(247, 244, 238, 0.96)),
-        url("../img/ksl/mombasa.webp") center 42% / cover no-repeat;
-    border-radius: 0;
-    box-shadow: 0 24px 60px rgba(9, 41, 108, 0.22);
-    animation: none;
-}
-.ksl-banner.is-launch .ksl-banner-inner {
-    flex-direction: column;
-    align-items: center;
-    max-width: none;
-    margin: 0;
-    padding: 36px 32px 28px;
-    text-align: center;
-}
-.ksl-banner.is-launch .ksl-banner-crest {
-    position: static;
-    width: 76px;
-    height: auto;
-    padding: 0;
-    background: transparent;
-}
-.ksl-banner.is-launch .ksl-banner-tag { color: #8a6a24; }
-.ksl-banner.is-launch .ksl-banner-text {
-    font-size: 1.25rem;
-    font-weight: 500;
-    line-height: 1.45;
-    white-space: normal;
-}
-.ksl-banner.is-launch .ksl-banner-cta { margin-top: 8px; padding: 10px 18px; background: #09296C; color: #fff; }
-.ksl-banner.is-launch .ksl-banner-close {
-    top: 12px;
-    right: 12px;
-    margin-top: 0;
-    color: #0b1f3a;
-    background: transparent;
-}
-
 /* Ticker mode: the message runs the full width of the bar */
 .ksl-banner.is-ticker .ksl-banner-inner {
     display: flex;
@@ -13424,7 +13272,6 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 .ksl-banner.is-ticker.is-quay .ksl-banner-inner { padding-left: calc(min(280px, 28vw) + 22px); }
 .ksl-banner.is-ticker.is-berth .ksl-banner-inner { padding-right: calc(min(280px, 28vw) + 22px); }
 .ksl-banner.is-ticker.is-berth .ksl-banner-cta { right: calc(min(280px, 28vw) + 48px); }
-.ksl-banner.is-ticker.is-reed .ksl-banner-inner { padding-left: calc(min(240px, 26vw) + 18px); }
 .ksl-banner.is-ticker.is-chapter-head .ksl-banner-inner,
 .ksl-banner.is-ticker.is-split-bar .ksl-banner-inner {
     display: flex;
@@ -13535,21 +13382,11 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     .ksl-banner.is-quay::before { width: 92px; }
     .ksl-banner.is-quay .ksl-banner-inner,
     .ksl-banner.is-ticker.is-quay .ksl-banner-inner { padding-left: 108px; }
-    .ksl-banner.is-lake::before,
-    .ksl-banner.is-shore::after { height: 36px; }
     .ksl-banner.is-berth::before { width: 92px; }
     .ksl-banner.is-berth .ksl-banner-inner,
     .ksl-banner.is-ticker.is-berth .ksl-banner-inner { padding-right: 108px; }
     .ksl-banner.is-berth .ksl-banner-close { right: 100px; }
     .ksl-banner.is-ticker.is-berth .ksl-banner-cta { right: 148px; }
-    .ksl-banner.is-reed::before { width: 88px; }
-    .ksl-banner.is-reed .ksl-banner-inner,
-    .ksl-banner.is-ticker.is-reed .ksl-banner-inner { padding-left: 100px; }
-    .ksl-banner.is-corner { right: 12px; bottom: 72px; width: min(420px, calc(100vw - 24px)); }
-    .ksl-banner.is-corner .ksl-banner-photo { width: 96px; min-height: 132px; }
-    .ksl-banner.is-corner .ksl-banner-inner { grid-template-columns: 96px minmax(0, 1fr); padding-right: 36px; }
-    .ksl-banner.is-launch .ksl-banner-inner { padding: 28px 22px 22px; }
-    .ksl-banner.is-launch .ksl-banner-crest { position: static; top: auto; width: 60px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

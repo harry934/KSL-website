@@ -123,12 +123,11 @@
         alert: "alert", "alert-bar": "alert",
         "nav-line": "nav-line",
         quay: "quay", berth: "berth", channel: "channel",
-        lake: "lake", shore: "shore", reed: "reed", yard: "quay",
-        corner: "corner", launch: "launch"
+        lake: "quay", shore: "quay", reed: "quay", yard: "quay",
+        corner: "navy", launch: "navy"
     };
     function bannerPlacement(style) {
         if (style === "nav-line") return "nav";
-        if (style === "corner" || style === "launch") return "popup";
         return "bar";
     }
     var ICON_ARROW =
@@ -183,8 +182,6 @@
         bar.setAttribute("aria-label", "Announcement");
         bar.innerHTML =
             '<div class="ksl-banner-inner">' +
-            (style === "corner" ? '<span class="ksl-banner-photo" aria-hidden="true"></span>' : "") +
-            (style === "launch" ? '<img class="ksl-banner-crest" src="img/ksl/logo.png" alt="">' : "") +
             '<span class="ksl-banner-icon">' + icon + "</span>" +
             '<span class="ksl-banner-tag">' + escapeHtml(a.label || "Announcement") + "</span>" +
             '<div class="ksl-banner-body">' +
@@ -202,21 +199,8 @@
             bar.style.setProperty("--kb-ticker-duration", Math.min(48, Math.max(26, a.text.length * 0.18)) + "s");
         }
 
-        var scrim = null;
-        if (style === "launch") {
-            scrim = document.createElement("div");
-            scrim.className = "ksl-banner-scrim";
-            scrim.appendChild(bar);
-        }
-        var host = scrim || bar;
-
         function dismiss() {
             try { window.sessionStorage.setItem(key, "1"); } catch (e) {}
-            if (place === "popup") {
-                host.classList.add("is-closing");
-                window.setTimeout(function () { host.remove(); }, 280);
-                return;
-            }
             bar.style.maxHeight = bar.offsetHeight + "px";
             void bar.offsetHeight;
             bar.classList.add("is-closing");
@@ -228,17 +212,10 @@
             event.stopPropagation();
             dismiss();
         });
-        if (scrim) {
-            scrim.addEventListener("click", function (event) {
-                if (event.target === scrim) dismiss();
-            });
-        }
 
         var nav = document.querySelector("nav.navbar");
         var mast = nav && nav.closest(".ksl-mast");
-        if (place === "popup") {
-            document.body.appendChild(host);
-        } else if (place === "nav" && nav) {
+        if (place === "nav" && nav) {
             nav.appendChild(bar);
         } else if (mast) {
             mast.insertBefore(bar, mast.firstChild);

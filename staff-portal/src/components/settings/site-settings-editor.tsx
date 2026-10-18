@@ -42,16 +42,6 @@ const BANNER_GROUPS: { label: string; designs: { value: BannerDesign; label: str
       { value: "quay", label: "Quay" },
       { value: "berth", label: "Berth" },
       { value: "channel", label: "Channel" },
-      { value: "lake", label: "Lake" },
-      { value: "shore", label: "Shore" },
-      { value: "reed", label: "Reed" },
-    ],
-  },
-  {
-    label: "Popup",
-    designs: [
-      { value: "corner", label: "Corner" },
-      { value: "launch", label: "Launch" },
     ],
   },
 ];
@@ -116,8 +106,6 @@ function BannerPreview({ a, picker = false }: { a: AnnouncementSettings; picker?
   return (
     <div className={cn("kb-preview", `is-${design}`, moving && "is-ticker", picker && "is-picker")}>
       <div className="kb-preview-inner">
-        {design === "corner" && <span className="kb-preview-photo" aria-hidden />}
-        {design === "launch" && <img className="kb-preview-crest" src="/ksl-logo.png" alt="" />}
         <span className="kb-preview-icon">
           <BannerMark design={design} />
         </span>
@@ -238,7 +226,7 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
 
       <FormSection
         title="Website banner"
-        description="A notice on every page. Some designs sit above the menu, one sits inside the menu, and two open as a card. The preview updates as you edit. The public site changes when you save."
+        description="A notice on every page. Most designs sit above the menu, and Nav line sits inside it. The preview updates as you edit. The public site changes when you save."
       >
         <div className="space-y-2">
           <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-[#8a96a5]">Preview</p>
@@ -262,18 +250,7 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
               )}
             </div>
             {bannerPlace === "bar" && <BannerPreview a={a} />}
-            <div className={cn("relative bg-[linear-gradient(180deg,#f4f6f9,#fff)]", bannerPlace === "popup" ? "h-80" : "h-16")}>
-              {bannerPlace === "popup" && bannerDesign(a.style) === "corner" && (
-                <div className="absolute bottom-3 right-3">
-                  <BannerPreview a={a} />
-                </div>
-              )}
-              {bannerPlace === "popup" && bannerDesign(a.style) === "launch" && (
-                <div className="absolute inset-0 flex items-center justify-center bg-[rgba(39,50,114,0.38)] p-4">
-                  <BannerPreview a={a} />
-                </div>
-              )}
-            </div>
+            <div className="relative h-16 bg-[linear-gradient(180deg,#f4f6f9,#fff)]" />
           </div>
           {!a.enabled && (
             <p className="text-[12.5px] text-[#6b7785]">The banner is switched off, so visitors will not see it.</p>
