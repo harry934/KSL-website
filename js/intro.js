@@ -63,13 +63,7 @@
             var letters = "";
             var i;
             for (i = 0; i < word.text.length; i++) {
-                var sway = n % 2 === 0 ? -1 : 1;
-                var dx = sway * (16 + (n % 5) * 11);
-                var dy = -(42 + (n % 4) * 18);
-                var rx = 58 + (n % 3) * 8;
-                var ry = sway * (16 + (n % 4) * 7);
-                var rz = sway * (6 + (n % 3) * 4);
-                letters += '<span class="ksl-intro-letter' + (word.gold ? " is-gold" : "") + '" style="--d:' + (n * 0.052).toFixed(3) + "s;--dx:" + dx + "px;--dy:" + dy + "px;--rx:" + rx + "deg;--ry:" + ry + "deg;--rz:" + rz + 'deg">' + word.text.charAt(i) + "</span>";
+                letters += '<span class="ksl-intro-letter' + (word.gold ? " is-gold" : "") + '" style="--i:' + n + '">' + word.text.charAt(i) + "</span>";
                 n += 1;
             }
             return '<span class="ksl-intro-word">' + letters + "</span>";
@@ -262,12 +256,10 @@
                 intro.classList.toggle("show-ship", remaining <= 2.5);
                 intro.classList.toggle("show-logo-depth", remaining <= 2.1);
                 intro.classList.toggle("show-ripples", remaining <= 1.85);
-                intro.classList.toggle("show-tagline", remaining <= 2.55);
+                intro.classList.toggle("show-tagline", remaining <= 1.55);
             });
             video.addEventListener("ended", function () {
-                window.setTimeout(function () {
-                    finish(true);
-                }, 700);
+                finish(true);
             }, { once: true });
             video.addEventListener("error", finish, { once: true });
 

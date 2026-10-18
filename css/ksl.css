@@ -8377,29 +8377,6 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     transition: opacity .15s linear;
 }
 
-.ksl-intro-tagline::after {
-    content: "";
-    position: absolute;
-    left: 8%;
-    right: 8%;
-    bottom: -.42em;
-    height: .42em;
-    background: radial-gradient(ellipse at center, rgba(9, 41, 108, .28), transparent 72%);
-    filter: blur(5px);
-    opacity: 0;
-    transform: scaleX(.35);
-    pointer-events: none;
-}
-
-.ksl-intro.show-tagline .ksl-intro-tagline {
-    opacity: 1;
-}
-
-.ksl-intro.show-tagline .ksl-intro-tagline::after {
-    animation: kslHullGlow .7s ease forwards;
-    animation-delay: 2.15s;
-}
-
 .ksl-intro-tagline-depth {
     display: flex;
     justify-content: center;
@@ -8414,15 +8391,17 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     transform-style: preserve-3d;
 }
 
+.ksl-intro.show-tagline .ksl-intro-tagline {
+    opacity: 1;
+}
+
 .ksl-intro-letter {
     display: inline-block;
-    position: relative;
     color: #09296C;
     opacity: 0;
-    filter: blur(10px);
-    transform: translate3d(var(--dx), var(--dy), 24px) rotateX(var(--rx)) rotateY(var(--ry)) rotateZ(var(--rz)) scale(.42);
+    filter: blur(8px);
+    transform: translate3d(0, -12px, 80px) scale(1.35);
     transform-origin: center bottom;
-    transform-style: preserve-3d;
     will-change: transform, filter;
 }
 
@@ -8431,43 +8410,26 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
 }
 
 .ksl-intro.show-tagline .ksl-intro-letter {
-    animation: kslLetterFlight .96s linear forwards;
-    animation-delay: var(--d);
+    animation: kslLetterFlight .38s cubic-bezier(.16, .8, .2, 1) forwards;
+    animation-delay: calc(var(--i) * 28ms);
 }
 
 @keyframes kslLetterFlight {
     0% {
         opacity: 0;
-        filter: blur(11px);
-        transform: translate3d(var(--dx), var(--dy), 28px) rotateX(var(--rx)) rotateY(var(--ry)) rotateZ(var(--rz)) scale(.4);
+        filter: blur(8px);
+        transform: translate3d(0, -14px, 90px) scale(1.4);
     }
-    16% {
+    70% {
         opacity: 1;
         filter: blur(2px);
-        transform: translate3d(calc(var(--dx) * 1.15), calc(var(--dy) * .35), 230px) rotateX(calc(var(--rx) * .35)) rotateY(calc(var(--ry) * 1.2)) rotateZ(calc(var(--rz) * .6)) scale(1.72);
-    }
-    48% {
-        filter: blur(7px);
-        transform: translate3d(calc(var(--dx) * .28), calc(var(--dy) * .12), 120px) rotateX(calc(var(--rx) * .12)) rotateY(calc(var(--ry) * .35)) rotateZ(0deg) scale(1.22);
-    }
-    78% {
-        filter: blur(.6px);
-        transform: translate3d(0, -11px, 22px) rotateX(-8deg) rotateY(0deg) rotateZ(0deg) scale(1.06);
-    }
-    88% {
-        filter: blur(0) drop-shadow(0 2px 0 rgba(5, 16, 40, .45));
-        transform: translate3d(0, 3px, 0) rotateX(4deg) scale(.96);
+        transform: translate3d(0, 2px, 0) scale(.98);
     }
     100% {
         opacity: 1;
         filter: blur(0);
-        transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1);
+        transform: translate3d(0, 0, 0) scale(1);
     }
-}
-
-@keyframes kslHullGlow {
-    0% { opacity: 0; transform: scaleX(.3); }
-    100% { opacity: .85; transform: scaleX(1); }
 }
 
 .ksl-intro-flight-logo {
