@@ -224,6 +224,7 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
     );
 
   const a = settings.announcement;
+  const bannerPlace = bannerPlacement(bannerDesign(a.style));
   const expired = !!a.endsOn && a.endsOn < todayInNairobi();
 
   return (
@@ -244,7 +245,7 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
               <span className="h-2.5 w-2.5 rounded-full bg-[#e3e8ee]" />
               <span className="h-2.5 w-2.5 rounded-full bg-[#e3e8ee]" />
               <span className="ml-3 text-[12px] font-semibold text-[#0b1f3a]">Kenya Shipyards Limited</span>
-              {bannerPlacement(bannerDesign(a.style)) === "nav" ? (
+              {bannerPlace === "nav" ? (
                 <span className="ml-auto max-w-[46%]">
                   <BannerPreview a={a} />
                 </span>
@@ -257,15 +258,15 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
                 </span>
               )}
             </div>
-            {bannerPlacement(bannerDesign(a.style)) === "bar" && <BannerPreview a={a} />}
-            <div className="relative h-28 bg-[linear-gradient(180deg,#f4f6f9,#fff)]">
-              {bannerPlacement(bannerDesign(a.style)) === "popup" && bannerDesign(a.style) === "corner" && (
+            {bannerPlace === "bar" && <BannerPreview a={a} />}
+            <div className={cn("relative bg-[linear-gradient(180deg,#f4f6f9,#fff)]", bannerPlace === "popup" ? "h-80" : "h-16")}>
+              {bannerPlace === "popup" && bannerDesign(a.style) === "corner" && (
                 <div className="absolute bottom-3 right-3">
                   <BannerPreview a={a} />
                 </div>
               )}
-              {bannerPlacement(bannerDesign(a.style)) === "popup" && bannerDesign(a.style) === "launch" && (
-                <div className="absolute inset-0 flex items-center justify-center bg-[rgba(8,18,40,0.45)]">
+              {bannerPlace === "popup" && bannerDesign(a.style) === "launch" && (
+                <div className="absolute inset-0 flex items-center justify-center bg-[rgba(39,50,114,0.38)] p-4">
                   <BannerPreview a={a} />
                 </div>
               )}

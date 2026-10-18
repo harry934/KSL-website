@@ -13186,33 +13186,52 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 
 .ksl-banner.is-quay {
     color: #fff;
-    background:
-        linear-gradient(90deg, rgba(11, 31, 58, 0.9), rgba(11, 31, 58, 0.72)),
-        url("../img/ksl/mombasa.webp") center / cover no-repeat;
+    background: #09296C;
 }
+.ksl-banner.is-quay::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(280px, 28vw);
+    background:
+        linear-gradient(90deg, transparent 62%, #09296C),
+        url("../img/ksl/mombasa.webp") center 42% / cover no-repeat;
+}
+.ksl-banner.is-quay .ksl-banner-inner { padding-left: calc(min(280px, 28vw) + 22px); }
 .ksl-banner.is-quay .ksl-banner-tag { color: #e6c56a; }
-.ksl-banner.is-quay .ksl-banner-cta { padding: 0 0 1px; color: #fff; border-bottom: 1px solid #fff; }
+.ksl-banner.is-quay .ksl-banner-cta { padding: 0 0 1px; color: #e6c56a; border-bottom: 1px solid #e6c56a; }
 
-.ksl-banner.is-lake { background: #e7eef6; }
-.ksl-banner.is-lake .ksl-banner-inner {
-    width: calc(100% - 28px);
-    margin: 8px auto;
-    padding: 12px 48px 12px 18px;
+.ksl-banner.is-lake { background: #f6f3ec; }
+.ksl-banner.is-lake::before {
+    content: "";
+    display: block;
+    height: 46px;
     background:
-        linear-gradient(90deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.86)),
-        url("../img/ksl/kisumu.webp") center / cover no-repeat;
-    border-radius: 10px;
+        linear-gradient(180deg, rgba(246, 243, 236, 0) 55%, #f6f3ec),
+        url("../img/ksl/kisumu.webp") center 38% / cover no-repeat;
 }
-.ksl-banner.is-lake .ksl-banner-tag { color: #0A3E95; }
-.ksl-banner.is-lake .ksl-banner-cta { padding: 8px 14px; background: #0b1f3a; color: #fff; }
+.ksl-banner.is-lake .ksl-banner-inner { padding-top: 8px; padding-bottom: 14px; }
+.ksl-banner.is-lake .ksl-banner-tag { color: #8a6a24; }
+.ksl-banner.is-lake .ksl-banner-cta { padding: 8px 14px; background: #09296C; color: #fff; }
 
 .ksl-banner.is-yard {
-    color: #0b1f3a;
-    background:
-        linear-gradient(90deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.84)),
-        url("../img/ksl/yard.jpg") center / cover no-repeat;
-    box-shadow: inset 0 -3px 0 #0b1f3a;
+    color: #1c1915;
+    background: #f7f4ee;
 }
+.ksl-banner.is-yard::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 18px;
+    width: 58px;
+    height: 58px;
+    margin-top: -29px;
+    background: url("../img/ksl/yard.jpg") center / cover no-repeat;
+}
+.ksl-banner.is-yard .ksl-banner-inner { padding-left: 96px; }
+.ksl-banner.is-yard .ksl-banner-tag { color: #8a6a24; }
 .ksl-banner.is-yard .ksl-banner-cta { padding: 0 0 1px; border-bottom: 1px solid currentColor; }
 
 .ksl-banner.is-nav-line {
@@ -13222,29 +13241,34 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     align-items: center;
     flex: 0 1 auto;
     width: auto;
-    max-width: min(460px, 36vw);
-    margin-left: auto;
-    padding-right: 8px;
+    min-width: 0;
+    max-width: min(420px, 34vw);
+    margin: 8px 16px 8px auto;
     background: transparent;
     color: #0b1f3a;
     animation: none;
     box-shadow: none;
 }
 .ksl-banner.is-nav-line .ksl-banner-inner {
+    flex: 1 1 auto;
+    min-width: 0;
     max-width: none;
-    width: auto;
+    width: 100%;
     margin: 0;
-    padding: 8px 28px 8px 0;
+    padding: 7px 28px 7px 12px;
     gap: 8px;
 }
-.ksl-banner.is-nav-line .ksl-banner-tag { color: #0A3E95; font-size: 0.62rem; }
+.ksl-banner.is-nav-line .ksl-banner-tag { color: #8a6a24; font-size: 0.62rem; }
+.ksl-banner.is-nav-line .ksl-banner-body { min-width: 0; overflow: hidden; }
 .ksl-banner.is-nav-line .ksl-banner-text {
-    font-size: 0.86rem;
-    font-weight: 600;
+    overflow: hidden;
+    font-size: 0.84rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
-.ksl-banner.is-nav-line .ksl-banner-cta { padding: 0 0 1px; border-bottom: 1px solid #0A3E95; color: #0A3E95; }
-.ksl-banner.is-nav-line .ksl-banner-close { right: 0; }
+.ksl-banner.is-nav-line .ksl-banner-cta { padding: 0 0 1px; border-bottom: 1px solid #09296C; color: #09296C; }
+.ksl-banner.is-nav-line .ksl-banner-close { right: 2px; color: #0b1f3a; }
 
 .ksl-banner-scrim {
     position: fixed;
@@ -13254,64 +13278,105 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     align-items: center;
     justify-content: center;
     padding: 24px;
-    background: rgba(8, 18, 40, 0.45);
+    background: rgba(39, 50, 114, 0.38);
 }
 .ksl-banner-scrim.is-closing { opacity: 0; transition: opacity 0.25s ease; pointer-events: none; }
 
 .ksl-banner.is-corner {
     position: fixed;
     right: 20px;
-    bottom: 20px;
+    bottom: 78px;
     z-index: 2147482000;
     display: flex;
-    width: min(380px, calc(100vw - 32px));
+    width: min(300px, calc(100vw - 32px));
     overflow: hidden;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 16px 40px rgba(8, 18, 40, 0.22);
+    background: #f7f4ee;
+    border-radius: 0;
+    box-shadow: 0 14px 36px rgba(9, 41, 108, 0.18);
     animation: none;
 }
 .ksl-banner.is-corner .ksl-banner-photo {
     flex: none;
     align-self: stretch;
-    width: 112px;
-    min-height: 96px;
+    width: 100%;
+    height: 112px;
+    min-height: 112px;
     background: url("../img/ksl/yard.jpg") center / cover no-repeat;
 }
 .ksl-banner.is-corner .ksl-banner-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
     max-width: none;
+    width: 100%;
     margin: 0;
-    padding: 14px 40px 14px 14px;
+    padding: 0 0 14px;
 }
+.ksl-banner.is-corner .ksl-banner-tag,
+.ksl-banner.is-corner .ksl-banner-body,
+.ksl-banner.is-corner .ksl-banner-cta { margin-right: 36px; margin-left: 14px; }
+.ksl-banner.is-corner .ksl-banner-tag { margin-top: 12px; color: #8a6a24; }
 .ksl-banner.is-corner .ksl-banner-body { display: flex; flex-direction: column; }
-.ksl-banner.is-corner .ksl-banner-text { white-space: normal; }
-.ksl-banner.is-corner .ksl-banner-cta { align-self: flex-start; margin-top: 8px; padding: 7px 12px; background: #0b1f3a; color: #fff; }
+.ksl-banner.is-corner .ksl-banner-text { font-weight: 500; white-space: normal; }
+.ksl-banner.is-corner .ksl-banner-cta {
+    align-self: flex-start;
+    margin-top: 4px;
+    padding: 0 0 1px;
+    background: transparent;
+    color: #09296C;
+    border-bottom: 1px solid #09296C;
+}
+.ksl-banner.is-corner .ksl-banner-close {
+    top: 8px;
+    margin-top: 0;
+    color: #fff;
+    background: rgba(9, 41, 108, 0.45);
+}
 .ksl-banner.is-corner.is-closing { opacity: 0; transition: opacity 0.25s ease; }
 
 .ksl-banner.is-launch {
     position: relative;
-    width: min(440px, 100%);
+    width: min(420px, 100%);
     overflow: hidden;
-    color: #fff;
-    background:
-        linear-gradient(180deg, rgba(7, 17, 31, 0.78), rgba(7, 17, 31, 0.9)),
-        url("../img/ksl/mombasa.webp") center / cover no-repeat;
-    border-radius: 16px;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    color: #0b1f3a;
+    background: #f7f4ee;
+    border-radius: 0;
+    box-shadow: 0 22px 54px rgba(9, 41, 108, 0.28);
     animation: none;
+}
+.ksl-banner.is-launch::before {
+    content: "";
+    display: block;
+    height: 148px;
+    background:
+        linear-gradient(180deg, transparent 58%, #f7f4ee),
+        url("../img/ksl/mombasa.webp") center 40% / cover no-repeat;
 }
 .ksl-banner.is-launch .ksl-banner-inner {
     flex-direction: column;
     align-items: flex-start;
     max-width: none;
     margin: 0;
-    padding: 28px 24px 22px;
+    padding: 52px 28px 24px;
 }
-.ksl-banner.is-launch .ksl-banner-crest { width: 72px; height: auto; }
-.ksl-banner.is-launch .ksl-banner-tag { color: #e6c56a; }
-.ksl-banner.is-launch .ksl-banner-text { font-size: 1.15rem; font-weight: 500; white-space: normal; }
-.ksl-banner.is-launch .ksl-banner-cta { margin-top: 8px; padding: 9px 16px; background: #c5a028; color: #0b1f3a; }
-.ksl-banner.is-launch .ksl-banner-close { color: #fff; }
+.ksl-banner.is-launch .ksl-banner-crest {
+    position: absolute;
+    top: -36px;
+    left: 24px;
+    width: 68px;
+    height: auto;
+    padding: 4px;
+    background: #fff;
+}
+.ksl-banner.is-launch .ksl-banner-tag { color: #8a6a24; }
+.ksl-banner.is-launch .ksl-banner-text { font-size: 1.2rem; font-weight: 500; line-height: 1.4; white-space: normal; }
+.ksl-banner.is-launch .ksl-banner-cta { margin-top: 6px; padding: 10px 18px; background: #09296C; color: #fff; }
+.ksl-banner.is-launch .ksl-banner-close {
+    top: 10px;
+    margin-top: 0;
+    color: #fff;
+    background: rgba(9, 41, 108, 0.45);
+}
 
 /* Ticker mode: the message runs the full width of the bar */
 .ksl-banner.is-ticker .ksl-banner-inner {
@@ -13323,6 +13388,8 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 }
 .ksl-banner.is-ticker.is-flag .ksl-banner-inner { padding-left: 100px; }
 .ksl-banner.is-ticker.is-split .ksl-banner-inner { padding-left: 0; }
+.ksl-banner.is-ticker.is-quay .ksl-banner-inner { padding-left: calc(min(280px, 28vw) + 22px); }
+.ksl-banner.is-ticker.is-yard .ksl-banner-inner { padding-left: 96px; }
 .ksl-banner.is-ticker.is-chapter-head .ksl-banner-inner,
 .ksl-banner.is-ticker.is-split-bar .ksl-banner-inner {
     display: flex;
@@ -13401,6 +13468,18 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     to { transform: translateX(-50%); }
 }
 
+@media (max-width: 991.98px) {
+    .ksl-banner.is-nav-line {
+        flex: 1 0 100%;
+        order: 3;
+        max-width: none;
+        margin: 0;
+        background: #f7f4ee;
+    }
+    .ksl-banner.is-nav-line .ksl-banner-inner { padding-left: 14px; }
+    .ksl-banner.is-nav-line .ksl-banner-text { white-space: normal; }
+}
+
 @media (max-width: 767.98px) {
     .ksl-banner-inner {
         gap: 8px;
@@ -13419,17 +13498,16 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     .ksl-banner.is-ticker .ksl-banner-text { overflow: visible; text-overflow: unset; }
     .ksl-banner-cta { padding: 6px 12px; font-size: 0.8rem; box-shadow: none; }
     .ksl-banner-close { right: 8px; }
-    .ksl-banner.is-nav-line {
-        flex: 1 0 100%;
-        order: 3;
-        max-width: none;
-        margin-left: 0;
-        padding: 0 14px;
-        border-top: 1px solid #e4e9ef;
-    }
-    .ksl-banner.is-nav-line .ksl-banner-text { white-space: normal; }
-    .ksl-banner.is-corner { right: 12px; bottom: 12px; }
-    .ksl-banner.is-corner .ksl-banner-photo { width: 84px; }
+    .ksl-banner.is-quay::before { width: 92px; }
+    .ksl-banner.is-quay .ksl-banner-inner,
+    .ksl-banner.is-ticker.is-quay .ksl-banner-inner { padding-left: 108px; }
+    .ksl-banner.is-lake::before { height: 36px; }
+    .ksl-banner.is-yard::before { left: 12px; width: 44px; height: 44px; margin-top: -22px; }
+    .ksl-banner.is-yard .ksl-banner-inner,
+    .ksl-banner.is-ticker.is-yard .ksl-banner-inner { padding-left: 68px; }
+    .ksl-banner.is-corner { right: 12px; bottom: 72px; }
+    .ksl-banner.is-launch::before { height: 120px; }
+    .ksl-banner.is-launch .ksl-banner-crest { top: -28px; width: 56px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
