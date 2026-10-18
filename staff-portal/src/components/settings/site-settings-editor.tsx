@@ -146,6 +146,7 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState<SiteSettingKey | null>(null);
   const [customLink, setCustomLink] = useState(false);
+  const [previewFrame, setPreviewFrame] = useState<"desk" | "phone">("desk");
 
   const load = useCallback(async () => {
     try {
@@ -229,7 +230,18 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
         description="A notice on every page. Most designs sit above the menu, and Nav line sits inside it. The preview updates as you edit. The public site changes when you save."
       >
         <div className="space-y-2">
-          <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-[#8a96a5]">Preview</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-[#8a96a5]">Preview</p>
+            <div className="flex border border-[#d5dce4]">
+              <button type="button" className={`px-3 py-1 text-[12.5px] font-semibold ${previewFrame === "desk" ? "bg-[#0b1f3a] text-white" : "bg-white text-[#0b1f3a]"}`} onClick={() => setPreviewFrame("desk")}>
+                Desktop
+              </button>
+              <button type="button" className={`px-3 py-1 text-[12.5px] font-semibold ${previewFrame === "phone" ? "bg-[#0b1f3a] text-white" : "bg-white text-[#0b1f3a]"}`} onClick={() => setPreviewFrame("phone")}>
+                Phone
+              </button>
+            </div>
+          </div>
+          <div className={previewFrame === "phone" ? "mx-auto w-[390px] max-w-full" : ""}>
           <div className="relative overflow-hidden rounded-[10px] border border-[#e3e8ee] bg-white">
             <div className="flex items-center gap-2 border-b border-[#eef1f4] px-4 py-2.5">
               <span className="h-2.5 w-2.5 rounded-full bg-[#e3e8ee]" />
@@ -251,6 +263,7 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
             </div>
             {bannerPlace === "bar" && <BannerPreview a={a} />}
             <div className="relative h-16 bg-[linear-gradient(180deg,#f4f6f9,#fff)]" />
+          </div>
           </div>
           {!a.enabled && (
             <p className="text-[12.5px] text-[#6b7785]">The banner is switched off, so visitors will not see it.</p>

@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { getStaffSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
+import { canAccess, MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
+import { addDays, formatDay, nairobiToday } from "@/lib/dates";
 import { describeActivity } from "@/lib/activity-words";
 import { PageHeader } from "@/components/portal/page-header";
 import { MODULE_ICONS } from "@/components/portal/module-icons";
@@ -25,6 +26,44 @@ const QUICK_ACTIONS: { module: ModuleKey; label: string }[] = [
   { module: "downloads", label: "Add a document" },
 ];
 
+type DueItem = { href: string; title: string; detail: string };
+
+async function closingSoon(session: NonNullable<Awaited<ReturnType<typeof getStaffSession>>>) {
+  const admin = createAdminClient();
+  const today = nairobiToday();
+  const until = addDays(today, 14);
+  const from = addDays(today, -7);
+  const items: DueItem[] = [];
+
+  if (canAccess(session.permissions, "careers", "view", session.isSuperAdmin)) {
+    const { data } = await admin.from("career_listings").select("id, title, closing_date").eq("status", "published");
+    for (const row of data ?? []) {
+      const day = String(row.closing_date ?? "").slice(0, 10);
+      if (!day || day < from || day > until) continue;
+      items.push({
+        href: `/careers?edit=${row.id}`,
+        title: row.title,
+        detail: day < today ? `The closing date was ${formatDay(day)}, and the job is still on the website.` : `Closes ${formatDay(day)}.`,
+      });
+    }
+  }
+
+  if (canAccess(session.permissions, "site_settings", "view", session.isSuperAdmin)) {
+    const { data } = await admin.from("site_settings").select("value").eq("key", "announcement").maybeSingle();
+    const value = (data?.value ?? null) as { enabled?: boolean; endsOn?: string; label?: string } | null;
+    const ends = String(value?.endsOn ?? "").slice(0, 10);
+    if (value?.enabled && ends && ends >= from && ends <= until) {
+      items.push({
+        href: "/settings",
+        title: value.label?.trim() || "Website banner",
+        detail: ends < today ? `The banner ended on ${formatDay(ends)}.` : `The banner ends on ${formatDay(ends)}.`,
+      });
+    }
+  }
+
+  return items;
+}
+
 function formatWhen(iso: string) {
   return new Intl.DateTimeFormat("en-KE", {
     dateStyle: "medium",
@@ -46,6 +85,7 @@ export default async function DashboardPage() {
       .limit(8);
     activity = (activityRes.data ?? []) as unknown as ActivityRow[];
   }
+  const due = await closingSoon(session);
   const quick = QUICK_ACTIONS.filter((action) => {
     if (session.isSuperAdmin) return true;
     return session.permissions.some((p) => p.module_key === action.module && p.can_edit);
@@ -77,6 +117,24 @@ export default async function DashboardPage() {
               );
             })}
           </div>
+        </section>
+      )}
+
+      {due.length > 0 && (
+        <section className="ksl-card">
+          <div className="border-b border-[#eef1f4] px-5 py-4">
+            <h2 className="text-[15px] font-bold text-[#0b1f3a]">Closing soon</h2>
+          </div>
+          <ul className="divide-y divide-[#eef1f4]">
+            {due.map((item) => (
+              <li key={item.href + item.title}>
+                <Link href={item.href} className="block px-5 py-3 hover:bg-[#fafbfc]">
+                  <p className="text-[14px] font-semibold text-[#0b1f3a]">{item.title}</p>
+                  <p className="text-[13px] text-[#6b7785]">{item.detail}</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

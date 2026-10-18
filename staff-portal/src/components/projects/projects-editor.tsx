@@ -12,6 +12,8 @@ import { slugify } from "@/lib/news";
 import { reorderItem, uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import { PROJECT_GROUPS, projectGroup, type ProjectRow } from "@/lib/projects";
+import { projectPublicUrl } from "@/lib/public-links";
+import { useOpenEdit } from "@/lib/open-edit";
 
 export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean; canDelete: boolean }) {
   const { toast, confirm } = useFeedback();
@@ -31,6 +33,8 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
   useEffect(() => {
     load();
   }, [load]);
+
+  useOpenEdit(loading, items, (item) => setEditing(item));
 
   const groups = useMemo(() => {
     const present = new Set(items.map((item) => item.category));
@@ -156,6 +160,11 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
           </div>
         </div>
         <SaveBar>
+          {editing.status === "published" && editing.category && (
+            <a href={projectPublicUrl(editing.category)} target="_blank" rel="noreferrer" className="mr-auto text-[13.5px] font-semibold text-[#0b1f3a] underline-offset-2 hover:underline">
+              View on the website
+            </a>
+          )}
           <Button variant="secondary" onClick={() => setEditing(null)}>
             Cancel
           </Button>
@@ -187,6 +196,7 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
                 subtitle: item.subtitle,
                 image: item.image_path,
                 status: item.status,
+                siteHref: item.status === "published" ? projectPublicUrl(item.category) : undefined,
               }))}
             onEdit={(id) => setEditing(items.find((item) => item.id === id) ?? null)}
             onDelete={canDelete ? remove : undefined}

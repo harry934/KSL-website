@@ -11,6 +11,7 @@ import { useCan } from "@/components/portal/session-context";
 import { reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import type { CareerListingRow } from "@/lib/careers";
+import { useOpenEdit } from "@/lib/open-edit";
 
 type Settings = { apply_email: string; apply_note: string | null };
 type Kind = CareerListingRow["kind"];
@@ -50,6 +51,8 @@ export function CareersEditor() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useOpenEdit(loading, listings, (item) => setEditing(item));
 
   async function saveSettings() {
     setSaving("settings");

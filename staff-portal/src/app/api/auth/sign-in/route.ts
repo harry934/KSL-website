@@ -52,6 +52,11 @@ export async function POST(req: NextRequest) {
   }
 
   await recordAttempt(username, ip, true);
+  // A new sign-in replaces any other open session for this account.
+  const { error: othersError } = await supabase.auth.signOut({ scope: "others" });
+  if (othersError) {
+    console.error("Could not close the other session", othersError.message);
+  }
   await logActivity(signIn.user.id, "staff", "sign in", "session", signIn.user.id, { ip });
   return NextResponse.json({ ok: true });
 }

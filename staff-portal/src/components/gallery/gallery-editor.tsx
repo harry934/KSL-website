@@ -103,7 +103,7 @@ export function GalleryEditor() {
   async function removePhoto(row: GalleryRow) {
     const ok = await confirm({
       title: "Remove this photo?",
-      message: "It will disappear from the website's Gallery page.",
+      message: "It will leave the Gallery page. You can bring it back for a few seconds.",
       confirmLabel: "Remove photo",
       danger: true,
     });
@@ -111,7 +111,17 @@ export function GalleryEditor() {
     try {
       await sendJson(`/api/gallery?id=${encodeURIComponent(row.id)}`, "DELETE");
       setPhotos((list) => list.filter((p) => p.id !== row.id));
-      toast("Photo removed.");
+      toast("Photo removed.", "success", {
+        label: "Bring it back",
+        onClick: () => {
+          sendJson("/api/gallery", "POST", row)
+            .then(() => {
+              toast("Photo brought back.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        },
+      });
     } catch (e) {
       toast((e as Error).message, "error");
     }
@@ -205,8 +215,18 @@ export function GalleryEditor() {
     if (!ok) return;
     try {
       await sendJson(`/api/gallery?id=${encodeURIComponent(row.id)}&type=video`, "DELETE");
+      toast("Video removed.", "success", {
+        label: "Bring it back",
+        onClick: () => {
+          sendJson("/api/gallery", "POST", { ...row, type: "video", youtube_id: row.youtube_id })
+            .then(() => {
+              toast("Video brought back.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        },
+      });
       setVideos((list) => list.filter((v) => v.id !== row.id));
-      toast("Video removed.");
     } catch (e) {
       toast((e as Error).message, "error");
     }

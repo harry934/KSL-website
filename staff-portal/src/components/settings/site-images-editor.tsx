@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { sendJson, uploadFile } from "@/lib/upload-client";
+import { PhotoCropDialog } from "@/components/ui/photo-crop";
 import { siteAssetUrl } from "@/lib/site-url";
 import type { SiteImageSlot } from "@/lib/site-images";
 
@@ -22,6 +23,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   const [page, setPage] = useState("");
   const [picking, setPicking] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [crop, setCrop] = useState<{ slotId: string; file: File } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -95,22 +97,27 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   return (
     <div className="space-y-4">
       {!canEdit && <Notice kind="info">You can look at these photos. Only an administrator can change them.</Notice>}
-      <div className="flex flex-wrap gap-2">
-        {pages.map((name) => (
-          <button
-            key={name}
-            type="button"
-            onClick={() => setPage(name)}
-            className={
-              name === page
-                ? "rounded-full border border-[#0b1f3a] bg-[#0b1f3a] px-3 py-1.5 text-[13px] font-semibold text-white"
-                : "rounded-full border border-[#d5dde6] bg-white px-3 py-1.5 text-[13px] font-semibold text-[#0b1f3a]"
-            }
-          >
-            {name}
-          </button>
-        ))}
-      </div>
+      <div className="grid items-start gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+      <nav className="border border-[#e3e8ee] bg-white" aria-label="Pages">
+        {pages.map((name) => {
+          const count = slots.filter((slot) => slot.page === name).length;
+          return (
+            <button
+              key={name}
+              type="button"
+              onClick={() => setPage(name)}
+              className={
+                name === page
+                  ? "flex w-full items-center justify-between bg-[#0b1f3a] px-3 py-2.5 text-left text-[13.5px] font-semibold text-white"
+                  : "flex w-full items-center justify-between border-b border-[#eef1f4] bg-white px-3 py-2.5 text-left text-[13.5px] font-semibold text-[#0b1f3a] last:border-b-0"
+              }
+            >
+              <span>{name}</span>
+              <span className={name === page ? "text-[12px] text-white/70" : "text-[12px] text-[#6b7785]"}>{count}</span>
+            </button>
+          );
+        })}
+      </nav>
       <div className="space-y-3">
         {visible.map((slot) => {
           const stored = overrideFor(slot.id);
@@ -138,7 +145,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                       onChange={(event) => {
                         const file = event.target.files?.[0];
                         event.target.value = "";
-                        if (file) upload(slot.id, file);
+                        if (file) setCrop({ slotId: slot.id, file });
                       }}
                     />
                   </label>
@@ -148,6 +155,18 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
           );
         })}
       </div>
+      </div>
+      {crop && (
+        <PhotoCropDialog
+          file={crop.file}
+          onCancel={() => setCrop(null)}
+          onDone={(file) => {
+            const slotId = crop.slotId;
+            setCrop(null);
+            upload(slotId, file);
+          }}
+        />
+      )}
 
       {picking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(39,50,114,0.38)] p-4">

@@ -44,6 +44,7 @@ export function useNoticeBadges(userId: string) {
     const counts: Partial<Record<ModuleKey, number>> = {};
     for (const mark of marks) {
       if (!mark.module) continue;
+      if (mark.module === "messages" && mark.kind !== "message") continue;
       const unread = mark.kind === "message" ? !!mark.unread : new Date(mark.createdAt).getTime() > seenAt;
       if (!unread) continue;
       counts[mark.module] = (counts[mark.module] ?? 0) + 1;

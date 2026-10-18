@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     location: body.location ?? null,
     body_html: body.body_html ? sanitizeRichHtml(body.body_html) : null,
     status,
+    go_live_on: body.go_live_on ? String(body.go_live_on).slice(0, 10) : null,
     published_at: status === "published" ? new Date().toISOString() : null,
     updated_by: session.userId,
   };

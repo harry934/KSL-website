@@ -13,6 +13,7 @@ export type NewsRow = {
   body_html: string | null;
   status: string;
   published_at: string | null;
+  go_live_on: string | null;
 };
 
 export function toPublicNewsItem(row: NewsRow) {

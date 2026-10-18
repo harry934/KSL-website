@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPublicNewsItem } from "@/lib/news";
+import { nairobiToday } from "@/lib/dates";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -12,8 +13,10 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
+  const today = nairobiToday();
+  const live = (data ?? []).filter((row) => !row.go_live_on || String(row.go_live_on).slice(0, 10) <= today);
   return NextResponse.json(
-    { items: (data ?? []).map(toPublicNewsItem) },
+    { items: live.map(toPublicNewsItem) },
     { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } }
   );
 }

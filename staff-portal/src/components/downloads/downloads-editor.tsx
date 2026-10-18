@@ -13,6 +13,7 @@ import { slugify } from "@/lib/news";
 import { keyFrom, reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import { downloadSource, type DownloadItemRow } from "@/lib/downloads";
+import { useOpenEdit } from "@/lib/open-edit";
 
 type Draft = Partial<DownloadItemRow> & { isNew?: boolean };
 
@@ -55,6 +56,8 @@ export function DownloadsEditor() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useOpenEdit(loading, items, (item) => setEditing({ ...item, isNew: false }));
 
   const sections = useMemo(() => {
     const map = new Map<string, { key: string; anchor: string | null }>();

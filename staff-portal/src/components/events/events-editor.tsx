@@ -11,8 +11,10 @@ import { RichText } from "@/components/ui/rich-text";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import type { EventRow } from "@/lib/events";
+import { useOpenEdit } from "@/lib/open-edit";
 import { uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
+import { EventsMonth } from "@/components/events/events-month";
 
 function formatDate(value: string | null) {
   if (!value) return "";
@@ -27,6 +29,7 @@ export function EventsEditor() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<EventRow> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [view, setView] = useState<"month" | "list">("month");
 
   const load = useCallback(async () => {
     const res = await fetch("/api/events");
@@ -39,6 +42,8 @@ export function EventsEditor() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useOpenEdit(loading, items, (item) => setEditing(item));
 
   function startNew() {
     setEditing({
@@ -175,12 +180,21 @@ export function EventsEditor() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex border border-[#d5dce4]">
+          <button type="button" className={`px-3 py-1.5 text-[13px] font-semibold ${view === "month" ? "bg-[#0b1f3a] text-white" : "bg-white text-[#0b1f3a]"}`} onClick={() => setView("month")}>
+            Month
+          </button>
+          <button type="button" className={`px-3 py-1.5 text-[13px] font-semibold ${view === "list" ? "bg-[#0b1f3a] text-white" : "bg-white text-[#0b1f3a]"}`} onClick={() => setView("list")}>
+            List
+          </button>
+        </div>
         <Button onClick={startNew}>
           <Plus className="h-4 w-4" /> New event
         </Button>
       </div>
-      <ItemList
+      {view === "month" && <EventsMonth items={items} onOpen={(item) => setEditing(item)} />}
+      {view === "list" && <ItemList
         showImages
         items={items.map((i) => ({
           id: i.id,
@@ -192,7 +206,7 @@ export function EventsEditor() {
         onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
         onDelete={canDelete ? remove : undefined}
         emptyText="No events yet. Click New event to add one."
-      />
+      />}
     </div>
   );
 }

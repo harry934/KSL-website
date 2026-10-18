@@ -22,6 +22,8 @@ import { slugify } from "@/lib/news";
 import { reorderItem, uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import type { ProductRow, ProductsSettings, Spec } from "@/lib/products";
+import { productPublicUrl } from "@/lib/public-links";
+import { useOpenEdit } from "@/lib/open-edit";
 
 type GroupDraft = { title: string; itemsText: string };
 
@@ -94,6 +96,8 @@ export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean;
   useEffect(() => {
     load();
   }, [load]);
+
+  useOpenEdit(loading, items, (item) => setEditing(item));
 
   const types = useMemo(() => {
     const map = new Map<string, string>();
@@ -260,6 +264,11 @@ export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean;
           </div>
         </div>
         <SaveBar>
+          {editing.status === "published" && editing.slug && (
+            <a href={productPublicUrl(editing.slug)} target="_blank" rel="noreferrer" className="mr-auto text-[13.5px] font-semibold text-[#0b1f3a] underline-offset-2 hover:underline">
+              View on the website
+            </a>
+          )}
           <Button variant="secondary" onClick={() => setEditing(null)}>
             Cancel
           </Button>
@@ -299,6 +308,7 @@ export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean;
                       subtitle: i.eyebrow,
                       image: i.image_path,
                       status: i.status,
+                      siteHref: i.status === "published" && i.slug ? productPublicUrl(i.slug) : undefined,
                     }))}
                     onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
                     onDelete={canDelete ? remove : undefined}

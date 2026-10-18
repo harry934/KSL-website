@@ -57,12 +57,12 @@ function flagsFor(level: AccessLevel): Record<PermField, boolean> {
   };
 }
 
-function levelOf(row: PermRow): AccessLevel {
-  if (row.can_delete) return "full";
-  if (row.can_publish) return "publish";
-  if (row.can_edit) return "edit";
-  return "read";
-}
+const PERMISSION_TICKS: { field: PermField; title: string; sentence: string }[] = [
+  { field: "can_view", title: "Can open this section", sentence: "They can read what is already there." },
+  { field: "can_edit", title: "Can add and change", sentence: "They can write and edit. Visitors still see the old version until it is published." },
+  { field: "can_publish", title: "Can show it on the website", sentence: "They can make a change visible to visitors." },
+  { field: "can_delete", title: "Can remove items", sentence: "They can delete. A board member or photo can be brought back for a few seconds." },
+];
 
 function AccessEditor({
   permissions,
@@ -76,6 +76,28 @@ function AccessEditor({
     label: group.label,
     modules: group.modules.filter((key) => key !== "staff" && !granted.some((row) => row.module_key === key)),
   })).filter((group) => group.modules.length > 0);
+
+  function setTick(module: ModuleKey, field: PermField, on: boolean) {
+    onChange(
+      permissions.map((row) => {
+        if (row.module_key !== module) return row;
+        const next = { ...row, [field]: on };
+        if (on) {
+          if (field !== "can_view") next.can_view = true;
+          if (field === "can_publish" || field === "can_delete") next.can_edit = true;
+          if (field === "can_delete") next.can_publish = true;
+        } else if (field === "can_view") {
+          return { ...next, can_edit: false, can_publish: false, can_delete: false };
+        } else if (field === "can_edit") {
+          next.can_publish = false;
+          next.can_delete = false;
+        } else if (field === "can_publish") {
+          next.can_delete = false;
+        }
+        return next;
+      })
+    );
+  }
 
   function setLevel(module: ModuleKey, level: string) {
     onChange(
@@ -95,26 +117,29 @@ function AccessEditor({
         <p className="text-[13.5px] text-[#6b7785]">No sections yet. Add one to let this agent into the portal.</p>
       )}
       {granted.map((row) => (
-        <div
-          key={row.module_key}
-          className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-[#e3e8ee] bg-white px-4 py-3"
-        >
-          <div>
+        <div key={row.module_key} className="rounded-[10px] border border-[#e3e8ee] bg-white px-4 py-3">
+          <div className="mb-3 flex items-center justify-between gap-3">
             <p className="text-[14px] font-semibold text-[#0b1f3a]">{MODULE_LABELS[row.module_key]}</p>
-            <p className="text-[12.5px] text-[#6b7785]">Sections left off this list stay restricted.</p>
+            <button type="button" className="text-[12.5px] font-semibold text-[#b42318]" onClick={() => setLevel(row.module_key, "restricted")}>
+              Remove section
+            </button>
           </div>
-          <select
-            className="h-[40px] rounded-[8px] border border-[#d5dce4] bg-white px-3 text-[14px] text-[#0b1f3a]"
-            value={levelOf(row)}
-            aria-label={`${MODULE_LABELS[row.module_key]} access`}
-            onChange={(event) => setLevel(row.module_key, event.target.value)}
-          >
-            <option value="restricted">Restricted</option>
-            <option value="read">Read</option>
-            <option value="edit">Create and edit</option>
-            <option value="publish">Publish</option>
-            <option value="full">Full access</option>
-          </select>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {PERMISSION_TICKS.map((tick) => (
+              <label key={tick.field} className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={row[tick.field]}
+                  onChange={(event) => setTick(row.module_key, tick.field, event.target.checked)}
+                />
+                <span>
+                  <span className="block text-[13.5px] font-semibold text-[#0b1f3a]">{tick.title}</span>
+                  <span className="block text-[12.5px] text-[#6b7785]">{tick.sentence}</span>
+                </span>
+              </label>
+            ))}
+          </div>
         </div>
       ))}
       {available.length > 0 && (

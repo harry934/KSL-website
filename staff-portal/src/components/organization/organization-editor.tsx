@@ -144,14 +144,27 @@ export function OrganizationEditor() {
   async function remove(id: string, scope: Scope) {
     const ok = await confirm({
       title: "Delete this entry?",
-      message: "It will be removed from the website for good.",
+      message: "It will leave the website. You can bring it back for a few seconds.",
       confirmLabel: "Delete",
       danger: true,
     });
     if (!ok) return;
+    const row = (scope === "board" ? board : leadership).find((item) => item.id === id);
     try {
       await sendJson(`/api/organization?id=${encodeURIComponent(id)}&scope=${scope}`, "DELETE");
-      toast("Deleted.");
+      toast("Deleted.", "success", row
+        ? {
+            label: "Bring it back",
+            onClick: () => {
+              sendJson("/api/organization", "POST", { ...row, scope })
+                .then(() => {
+                  toast("Brought back.");
+                  load();
+                })
+                .catch((err) => toast((err as Error).message, "error"));
+            },
+          }
+        : undefined);
       load();
     } catch (err) {
       toast((err as Error).message, "error");

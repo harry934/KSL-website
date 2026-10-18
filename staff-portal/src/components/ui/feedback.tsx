@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
 type ToastKind = "success" | "error";
-type Toast = { id: number; kind: ToastKind; message: string };
+type ToastAction = { label: string; onClick: () => void };
+type Toast = { id: number; kind: ToastKind; message: string; action?: ToastAction };
 
 type ConfirmOptions = {
   title: string;
@@ -16,7 +17,7 @@ type ConfirmOptions = {
 };
 
 type FeedbackApi = {
-  toast: (message: string, kind?: ToastKind) => void;
+  toast: (message: string, kind?: ToastKind, action?: ToastAction) => void;
   confirm: (options: ConfirmOptions) => Promise<boolean>;
 };
 
@@ -30,10 +31,10 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
   const dismiss = useCallback((id: number) => setToasts((list) => list.filter((t) => t.id !== id)), []);
 
   const toast = useCallback(
-    (message: string, kind: ToastKind = "success") => {
+    (message: string, kind: ToastKind = "success", action?: ToastAction) => {
       const id = nextId.current++;
-      setToasts((list) => [...list.slice(-3), { id, kind, message }]);
-      window.setTimeout(() => dismiss(id), kind === "error" ? 7000 : 4000);
+      setToasts((list) => [...list.slice(-3), { id, kind, message, action }]);
+      window.setTimeout(() => dismiss(id), action ? 12000 : kind === "error" ? 7000 : 4000);
     },
     [dismiss]
   );
@@ -67,7 +68,21 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
             ) : (
               <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
             )}
-            <span className="min-w-0 flex-1">{t.message}</span>
+            <span className="min-w-0 flex-1">
+              {t.message}
+              {t.action && (
+                <button
+                  type="button"
+                  className="ml-2 font-semibold underline"
+                  onClick={() => {
+                    t.action?.onClick();
+                    dismiss(t.id);
+                  }}
+                >
+                  {t.action.label}
+                </button>
+              )}
+            </span>
             <button type="button" onClick={() => dismiss(t.id)} aria-label="Dismiss" className="opacity-80 hover:opacity-100">
               <X className="h-4 w-4" />
             </button>

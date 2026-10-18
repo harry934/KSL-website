@@ -19,6 +19,9 @@ import { RichText } from "@/components/ui/rich-text";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import type { NewsRow } from "@/lib/news";
+import { nairobiToday } from "@/lib/dates";
+import { newsPublicUrl } from "@/lib/public-links";
+import { useOpenEdit } from "@/lib/open-edit";
 import { uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 
@@ -48,6 +51,8 @@ export function NewsEditor() {
     load();
   }, [load]);
 
+  useOpenEdit(loading, items, (item) => setEditing(item));
+
   const categories = useMemo(() => {
     const names = new Set(["News", ...items.map((i) => i.category).filter((c): c is string => !!c)]);
     return Array.from(names).map((name) => ({ value: name, label: name }));
@@ -64,6 +69,7 @@ export function NewsEditor() {
       author: "KSL Communications",
       location: "",
       body_html: "",
+      go_live_on: "",
       status: canPublish ? "published" : "draft",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -81,8 +87,15 @@ export function NewsEditor() {
       const slug =
         editing.slug?.trim() ||
         uniqueSlug(editing.title, items.filter((i) => i.id !== editing.id).map((i) => i.slug), "news");
-      await sendJson("/api/news", "POST", { ...editing, slug });
-      toast(editing.status === "published" ? "Article saved and shown on the website." : "Article saved as hidden (draft).");
+      await sendJson("/api/news", "POST", { ...editing, slug, go_live_on: editing.go_live_on || null });
+      const waiting = editing.status === "published" && editing.go_live_on && editing.go_live_on > nairobiToday();
+      toast(
+        waiting
+          ? "Saved. Visitors will see it on the morning you chose."
+          : editing.status === "published"
+            ? "Article saved and shown on the website."
+            : "Article saved as hidden (draft)."
+      );
       setEditing(null);
       load();
     } catch (err) {
@@ -144,6 +157,9 @@ export function NewsEditor() {
               <Field label="Date">
                 <Input type="date" value={editing.published_date ?? ""} onChange={(e) => set({ published_date: e.target.value })} />
               </Field>
+              <Field label="Show on the website from" hint="Leave this blank to show the story as soon as it is published. A future date keeps it hidden until that morning.">
+                <Input type="date" value={editing.go_live_on ?? ""} onChange={(e) => set({ go_live_on: e.target.value })} />
+              </Field>
               <Field label="Category">
                 <ChoiceField value={editing.category ?? ""} options={categories} onChange={(category) => set({ category })} />
               </Field>
@@ -162,6 +178,11 @@ export function NewsEditor() {
           </div>
         </div>
         <SaveBar>
+          {editing.status === "published" && editing.slug && (!editing.go_live_on || editing.go_live_on <= nairobiToday()) && (
+            <a href={newsPublicUrl(editing.slug)} target="_blank" rel="noreferrer" className="mr-auto text-[13.5px] font-semibold text-[#0b1f3a] underline-offset-2 hover:underline">
+              View on the website
+            </a>
+          )}
           <Button variant="secondary" onClick={() => setEditing(null)}>
             Cancel
           </Button>
@@ -185,9 +206,18 @@ export function NewsEditor() {
         items={items.map((i) => ({
           id: i.id,
           title: i.title,
-          subtitle: [formatDate(i.published_date), i.category].filter(Boolean).join(" · "),
+          subtitle: [
+            i.go_live_on && i.go_live_on > nairobiToday() ? `Appears ${formatDate(i.go_live_on)}` : formatDate(i.published_date),
+            i.category,
+          ]
+            .filter(Boolean)
+            .join(" · "),
           image: i.image_path,
           status: i.status,
+          siteHref:
+            i.status === "published" && i.slug && (!i.go_live_on || i.go_live_on <= nairobiToday())
+              ? newsPublicUrl(i.slug)
+              : undefined,
         }))}
         onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
         onDelete={canDelete ? remove : undefined}

@@ -5,6 +5,7 @@ import { ImageIcon, Loader2, Upload } from "lucide-react";
 import type { ModuleKey } from "@/lib/modules";
 import { siteAssetUrl } from "@/lib/site-url";
 import { uploadFile } from "@/lib/upload-client";
+import { PhotoCropDialog } from "@/components/ui/photo-crop";
 import { cn } from "@/lib/cn";
 
 export function ImageField({
@@ -20,6 +21,7 @@ export function ImageField({
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<File | null>(null);
 
   async function upload(file: File) {
     setUploading(true);
@@ -69,7 +71,7 @@ export function ImageField({
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 e.target.value = "";
-                if (file) upload(file);
+                if (file) setPending(file);
               }}
             />
           </label>
@@ -82,6 +84,16 @@ export function ImageField({
         {!compact && <p className="text-[12px] text-[#6b7785]">JPG, PNG or WebP, up to 8 MB.</p>}
         {error && <p className="text-[12.5px] text-[#b42318]">{error}</p>}
       </div>
+      {pending && (
+        <PhotoCropDialog
+          file={pending}
+          onCancel={() => setPending(null)}
+          onDone={(next) => {
+            setPending(null);
+            upload(next);
+          }}
+        />
+      )}
     </div>
   );
 }

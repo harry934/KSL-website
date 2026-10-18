@@ -8,6 +8,7 @@ import { MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import type { StaffSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell } from "@/components/portal/notification-bell";
+import { PortalSearch } from "@/components/portal/portal-search";
 import { UserAvatar } from "@/components/portal/user-avatar";
 
 const EXTRA_TITLES: Record<string, string> = {
@@ -71,8 +72,10 @@ export function Topbar({
         >
           <PanelLeft className="h-4 w-4" />
         </button>
-        <p className="truncate text-[15px] font-bold text-[#0b1f3a]">{titleFor(pathname)}</p>
+        <p className="hidden truncate text-[15px] font-bold text-[#0b1f3a] sm:block">{titleFor(pathname)}</p>
       </div>
+
+      <PortalSearch />
 
       <div className="flex items-center gap-1.5">
         <NotificationBell userId={session.userId} canSeeAll={session.isSuperAdmin} />

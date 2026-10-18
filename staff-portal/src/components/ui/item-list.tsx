@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { GripVertical, ImageIcon, Pencil, Trash2 } from "lucide-react";
+import { ExternalLink, GripVertical, ImageIcon, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, StatusBadge } from "@/components/ui/form-bits";
 import { DRAG_FROM, useLiveDrag } from "@/components/ui/live-drag";
@@ -14,6 +14,7 @@ export type ListItem = {
   subtitle?: string | null;
   image?: string | null;
   status?: string;
+  siteHref?: string;
 };
 
 const PAGE_SIZE = 25;
@@ -120,6 +121,16 @@ export function ItemList({
               </button>
               {item.status && <StatusBadge status={item.status} />}
               <span className="flex shrink-0 items-center gap-1">
+                {item.siteHref && (
+                  <a
+                    href={item.siteHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-8 items-center gap-1 rounded-[6px] px-2 text-[12.5px] font-semibold text-[#0b1f3a] hover:bg-[#f4f6f8]"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" /> View
+                  </a>
+                )}
                 <Button variant="secondary" size="sm" onClick={() => onEdit(item.id)}>
                   <Pencil className="h-3.5 w-3.5" /> Edit
                 </Button>
