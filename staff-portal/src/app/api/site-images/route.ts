@@ -4,12 +4,27 @@ import { isImagePath, isSiteImageSlot, safeImageUrl, SITE_IMAGE_SLOTS } from "@/
 import { siteAssetUrl } from "@/lib/site-url";
 import { NextRequest, NextResponse } from "next/server";
 
+function galleryFileUrl(
+  admin: ReturnType<typeof createAdminClient>,
+  publicUrl: string | null | undefined,
+  storagePath: string | null | undefined
+) {
+  const published = (publicUrl || "").trim();
+  if (/^https?:/i.test(published)) return published;
+  const path = (storagePath || published).trim();
+  if (!path) return "";
+  if (/^https?:/i.test(path)) return path;
+  if (path.startsWith("img/") || path.startsWith("/img/")) return siteAssetUrl(path);
+  const { data } = admin.storage.from("media-public").getPublicUrl(path.replace(/^\/+/, ""));
+  return data.publicUrl;
+}
+
 async function storedImages() {
   const admin = createAdminClient();
   const found = new Map<string, { url: string; storagePath: string | null; label: string }>();
 
   function add(url: string | null | undefined, storagePath: string | null, label: string) {
-    const safe = safeImageUrl(url) || (url ? safeImageUrl(siteAssetUrl(url)) : null);
+    const safe = safeImageUrl(url);
     if (!safe || !isImagePath(safe) || found.has(safe)) return;
     found.set(safe, { url: safe, storagePath, label: label || "Gallery photo" });
   }
@@ -21,16 +36,7 @@ async function storedImages() {
     .order("sort_order");
 
   for (const row of gallery ?? []) {
-    let url = row.public_url as string | null;
-    if ((!url || !/^https?:/i.test(url)) && row.storage_path) {
-      const { data: pub } = admin.storage.from("media-public").getPublicUrl(row.storage_path);
-      url = pub.publicUrl;
-    }
-    add(url, row.storage_path, row.title || "Gallery photo");
-  }
-
-  for (const slot of SITE_IMAGE_SLOTS) {
-    add(slot.src, null, slot.label);
+    add(galleryFileUrl(admin, row.public_url, row.storage_path), row.storage_path, row.title || "Gallery photo");
   }
 
   return Array.from(found.values());
@@ -77,6 +83,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Choose an image file." }, { status: 400 });
   }
   const storagePath = typeof body.storagePath === "string" && /^[\w./-]+$/.test(body.storagePath) ? body.storagePath : null;
+
+  if (body.addToGallery) {
+    const already = storagePath
+      ? await admin.from("gallery_photos").select("id").eq("storage_path", storagePath).limit(1)
+      : await admin.from("gallery_photos").select("id").eq("public_url", publicUrl).limit(1);
+    if (!already.data?.length) {
+      const { data: latest } = await admin.from("gallery_photos").select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle();
+      const title = String(body.title || "Photo").replace(/\.[a-z0-9]+$/i, "").slice(0, 120) || "Photo";
+      const { error: galleryErr } = await admin.from("gallery_photos").insert({
+        title,
+        category: "all",
+        storage_path: storagePath,
+        public_url: publicUrl,
+        sort_order: (latest?.sort_order ?? 0) + 1,
+        status: "published",
+        updated_by: session.userId,
+      });
+      if (galleryErr) return NextResponse.json({ error: dbError(galleryErr) }, { status: 500 });
+    }
+  }
 
   const { error: upErr } = await admin.from("site_image_overrides").upsert({
     slot_id: slotId,

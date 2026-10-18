@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, X } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
-import { sendJson } from "@/lib/upload-client";
+import { sendJson, uploadFile } from "@/lib/upload-client";
 import { siteAssetUrl } from "@/lib/site-url";
 import type { SiteImageSlot } from "@/lib/site-images";
 
@@ -52,7 +52,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   const visible = slots.filter((slot) => slot.page === page);
   const overrideFor = (id: string) => overrides.find((row) => row.slot_id === id && row.source === "storage" && row.public_url);
 
-  async function save(slotId: string, image: LibraryImage) {
+  async function save(slotId: string, image: LibraryImage, addToGallery = false) {
     setBusy(slotId);
     try {
       await sendJson("/api/site-images", "POST", {
@@ -60,14 +60,27 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
         source: "storage",
         publicUrl: image.url,
         storagePath: image.storagePath,
+        addToGallery,
+        title: image.label,
       });
-      toast("Photo updated on the website.");
+      toast(addToGallery ? "Photo added to the gallery and the website." : "Photo updated on the website.");
       setPicking(null);
       await load();
     } catch (err) {
       toast((err as Error).message, "error");
     }
     setBusy(null);
+  }
+
+  async function upload(slotId: string, file: File) {
+    setBusy(slotId);
+    try {
+      const uploaded = await uploadFile("site_settings", file);
+      await save(slotId, { url: uploaded.public_url, storagePath: uploaded.storage_path, label: file.name.replace(/\.[a-z0-9]+$/i, "") }, true);
+    } catch (err) {
+      toast((err as Error).message, "error");
+      setBusy(null);
+    }
   }
 
   if (loading) {
@@ -109,10 +122,27 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                 <p className="m-0 text-[14px] font-semibold text-[#0b1f3a]">{slot.label}</p>
               </div>
               {canEdit && (
-                <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => setPicking(slot.id)}>
-                  {busy === slot.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  Choose from gallery
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => setPicking(slot.id)}>
+                    {busy === slot.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Choose from gallery
+                  </Button>
+                  <label className="inline-flex h-10 cursor-pointer items-center gap-2 border border-[#d5dce4] bg-white px-4 text-[14px] font-semibold text-[#0b1f3a]">
+                    <Upload className="h-4 w-4" />
+                    Upload new
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      disabled={busy !== null}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        event.target.value = "";
+                        if (file) upload(slot.id, file);
+                      }}
+                    />
+                  </label>
+                </div>
               )}
             </article>
           );
