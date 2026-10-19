@@ -15,8 +15,11 @@ export function passkeyError(error: PasskeyFailure): string | null {
   if (code === "passkey_disabled") {
     return "Passkeys are not turned on for this portal yet.";
   }
-  if (code === "ERROR_INVALID_DOMAIN" || code === "ERROR_INVALID_RP_ID") {
-    return "A passkey can only be used on the portal address it was set up for.";
+  if (code === "ERROR_INVALID_RP_ID") {
+    return "The passkey address in Supabase is not valid. Set the relying party ID to ksl-websitemink.vercel.app with no dot at the end.";
+  }
+  if (code === "ERROR_INVALID_DOMAIN") {
+    return "Open https://ksl-websitemink.vercel.app to use a passkey. This page is a different address.";
   }
   if (code === "webauthn_credential_exists") {
     return "That passkey is already saved on this account.";

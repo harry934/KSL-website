@@ -44,8 +44,17 @@ The portal can register a passkey only after a staff member has signed in. It do
 1. Open [Authentication → Passkeys](https://supabase.com/dashboard/project/envqgczfhxywkxcnsxrt/auth/passkeys).
 2. Turn on **Enable Passkey authentication**.
 3. Relying party display name: `Kenya Shipyards Limited`.
-4. Relying party ID: `ksl-websitemink.vercel.app` with no trailing dot.
-5. Relying party origins: `https://ksl-websitemink.vercel.app`.
+4. Relying party ID, with nothing after the last letter:
+
+```
+ksl-websitemink.vercel.app
+```
+
+5. Relying party origins:
+
+```
+https://ksl-websitemink.vercel.app
+```
 6. Save. Leave public sign-up off.
 
 A passkey is tied to that address. When the portal moves to `kenyashipyards.co.ke`, change the relying party to that domain and have each staff member add the passkey again.
