@@ -11,6 +11,7 @@ import { Field, FieldGrid, FormSection, SaveBar, Textarea, VisibilitySwitch } fr
 import { useFeedback } from "@/components/ui/feedback";
 import { reorderItem, uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
+import { useOpenEdit } from "@/lib/open-edit";
 import type { CsrImage, CsrProjectRow, CsrSettings, CsrStat } from "@/lib/csr";
 
 const EMPTY_SETTINGS: CsrSettings = {
@@ -56,6 +57,8 @@ export function CsrEditor({ canPublish, canDelete }: { canPublish: boolean; canD
   useEffect(() => {
     load();
   }, [load]);
+
+  useOpenEdit(loading, items, (item) => setEditing(item));
 
   async function saveSettings() {
     setSaving("settings");

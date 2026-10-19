@@ -11,6 +11,7 @@ import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
+import { useOpenEdit } from "@/lib/open-edit";
 import { documentOptions, useDocuments } from "@/lib/use-documents";
 import { SearchSelect } from "@/components/ui/search-select";
 import { cn } from "@/lib/cn";
@@ -69,6 +70,8 @@ export function PressEditor() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useOpenEdit(loading, assets, (row) => setEditing({ ...row, source: sourceOf(row) }));
 
   const typeOptions = useMemo(() => {
     const names = new Set(["PDF", "Word", "Image", "Page", ...assets.map((a) => a.asset_type).filter((t): t is string => !!t)]);

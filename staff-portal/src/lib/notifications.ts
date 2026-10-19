@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { describeActivity } from "@/lib/activity-words";
+import { activityPlace } from "@/lib/activity-place";
 import { MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import type { StaffSession } from "@/lib/session";
 
@@ -50,6 +51,7 @@ function visibleModules(session: StaffSession): ModuleKey[] {
 
 function toActivityItem(row: ActivityRow, visible: ModuleKey[], openAudit: boolean): NoticeItem {
   const key = isModule(row.module_key) ? row.module_key : null;
+  const place = activityPlace(row);
   return {
     id: row.id,
     kind: "activity",
@@ -57,7 +59,7 @@ function toActivityItem(row: ActivityRow, visible: ModuleKey[], openAudit: boole
     who: row.admin_profiles?.display_name || "Someone",
     text: describeActivity(row),
     area: key ? MODULE_LABELS[key] : null,
-    href: openAudit ? `/activity?entry=${row.id}` : key && visible.includes(key) ? MODULE_ROUTES[key] : "/",
+    href: openAudit || (key && visible.includes(key)) ? place : "/",
     createdAt: row.created_at,
   };
 }

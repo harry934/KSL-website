@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
-import { readSeen, writeSeen } from "@/lib/notification-seen";
+import { dismissNotices, readDismissed, readSeen, SEEN_EVENT } from "@/lib/notification-seen";
 
 type Item = {
   id: string;
@@ -33,35 +33,54 @@ export function NotificationBell({ userId, canSeeAll }: { userId: string; canSee
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [seenAt, setSeenAt] = useState(0);
+  const [dismissed, setDismissed] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
+  const [glance, setGlance] = useState("");
   const [loaded, setLoaded] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
+  const openRef = useRef(false);
 
   const load = useCallback(async () => {
     try {
       const res = await fetch("/api/notifications", { cache: "no-store" });
-      if (res.ok) setItems((await res.json()).items ?? []);
+      if (!res.ok) return;
+      const next = ((await res.json()).items ?? []) as Item[];
+      setItems(next);
+      if (openRef.current) dismissNotices(userId, next.map((item) => item.id));
     } finally {
       setLoaded(true);
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     setSeenAt(readSeen(userId));
+    setDismissed(readDismissed(userId));
     load();
+    function onSeen() {
+      setSeenAt(readSeen(userId));
+      setDismissed(readDismissed(userId));
+    }
+    window.addEventListener(SEEN_EVENT, onSeen);
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") load();
     }, POLL_MS);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.removeEventListener(SEEN_EVENT, onSeen);
+      window.clearInterval(timer);
+    };
   }, [load, userId]);
 
   useEffect(() => {
     if (!open) return;
+    function close() {
+      openRef.current = false;
+      setOpen(false);
+    }
     function onClick(event: MouseEvent) {
-      if (!wrap.current?.contains(event.target as Node)) setOpen(false);
+      if (!wrap.current?.contains(event.target as Node)) close();
     }
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") close();
     }
     document.addEventListener("mousedown", onClick);
     document.addEventListener("keydown", onKey);
@@ -71,14 +90,24 @@ export function NotificationBell({ userId, canSeeAll }: { userId: string; canSee
     };
   }, [open]);
 
-  const isUnread = (item: Item) =>
-    item.kind === "message" ? !!item.unread : new Date(item.createdAt).getTime() > seenAt;
-  const unread = items.filter(isUnread).length;
+  const isUnread = (item: Item) => {
+    if (dismissed.includes(item.id)) return false;
+    return item.kind === "message" ? !!item.unread : new Date(item.createdAt).getTime() > seenAt;
+  };
+  const changes = items.filter((item) => item.kind !== "message" && isUnread(item)).length;
+  const messages = items.filter((item) => item.kind === "message" && isUnread(item)).length;
+  const unread = changes + messages;
+
+  function summary() {
+    if (!unread) return "You are up to date";
+    const parts: string[] = [];
+    if (changes) parts.push(`${changes} new ${changes === 1 ? "change" : "changes"}`);
+    if (messages) parts.push(`${messages} new ${messages === 1 ? "message" : "messages"}`);
+    return parts.join(", ");
+  }
 
   function markAllRead() {
-    const now = Date.now();
-    writeSeen(userId, now);
-    setSeenAt(now);
+    dismissNotices(userId, items.map((item) => item.id));
     if (items.some((item) => item.kind === "message" && item.unread)) {
       fetch("/api/messages", {
         method: "PATCH",
@@ -90,9 +119,37 @@ export function NotificationBell({ userId, canSeeAll }: { userId: string; canSee
     }
   }
 
+  function openBell() {
+    const next = !open;
+    openRef.current = next;
+    setOpen(next);
+    if (next) {
+      setGlance(summary());
+      dismissNotices(
+        userId,
+        items.filter(isUnread).map((item) => item.id)
+      );
+      load();
+    }
+  }
+
   function openItem(item: Item) {
+    dismissNotices(userId, [item.id]);
+    openRef.current = false;
     setOpen(false);
-    router.push(item.href);
+    if (item.kind === "message" && item.unread) {
+      const id = item.id.replace(/^message:/, "");
+      fetch("/api/messages", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      }).catch(() => undefined);
+    }
+    if (item.href && item.href !== window.location.pathname + window.location.search) {
+      window.location.assign(item.href);
+      return;
+    }
+    router.push(item.href || "/");
   }
 
   return (
@@ -103,10 +160,7 @@ export function NotificationBell({ userId, canSeeAll }: { userId: string; canSee
         title="Notifications"
         aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
         aria-expanded={open}
-        onClick={() => {
-          setOpen((value) => !value);
-          if (!open) load();
-        }}
+        onClick={openBell}
       >
         <Bell className="h-[18px] w-[18px]" />
         {unread > 0 && <span className="notify-badge">{unread > 9 ? "9+" : unread}</span>}
@@ -117,7 +171,7 @@ export function NotificationBell({ userId, canSeeAll }: { userId: string; canSee
           <div className="notification-dropdown-header">
             <div>
               <strong>Notifications</strong>
-              <span className="notification-count">{unread ? `${unread} unread` : "You are up to date"}</span>
+              <span className="notification-count">{open && glance ? glance : summary()}</span>
             </div>
             <div className="flex shrink-0 items-center gap-0.5">
               {unread > 0 && (
@@ -130,8 +184,10 @@ export function NotificationBell({ userId, canSeeAll }: { userId: string; canSee
                   type="button"
                   className="btn-quiet"
                   onClick={() => {
+                    openRef.current = false;
                     setOpen(false);
-                    router.push("/activity");
+                    dismissNotices(userId, items.map((item) => item.id));
+                    window.location.assign("/activity");
                   }}
                 >
                   View all

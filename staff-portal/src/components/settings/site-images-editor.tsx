@@ -43,6 +43,19 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (loading || !slots.length) return;
+    const url = new URL(window.location.href);
+    const slotId = url.searchParams.get("slot");
+    if (!slotId) return;
+    const match = slots.find((slot) => slot.id === slotId);
+    if (!match) return;
+    url.searchParams.delete("slot");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    setPage(match.page);
+    window.setTimeout(() => document.getElementById(`slot-${slotId}`)?.scrollIntoView({ block: "center" }), 50);
+  }, [loading, slots]);
+
   const pages = useMemo(() => {
     const names: string[] = [];
     for (const slot of slots) {
@@ -123,7 +136,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
           const stored = overrideFor(slot.id);
           const current = stored?.public_url || slot.src;
           return (
-            <article key={slot.id} className="flex flex-wrap items-center gap-4 border border-[#e3e8ee] bg-white p-3">
+            <article id={`slot-${slot.id}`} key={slot.id} className="flex flex-wrap items-center gap-4 border border-[#e3e8ee] bg-white p-3">
               <img src={siteAssetUrl(current)} alt="" className="h-16 w-28 bg-[#f4f6f8] object-cover" />
               <div className="min-w-0 flex-1">
                 <p className="m-0 text-[14px] font-semibold text-[#0b1f3a]">{slot.label}</p>

@@ -52,6 +52,30 @@ export function GalleryEditor() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (loading) return;
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get("edit");
+    if (!id) return;
+    url.searchParams.delete("edit");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    const photo = photos.find((row) => row.id === id);
+    if (photo) setPlace("any");
+    const clip = videos.find((row) => row.id === id);
+    if (clip) {
+      setVideo({
+        id: clip.id,
+        link: `https://www.youtube.com/watch?v=${clip.youtube_id}`,
+        title: clip.title ?? "",
+        caption: clip.caption ?? "",
+        featured: clip.featured,
+        status: clip.status,
+        sort_order: clip.sort_order,
+      });
+    }
+    window.setTimeout(() => document.getElementById(`gallery-${id}`)?.scrollIntoView({ block: "center" }), 50);
+  }, [loading, photos, videos]);
+
   const shown = useMemo(() => (place === "any" ? photos : photos.filter((p) => (p.category || "all") === place)), [photos, place]);
 
   async function savePhoto(row: GalleryRow, message?: string) {
@@ -301,7 +325,7 @@ export function GalleryEditor() {
                   {shown
                     .filter((p) => (p.category || "all") === placeOption.value)
                     .map((p) => (
-                      <li key={p.id} className="flex flex-wrap items-center gap-3 bg-white px-3 py-2.5 sm:flex-nowrap">
+                      <li id={`gallery-${p.id}`} key={p.id} className="flex flex-wrap items-center gap-3 bg-white px-3 py-2.5 sm:flex-nowrap">
                         <span className="relative h-14 w-20 shrink-0 overflow-hidden rounded-[6px] bg-[#f1f4f7]">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
@@ -440,6 +464,7 @@ export function GalleryEditor() {
           <ul className="divide-y divide-[#eef1f4]">
             {videos.map((v, index) => (
               <li
+                id={`gallery-${v.id}`}
                 key={v.id}
                 ref={videoDrag.itemRef(index)}
                 style={videos.length >= DRAG_FROM ? videoDrag.itemStyle(index) : undefined}

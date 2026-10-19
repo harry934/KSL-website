@@ -58,37 +58,6 @@ function flagsFor(level: AccessLevel): Record<PermField, boolean> {
   };
 }
 
-const TICK_SHORT: Record<PermField, string> = {
-  can_view: "Open",
-  can_edit: "Change",
-  can_publish: "Publish",
-  can_delete: "Remove",
-};
-
-const PERMISSION_TICKS: { field: PermField; title: string; sentence: string }[] = [
-  { field: "can_view", title: "Can open this section", sentence: "They can read what is already there." },
-  { field: "can_edit", title: "Can add and change", sentence: "They can write and edit. Visitors still see the old version until it is published." },
-  { field: "can_publish", title: "Can show it on the website", sentence: "They can make a change visible to visitors." },
-  { field: "can_delete", title: "Can remove items", sentence: "They can delete. A board member or photo can be brought back for a few seconds." },
-];
-
-function withTick(row: PermRow, field: PermField, on: boolean): PermRow {
-  const next = { ...row, [field]: on };
-  if (on) {
-    if (field !== "can_view") next.can_view = true;
-    if (field === "can_publish" || field === "can_delete") next.can_edit = true;
-    if (field === "can_delete") next.can_publish = true;
-  } else if (field === "can_view") {
-    return { ...next, can_edit: false, can_publish: false, can_delete: false };
-  } else if (field === "can_edit") {
-    next.can_publish = false;
-    next.can_delete = false;
-  } else if (field === "can_publish") {
-    next.can_delete = false;
-  }
-  return next;
-}
-
 function applyLevel(row: PermRow, level: "none" | AccessLevel): PermRow {
   if (level === "none") {
     return { ...row, can_view: false, can_edit: false, can_publish: false, can_delete: false };
@@ -104,6 +73,49 @@ const LEVEL_CHOICES: { value: "none" | AccessLevel; label: string }[] = [
   { value: "full", label: "Full access" },
 ];
 
+function levelOf(row: PermRow): "none" | AccessLevel {
+  if (row.can_delete) return "full";
+  if (row.can_publish) return "publish";
+  if (row.can_edit) return "edit";
+  if (row.can_view) return "read";
+  return "none";
+}
+
+function sharedLevel(rows: PermRow[]) {
+  if (!rows.length) return "none";
+  const first = levelOf(rows[0]);
+  return rows.every((row) => levelOf(row) === first) ? first : "";
+}
+
+function LevelSelect({
+  value,
+  label,
+  onChange,
+}: {
+  value: string;
+  label: string;
+  onChange: (level: "none" | AccessLevel) => void;
+}) {
+  return (
+    <select
+      className="h-9 min-w-[148px] rounded-[8px] border border-[#d5dce4] bg-white px-2 text-[13.5px] font-semibold text-[#0b1f3a]"
+      aria-label={label}
+      value={value}
+      onChange={(event) => {
+        const level = event.target.value as "none" | AccessLevel;
+        if (level) onChange(level);
+      }}
+    >
+      {value === "" && <option value="">Mixed</option>}
+      {LEVEL_CHOICES.map((choice) => (
+        <option key={choice.value} value={choice.value}>
+          {choice.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 function AccessEditor({
   permissions,
   onChange,
@@ -116,107 +128,48 @@ function AccessEditor({
     onChange(permissions.map((row) => (chosen.has(row.module_key) ? applyLevel(row, level) : row)));
   }
 
-  function toggleColumn(field: PermField) {
-    const rows = permissions.filter((row) => EDITABLE_MODULES.includes(row.module_key));
-    const allOn = rows.length > 0 && rows.every((row) => row[field]);
-    onChange(permissions.map((row) => (EDITABLE_MODULES.includes(row.module_key) ? withTick(row, field, !allOn) : row)));
-  }
+  const rowsFor = (keys: ModuleKey[]) => permissions.filter((row) => keys.includes(row.module_key));
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-2">
-        {LEVEL_CHOICES.map((choice) => (
-          <Button key={choice.value} type="button" variant="secondary" size="sm" onClick={() => applyTo(EDITABLE_MODULES, choice.value)}>
-            {choice.value === "none" ? "Clear all" : `${choice.label} — all sections`}
-          </Button>
-        ))}
+    <div className="overflow-hidden rounded-[10px] border border-[#e3e8ee]">
+      <div className="flex items-center justify-between gap-3 bg-[#f6f8fa] px-3 py-2.5">
+        <p className="text-[13.5px] font-semibold text-[#0b1f3a]">Every section</p>
+        <LevelSelect
+          value={sharedLevel(rowsFor(EDITABLE_MODULES))}
+          label="Access for every section"
+          onChange={(level) => applyTo(EDITABLE_MODULES, level)}
+        />
       </div>
-      <div className="overflow-x-auto rounded-[10px] border border-[#e3e8ee]">
-        <table className="w-full min-w-[640px] text-left text-[13.5px]">
-          <thead className="bg-[#f6f8fa] text-[12.5px] text-[#5b6775]">
-            <tr>
-              <th className="px-3 py-2 font-semibold">Section</th>
-              {PERMISSION_TICKS.map((tick) => (
-                <th key={tick.field} className="px-3 py-2 font-semibold">
-                  <button type="button" className="underline decoration-dotted underline-offset-2" title={`${tick.title}. ${tick.sentence} Click to set this for every section.`} onClick={() => toggleColumn(tick.field)}>
-                    {TICK_SHORT[tick.field]}
-                  </button>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {MODULE_GROUPS.map((group) => {
-              const modules = group.modules.filter((key) => key !== "staff");
-              if (!modules.length) return null;
+      {MODULE_GROUPS.map((group) => {
+        const modules = group.modules.filter((key) => key !== "staff");
+        if (!modules.length) return null;
+        return (
+          <div key={group.label}>
+            <div className="flex items-center justify-between gap-3 border-t border-[#e3e8ee] bg-[#f8fafc] px-3 py-2">
+              <p className="text-[13px] font-semibold text-[#0b1f3a]">{group.label}</p>
+              <LevelSelect
+                value={sharedLevel(rowsFor(modules))}
+                label={`Access for ${group.label}`}
+                onChange={(level) => applyTo(modules, level)}
+              />
+            </div>
+            {modules.map((key) => {
+              const row = permissions.find((item) => item.module_key === key);
+              if (!row) return null;
               return (
-                <GroupRows key={group.label} label={group.label} modules={modules} permissions={permissions} onApply={applyTo} onTick={(module, field, on) => onChange(permissions.map((row) => (row.module_key === module ? withTick(row, field, on) : row)))} />
+                <div key={key} className="flex items-center justify-between gap-3 border-t border-[#eef1f4] px-3 py-2 pl-6">
+                  <p className="text-[13.5px] text-[#0b1f3a]">{MODULE_LABELS[key]}</p>
+                  <LevelSelect value={levelOf(row)} label={`Access for ${MODULE_LABELS[key]}`} onChange={(level) => applyTo([key], level)} />
+                </div>
               );
             })}
-          </tbody>
-        </table>
-      </div>
-      <p className="text-[12.5px] text-[#6b7785]">Use a button to set every section at once, or a column heading to tick that right for every section. An administrator skips this list and can do everything.</p>
-    </div>
-  );
-}
-
-function GroupRows({
-  label,
-  modules,
-  permissions,
-  onApply,
-  onTick,
-}: {
-  label: string;
-  modules: ModuleKey[];
-  permissions: PermRow[];
-  onApply: (keys: ModuleKey[], level: "none" | AccessLevel) => void;
-  onTick: (module: ModuleKey, field: PermField, on: boolean) => void;
-}) {
-  return (
-    <>
-      <tr className="border-t border-[#eef1f4] bg-[#f8fafc]">
-        <td className="px-3 py-2 font-semibold text-[#0b1f3a]" colSpan={5}>
-          <span className="mr-3">{label}</span>
-          <select
-            className="h-8 rounded-[6px] border border-[#d5dce4] bg-white px-2 text-[12.5px] font-semibold"
-            value=""
-            aria-label={`Set access for ${label}`}
-            onChange={(event) => {
-              const level = event.target.value as "none" | AccessLevel;
-              if (level) onApply(modules, level);
-            }}
-          >
-            <option value="">Set this group…</option>
-            {LEVEL_CHOICES.map((choice) => (
-              <option key={choice.value} value={choice.value}>
-                {choice.label}
-              </option>
-            ))}
-          </select>
-        </td>
-      </tr>
-      {modules.map((key) => {
-        const row = permissions.find((item) => item.module_key === key);
-        if (!row) return null;
-        return (
-          <tr key={key} className="border-t border-[#eef1f4]">
-            <td className="px-3 py-2 font-medium text-[#0b1f3a]">{MODULE_LABELS[key]}</td>
-            {PERMISSION_TICKS.map((tick) => (
-              <td key={tick.field} className="px-3 py-2">
-                <input
-                  type="checkbox"
-                  aria-label={`${tick.title} ${MODULE_LABELS[key]}`}
-                  checked={row[tick.field]}
-                  onChange={(event) => onTick(key, tick.field, event.target.checked)}
-                />
-              </td>
-            ))}
-          </tr>
+          </div>
         );
       })}
-    </>
+      <p className="border-t border-[#eef1f4] px-3 py-2 text-[12.5px] text-[#6b7785]">
+        Pick one level. Can change includes opening. Can publish includes changing. Full access can also remove items.
+      </p>
+    </div>
   );
 }
 
@@ -227,7 +180,7 @@ function RoleChoice({ value, onChange }: { value: "agent" | "admin"; onChange: (
       <label className={cn("rounded-[10px] border px-3 py-3", value === "agent" ? "border-[#0b1f3a] bg-[#f4f7fb]" : "border-[#e3e8ee]")}>
         <input className="mr-2" type="radio" name="staff-role" checked={value === "agent"} onChange={() => onChange("agent")} />
         <span className="font-semibold text-[#0b1f3a]">Agent</span>
-        <span className="mt-1 block text-[12.5px] text-[#6b7785]">Access is limited to the sections you tick below.</span>
+        <span className="mt-1 block text-[12.5px] text-[#6b7785]">Access is limited to the sections you choose below.</span>
       </label>
       <label className={cn("rounded-[10px] border px-3 py-3", value === "admin" ? "border-[#0b1f3a] bg-[#f4f7fb]" : "border-[#e3e8ee]")}>
         <input className="mr-2" type="radio" name="staff-role" checked={value === "admin"} onChange={() => onChange("admin")} />
@@ -258,24 +211,33 @@ function whatsAppNumber(phone: string) {
   return digits;
 }
 
+function mailComposeUrl(kind: "gmail" | "outlook", email: string, body: string) {
+  const subject = "Your Kenya Shipyards portal sign in";
+  if (kind === "gmail") {
+    return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+  return `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(email)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 function OneTimePasswordBox({ issued, onClose }: { issued: Issued; onClose: () => void }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"password" | "message" | null>(null);
 
   const details = signInText(issued);
+  const hasEmail = issued.email.includes("@");
 
-  async function copyPassword() {
+  async function copyText(value: string, which: "password" | "message") {
     try {
-      await navigator.clipboard.writeText(issued.password);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(value);
+      setCopied(which);
+      window.setTimeout(() => setCopied(null), 2000);
     } catch {
-      setCopied(false);
+      setCopied(null);
     }
   }
 
-  function sendEmail() {
-    const href = `mailto:${issued.email}?subject=${encodeURIComponent("Your Kenya Shipyards portal sign-in")}&body=${encodeURIComponent(details)}`;
-    window.location.href = href;
+  function sendMail(kind: "gmail" | "outlook") {
+    if (!hasEmail) return;
+    window.open(mailComposeUrl(kind, issued.email, details), "_blank", "noopener");
   }
 
   function sendWhatsApp() {
@@ -302,16 +264,25 @@ function OneTimePasswordBox({ issued, onClose }: { issued: Issued; onClose: () =
             <p className="text-[12.5px] text-[#6b7785]">One-time password</p>
             <p className="mt-0.5 select-all font-mono text-[16px] font-semibold tracking-wide text-[#0b1f3a]">{issued.password}</p>
           </div>
-          <Button variant="secondary" size="sm" onClick={copyPassword}>
-            {copied ? <Check className="h-4 w-4 text-[#1b7a3d]" /> : <Copy className="h-4 w-4" />}
-            {copied ? "Copied" : "Copy password"}
+          <Button variant="secondary" size="sm" onClick={() => copyText(issued.password, "password")}>
+            {copied === "password" ? <Check className="h-4 w-4 text-[#1b7a3d]" /> : <Copy className="h-4 w-4" />}
+            {copied === "password" ? "Copied" : "Copy password"}
           </Button>
         </div>
       </div>
-      <p className="mt-3 text-[12.5px] text-[#6b7785]">These details are shown only once. If they are lost, create a new password.</p>
+      <p className="mt-3 text-[12.5px] text-[#6b7785]">
+        These details are shown only once. Gmail and Outlook open a new message with the username and password already written. Press Send there.
+        {hasEmail ? "" : " Add a contact email if you want those buttons."}
+      </p>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button variant="secondary" onClick={sendEmail}>
-          <Mail className="h-4 w-4" /> Send by email
+        <Button variant="secondary" onClick={() => copyText(details, "message")}>
+          <Copy className="h-4 w-4" /> {copied === "message" ? "Message copied" : "Copy message"}
+        </Button>
+        <Button variant="secondary" onClick={() => sendMail("gmail")} disabled={!hasEmail}>
+          <Mail className="h-4 w-4" /> Send with Gmail
+        </Button>
+        <Button variant="secondary" onClick={() => sendMail("outlook")} disabled={!hasEmail}>
+          <Mail className="h-4 w-4" /> Send with Outlook
         </Button>
         <Button variant="secondary" onClick={sendWhatsApp}>
           <MessageCircle className="h-4 w-4" /> Send on WhatsApp

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ModuleKey } from "@/lib/modules";
 import type { NoticeItem } from "@/lib/notifications";
-import { SEEN_EVENT, readSeen } from "@/lib/notification-seen";
+import { SEEN_EVENT, readDismissed, readSeen } from "@/lib/notification-seen";
 
 const POLL_MS = 60_000;
 
@@ -11,6 +11,7 @@ const POLL_MS = 60_000;
 export function useNoticeBadges(userId: string) {
   const [marks, setMarks] = useState<NoticeItem[]>([]);
   const [seenAt, setSeenAt] = useState(0);
+  const [dismissed, setDismissed] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -25,9 +26,11 @@ export function useNoticeBadges(userId: string) {
 
   useEffect(() => {
     setSeenAt(readSeen(userId));
+    setDismissed(readDismissed(userId));
     load();
     function onSeen() {
       setSeenAt(readSeen(userId));
+      setDismissed(readDismissed(userId));
       load();
     }
     window.addEventListener(SEEN_EVENT, onSeen);
@@ -45,10 +48,11 @@ export function useNoticeBadges(userId: string) {
     for (const mark of marks) {
       if (!mark.module) continue;
       if (mark.module === "messages" && mark.kind !== "message") continue;
+      if (dismissed.includes(mark.id)) continue;
       const unread = mark.kind === "message" ? !!mark.unread : new Date(mark.createdAt).getTime() > seenAt;
       if (!unread) continue;
       counts[mark.module] = (counts[mark.module] ?? 0) + 1;
     }
     return counts;
-  }, [marks, seenAt]);
+  }, [dismissed, marks, seenAt]);
 }

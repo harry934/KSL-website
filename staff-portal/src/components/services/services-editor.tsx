@@ -21,6 +21,7 @@ import { useCan } from "@/components/portal/session-context";
 import type { ServiceRow } from "@/lib/services";
 import { keyFrom, reorderItem, uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
+import { useOpenEdit } from "@/lib/open-edit";
 
 type DocRow = { key: string; title: string; href: string };
 
@@ -66,6 +67,8 @@ export function ServicesEditor() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useOpenEdit(loading, items, (item) => setEditing(item));
 
   const categories = useMemo(
     () =>

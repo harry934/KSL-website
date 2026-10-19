@@ -10,13 +10,20 @@ export function useOpenEdit<T extends { id: string }>(loading: boolean, items: T
 
   useEffect(() => {
     if (loading || opened.current) return;
-    opened.current = true;
     const url = new URL(window.location.href);
     const id = url.searchParams.get("edit");
-    if (!id) return;
+    if (!id) {
+      opened.current = true;
+      return;
+    }
+    const item = items.find((row) => row.id === id);
+    if (!item) {
+      opened.current = true;
+      return;
+    }
+    opened.current = true;
     url.searchParams.delete("edit");
     window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
-    const item = items.find((row) => row.id === id);
-    if (item) openRef.current(item);
+    openRef.current(item);
   }, [loading, items]);
 }

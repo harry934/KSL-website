@@ -16,3 +16,24 @@ export function writeSeen(userId: string, at = Date.now()) {
   window.localStorage.setItem(seenKey(userId), String(at));
   window.dispatchEvent(new Event(SEEN_EVENT));
 }
+
+function dismissedKey(userId: string) {
+  return `ksl-notifications-read:${userId}`;
+}
+
+export function readDismissed(userId: string) {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(dismissedKey(userId)) || "[]");
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Clears these notices from the bell and the sidebar counts. */
+export function dismissNotices(userId: string, ids: string[]) {
+  const next = [...new Set([...readDismissed(userId), ...ids])].slice(-300);
+  window.localStorage.setItem(dismissedKey(userId), JSON.stringify(next));
+  writeSeen(userId, Date.now());
+}

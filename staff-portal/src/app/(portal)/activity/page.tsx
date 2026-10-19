@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 import { PageHeader } from "@/components/portal/page-header";
 import { describeActivity } from "@/lib/activity-words";
+import { activityPlace } from "@/lib/activity-place";
 import { cn } from "@/lib/cn";
 import { controlClass } from "@/components/ui/input";
 
@@ -129,6 +130,9 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
                 ? ` in ${MODULE_LABELS[featured.module_key as ModuleKey]}`
                 : ""}
               <span className="mt-1 block text-[13px] text-[#6b7785]">{formatWhen(featured.created_at)}</span>
+              <Link className="mt-2 inline-block text-[13.5px] font-semibold text-[#0b1f3a] underline" href={activityPlace(featured)}>
+                Open this change
+              </Link>
             </p>
           ) : (
             <p className="mt-2 text-[14px] text-[#6b7785]">That audit entry is no longer available.</p>
