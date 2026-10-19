@@ -7,8 +7,9 @@ Do not run the `GRANT SELECT` statement suggested by a Data API error. Anonymous
 ## 1. Turn off public sign-up
 
 1. Open [Authentication → Email provider](https://supabase.com/dashboard/project/envqgczfhxywkxcnsxrt/auth/providers?provider=Email).
-2. Under Email, turn **Allow new users to sign up** off.
-3. Save. Confirm `disable_signup` would now be true. The live check on 19 October 2026 returned `false`.
+2. Leave **Enable Email provider** on. Turning this off blocks existing staff from signing in with a password.
+3. Under Email, turn **Allow new users to sign up** off.
+4. Save.
 
 Staff accounts are created from the portal with the service role. Public registration does not create an `admin_profiles` row, but it can still create Auth users and send confirmation email.
 

@@ -34,6 +34,12 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createClient();
   const { data: signIn, error } = await supabase.auth.signInWithPassword({ email: email as string, password });
+  if (error?.code === "email_provider_disabled") {
+    return NextResponse.json(
+      { error: "Email sign-in is turned off. In Supabase, enable the Email provider and leave new sign-ups off." },
+      { status: 503 }
+    );
+  }
   if (error || !signIn.user) {
     await recordAttempt(username, ip, false);
     return NextResponse.json({ error: INVALID }, { status: 401 });
