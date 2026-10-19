@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261019-1";
+    var ASSET_V = "20261019-2";
 
     var BUNDLES = {
         wow: [
@@ -103,6 +103,9 @@
         });
         TAIL.forEach(function (src) { queue.push(src); });
         var page = document.body.getAttribute("data-ksl-page");
+        if (page === "home" || page === "news" || page === "event") {
+            queue.push("js/event-countdown.js");
+        }
         if (page) {
             queue.push("js/pages/" + page + ".js");
         }

@@ -119,7 +119,8 @@
                 title: item.title,
                 meta: when || item.summary || "",
                 sortDate: item.date || "",
-                excerpt: item.description || item.summary || item.theme || ""
+                excerpt: item.description || item.summary || item.theme || "",
+                raw: item
             };
         }
 
@@ -172,6 +173,7 @@
 
             if (!source.length) {
                 if (pages) pages.innerHTML = "";
+                grid.classList.remove("ksl-count-grid");
                 grid.innerHTML = emptyState(
                     activeTab === "events" ? "No events available" : "News is coming soon",
                     activeTab === "events" ? "There are no upcoming events to show." : "There are no published news articles yet.",
@@ -182,6 +184,7 @@
 
             if (!filtered.length) {
                 if (pages) pages.innerHTML = "";
+                grid.classList.remove("ksl-count-grid");
                 grid.innerHTML = emptyState(
                     activeTab === "events" ? "No matching events" : "No matching news",
                     "Nothing matches that search. Try a shorter word, or browse the full list.",
@@ -192,7 +195,18 @@
             }
 
             var start = (page - 1) * PAGE_SIZE;
-            grid.innerHTML = filtered.slice(start, start + PAGE_SIZE).map(feedCard).join("");
+            var slice = filtered.slice(start, start + PAGE_SIZE);
+            if (activeTab === "events" && window.KSL_EVENTS) {
+                grid.classList.add("ksl-count-grid");
+                grid.innerHTML = slice.map(function (item) {
+                    if (item.raw && String(item.sortDate || "") >= today) return window.KSL_EVENTS.card(item.raw);
+                    return feedCard(item);
+                }).join("");
+                window.KSL_EVENTS.watch(grid);
+            } else {
+                grid.classList.remove("ksl-count-grid");
+                grid.innerHTML = slice.map(feedCard).join("");
+            }
             renderPages(filtered.length);
         }
 

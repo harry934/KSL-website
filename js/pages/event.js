@@ -146,9 +146,27 @@
             "<strong>" + escapeHtml(formatDate(evt.date, { day: "2-digit" })) + "</strong>" +
             "<span>" + escapeHtml(formatDate(evt.date, { month: "short", year: "numeric" })) + "</span>";
 
+        var info = window.KSL_EVENTS ? window.KSL_EVENTS.phase(evt) : null;
+        var state = info ? info.state : (past ? "ended" : "countdown");
         var status = byId("kslEventStatus");
-        status.textContent = statusText(days);
-        status.classList.toggle("is-past", past);
+        status.textContent = state === "live"
+            ? "Happening now"
+            : state === "ended"
+                ? "This event has ended"
+                : state === "soon"
+                    ? "Starts soon"
+                    : statusText(days);
+        status.classList.toggle("is-past", state === "ended");
+        status.classList.toggle("is-live", state === "live");
+
+        var clock = byId("kslEventClock");
+        if (clock && info && info.start && window.KSL_EVENTS) {
+            clock.innerHTML =
+                '<div class="ksl-count-inline" data-ksl-count data-start="' + info.start.toISOString() + '" data-end="' + info.end.toISOString() + '">' +
+                window.KSL_EVENTS.clockMarkup() +
+                "</div>";
+            window.KSL_EVENTS.watch(clock);
+        }
 
         var icons = {
             time: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
@@ -167,7 +185,7 @@
         byId("kslEventFacts").innerHTML = facts;
 
         var actions = "";
-        if (!past) {
+        if (state !== "ended") {
             var ics = URL.createObjectURL(new Blob([toIcal(evt)], { type: "text/calendar;charset=utf-8" }));
             actions += '<a class="ksl-event-btn" href="' + ics + '" download="' + escapeHtml(evt.slug) + '.ics">Add to calendar</a>';
         }
