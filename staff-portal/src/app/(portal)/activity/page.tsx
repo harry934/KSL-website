@@ -55,7 +55,7 @@ function formatWhen(iso: string) {
   }).format(new Date(iso));
 }
 
-type Params = { page?: string; module?: string; who?: string; what?: string; from?: string; to?: string };
+type Params = { page?: string; module?: string; who?: string; what?: string; from?: string; to?: string; entry?: string };
 
 export default async function ActivityPage({ searchParams }: { searchParams: Promise<Params> }) {
   const session = await getStaffSession();
@@ -68,6 +68,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
   const what = params.what && params.what in ACTION_GROUPS ? params.what : "";
   const from = params.from && DATE.test(params.from) ? params.from : "";
   const to = params.to && DATE.test(params.to) ? params.to : "";
+  const entryId = params.entry && UUID.test(params.entry) ? params.entry : "";
   const filtered = Boolean(moduleFilter || who || what || from || to);
 
   const admin = createAdminClient();
@@ -84,11 +85,21 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
   if (from) query = query.gte("created_at", `${from}T00:00:00+03:00`);
   if (to) query = query.lte("created_at", `${to}T23:59:59.999+03:00`);
 
-  const [{ data, count }, { data: people }] = await Promise.all([
+  const entryQuery = entryId
+    ? admin
+        .from("activity_log")
+        .select("id, module_key, action, entity_type, entity_id, metadata, created_at, admin_profiles(display_name, username)")
+        .eq("id", entryId)
+        .maybeSingle()
+    : Promise.resolve({ data: null });
+
+  const [{ data, count }, { data: people }, { data: entryRow }] = await Promise.all([
     query,
     admin.from("admin_profiles").select("id, display_name, username").order("display_name"),
+    entryQuery,
   ]);
   const rows = (data ?? []) as unknown as Row[];
+  const featured = (entryRow ?? null) as Row | null;
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
   const href = (p: number, m: string | null = moduleFilter) => {
     const qs = new URLSearchParams({ page: String(p) });
@@ -97,12 +108,33 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
     if (what) qs.set("what", what);
     if (from) qs.set("from", from);
     if (to) qs.set("to", to);
+    if (entryId) qs.set("entry", entryId);
     return `/activity?${qs}`;
   };
 
   return (
     <div className="flex flex-col gap-[14px]">
       <PageHeader title="Activity log" description="Every sign-in and every change made in this portal, newest first." />
+
+      {entryId && (
+        <section className="ksl-card border-[#c5a028] p-4">
+          <p className="text-[12.5px] font-semibold uppercase tracking-wide text-[#99792c]">From your notification</p>
+          {featured ? (
+            <p className="mt-2 text-[15px] text-[#0b1f3a]">
+              <span className="font-semibold">{featured.admin_profiles?.display_name ?? "Removed account"}</span>
+              {featured.admin_profiles?.username ? <span className="text-[#6b7785]"> @{featured.admin_profiles.username}</span> : null}
+              {" "}
+              {describeActivity(featured)}
+              {featured.module_key && featured.module_key in MODULE_LABELS
+                ? ` in ${MODULE_LABELS[featured.module_key as ModuleKey]}`
+                : ""}
+              <span className="mt-1 block text-[13px] text-[#6b7785]">{formatWhen(featured.created_at)}</span>
+            </p>
+          ) : (
+            <p className="mt-2 text-[14px] text-[#6b7785]">That audit entry is no longer available.</p>
+          )}
+        </section>
+      )}
 
       <form method="get" action="/activity" className="ksl-card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto_auto_auto]">
         <label className="text-[12.5px] font-semibold text-[#5b6775]">
@@ -186,7 +218,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
               </tr>
             )}
             {rows.map((row) => (
-              <tr key={row.id} className="border-t border-[#eef1f4]">
+              <tr key={row.id} id={row.id === entryId ? "audit-entry" : undefined} className={row.id === entryId ? "border-t border-[#eef1f4] bg-[#fff8e8]" : "border-t border-[#eef1f4]"}>
                 <td className="whitespace-nowrap px-4 py-3 text-[#6b7785]">{formatWhen(row.created_at)}</td>
                 <td className="px-4 py-3">
                   <span className="font-semibold text-[#0b1f3a]">{row.admin_profiles?.display_name ?? "Removed account"}</span>

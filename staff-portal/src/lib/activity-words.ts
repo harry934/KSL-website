@@ -48,13 +48,19 @@ export function describeActivity(row: {
 }) {
   const username = typeof row.metadata?.username === "string" ? row.metadata.username : null;
   if (row.action === "sign in") return "signed in";
+  if (row.action === "set role") {
+    const who = username ? `@${username}` : "a staff account";
+    return row.metadata?.superAdmin ? `made ${who} an administrator with full access` : `changed ${who} back to an agent`;
+  }
   if (row.action === "change password") return "changed their password";
   if (row.action === "update profile") return "updated their details";
 
   const verb = ACTION_WORDS[row.action] ?? row.action.replace(/_/g, " ");
   if (row.entity_type === "admin_profile") {
     const who = username ? `@${username}` : "a staff account";
-    if (row.action === "create") return `added the staff account ${who}`;
+    if (row.action === "create") {
+      return row.metadata?.superAdmin ? `added ${who} as an administrator` : `added the staff account ${who}`;
+    }
     if (row.action === "delete") return `deleted the staff account ${who}`;
     return `${verb} ${who}`;
   }

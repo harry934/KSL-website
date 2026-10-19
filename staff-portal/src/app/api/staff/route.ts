@@ -97,12 +97,13 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = created.user.id;
+  const superAdmin = body.superAdmin === true;
   const { error: profileError } = await admin.from("admin_profiles").insert({
     id: userId,
     username,
     contact_email: contactEmail,
     display_name: displayName,
-    is_super_admin: false,
+    is_super_admin: superAdmin,
     is_active: true,
     must_change_password: true,
     must_change_username: true,
@@ -114,10 +115,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Could not create the account. Please try again." }, { status: 500 });
   }
 
-  const rows = permissionRows(userId, body.permissions);
-  if (rows.length) await admin.from("admin_module_permissions").insert(rows);
+  if (!superAdmin) {
+    const rows = permissionRows(userId, body.permissions);
+    if (rows.length) await admin.from("admin_module_permissions").insert(rows);
+  }
 
-  await logActivity(session.userId, "staff", "create", "admin_profile", userId, { username });
+  await logActivity(session.userId, "staff", "create", "admin_profile", userId, { username, superAdmin });
   return NextResponse.json({ id: userId, username, oneTimePassword: password });
 }
 
@@ -137,8 +140,35 @@ export async function PATCH(req: NextRequest) {
     .eq("id", id)
     .maybeSingle();
   if (!target) return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
-  if (target.is_super_admin || target.id === session.userId) {
-    return NextResponse.json({ error: "Super admin accounts are managed from Account settings." }, { status: 403 });
+  if (target.id === session.userId) {
+    return NextResponse.json({ error: "Change your own details from My account." }, { status: 403 });
+  }
+
+  if (action === "set_role") {
+    const makeAdmin = body.superAdmin === true;
+    if (!makeAdmin && target.is_super_admin) {
+      const { count } = await admin
+        .from("admin_profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("is_super_admin", true);
+      if ((count ?? 0) <= 1) {
+        return NextResponse.json({ error: "Keep at least one administrator." }, { status: 400 });
+      }
+    }
+    const { error: roleErr } = await admin.from("admin_profiles").update({ is_super_admin: makeAdmin }).eq("id", id);
+    if (roleErr) return NextResponse.json({ error: "Could not change this role." }, { status: 500 });
+    await logActivity(session.userId, "staff", "set role", "admin_profile", id, {
+      username: target.username,
+      superAdmin: makeAdmin,
+    });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (target.is_super_admin && action === "permissions") {
+    return NextResponse.json({ error: "Change this person to an agent before setting section access." }, { status: 403 });
+  }
+  if (target.is_super_admin && action !== "profile" && action !== "reset_password") {
+    return NextResponse.json({ error: "Change this person to an agent before suspending or limiting them." }, { status: 403 });
   }
 
   if (action === "permissions") {

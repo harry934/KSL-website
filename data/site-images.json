@@ -346,6 +346,13 @@
       "kind": "img"
     },
     {
+      "id": "index.17-nairobi-hq",
+      "page": "Home",
+      "label": "Nairobi HQ",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
       "id": "project.1-mv-uhuru-ii",
       "page": "Projects",
       "label": "MV Uhuru II",

@@ -48,7 +48,7 @@ function visibleModules(session: StaffSession): ModuleKey[] {
   return session.permissions.filter((p) => p.can_view && p.module_key !== "staff").map((p) => p.module_key);
 }
 
-function toActivityItem(row: ActivityRow, visible: ModuleKey[]): NoticeItem {
+function toActivityItem(row: ActivityRow, visible: ModuleKey[], openAudit: boolean): NoticeItem {
   const key = isModule(row.module_key) ? row.module_key : null;
   return {
     id: row.id,
@@ -57,7 +57,7 @@ function toActivityItem(row: ActivityRow, visible: ModuleKey[]): NoticeItem {
     who: row.admin_profiles?.display_name || "Someone",
     text: describeActivity(row),
     area: key ? MODULE_LABELS[key] : null,
-    href: key && visible.includes(key) ? MODULE_ROUTES[key] : "/",
+    href: openAudit ? `/activity?entry=${row.id}` : key && visible.includes(key) ? MODULE_ROUTES[key] : "/",
     createdAt: row.created_at,
   };
 }
@@ -112,7 +112,7 @@ export async function loadNotifications(session: StaffSession): Promise<NoticeIt
 
   const activity = ((activityRows ?? []) as unknown as ActivityRow[])
     .filter((row) => isModule(row.module_key))
-    .map((row) => toActivityItem(row, visible));
+    .map((row) => toActivityItem(row, visible, session.isSuperAdmin));
 
   const messages = ((messageRows ?? []) as MessageRow[]).map((row) => ({
     id: `message:${row.id}`,
