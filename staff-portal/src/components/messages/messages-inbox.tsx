@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useCan } from "@/components/portal/session-context";
+import { Button } from "@/components/ui/button";
+import { useFeedback } from "@/components/ui/feedback";
 import { Notice } from "@/components/ui/form-bits";
 import { cn } from "@/lib/cn";
 
@@ -31,9 +34,12 @@ function fullName(row: Message) {
 }
 
 export function MessagesInbox({ initialId }: { initialId: string | null }) {
+  const canDelete = useCan("messages", "delete");
+  const { confirm, toast } = useFeedback();
   const [messages, setMessages] = useState<Message[]>([]);
   const [openId, setOpenId] = useState<string | null>(initialId);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const marked = useRef(new Set<string>());
 
@@ -72,6 +78,30 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
     marked.current.add(initialId);
     open(row);
   }, [initialId, loading, messages]);
+
+  async function remove(row: Message) {
+    const ok = await confirm({
+      title: "Delete this message?",
+      message: `"${row.subject}" from ${fullName(row)} will be removed. This cannot be undone.`,
+      confirmLabel: "Delete message",
+      danger: true,
+    });
+    if (!ok) return;
+    setDeleting(true);
+    const res = await fetch(`/api/messages?id=${encodeURIComponent(row.id)}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    setDeleting(false);
+    if (!res.ok) {
+      toast(data.error ?? "Could not delete the message.", "error");
+      return;
+    }
+    setMessages((prev) => prev.filter((item) => item.id !== row.id));
+    setOpenId(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("id");
+    window.history.replaceState(null, "", url.pathname + url.search);
+    toast("Message deleted.");
+  }
 
   const openRow = messages.find((row) => row.id === openId) ?? null;
 
@@ -124,6 +154,13 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
               <p className="mt-1 text-[13.5px] text-[#5b6775]">Preferred contact: {openRow.preferred_contact}</p>
             )}
             <p className="mt-4 whitespace-pre-wrap text-[15px] leading-relaxed text-[#1f2933]">{openRow.message}</p>
+            {canDelete && (
+              <div className="mt-6 border-t border-[#eef1f4] pt-4">
+                <Button variant="danger" disabled={deleting} onClick={() => remove(openRow)}>
+                  {deleting ? "Deleting…" : "Delete message"}
+                </Button>
+              </div>
+            )}
           </article>
         )}
       </section>
