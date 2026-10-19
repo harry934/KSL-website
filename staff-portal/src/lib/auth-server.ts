@@ -84,6 +84,13 @@ export function usernameChoices(displayName: string) {
   return choices.length ? choices : ["agent", "agent2", "agent3"];
 }
 
+export const ONE_TIME_PASSWORD_MS = 10 * 60 * 1000;
+
+/** When a newly issued password stops working. */
+export function oneTimePasswordExpiry(from = Date.now()) {
+  return new Date(from + ONE_TIME_PASSWORD_MS).toISOString();
+}
+
 /** Readable one-time password such as "hT7k-Q4mz-9Rp2": no look-alike characters, always letters and numbers. */
 export function generateOneTimePassword() {
   const all = OTP_LETTERS + OTP_DIGITS;

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { clientIp, formatClock, lockedUntil, recordAttempt } from "@/lib/auth-server";
+import { clientIp, formatClock, generateOneTimePassword, lockedUntil, recordAttempt } from "@/lib/auth-server";
 import { normalizeUsername } from "@/lib/accounts";
 import { logActivity } from "@/lib/api-auth";
 
@@ -26,6 +26,22 @@ export async function POST(req: NextRequest) {
   }
 
   const admin = createAdminClient();
+  const { data: gate } = await admin
+    .from("admin_profiles")
+    .select("id, is_active, must_change_password, one_time_password_expires_at")
+    .eq("username", username)
+    .maybeSingle();
+  const expiresAt = gate?.one_time_password_expires_at ? new Date(gate.one_time_password_expires_at).getTime() : 0;
+  if (gate?.is_active && gate.must_change_password && expiresAt && expiresAt <= Date.now()) {
+    const discarded = `${generateOneTimePassword()}${generateOneTimePassword()}`.replace(/-/g, "");
+    await admin.auth.admin.updateUserById(gate.id, { password: discarded });
+    await recordAttempt(username, ip, false);
+    return NextResponse.json(
+      { error: "This one-time password has expired. Ask an administrator for a new one." },
+      { status: 401 }
+    );
+  }
+
   const { data: email } = await admin.rpc("auth_email_for_username", { p_username: username });
   if (!email) {
     await recordAttempt(username, ip, false);

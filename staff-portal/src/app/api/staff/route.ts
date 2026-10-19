@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity } from "@/lib/api-auth";
 import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
-import { authEmailFor, generateOneTimePassword, usernameChoices } from "@/lib/auth-server";
+import { authEmailFor, generateOneTimePassword, oneTimePasswordExpiry, usernameChoices } from "@/lib/auth-server";
 import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 import { avatarUrl } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
@@ -98,6 +98,7 @@ export async function POST(req: NextRequest) {
 
   const userId = created.user.id;
   const superAdmin = body.superAdmin === true;
+  const expiresAt = oneTimePasswordExpiry();
   const { error: profileError } = await admin.from("admin_profiles").insert({
     id: userId,
     username,
@@ -107,6 +108,7 @@ export async function POST(req: NextRequest) {
     is_active: true,
     must_change_password: true,
     must_change_username: true,
+    one_time_password_expires_at: expiresAt,
     created_by: session.userId,
   });
 
@@ -121,7 +123,7 @@ export async function POST(req: NextRequest) {
   }
 
   await logActivity(session.userId, "staff", "create", "admin_profile", userId, { username, superAdmin });
-  return NextResponse.json({ id: userId, username, oneTimePassword: password });
+  return NextResponse.json({ id: userId, username, oneTimePassword: password, expiresAt });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -202,11 +204,12 @@ export async function PATCH(req: NextRequest) {
       .eq("id", id);
   } else if (action === "reset_password") {
     const password = generateOneTimePassword();
+    const expiresAt = oneTimePasswordExpiry();
     const { error: authErr } = await admin.auth.admin.updateUserById(id, { password });
     if (authErr) return NextResponse.json({ error: "Could not reset the password. Please try again." }, { status: 400 });
-    await admin.from("admin_profiles").update({ must_change_password: true }).eq("id", id);
+    await admin.from("admin_profiles").update({ must_change_password: true, one_time_password_expires_at: expiresAt }).eq("id", id);
     await logActivity(session.userId, "staff", "reset password", "admin_profile", id, { username: target.username });
-    return NextResponse.json({ ok: true, oneTimePassword: password });
+    return NextResponse.json({ ok: true, oneTimePassword: password, expiresAt });
   } else if (action === "set_active") {
     const active = !!body.active;
     await admin.from("admin_profiles").update({ is_active: active }).eq("id", id);

@@ -48,8 +48,14 @@ export async function POST(req: NextRequest) {
   });
   if (error) return NextResponse.json({ error: "Could not change the sign-in details. Please try again." }, { status: 400 });
 
-  const profileUpdate: { must_change_password: boolean; username?: string; must_change_username?: boolean } = {
+  const profileUpdate: {
+    must_change_password: boolean;
+    one_time_password_expires_at: null;
+    username?: string;
+    must_change_username?: boolean;
+  } = {
     must_change_password: false,
+    one_time_password_expires_at: null,
   };
   if (session.mustChangeUsername) {
     profileUpdate.username = newUsername;

@@ -33,7 +33,7 @@ type StaffRow = {
 };
 
 type Panel = { kind: "create" } | { kind: "edit"; row: StaffRow } | null;
-type Issued = { username: string; password: string; email: string; phone: string; isNew: boolean };
+type Issued = { username: string; password: string; email: string; phone: string; isNew: boolean; expiresAt: string };
 
 function emptyPerms(): PermRow[] {
   return EDITABLE_MODULES.map((key) => ({
@@ -191,13 +191,29 @@ function RoleChoice({ value, onChange }: { value: "agent" | "admin"; onChange: (
   );
 }
 
+function expiryLabel(iso: string) {
+  try {
+    return new Intl.DateTimeFormat("en-KE", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: "Africa/Nairobi",
+    }).format(new Date(iso));
+  } catch {
+    return "";
+  }
+}
+
 function signInText(issued: Issued) {
+  const until = expiryLabel(issued.expiresAt);
   return [
     "Kenya Shipyards staff portal",
     "",
     `Username: ${issued.username}`,
     `One-time password: ${issued.password}`,
     "",
+    until
+      ? `This password stops working at ${until} East Africa Time (10 minutes after it was created).`
+      : "This password stops working after 10 minutes.",
     issued.isNew
       ? "Sign in and choose your own username and password."
       : "Sign in with this one-time password and choose a new password.",
@@ -252,7 +268,11 @@ function OneTimePasswordBox({ issued, onClose }: { issued: Issued; onClose: () =
         {issued.isNew ? "Agent created" : "New one-time password"}
       </h2>
       <p className="mt-1 text-[13.5px] text-[#5b6775]">
-        Give this to the agent. {issued.isNew ? "They will choose their own username and password the first time they sign in." : "They will choose a new password the next time they sign in."}
+        Give this to the agent.{" "}
+        {expiryLabel(issued.expiresAt)
+          ? `It stops working at ${expiryLabel(issued.expiresAt)} East Africa Time.`
+          : "It stops working after 10 minutes."}{" "}
+        {issued.isNew ? "They will choose their own username and password the first time they sign in." : "They will choose a new password the next time they sign in."}
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div className="rounded-[8px] bg-[#f6f8fa] px-4 py-3">
@@ -381,6 +401,7 @@ export function StaffManager() {
         email: email.trim(),
         phone: phone.trim(),
         isNew: true,
+        expiresAt: data.expiresAt,
       });
       load();
     }
@@ -416,7 +437,7 @@ export function StaffManager() {
   async function resetPassword(row: StaffRow) {
     const ok = await confirm({
       title: `Give ${row.display_name || row.username} a new one-time password?`,
-      message: "Their current password will stop working. They will choose a new one when they next sign in.",
+      message: "Their current password will stop working. The new one lasts 10 minutes, then they must be given another.",
       confirmLabel: "Create new password",
     });
     if (!ok) return;
@@ -429,6 +450,7 @@ export function StaffManager() {
         email: row.contact_email ?? "",
         phone: "",
         isNew: false,
+        expiresAt: data.expiresAt,
       });
       load();
     }
