@@ -36,6 +36,19 @@ The portal has no enrollment screen and no second-factor step after `signInWithP
 2. Do not require MFA for every session until the portal can enroll a factor and complete the challenge. That application work is not in this change.
 3. Official behaviour is described in [Multi-Factor Authentication](https://supabase.com/docs/guides/auth/auth-mfa).
 
+## Passkeys for existing staff
+
+The portal can register a passkey only after a staff member has signed in. It does not create accounts, and the OAuth server stays off.
+
+1. Open [Authentication → Passkeys](https://supabase.com/dashboard/project/envqgczfhxywkxcnsxrt/auth/passkeys).
+2. Turn on **Enable Passkey authentication**.
+3. Relying party display name: `Kenya Shipyards Limited`.
+4. Relying party ID: `ksl-websitemink.vercel.app` with no trailing dot.
+5. Relying party origins: `https://ksl-websitemink.vercel.app`.
+6. Save. Leave public sign-up off.
+
+A passkey is tied to that address. When the portal moves to `kenyashipyards.co.ke`, change the relying party to that domain and have each staff member add the passkey again.
+
 ## 4. Redirect allow-list and backups
 
 1. Open [URL configuration](https://supabase.com/dashboard/project/envqgczfhxywkxcnsxrt/auth/url-configuration).
