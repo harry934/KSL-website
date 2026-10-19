@@ -3,11 +3,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getStaffSession } from "@/lib/session";
 import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
 import { authEmailFor } from "@/lib/auth-server";
-import { logActivity } from "@/lib/api-auth";
+import { credentialsCurrent, logActivity } from "@/lib/api-auth";
 
 export async function PATCH(req: NextRequest) {
   const session = await getStaffSession();
   if (!session) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
+  const blocked = credentialsCurrent(session);
+  if (blocked) return blocked;
 
   const body = await req.json().catch(() => ({}));
   const username = session.isSuperAdmin ? normalizeUsername(body.username) : session.username;

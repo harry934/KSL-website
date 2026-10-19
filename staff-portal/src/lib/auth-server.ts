@@ -9,9 +9,12 @@ const MAX_FAILURES_PER_IDENTIFIER = 5;
 const MAX_FAILURES_PER_IP = 20;
 
 export function clientIp(req: NextRequest) {
+  const real = req.headers.get("x-real-ip")?.trim();
+  if (real) return real;
   const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim();
-  return req.headers.get("x-real-ip") ?? "unknown";
+  if (!forwarded) return "unknown";
+  const hops = forwarded.split(",").map((hop) => hop.trim()).filter(Boolean);
+  return hops[hops.length - 1] ?? "unknown";
 }
 
 /** When sign-in is blocked, the time it opens again; null when not blocked. */

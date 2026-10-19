@@ -7,7 +7,7 @@ export async function GET() {
   const admin = createAdminClient();
   const [settingsRes, itemsRes] = await Promise.all([
     admin.from("downloads_settings").select("base_url").eq("id", "default").maybeSingle(),
-    admin.from("download_items").select("*").order("sort_order", { ascending: true }),
+    admin.from("download_items").select("*").eq("status", "published").order("sort_order", { ascending: true }),
   ]);
 
   if (settingsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });

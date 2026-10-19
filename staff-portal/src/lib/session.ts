@@ -4,7 +4,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { ModulePermission } from "@/lib/modules";
 import { isInternalEmail } from "@/lib/accounts";
 
-export function avatarUrl(path: string) {
+export async function avatarUrl(path: string) {
+  const admin = createAdminClient();
+  const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
+  const name = path.slice(folder.length + (folder ? 1 : 0));
+  const { data: listed, error } = await admin.storage.from("avatars").list(folder, { search: name, limit: 10 });
+  const stored = !error && listed?.some((item) => item.name === name);
+  if (stored) {
+    const { data } = await admin.storage.from("avatars").createSignedUrl(path, 60 * 60);
+    if (data?.signedUrl) return data.signedUrl;
+  }
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media-public/${path}`;
 }
 
@@ -63,7 +72,7 @@ export const getStaffSession = cache(async (): Promise<StaffSession | null> => {
     isActive: profile.is_active,
     mustChangePassword: profile.must_change_password,
     mustChangeUsername: profile.must_change_username,
-    avatarUrl: profile.avatar_path ? avatarUrl(profile.avatar_path) : null,
+    avatarUrl: profile.avatar_path ? await avatarUrl(profile.avatar_path) : null,
     permissions: profile.admin_module_permissions ?? [],
   };
 });

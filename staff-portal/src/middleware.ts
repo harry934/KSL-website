@@ -3,8 +3,6 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const ALLOWED_ORIGINS = new Set([
   "https://ksl-website.vercel.app",
-  "https://kenyashipyards.co.ke",
-  "https://www.kenyashipyards.co.ke",
 ]);
 
 function isAllowedOrigin(origin: string) {

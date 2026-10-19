@@ -51,10 +51,12 @@ export async function GET() {
     .order("created_at", { ascending: false });
 
   if (dbError) return NextResponse.json({ error: "Could not load the staff list." }, { status: 500 });
-  const staff = (data ?? []).map(({ avatar_path, ...row }) => ({
-    ...row,
-    avatar_url: avatar_path ? avatarUrl(avatar_path) : null,
-  }));
+  const staff = await Promise.all(
+    (data ?? []).map(async ({ avatar_path, ...row }) => ({
+      ...row,
+      avatar_url: avatar_path ? await avatarUrl(avatar_path) : null,
+    }))
+  );
   return NextResponse.json({ staff });
 }
 

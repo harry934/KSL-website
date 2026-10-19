@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { credentialsCurrent } from "@/lib/api-auth";
 import { getStaffSession } from "@/lib/session";
 import { canAccess, MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 
@@ -12,6 +13,8 @@ function safeLike(value: string) {
 export async function GET(req: NextRequest) {
   const session = await getStaffSession();
   if (!session) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
+  const blocked = credentialsCurrent(session);
+  if (blocked) return blocked;
 
   const q = new URL(req.url).searchParams.get("q")?.trim() ?? "";
   if (q.length < 2) return NextResponse.json({ results: [] });

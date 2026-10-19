@@ -7,7 +7,7 @@ export async function GET() {
   const admin = createAdminClient();
   const [settingsRes, assetsRes] = await Promise.all([
     admin.from("press_settings").select("boilerplate, contact_email, contact_phone").eq("id", "default").maybeSingle(),
-    admin.from("press_assets").select("*").order("sort_order", { ascending: true }),
+    admin.from("press_assets").select("*").eq("status", "published").order("sort_order", { ascending: true }),
   ]);
 
   if (settingsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });

@@ -126,21 +126,25 @@
                     '<div class="ksl-empty-state-actions"><a class="btn btn-primary" href="mailto:careers@kenyashipyards.co.ke">Email careers</a><a class="btn btn-outline-primary" href="contact.html">Contact us</a></div>';
             }
             vacancies.forEach(function (job) {
+                var esc = window.KSL_ESCAPE || function (value) { return String(value == null ? "" : value); };
+                var link = window.KSL_SAFE_LINK || function () { return ""; };
+                var apply = link(job.applyUrl) || link("mailto:" + (data.applyEmail || ""));
                 var article = document.createElement("article");
                 article.className = "ksl-career-card mb-4 p-4 bg-white shadow-sm";
                 article.setAttribute("data-locations", placesOf(job.location).join("|"));
                 article.innerHTML =
-                    "<h3 class=\"h5\">" + job.title + "</h3>" +
-                    "<p class=\"text-muted mb-2\">" + job.location + " · Closes " + job.closingDate + "</p>" +
-                    "<p>" + job.summary + "</p>" +
-                    '<a class="btn btn-primary" href="' + (job.applyUrl || ("mailto:" + data.applyEmail)) + '">Apply</a>';
+                    "<h3 class=\"h5\">" + esc(job.title) + "</h3>" +
+                    "<p class=\"text-muted mb-2\">" + esc(job.location) + " · Closes " + esc(job.closingDate) + "</p>" +
+                    "<p>" + esc(job.summary) + "</p>" +
+                    (apply ? '<a class="btn btn-primary" href="' + esc(apply) + '">Apply</a>' : "");
                 list.appendChild(article);
             });
             buildFilters(vacancies);
             var intern = document.getElementById("ksl-careers-internships");
             if (intern && data.internships && data.internships.length) {
                 intern.innerHTML = data.internships.map(function (row) {
-                    return "<li><strong>" + row.title + "</strong> — " + row.location + ". " + row.summary + "</li>";
+                    var esc = window.KSL_ESCAPE || function (value) { return String(value == null ? "" : value); };
+                    return "<li><strong>" + esc(row.title) + "</strong> — " + esc(row.location) + ". " + esc(row.summary) + "</li>";
                 }).join("");
             }
             var how = document.getElementById("ksl-careers-how");

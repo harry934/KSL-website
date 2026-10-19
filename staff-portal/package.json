@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --experimental-strip-types --test src/lib/security.test.ts",
     "bootstrap:admin": "node scripts/bootstrap-super-admin.mjs",
     "import:faq": "node scripts/import-faq-from-json.mjs",
     "import:news": "node scripts/import-news-from-json.mjs"
@@ -23,6 +24,7 @@
     "next": "15.5.28",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "sanitize-html": "^2.18.1",
     "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
@@ -31,6 +33,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sanitize-html": "^2.16.2",
     "eslint": "^9",
     "eslint-config-next": "15.5.28",
     "tailwindcss": "^4",

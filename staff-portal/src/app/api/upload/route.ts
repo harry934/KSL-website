@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, dbError } from "@/lib/api-auth";
+import { matchesDeclaredType } from "@/lib/file-bytes";
 import { privateRef } from "@/lib/stored-file";
 import type { ModuleKey } from "@/lib/modules";
 import { NextRequest, NextResponse } from "next/server";
@@ -63,6 +64,9 @@ export async function POST(req: NextRequest) {
   const path = `${moduleKey}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const admin = createAdminClient();
   const buffer = Buffer.from(await file.arrayBuffer());
+  if (!matchesDeclaredType(buffer, ext)) {
+    return NextResponse.json({ error: "The file contents do not match the selected type." }, { status: 400 });
+  }
   const image = IMAGE_EXTS.has(ext);
   const bucket = image ? "media-public" : "downloads";
   const { error: upErr } = await admin.storage.from(bucket).upload(path, buffer, {

@@ -2,6 +2,14 @@ import { getStaffSession } from "@/lib/session";
 import { canAccess, type ModuleKey } from "@/lib/modules";
 import { NextResponse } from "next/server";
 
+export function credentialsCurrent(session: { mustChangePassword: boolean; mustChangeUsername: boolean }) {
+  if (!session.mustChangePassword && !session.mustChangeUsername) return null;
+  return NextResponse.json(
+    { error: "Change your sign-in details before continuing." },
+    { status: 403 }
+  );
+}
+
 export async function requireStaff(
   module: ModuleKey | null,
   action: "view" | "edit" | "publish" | "delete"
@@ -10,6 +18,8 @@ export async function requireStaff(
   if (!session) {
     return { error: NextResponse.json({ error: "Please sign in again." }, { status: 401 }), session: null };
   }
+  const blocked = credentialsCurrent(session);
+  if (blocked) return { error: blocked, session: null };
   if (module && !canAccess(session.permissions, module, action, session.isSuperAdmin)) {
     return { error: NextResponse.json({ error: NOT_ALLOWED }, { status: 403 }), session: null };
   }

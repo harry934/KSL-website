@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { clientIp } from "@/lib/auth-server";
+import { verifyContactToken, verifyTurnstile } from "@/lib/contact-token";
 import { NextRequest, NextResponse } from "next/server";
 
 const PREFERRED = new Set(["Phone Call", "Email", "Message / WhatsApp", ""]);
@@ -9,6 +10,10 @@ function clip(value: unknown, max: number) {
 }
 
 export async function POST(req: NextRequest) {
+  const length = Number(req.headers.get("content-length") || 0);
+  if (length > 32_000) {
+    return NextResponse.json({ error: "That message is too large." }, { status: 413 });
+  }
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Send the form again." }, { status: 400 });
@@ -35,8 +40,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  const challenge = verifyContactToken(body.challenge);
+  if (challenge === "too_fast") {
+    return NextResponse.json({ error: "Please wait a moment, then send the message again.", code: "too_fast" }, { status: 400 });
+  }
+  if (challenge !== "ok") {
+    return NextResponse.json({ error: "Refresh the page, then send the message again." }, { status: 400 });
+  }
+
   const admin = createAdminClient();
   const ip = clientIp(req).slice(0, 80);
+  if (!(await verifyTurnstile(body.turnstileToken, ip))) {
+    return NextResponse.json({ error: "The security check failed. Refresh the page and try again." }, { status: 400 });
+  }
   const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const { count } = await admin
     .from("contact_attempts")

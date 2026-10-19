@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261018-34";
+    var ASSET_V = "20261019-1";
 
     var BUNDLES = {
         wow: [
@@ -16,8 +16,8 @@
     };
 
     var CORE = [
-        "https://code.jquery.com/jquery-3.4.1.min.js",
-        "https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"
+        "lib/vendor/jquery-3.7.1.min.js",
+        "lib/vendor/bootstrap.bundle.min.js"
     ];
 
     var TAIL = [

@@ -6,7 +6,7 @@ export async function GET() {
   const admin = createAdminClient();
   const [settingsRes, listingsRes] = await Promise.all([
     admin.from("careers_settings").select("apply_email, apply_note").eq("id", "default").maybeSingle(),
-    admin.from("career_listings").select("*").order("sort_order", { ascending: true }),
+    admin.from("career_listings").select("*").eq("status", "published").order("sort_order", { ascending: true }),
   ]);
 
   if (settingsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });

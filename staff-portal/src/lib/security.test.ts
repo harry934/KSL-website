@@ -1,0 +1,107 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { toPublicCareersPayload } from "./careers.ts";
+import { toPublicDownloadsPayload } from "./downloads.ts";
+import { matchesDeclaredType } from "./file-bytes.ts";
+import { issueContactToken, verifyContactToken } from "./contact-token.ts";
+import { sanitizeRichHtml } from "./sanitize-html.ts";
+
+test("published careers stay public and drafts stay out", () => {
+  const payload = toPublicCareersPayload(
+    { apply_email: "careers@kenyashipyards.co.ke", apply_note: "Send a CV." },
+    [
+      {
+        id: "1",
+        kind: "vacancy",
+        title: "Fitter",
+        location: "Mombasa",
+        summary: "Published role",
+        closing_date: "2026-12-01",
+        apply_url: "https://example.com/apply",
+        sort_order: 1,
+        status: "published",
+      },
+      {
+        id: "2",
+        kind: "vacancy",
+        title: "Hidden role",
+        location: "Nairobi",
+        summary: "Not public",
+        closing_date: null,
+        apply_url: null,
+        sort_order: 2,
+        status: "draft",
+      },
+    ]
+  );
+  assert.equal(payload.vacancies.length, 1);
+  assert.equal(payload.vacancies[0].title, "Fitter");
+  assert.equal(JSON.stringify(payload).includes("Hidden role"), false);
+});
+
+test("unpublished downloads are not signed or returned", () => {
+  const payload = toPublicDownloadsPayload("https://example.com/files/", [
+    {
+      id: "pub",
+      title: "Public file",
+      subtitle: null,
+      category: "reports",
+      category_label: "Reports",
+      language: null,
+      doc_date: null,
+      file_type: "pdf",
+      file_name: "public.pdf",
+      anchor: null,
+      alias_of: null,
+      external_href: null,
+      source: "standard",
+      sort_order: 1,
+      status: "published",
+    },
+    {
+      id: "draft",
+      title: "Secret draft",
+      subtitle: null,
+      category: "reports",
+      category_label: "Reports",
+      language: null,
+      doc_date: null,
+      file_type: "pdf",
+      file_name: null,
+      anchor: null,
+      alias_of: null,
+      external_href: "private:downloads/secret.pdf",
+      source: "storage",
+      sort_order: 2,
+      status: "draft",
+    },
+  ]);
+  assert.equal(payload.items.length, 1);
+  assert.equal(payload.items[0].title, "Public file");
+  assert.equal(JSON.stringify(payload).includes("secret.pdf"), false);
+});
+
+test("story HTML drops scripts and unsafe links", () => {
+  const clean = sanitizeRichHtml(
+    '<p onclick="alert(1)">Hello</p><script>alert(1)</script><a href="javascript:alert(1)">bad</a><a href="https://example.com">ok</a>'
+  );
+  assert.equal(clean.includes("script"), false);
+  assert.equal(clean.includes("javascript:"), false);
+  assert.equal(clean.includes("onclick"), false);
+  assert.equal(clean.includes("https://example.com"), true);
+  assert.equal(clean.includes("Hello"), true);
+});
+
+test("file bytes must match the declared type", () => {
+  assert.equal(matchesDeclaredType(Uint8Array.from([0xff, 0xd8, 0xff, 0x00]), "jpg"), true);
+  assert.equal(matchesDeclaredType(Uint8Array.from([0x3c, 0x73, 0x63, 0x72]), "jpg"), false);
+  assert.equal(matchesDeclaredType(Uint8Array.from([0x25, 0x50, 0x44, 0x46]), "pdf"), true);
+});
+
+test("contact tokens expire into use and reject tampering", () => {
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role";
+  const token = issueContactToken();
+  assert.equal(verifyContactToken(token), "too_fast");
+  assert.equal(verifyContactToken(token + "x"), "invalid");
+  assert.equal(verifyContactToken("not-a-token"), "invalid");
+});
