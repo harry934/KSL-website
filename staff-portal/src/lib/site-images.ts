@@ -1,7 +1,7 @@
 import manifest from "@/lib/site-image-manifest.json";
-import { parseHeroCrop, type HeroCrop } from "@/lib/hero-frame";
+import { parseHeroCrop, parseHeroTrim, type HeroCrop, type HeroTrim } from "@/lib/hero-frame";
 
-export type { HeroCrop };
+export type { HeroCrop, HeroTrim };
 
 export type SiteImageSlot = {
   id: string;
@@ -40,6 +40,7 @@ export type HeroMediaItem = {
   public_url: string;
   storage_path: string | null;
   crop: HeroCrop | null;
+  trim: HeroTrim | null;
 };
 
 export function isImagePath(value: string) {
@@ -60,7 +61,7 @@ export function parseHeroMedia(value: unknown): HeroMediaItem[] {
   const items: HeroMediaItem[] = [];
   for (const row of value) {
     if (!row || typeof row !== "object") continue;
-    const record = row as { kind?: unknown; public_url?: unknown; publicUrl?: unknown; storage_path?: unknown; storagePath?: unknown; crop?: unknown };
+    const record = row as { kind?: unknown; public_url?: unknown; publicUrl?: unknown; storage_path?: unknown; storagePath?: unknown; crop?: unknown; trim?: unknown };
     const url = safeImageUrl(record.public_url ?? record.publicUrl);
     if (!url) continue;
     const kind = isVideoPath(url) ? "video" : isImagePath(url) ? "image" : null;
@@ -70,6 +71,7 @@ export function parseHeroMedia(value: unknown): HeroMediaItem[] {
       public_url: url,
       storage_path: storagePathOf(record.storage_path ?? record.storagePath),
       crop: kind === "video" ? parseHeroCrop(record.crop) : null,
+      trim: kind === "video" ? parseHeroTrim(record.trim) : null,
     });
     if (items.length >= HERO_MEDIA_LIMIT) break;
   }

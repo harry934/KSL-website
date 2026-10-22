@@ -3,7 +3,7 @@ import test from "node:test";
 import { toPublicCareersPayload } from "./careers.ts";
 import { toPublicDownloadsPayload } from "./downloads.ts";
 import { matchesDeclaredType, mp4IsHevc } from "./file-bytes.ts";
-import { heroFrameOffset, parseHeroCrop } from "./hero-frame.ts";
+import { heroFrameOffset, parseHeroCrop, parseHeroTrim } from "./hero-frame.ts";
 import { issueContactToken, verifyContactToken } from "./contact-token.ts";
 import { sanitizeRichHtml } from "./sanitize-html.ts";
 
@@ -112,6 +112,12 @@ test("a hero crop stays inside the film and covers the frame", () => {
   assert.ok(placed.width >= 1600);
   assert.ok(placed.height >= 900);
   assert.equal(Math.round(placed.left), 0);
+});
+
+test("a hero trim stays inside the film", () => {
+  assert.equal(parseHeroTrim({ start: 0, end: 30 }, 30), null);
+  assert.deepEqual(parseHeroTrim({ start: 1.24, end: 8.09 }, 30), { start: 1.2, end: 8.1 });
+  assert.equal(parseHeroTrim({ start: 4, end: 4.1 }), null);
 });
 
 test("contact tokens expire into use and reject tampering", () => {

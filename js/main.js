@@ -409,6 +409,7 @@
                 var clip = slide.querySelector("video");
                 if (clip && !active) {
                     clip.onended = null;
+                    clip.ontimeupdate = null;
                     clip.pause();
                 }
             });
@@ -426,21 +427,54 @@
             if (reduceMotion.matches || !heroVideoEnabled) return;
             var clip = slide.querySelector("video");
             if (!clip) return;
+            var shown = customIndex;
+            function trimBounds() {
+                var trim = clip._kslTrim;
+                if (!trim) return null;
+                var length = clip.duration;
+                var start = Math.max(0, Number(trim.start) || 0);
+                var end = Number(trim.end);
+                if (isFinite(length) && length > 0) end = Math.min(end, length);
+                if (!(end > start + 0.2)) return null;
+                return { start: start, end: end };
+            }
+            function beginPlayback() {
+                var bounds = trimBounds();
+                try {
+                    if (bounds) clip.currentTime = bounds.start;
+                    else if (clip.ended) clip.currentTime = 0;
+                } catch (e) {}
+                clip.loop = count === 1 && !bounds;
+                if (clip._kslCrop) placeFramedClip(clip);
+                var playPromise = clip.play();
+                if (playPromise && typeof playPromise.catch === "function") playPromise.catch(function () {});
+                clip.ontimeupdate = function () {
+                    var live = trimBounds();
+                    if (!live || customIndex !== shown || clip.currentTime < live.end - 0.08) return;
+                    if (count === 1) {
+                        try { clip.currentTime = live.start; } catch (err) {}
+                        return;
+                    }
+                    clip.ontimeupdate = null;
+                    clip.onended = null;
+                    showCustom(shown + 1);
+                };
+                if (count > 1) {
+                    clip.onended = function () {
+                        if (customIndex === shown) showCustom(shown + 1);
+                    };
+                }
+            }
             if (clip.getAttribute("src") !== item.url) {
                 clip.src = item.url;
                 clip.load();
-            } else if (clip.ended) {
-                try { clip.currentTime = 0; } catch (e) {}
-            }
-            clip.loop = count === 1;
-            if (clip._kslCrop) placeFramedClip(clip);
-            var playPromise = clip.play();
-            if (playPromise && typeof playPromise.catch === "function") playPromise.catch(function () {});
-            if (count > 1) {
-                var shown = customIndex;
-                clip.onended = function () {
-                    if (customIndex === shown) showCustom(shown + 1);
-                };
+                clip.addEventListener("loadedmetadata", function onReady() {
+                    clip.removeEventListener("loadedmetadata", onReady);
+                    if (customIndex !== shown) return;
+                    beginPlayback();
+                });
+            } else {
+                beginPlayback();
             }
         }
 
@@ -487,7 +521,8 @@
                     clip.setAttribute("playsinline", "");
                     clip.preload = "none";
                     clip.setAttribute("aria-hidden", "true");
-                    if (usable.length === 1) clip.loop = true;
+                    if (usable.length === 1 && !(item.trim && item.trim.end > item.trim.start)) clip.loop = true;
+                    if (item.trim && item.trim.end > item.trim.start) clip._kslTrim = item.trim;
                     if (item.crop && item.crop.w && item.crop.h) {
                         clip._kslCrop = item.crop;
                         clip.classList.add("is-framed");

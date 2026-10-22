@@ -1,4 +1,24 @@
 export type HeroCrop = { x: number; y: number; w: number; h: number };
+export type HeroTrim = { start: number; end: number };
+
+function roundTenth(value: number) {
+  return Math.round(value * 10) / 10;
+}
+
+/** Keeps a start and end inside the film. A trim of the whole film is dropped. */
+export function parseHeroTrim(value: unknown, duration?: number): HeroTrim | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as { start?: unknown; end?: unknown };
+  const rawStart = unit(record.start);
+  const rawEnd = unit(record.end);
+  if (rawStart === null || rawEnd === null) return null;
+  const start = Math.max(0, rawStart);
+  const endCap = duration && duration > 0 ? duration : rawEnd;
+  const end = Math.min(endCap, rawEnd);
+  if (!(end > start + 0.2)) return null;
+  if (start < 0.2 && duration && duration > 0 && duration - end < 0.3) return null;
+  return { start: roundTenth(start), end: roundTenth(end) };
+}
 
 function unit(value: unknown) {
   const number = typeof value === "number" ? value : Number(value);

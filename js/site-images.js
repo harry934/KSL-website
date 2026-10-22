@@ -65,6 +65,16 @@
         return { x: x, y: y, w: w, h: h };
     }
 
+    function heroTrim(value) {
+        if (!value || typeof value !== "object") return null;
+        var start = Number(value.start);
+        var end = Number(value.end);
+        if (!isFinite(start) || !isFinite(end)) return null;
+        start = Math.max(0, start);
+        if (!(end > start + 0.2)) return null;
+        return { start: Math.round(start * 10) / 10, end: Math.round(end * 10) / 10 };
+    }
+
     function publishHero(data) {
         var list = data && data.hero;
         if (!Array.isArray(list) || !list.length) return;
@@ -75,7 +85,12 @@
             if (!url) return;
             if (kind === "video" && !/\.(mp4|webm)(\?|#|$)/i.test(url)) return;
             if (kind === "image" && !/\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i.test(url)) return;
-            clean.push({ kind: kind, url: url, crop: kind === "video" ? heroCrop(item && item.crop) : null });
+            clean.push({
+                kind: kind,
+                url: url,
+                crop: kind === "video" ? heroCrop(item && item.crop) : null,
+                trim: kind === "video" ? heroTrim(item && item.trim) : null
+            });
         });
         if (!clean.length) return;
         window.KSL_HERO_MEDIA = clean;

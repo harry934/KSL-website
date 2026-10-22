@@ -10,12 +10,12 @@ export async function GET() {
   if (error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
   const images: Record<string, string> = {};
-  let hero: { kind: "image" | "video"; url: string; crop: { x: number; y: number; w: number; h: number } | null }[] = [];
+  let hero: { kind: "image" | "video"; url: string; crop: { x: number; y: number; w: number; h: number } | null; trim: { start: number; end: number } | null }[] = [];
   for (const row of data ?? []) {
     if (row.slot_id === HOME_HERO_SLOT) {
       const items = parseHeroMedia(row.media);
       if (items.length) {
-        hero = items.map((item) => ({ kind: item.kind, url: item.public_url, crop: item.crop }));
+        hero = items.map((item) => ({ kind: item.kind, url: item.public_url, crop: item.crop, trim: item.trim }));
         const poster = hero.find((item) => item.kind === "image");
         if (poster) images[HOME_HERO_SLOT] = poster.url;
         continue;
