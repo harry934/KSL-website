@@ -11,23 +11,49 @@ function sizeLabel(bytes: number) {
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
+function lockedFrame(aspect: number, imageW: number, imageH: number, origin?: { x: number; y: number }, widthFrac?: number): Box {
+  const iw = Math.max(1, imageW);
+  const ih = Math.max(1, imageH);
+  const maxW = origin ? Math.max(0.12, 1 - origin.x) : 0.92;
+  const maxH = origin ? Math.max(0.12, 1 - origin.y) : 0.92;
+  let w = Math.min(maxW, widthFrac ?? 0.86);
+  let h = (w * iw) / (aspect * ih);
+  if (h > maxH) {
+    h = maxH;
+    w = Math.min(maxW, (aspect * h * ih) / iw);
+    h = (w * iw) / (aspect * ih);
+  }
+  const x = Math.max(0, origin ? Math.min(origin.x, 1 - w) : (1 - w) / 2);
+  const y = Math.max(0, origin ? Math.min(origin.y, 1 - h) : (1 - h) / 2);
+  return { x, y, w, h };
+}
+
 /** Lets staff trim a photo before it is uploaded, and warns when the file is heavy. */
 export function PhotoCropDialog({
   file,
   onCancel,
   onDone,
+  aspect,
+  note,
 }: {
   file: File;
   onCancel: () => void;
   onDone: (file: File) => void;
+  /** Width divided by height. `1` keeps the frame square. */
+  aspect?: number;
+  note?: string;
 }) {
   const frame = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const drag = useRef<{ kind: "move" | "resize"; x: number; y: number; box: Box } | null>(null);
+  const aspectRef = useRef(aspect);
+  const naturalRef = useRef({ w: 0, h: 0 });
   const [url, setUrl] = useState("");
   const [box, setBox] = useState<Box>({ x: 0.08, y: 0.08, w: 0.84, h: 0.84 });
   const [natural, setNatural] = useState({ w: 0, h: 0 });
   const [busy, setBusy] = useState(false);
+  aspectRef.current = aspect;
+  naturalRef.current = natural;
 
   useEffect(() => {
     const next = URL.createObjectURL(file);
@@ -49,6 +75,13 @@ export function PhotoCropDialog({
           x: Math.min(1 - current.box.w, Math.max(0, current.box.x + dx)),
           y: Math.min(1 - current.box.h, Math.max(0, current.box.y + dy)),
         });
+        return;
+      }
+      const ratio = aspectRef.current;
+      const size = naturalRef.current;
+      if (ratio && ratio > 0 && size.w > 0 && size.h > 0) {
+        const nextW = Math.min(1 - current.box.x, Math.max(0.12, current.box.w + dx));
+        setBox(lockedFrame(ratio, size.w, size.h, { x: current.box.x, y: current.box.y }, nextW));
         return;
       }
       setBox({
@@ -108,7 +141,11 @@ export function PhotoCropDialog({
       <div className="flex max-h-[92vh] w-full max-w-[640px] flex-col bg-white">
         <div className="border-b border-[#eef1f4] px-4 py-3">
           <p className="m-0 text-[15px] font-semibold text-[#0b1f3a]">Trim the photo</p>
-          <p className="m-0 mt-1 text-[13px] text-[#6b7785]">Drag the frame to choose what visitors see. Drag the corner to change its size.</p>
+          <p className="m-0 mt-1 text-[13px] text-[#6b7785]">
+            Drag the frame to choose what visitors see. Drag the corner to change its size.
+            {aspect ? " The frame stays square." : ""}
+            {note ? ` ${note}` : ""}
+          </p>
         </div>
         <div className="overflow-auto p-4">
           {heavy && (
@@ -126,7 +163,12 @@ export function PhotoCropDialog({
                 alt=""
                 className="block max-h-[420px] max-w-full"
                 draggable={false}
-                onLoad={(event) => setNatural({ w: event.currentTarget.naturalWidth, h: event.currentTarget.naturalHeight })}
+                onLoad={(event) => {
+                  const w = event.currentTarget.naturalWidth;
+                  const h = event.currentTarget.naturalHeight;
+                  setNatural({ w, h });
+                  if (aspect && aspect > 0) setBox(lockedFrame(aspect, w, h));
+                }}
               />
             )}
             <div

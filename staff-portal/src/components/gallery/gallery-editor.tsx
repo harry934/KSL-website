@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GripVertical, Loader2, Pencil, Plus, Star, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { DRAG_FROM, useLiveDrag } from "@/components/ui/live-drag";
 import { reorderItem } from "@/lib/list-utils";
 import { siteAssetUrl } from "@/lib/site-url";
 import { sendJson, uploadFile } from "@/lib/upload-client";
+import { PhotoCropDialog } from "@/components/ui/photo-crop";
 import { cn } from "@/lib/cn";
 
 type VideoDraft = { id?: string; link: string; title: string; caption: string; featured: boolean; status: string; sort_order: number };
@@ -25,6 +26,7 @@ function captionFromFile(name: string) {
 
 export function GalleryEditor() {
   const { toast, confirm } = useFeedback();
+  const canEdit = useCan("gallery", "edit");
   const canPublish = useCan("gallery", "publish");
   const canDelete = useCan("gallery", "delete");
 
@@ -33,6 +35,10 @@ export function GalleryEditor() {
   const [loading, setLoading] = useState(true);
   const [place, setPlace] = useState("any");
   const [progress, setProgress] = useState<string | null>(null);
+  const [cropQueue, setCropQueue] = useState<File[]>([]);
+  const [trimFile, setTrimFile] = useState<File | null>(null);
+  const [trimRow, setTrimRow] = useState<GalleryRow | null>(null);
+  const batch = useRef({ total: 0, added: 0 });
   const [video, setVideo] = useState<VideoDraft | null>(null);
   const [savingVideo, setSavingVideo] = useState(false);
 
@@ -96,32 +102,90 @@ export function GalleryEditor() {
     if (persist) savePhoto(next, message);
   }
 
-  async function onUpload(files: FileList | null) {
-    if (!files?.length) return;
-    const list = Array.from(files);
-    let order = photos.reduce((max, p) => Math.max(max, p.sort_order), 0);
-    let added = 0;
-    for (const [i, file] of list.entries()) {
-      setProgress(list.length > 1 ? `Uploading ${i + 1} of ${list.length}…` : "Uploading…");
-      try {
-        const up = await uploadFile("gallery", file);
-        order += 1;
-        await sendJson("/api/gallery", "POST", {
-          title: captionFromFile(file.name),
-          category: place === "any" ? "all" : place,
-          public_url: up.public_url,
-          storage_path: up.storage_path,
-          sort_order: order,
-          status: canPublish ? "published" : "draft",
-        });
-        added += 1;
-      } catch (e) {
-        toast(`${file.name}: ${(e as Error).message}`, "error");
+  function queueUploads(files: FileList | null) {
+    if (!files?.length || cropQueue.length || trimFile) return;
+    const list = Array.from(files).filter((file) => /^image\/(jpeg|png|webp)$/.test(file.type));
+    if (!list.length) {
+      toast("Choose a JPG, PNG, or WebP photo.", "error");
+      return;
+    }
+    batch.current = { total: list.length, added: 0 };
+    setCropQueue(list);
+  }
+
+  function finishQueued(uploaded: boolean) {
+    if (uploaded) batch.current.added += 1;
+    setProgress(null);
+    setCropQueue((current) => current.slice(1));
+  }
+
+  useEffect(() => {
+    if (cropQueue.length > 0 || batch.current.total === 0) return;
+    const added = batch.current.added;
+    batch.current = { total: 0, added: 0 };
+    if (!added) return;
+    toast(added === 1 ? "Photo added." : `${added} photos added.`);
+    void load();
+  }, [cropQueue, load, toast]);
+
+  async function acceptQueued(cropped: File) {
+    const source = cropQueue[0];
+    if (!source) return;
+    const index = batch.current.total - cropQueue.length + 1;
+    setProgress(batch.current.total > 1 ? `Uploading ${index} of ${batch.current.total}…` : "Uploading…");
+    try {
+      const up = await uploadFile("gallery", cropped);
+      const order = photos.reduce((max, p) => Math.max(max, p.sort_order), 0) + batch.current.added + 1;
+      await sendJson("/api/gallery", "POST", {
+        title: captionFromFile(source.name),
+        category: place === "any" ? "all" : place,
+        public_url: up.public_url,
+        storage_path: up.storage_path,
+        sort_order: order,
+        status: canPublish ? "published" : "draft",
+      });
+      finishQueued(true);
+    } catch (e) {
+      toast(`${source.name}: ${(e as Error).message}`, "error");
+      finishQueued(false);
+    }
+  }
+
+  async function startTrim(row: GalleryRow) {
+    if (cropQueue.length || progress) return;
+    setProgress("Opening the photo…");
+    try {
+      const res = await fetch(`/api/gallery/file?id=${encodeURIComponent(row.id)}`);
+      const type = res.headers.get("content-type") || "";
+      if (!res.ok || type.includes("application/json")) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error ?? "That photo could not be opened for trimming.");
       }
+      const blob = await res.blob();
+      setTrimRow(row);
+      setTrimFile(new File([blob], "photo.jpg", { type: blob.type || "image/jpeg" }));
+    } catch (e) {
+      toast((e as Error).message, "error");
     }
     setProgress(null);
-    if (added) toast(added === 1 ? "Photo added." : `${added} photos added.`);
-    load();
+  }
+
+  async function saveTrim(cropped: File) {
+    const row = trimRow;
+    if (!row) return;
+    setTrimFile(null);
+    setProgress("Saving the crop…");
+    try {
+      const up = await uploadFile("gallery", cropped);
+      const next = { ...row, public_url: up.public_url, storage_path: up.storage_path };
+      setPhotos((list) => list.map((p) => (p.id === row.id ? next : p)));
+      await savePhoto(next, "Photo trimmed.");
+    } catch (e) {
+      toast((e as Error).message, "error");
+      load();
+    }
+    setTrimRow(null);
+    setProgress(null);
   }
 
   async function removePhoto(row: GalleryRow) {
@@ -286,7 +350,7 @@ export function GalleryEditor() {
             <label
               className={cn(
                 "inline-flex h-[40px] cursor-pointer items-center gap-2 rounded-[6px] bg-[#0b1f3a] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#123056]",
-                progress && "pointer-events-none opacity-70"
+                (progress || cropQueue.length > 0) && "pointer-events-none opacity-70"
               )}
             >
               {progress ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
@@ -296,10 +360,10 @@ export function GalleryEditor() {
                 accept="image/jpeg,image/png,image/webp"
                 multiple
                 className="sr-only"
-                disabled={!!progress}
+                disabled={Boolean(progress) || cropQueue.length > 0}
                 onChange={(e) => {
-                  const files = e.target.files;
-                  onUpload(files).finally(() => (e.target.value = ""));
+                  queueUploads(e.target.files);
+                  e.target.value = "";
                 }}
               />
             </label>
@@ -361,6 +425,16 @@ export function GalleryEditor() {
                           </Select>
                         </label>
                         <div className="flex items-center gap-1">
+                          {canEdit && (
+                            <button
+                              type="button"
+                              className="h-8 px-2 text-[13px] font-semibold text-[#0b1f3a] hover:underline disabled:opacity-50"
+                              disabled={Boolean(progress) || cropQueue.length > 0}
+                              onClick={() => startTrim(p)}
+                            >
+                              Trim
+                            </button>
+                          )}
                           <Switch
                             checked={p.status === "published"}
                             disabled={!canPublish}
@@ -525,6 +599,28 @@ export function GalleryEditor() {
           </ul>
         )}
       </FormSection>
+      {cropQueue[0] && !progress && !trimFile && (
+        <PhotoCropDialog
+          file={cropQueue[0]}
+          note={batch.current.total > 1 ? `Photo ${batch.current.total - cropQueue.length + 1} of ${batch.current.total}.` : undefined}
+          onCancel={() => finishQueued(false)}
+          onDone={(file) => {
+            void acceptQueued(file);
+          }}
+        />
+      )}
+      {trimFile && (
+        <PhotoCropDialog
+          file={trimFile}
+          onCancel={() => {
+            setTrimFile(null);
+            setTrimRow(null);
+          }}
+          onDone={(file) => {
+            void saveTrim(file);
+          }}
+        />
+      )}
     </div>
   );
 }

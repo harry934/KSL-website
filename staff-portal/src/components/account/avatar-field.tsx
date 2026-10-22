@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useFeedback } from "@/components/ui/feedback";
 import { UserAvatar } from "@/components/portal/user-avatar";
 import { withBusy } from "@/lib/upload-client";
+import { PhotoCropDialog } from "@/components/ui/photo-crop";
 
 export function AvatarField({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
   const router = useRouter();
@@ -14,6 +15,7 @@ export function AvatarField({ name, avatarUrl }: { name: string; avatarUrl: stri
   const input = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState(avatarUrl);
   const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<File | null>(null);
 
   async function upload(file: File) {
     setBusy(true);
@@ -65,7 +67,11 @@ export function AvatarField({ name, avatarUrl }: { name: string; avatarUrl: stri
           type="file"
           accept="image/jpeg,image/png,image/webp"
           className="hidden"
-          onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (file) setPending(file);
+          }}
         />
         <Button variant="secondary" size="sm" disabled={busy} onClick={() => input.current?.click()}>
           <Camera className="h-4 w-4" /> {url ? "Change photo" : "Upload a photo"}
@@ -75,8 +81,19 @@ export function AvatarField({ name, avatarUrl }: { name: string; avatarUrl: stri
             <Trash2 className="h-4 w-4" /> Remove
           </Button>
         )}
-        <p className="w-full text-[12.5px] text-[#6b7785]">JPG, PNG or WebP, up to 3 MB.</p>
+        <p className="w-full text-[12.5px] text-[#6b7785]">JPG, PNG or WebP, up to 3 MB. You can trim it to a square before it is saved.</p>
       </div>
+      {pending && (
+        <PhotoCropDialog
+          file={pending}
+          aspect={1}
+          onCancel={() => setPending(null)}
+          onDone={(file) => {
+            setPending(null);
+            void upload(file);
+          }}
+        />
+      )}
     </div>
   );
 }
