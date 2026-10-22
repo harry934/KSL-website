@@ -17,18 +17,6 @@
             .replace(/"/g, "&quot;");
     }
 
-    function formatDate(iso) {
-        try {
-            return new Date(iso + "T12:00:00").toLocaleDateString("en-KE", {
-                year: "numeric",
-                month: "long",
-                day: "numeric"
-            });
-        } catch (e) {
-            return iso || "";
-        }
-    }
-
     function clockTime(value, fallback) {
         return /^\d{2}:\d{2}/.test(String(value || "")) ? String(value).slice(0, 5) : fallback;
     }
@@ -95,12 +83,26 @@
         );
     }
 
+    function dateParts(iso) {
+        try {
+            var parsed = new Date(iso + "T12:00:00");
+            if (isNaN(parsed.getTime())) throw new Error("date");
+            return {
+                day: pad(parsed.getDate()),
+                month: parsed.toLocaleDateString("en-KE", { month: "short", year: "numeric" })
+            };
+        } catch (e) {
+            return { day: "", month: iso || "" };
+        }
+    }
+
     function card(evt) {
         var href = "event.html?slug=" + encodeURIComponent(evt.slug || "");
         var photo = evt.image || "img/ksl/yard.jpg";
         var stand = evt.image ? "" : ' data-ksl-image="content.missing-photo"';
         var when = bounds(evt);
-        var venue = evt.venue ? "<span>" + escapeHtml(evt.venue) + "</span>" : "";
+        var parts = dateParts(evt.date);
+        var venue = evt.venue ? '<span class="ksl-count-venue">' + escapeHtml(evt.venue) + "</span>" : "";
         return (
             '<article class="ksl-count-card" data-ksl-count data-start="' + (when ? when.start.toISOString() : "") + '" data-end="' + (when ? when.end.toISOString() : "") + '">' +
             '<a class="ksl-count-photo" href="' + href + '" aria-label="' + escapeHtml(evt.title || "Event") + '">' +
@@ -109,7 +111,7 @@
             "</a>" +
             '<div class="ksl-count-body">' +
             '<h3><a href="' + href + '">' + escapeHtml(evt.title || "Event") + "</a></h3>" +
-            '<p class="ksl-count-meta"><span>' + escapeHtml(formatDate(evt.date)) + "</span>" + venue + "</p>" +
+            '<p class="ksl-count-meta"><time datetime="' + escapeHtml(evt.date || "") + '"><strong>' + escapeHtml(parts.day) + "</strong><span>" + escapeHtml(parts.month) + "</span></time>" + venue + "</p>" +
             clockMarkup() +
             '<a class="ksl-count-btn" href="' + href + '">Event details</a>' +
             "</div></article>"
