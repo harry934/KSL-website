@@ -13,22 +13,63 @@ export async function withBusy<T>(message: string, work: () => Promise<T>): Prom
   }
 }
 
+async function uploadError(res: Response) {
+  const data = await res.json().catch(() => ({}));
+  if (typeof data.error === "string" && data.error) return data.error;
+  if (res.status === 413) return "That file is too large to send this way.";
+  return "The upload did not work. Please try again.";
+}
+
+/** Home-hero films go straight to storage. The admin request only asks for the address. */
+async function uploadHeroVideo(module: ModuleKey, file: File) {
+  const header = new Uint8Array(await file.slice(0, 256).arrayBuffer());
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ksl-module": module,
+      "x-ksl-hero": "1",
+    },
+    body: JSON.stringify({
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      prefix: Array.from(header),
+    }),
+  });
+  if (!res.ok) throw new Error(await uploadError(res));
+  const data = await res.json();
+  const typed = new File([file], file.name, { type: data.content_type || file.type || "video/mp4" });
+  const body = new FormData();
+  body.append("cacheControl", "31536000");
+  body.append("", typed);
+  const put = await fetch(data.signed_url, { method: "PUT", headers: { "x-upsert": "false" }, body });
+  if (!put.ok) {
+    const detail = await put.json().catch(() => ({}));
+    const message = typeof detail.message === "string" ? detail.message : "";
+    if (/mime/i.test(message)) throw new Error("That video type is not allowed. Use an MP4 or WebM file.");
+    if (/size|large|exceed/i.test(message)) throw new Error("Video is too large (max 50 MB).");
+    throw new Error("The video could not be saved. Please try again.");
+  }
+  return { public_url: data.public_url as string, storage_path: data.storage_path as string, preview_url: data.public_url as string };
+}
+
 export async function uploadFile(
   module: ModuleKey,
   file: File,
   extraHeaders?: Record<string, string>
 ): Promise<{ public_url: string; storage_path: string; preview_url?: string }> {
-  const fd = new FormData();
-  fd.append("file", file);
   return withBusy("Uploading…", async () => {
+    if (extraHeaders?.["x-ksl-hero"] === "1") return uploadHeroVideo(module, file);
+    const fd = new FormData();
+    fd.append("file", file);
     const res = await fetch("/api/upload", {
       method: "POST",
       headers: { "x-ksl-module": module, ...extraHeaders },
       body: fd,
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error ?? "The upload did not work. Please try again.");
-    return data;
+    if (!res.ok) throw new Error(await uploadError(res));
+    return res.json();
   });
 }
 

@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, dbError } from "@/lib/api-auth";
-import { matchesDeclaredType } from "@/lib/file-bytes";
+import { matchesDeclaredType, mp4IsHevc } from "@/lib/file-bytes";
 import { privateRef } from "@/lib/stored-file";
 import type { ModuleKey } from "@/lib/modules";
 import { NextRequest, NextResponse } from "next/server";
@@ -48,6 +48,10 @@ export async function POST(req: NextRequest) {
 
   const { error, session } = await requireStaff(moduleKey, "edit");
   if (error || !session) return error;
+
+  if ((req.headers.get("content-type") || "").includes("application/json")) {
+    return signHeroVideo(req);
+  }
 
   const form = await req.formData();
   const file = form.get("file");
@@ -109,4 +113,65 @@ export async function POST(req: NextRequest) {
 
   const { data: pub } = admin.storage.from(bucket).getPublicUrl(path);
   return NextResponse.json({ storage_path: path, public_url: pub.publicUrl, preview_url: pub.publicUrl });
+}
+
+function heroExtension(name: string, type: string) {
+  if (type === "video/webm") return "webm";
+  if (type === "video/mp4" || type === "video/quicktime" || type === "video/x-quicktime") return "mp4";
+  const lower = name.toLowerCase();
+  const loose = type === "" || type === "application/octet-stream";
+  if (!loose && type !== "video/mp4" && type !== "video/webm" && type !== "video/quicktime" && type !== "video/x-quicktime") return null;
+  if (lower.endsWith(".webm")) return "webm";
+  if (lower.endsWith(".mp4") || lower.endsWith(".m4v") || lower.endsWith(".mov")) return "mp4";
+  return null;
+}
+
+function prefixBytes(value: unknown) {
+  if (!Array.isArray(value) || value.length < 8 || value.length > 256) return null;
+  const bytes = new Uint8Array(value.length);
+  for (let i = 0; i < value.length; i++) {
+    const part = value[i];
+    if (typeof part !== "number" || !Number.isInteger(part) || part < 0 || part > 255) return null;
+    bytes[i] = part;
+  }
+  return bytes;
+}
+
+/** Gives the browser a short-lived address so a film can go straight to storage. */
+async function signHeroVideo(req: NextRequest) {
+  if (req.headers.get("x-ksl-hero") !== "1" || req.headers.get("x-ksl-module") !== "site_settings") {
+    return NextResponse.json({ error: "Video can only be added to the home hero." }, { status: 400 });
+  }
+  const body = await req.json().catch(() => null);
+  const name = typeof body?.name === "string" ? body.name : "";
+  const type = typeof body?.type === "string" ? body.type : "";
+  const size = body?.size;
+  const ext = heroExtension(name, type);
+  if (!ext || typeof size !== "number" || !Number.isFinite(size) || size <= 0) {
+    return NextResponse.json({ error: "Use an MP4, WebM, or MOV video." }, { status: 400 });
+  }
+  if (size > MAX_VIDEO_BYTES) {
+    return NextResponse.json({ error: "Video is too large (max 50 MB)." }, { status: 400 });
+  }
+  const prefix = prefixBytes(body?.prefix);
+  if (!prefix || !matchesDeclaredType(prefix, ext)) {
+    return NextResponse.json({ error: "That file is not a valid MP4 or WebM video." }, { status: 400 });
+  }
+  if (ext === "mp4" && mp4IsHevc(prefix)) {
+    return NextResponse.json({ error: "This film uses a format the website cannot play. Export it as an MP4 (H.264) and upload that." }, { status: 400 });
+  }
+
+  const path = `site_settings/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+  const admin = createAdminClient();
+  const { data, error } = await admin.storage.from("media-public").createSignedUploadUrl(path);
+  if (error || !data?.signedUrl) {
+    return NextResponse.json({ error: "The video could not be saved. Please try again." }, { status: 500 });
+  }
+  const { data: pub } = admin.storage.from("media-public").getPublicUrl(path);
+  return NextResponse.json({
+    storage_path: path,
+    public_url: pub.publicUrl,
+    signed_url: data.signedUrl,
+    content_type: ext === "webm" ? "video/webm" : "video/mp4",
+  });
 }

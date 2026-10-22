@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { toPublicCareersPayload } from "./careers.ts";
 import { toPublicDownloadsPayload } from "./downloads.ts";
-import { matchesDeclaredType } from "./file-bytes.ts";
+import { matchesDeclaredType, mp4IsHevc } from "./file-bytes.ts";
 import { issueContactToken, verifyContactToken } from "./contact-token.ts";
 import { sanitizeRichHtml } from "./sanitize-html.ts";
 
@@ -97,8 +97,11 @@ test("file bytes must match the declared type", () => {
   assert.equal(matchesDeclaredType(Uint8Array.from([0x3c, 0x73, 0x63, 0x72]), "jpg"), false);
   assert.equal(matchesDeclaredType(Uint8Array.from([0x25, 0x50, 0x44, 0x46]), "pdf"), true);
   assert.equal(matchesDeclaredType(Uint8Array.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70]), "mp4"), true);
+  assert.equal(matchesDeclaredType(Uint8Array.from([0x00, 0x00, 0x00, 0x08, 0x66, 0x72, 0x65, 0x65, 0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70]), "mp4"), true);
   assert.equal(matchesDeclaredType(Uint8Array.from([0x1a, 0x45, 0xdf, 0xa3]), "webm"), true);
   assert.equal(matchesDeclaredType(Uint8Array.from([0xff, 0xd8, 0xff, 0x00]), "mp4"), false);
+  assert.equal(mp4IsHevc(Uint8Array.from([0x68, 0x76, 0x63, 0x31])), true);
+  assert.equal(mp4IsHevc(Uint8Array.from([0x69, 0x73, 0x6f, 0x6d])), false);
 });
 
 test("contact tokens expire into use and reject tampering", () => {

@@ -177,10 +177,10 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   }
 
   async function addHeroVideo(file: File) {
-    const named = /\.(mp4|webm)$/i.test(file.name);
-    const typed = file.type === "video/mp4" || file.type === "video/webm" || ((file.type === "" || file.type === "application/octet-stream") && named);
+    const named = /\.(mp4|webm|mov|m4v)$/i.test(file.name);
+    const typed = file.type === "video/mp4" || file.type === "video/webm" || file.type === "video/quicktime" || file.type === "video/x-quicktime" || ((file.type === "" || file.type === "application/octet-stream") && named);
     if (!typed) {
-      toast("Use an MP4 or WebM video.", "error");
+      toast("Use an MP4, WebM, or MOV video.", "error");
       return;
     }
     if (file.size > 50 * 1024 * 1024) {
@@ -336,7 +336,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                       Upload video
                       <input
                         type="file"
-                        accept="video/mp4,video/webm,.mp4,.webm"
+                        accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"
                         className="sr-only"
                         disabled={busy !== null}
                         onChange={(event) => {
