@@ -358,6 +358,30 @@
         var customIndex = 0;
         var customTimer = 0;
         var customPlaying = false;
+        var framedClips = [];
+
+        function placeFramedClip(clip) {
+            var crop = clip._kslCrop;
+            var frame = clip.parentElement;
+            if (!crop || !frame) return;
+            var mediaW = clip.videoWidth;
+            var mediaH = clip.videoHeight;
+            var frameW = frame.clientWidth;
+            var frameH = frame.clientHeight;
+            if (!mediaW || !mediaH || !frameW || !frameH) return;
+            var scale = Math.max(frameW / (crop.w * mediaW), frameH / (crop.h * mediaH));
+            var width = mediaW * scale;
+            var height = mediaH * scale;
+            clip.style.position = "absolute";
+            clip.style.width = width + "px";
+            clip.style.height = height + "px";
+            clip.style.left = ((frameW - crop.w * width) / 2 - crop.x * width) + "px";
+            clip.style.top = ((frameH - crop.h * height) / 2 - crop.y * height) + "px";
+        }
+
+        function placeFramedClips() {
+            framedClips.forEach(placeFramedClip);
+        }
 
         function clearCustomTimer() {
             if (customTimer) {
@@ -409,6 +433,7 @@
                 try { clip.currentTime = 0; } catch (e) {}
             }
             clip.loop = count === 1;
+            if (clip._kslCrop) placeFramedClip(clip);
             var playPromise = clip.play();
             if (playPromise && typeof playPromise.catch === "function") playPromise.catch(function () {});
             if (count > 1) {
@@ -463,6 +488,12 @@
                     clip.preload = "none";
                     clip.setAttribute("aria-hidden", "true");
                     if (usable.length === 1) clip.loop = true;
+                    if (item.crop && item.crop.w && item.crop.h) {
+                        clip._kslCrop = item.crop;
+                        clip.classList.add("is-framed");
+                        clip.addEventListener("loadedmetadata", function () { placeFramedClip(clip); });
+                        framedClips.push(clip);
+                    }
                     clip.addEventListener("error", function () {
                         if (!customMedia || customMedia.length < 2) return;
                         if (customHost && customHost.children[customIndex] === slide) showCustom(customIndex + 1);
@@ -477,6 +508,10 @@
                 customHost.appendChild(slide);
             });
             hero.insertBefore(customHost, heroVideo);
+            if (framedClips.length) {
+                placeFramedClips();
+                window.addEventListener("resize", placeFramedClips);
+            }
             if (usable.length > 1) {
                 customDots = document.createElement("div");
                 customDots.className = "ksl-hero-dots";

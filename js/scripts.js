@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261022-13";
+    var ASSET_V = "20261022-14";
 
     var BUNDLES = {
         wow: [

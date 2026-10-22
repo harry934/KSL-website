@@ -48,6 +48,23 @@
         document.documentElement.classList.add("ksl-photos-ready");
     }
 
+    function heroCrop(value) {
+        if (!value || typeof value !== "object") return null;
+        var x = Number(value.x);
+        var y = Number(value.y);
+        var w = Number(value.w);
+        var h = Number(value.h);
+        if (![x, y, w, h].every(function (part) { return isFinite(part); })) return null;
+        x = Math.min(1, Math.max(0, x));
+        y = Math.min(1, Math.max(0, y));
+        w = Math.min(1, Math.max(0, w));
+        h = Math.min(1, Math.max(0, h));
+        if (x + w > 1) w = 1 - x;
+        if (y + h > 1) h = 1 - y;
+        if (w < 0.08 || h < 0.08 || (w > 0.98 && h > 0.98)) return null;
+        return { x: x, y: y, w: w, h: h };
+    }
+
     function publishHero(data) {
         var list = data && data.hero;
         if (!Array.isArray(list) || !list.length) return;
@@ -58,7 +75,7 @@
             if (!url) return;
             if (kind === "video" && !/\.(mp4|webm)(\?|#|$)/i.test(url)) return;
             if (kind === "image" && !/\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i.test(url)) return;
-            clean.push({ kind: kind, url: url });
+            clean.push({ kind: kind, url: url, crop: kind === "video" ? heroCrop(item && item.crop) : null });
         });
         if (!clean.length) return;
         window.KSL_HERO_MEDIA = clean;

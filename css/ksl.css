@@ -4744,6 +4744,7 @@ html:not(.ksl-photos-ready) .ksl-hero::before {
 .ksl-hero-slide {
     position: absolute;
     inset: 0;
+    overflow: hidden;
     opacity: 0;
     transition: opacity .9s ease;
 }
@@ -4759,6 +4760,11 @@ html:not(.ksl-photos-ready) .ksl-hero::before {
     height: 100%;
     object-fit: cover;
     object-position: center 42%;
+}
+
+.ksl-hero-slide video.is-framed {
+    max-width: none;
+    object-fit: fill;
 }
 
 .ksl-hero.is-intro-crossfade .ksl-hero-shade {

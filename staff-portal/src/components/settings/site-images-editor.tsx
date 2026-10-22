@@ -1,18 +1,57 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, Loader2, Trash2, Upload, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Crop, GripVertical, Loader2, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { sendJson, uploadFile } from "@/lib/upload-client";
 import { PhotoCropDialog } from "@/components/ui/photo-crop";
+import { VideoCropDialog } from "@/components/ui/video-crop";
+import { heroFrameOffset, type HeroCrop } from "@/lib/hero-frame";
 import { siteAssetUrl } from "@/lib/site-url";
 import { HERO_MEDIA_LIMIT, HOME_HERO_SLOT, isImagePath, parseHeroMedia, type SiteImageSlot } from "@/lib/site-images";
 
 type Override = { slot_id: string; source: string; public_url: string | null; storage_path: string | null; media?: unknown };
 type LibraryImage = { url: string; storagePath: string | null; label: string };
-type HeroItem = { kind: "image" | "video"; url: string; storagePath: string | null; label: string };
+type HeroItem = { kind: "image" | "video"; url: string; storagePath: string | null; label: string; crop: HeroCrop | null };
+
+function HeroPreview({ item }: { item: HeroItem }) {
+  const frame = useRef<HTMLDivElement>(null);
+  const video = useRef<HTMLVideoElement>(null);
+  const place = useCallback(() => {
+    const box = frame.current;
+    const clip = video.current;
+    if (!box || !clip || !item.crop || !clip.videoWidth || !clip.videoHeight) return;
+    const next = heroFrameOffset(box.clientWidth, box.clientHeight, clip.videoWidth, clip.videoHeight, item.crop);
+    clip.style.position = "absolute";
+    clip.style.width = `${next.width}px`;
+    clip.style.height = `${next.height}px`;
+    clip.style.left = `${next.left}px`;
+    clip.style.top = `${next.top}px`;
+  }, [item.crop]);
+
+  if (item.kind !== "video") {
+    return <img src={heroFrameUrl(item.url, item.kind)} alt="" className="block h-24 w-40 bg-[#f4f6f8] object-cover" />;
+  }
+  return (
+    <div ref={frame} className="relative h-24 w-40 overflow-hidden bg-[#0b1f3a]">
+      <video
+        ref={video}
+        src={heroFrameUrl(item.url, item.kind)}
+        muted
+        playsInline
+        preload="metadata"
+        onLoadedMetadata={(event) => {
+          const clip = event.currentTarget;
+          if (clip.currentTime < 0.1) clip.currentTime = 0.1;
+          place();
+        }}
+        className={item.crop ? "absolute max-w-none" : "block h-full w-full object-cover"}
+      />
+    </div>
+  );
+}
 
 function slidePlace(index: number) {
   const place = index + 1;
@@ -33,7 +72,7 @@ function heroFromOverride(override: Override | undefined) {
   const source = parsed.length
     ? parsed
     : override?.public_url && isImagePath(override.public_url)
-      ? [{ kind: "image" as const, public_url: override.public_url, storage_path: override.storage_path }]
+      ? [{ kind: "image" as const, public_url: override.public_url, storage_path: override.storage_path, crop: null }]
       : [];
   return {
     live: parsed.length > 0,
@@ -42,6 +81,7 @@ function heroFromOverride(override: Override | undefined) {
       url: item.public_url,
       storagePath: item.storage_path,
       label: item.kind === "video" ? "Video" : "Photo",
+      crop: item.crop,
     })),
   };
 }
@@ -59,6 +99,9 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   const [picking, setPicking] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [crop, setCrop] = useState<{ slotId: string; file: File } | null>(null);
+  const [videoCrop, setVideoCrop] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+  const dragFrom = useRef<number | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -136,7 +179,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
         await sendJson("/api/site-images", "POST", {
           slotId: HOME_HERO_SLOT,
           source: "storage",
-          items: next.map((item) => ({ kind: item.kind, publicUrl: item.url, storagePath: item.storagePath })),
+          items: next.map((item) => ({ kind: item.kind, publicUrl: item.url, storagePath: item.storagePath, crop: item.kind === "video" ? item.crop : null })),
           addToGallery: Boolean(gallery && gallery.kind === "image"),
           publicUrl: gallery?.url,
           storagePath: gallery?.storagePath,
@@ -168,6 +211,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
         url: uploaded.public_url,
         storagePath: uploaded.storage_path,
         label: file.name.replace(/\.[a-z0-9]+$/i, "") || "Photo",
+        crop: null,
       };
       await persistHero([...heroItems, item], item);
     } catch (err) {
@@ -198,6 +242,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
           url: uploaded.public_url,
           storagePath: uploaded.storage_path,
           label: file.name.replace(/\.[a-z0-9]+$/i, "") || "Video",
+          crop: null,
         },
       ]);
     } catch (err) {
@@ -206,13 +251,21 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     }
   }
 
+  function moveHero(from: number, to: number) {
+    if (from === to || from < 0 || to < 0 || from >= heroItems.length || to >= heroItems.length) return;
+    const next = heroItems.slice();
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    persistHero(next);
+  }
+
   function appendHeroPhoto(image: LibraryImage) {
     if (heroItems.some((item) => item.url === image.url)) {
       toast("That photo is already in the home hero.", "error");
       return;
     }
     if (!heroRoom()) return;
-    persistHero([...heroItems, { kind: "image", url: image.url, storagePath: image.storagePath, label: image.label }]);
+    persistHero([...heroItems, { kind: "image", url: image.url, storagePath: image.storagePath, label: image.label, crop: null }]);
   }
 
   async function upload(slotId: string, file: File) {
@@ -267,45 +320,75 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                 <p className="m-0 text-[14px] font-semibold text-[#0b1f3a]">{slot.label}</p>
                 <p className="mb-3 mt-1 text-[13px] text-[#5b6775]">
                   {heroListLive
-                    ? "The homepage shows these one at a time, in this order. The dots on the hero follow the same order. Remove them all to bring back the original film."
+                    ? "Drag a row to set the order. The homepage and the dots follow that order. Crop a video to choose the part visitors see."
                     : heroItems.length
                       ? "This photo is already on the hero, under the original film. Add a video or another photo and the homepage will show your list one at a time instead."
                       : "The homepage is using its original film. Add photos, videos, or both, and it will show them one at a time."}
                 </p>
                 <p className="m-0 mb-2 text-[12px] font-semibold uppercase tracking-wide text-[#6b7785]">Playback order</p>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-2">
                   {heroItems.map((item, index) => (
-                    <div key={`${item.url}-${index}`} className="border border-[#eef1f4] p-2">
-                      <div className="mb-2 flex items-center justify-between gap-2">
+                    <div
+                      key={`${item.url}-${index}`}
+                      className={`flex items-center gap-3 border bg-white p-2 ${dragOver === index ? "border-[#0b1f3a]" : "border-[#eef1f4]"}`}
+                      onDragOver={(event) => {
+                        if (!canEdit || busy !== null) return;
+                        event.preventDefault();
+                        setDragOver(index);
+                      }}
+                      onDragLeave={() => setDragOver((current) => (current === index ? null : current))}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        const from = dragFrom.current;
+                        dragFrom.current = null;
+                        setDragOver(null);
+                        if (from === null) return;
+                        moveHero(from, index);
+                      }}
+                    >
+                      {canEdit && (
+                        <button
+                          type="button"
+                          draggable={busy === null}
+                          aria-label={`Drag ${item.kind === "video" ? "video" : "photo"} ${index + 1}. ${slidePlace(index)}. Use the arrow keys to move it.`}
+                          className="cursor-grab px-1 text-[#6b7785] active:cursor-grabbing"
+                          onDragStart={(event) => {
+                            dragFrom.current = index;
+                            event.dataTransfer.effectAllowed = "move";
+                            event.dataTransfer.setData("text/plain", String(index));
+                          }}
+                          onDragEnd={() => {
+                            dragFrom.current = null;
+                            setDragOver(null);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "ArrowUp") {
+                              event.preventDefault();
+                              moveHero(index, index - 1);
+                            } else if (event.key === "ArrowDown") {
+                              event.preventDefault();
+                              moveHero(index, index + 1);
+                            }
+                          }}
+                        >
+                          <GripVertical className="h-5 w-5" />
+                        </button>
+                      )}
+                      <HeroPreview item={item} />
+                      <div className="min-w-0 flex-1">
                         <p className="m-0 text-[13px] font-semibold text-[#0b1f3a]">
                           {index + 1}. {item.kind === "video" ? "Video" : "Photo"}
                         </p>
-                        <p className="m-0 text-[12px] text-[#0b1f3a]">{slidePlace(index)}</p>
+                        <p className="m-0 text-[12px] text-[#5b6775]">{slidePlace(index)}{item.crop ? " · Cropped" : ""}</p>
                       </div>
-                      {item.kind === "video" ? (
-                        <video src={heroFrameUrl(item.url, item.kind)} muted controls playsInline preload="metadata" className="mb-2 block h-40 w-full bg-[#0b1f3a] object-cover" />
-                      ) : (
-                        <img src={heroFrameUrl(item.url, item.kind)} alt="" className="mb-2 block h-40 w-full bg-[#f4f6f8] object-cover" />
-                      )}
-                      <p className="m-0 mb-2 truncate text-[12px] text-[#6b7785]">{item.label}</p>
                       {canEdit && (
                         <div className="flex gap-1">
-                          <Button type="button" variant="secondary" size="sm" aria-label="Move earlier" disabled={busy !== null || index === 0} onClick={() => {
-                            const next = heroItems.slice();
-                            const [moved] = next.splice(index, 1);
-                            next.splice(index - 1, 0, moved);
-                            persistHero(next);
-                          }}>
-                            <ChevronUp className="h-4 w-4" />
-                          </Button>
-                          <Button type="button" variant="secondary" size="sm" aria-label="Move later" disabled={busy !== null || index === heroItems.length - 1} onClick={() => {
-                            const next = heroItems.slice();
-                            const [moved] = next.splice(index, 1);
-                            next.splice(index + 1, 0, moved);
-                            persistHero(next);
-                          }}>
-                            <ChevronDown className="h-4 w-4" />
-                          </Button>
+                          {item.kind === "video" && (
+                            <Button type="button" variant="secondary" size="sm" disabled={busy !== null} onClick={() => setVideoCrop(index)}>
+                              <Crop className="h-4 w-4" />
+                              {item.crop ? "Edit crop" : "Crop"}
+                            </Button>
+                          )}
                           <Button type="button" variant="danger" size="sm" aria-label="Remove" disabled={busy !== null} onClick={() => persistHero(heroItems.filter((_, itemIndex) => itemIndex !== index))}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -396,6 +479,19 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
         })}
       </div>
       </div>
+      {videoCrop !== null && heroItems[videoCrop]?.kind === "video" && (
+        <VideoCropDialog
+          url={siteAssetUrl(heroItems[videoCrop].url)}
+          initial={heroItems[videoCrop].crop}
+          onCancel={() => setVideoCrop(null)}
+          onDone={(nextCrop) => {
+            const index = videoCrop;
+            setVideoCrop(null);
+            const next = heroItems.map((item, itemIndex) => (itemIndex === index ? { ...item, crop: nextCrop } : item));
+            persistHero(next);
+          }}
+        />
+      )}
       {crop && (
         <PhotoCropDialog
           file={crop.file}

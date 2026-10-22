@@ -3,6 +3,7 @@ import test from "node:test";
 import { toPublicCareersPayload } from "./careers.ts";
 import { toPublicDownloadsPayload } from "./downloads.ts";
 import { matchesDeclaredType, mp4IsHevc } from "./file-bytes.ts";
+import { heroFrameOffset, parseHeroCrop } from "./hero-frame.ts";
 import { issueContactToken, verifyContactToken } from "./contact-token.ts";
 import { sanitizeRichHtml } from "./sanitize-html.ts";
 
@@ -102,6 +103,15 @@ test("file bytes must match the declared type", () => {
   assert.equal(matchesDeclaredType(Uint8Array.from([0xff, 0xd8, 0xff, 0x00]), "mp4"), false);
   assert.equal(mp4IsHevc(Uint8Array.from([0x68, 0x76, 0x63, 0x31])), true);
   assert.equal(mp4IsHevc(Uint8Array.from([0x69, 0x73, 0x6f, 0x6d])), false);
+});
+
+test("a hero crop stays inside the film and covers the frame", () => {
+  assert.equal(parseHeroCrop({ x: 0, y: 0, w: 1, h: 1 }), null);
+  assert.deepEqual(parseHeroCrop({ x: -0.2, y: 0.1, w: 0.5, h: 0.4 }), { x: 0, y: 0.1, w: 0.5, h: 0.4 });
+  const placed = heroFrameOffset(1600, 900, 1920, 1080, { x: 0, y: 0, w: 0.5, h: 1 });
+  assert.ok(placed.width >= 1600);
+  assert.ok(placed.height >= 900);
+  assert.equal(Math.round(placed.left), 0);
 });
 
 test("contact tokens expire into use and reject tampering", () => {

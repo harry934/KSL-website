@@ -1,4 +1,7 @@
 import manifest from "@/lib/site-image-manifest.json";
+import { parseHeroCrop, type HeroCrop } from "@/lib/hero-frame";
+
+export type { HeroCrop };
 
 export type SiteImageSlot = {
   id: string;
@@ -36,6 +39,7 @@ export type HeroMediaItem = {
   kind: "image" | "video";
   public_url: string;
   storage_path: string | null;
+  crop: HeroCrop | null;
 };
 
 export function isImagePath(value: string) {
@@ -56,7 +60,7 @@ export function parseHeroMedia(value: unknown): HeroMediaItem[] {
   const items: HeroMediaItem[] = [];
   for (const row of value) {
     if (!row || typeof row !== "object") continue;
-    const record = row as { kind?: unknown; public_url?: unknown; publicUrl?: unknown; storage_path?: unknown; storagePath?: unknown };
+    const record = row as { kind?: unknown; public_url?: unknown; publicUrl?: unknown; storage_path?: unknown; storagePath?: unknown; crop?: unknown };
     const url = safeImageUrl(record.public_url ?? record.publicUrl);
     if (!url) continue;
     const kind = isVideoPath(url) ? "video" : isImagePath(url) ? "image" : null;
@@ -65,6 +69,7 @@ export function parseHeroMedia(value: unknown): HeroMediaItem[] {
       kind,
       public_url: url,
       storage_path: storagePathOf(record.storage_path ?? record.storagePath),
+      crop: kind === "video" ? parseHeroCrop(record.crop) : null,
     });
     if (items.length >= HERO_MEDIA_LIMIT) break;
   }
