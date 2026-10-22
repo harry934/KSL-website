@@ -1721,11 +1721,16 @@ main {
     background: #fff;
     overflow-anchor: none;
 }
+html,
+body {
+    overflow-anchor: none;
+}
 .ksl-mast .navbar.sticky-top {
     position: relative;
     top: auto;
     border-bottom: 0;
     box-shadow: none !important;
+    transition: none;
 }
 .navbar.sticky-top {
     top: var(--ksl-topbar-h, 0px);
@@ -5990,7 +5995,13 @@ html[lang="sw"] .download-button .download::after {
 
     .ksl-mast .navbar.sticky-top {
         z-index: 3;
-        transition: none;
+        align-items: center;
+        height: 80px;
+        transition: height var(--ksl-dock-time) var(--ksl-dock-ease);
+    }
+
+    .ksl-mast.is-min .navbar.sticky-top {
+        height: 60px;
     }
 
     .ksl-mast .navbar .navbar-brand,
@@ -6006,8 +6017,6 @@ html[lang="sw"] .download-button .download::after {
     }
 
     .ksl-mast.is-min .navbar.sticky-top::after {
-        top: 0;
-        bottom: auto;
         height: 2px;
     }
 

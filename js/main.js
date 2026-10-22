@@ -43,20 +43,24 @@
     var lastScrollY = window.scrollY || 0;
     var scrollAccum = 0;
     var minimized = (window.scrollY || 0) > 40;
-    var dockLock = 0;
+    var mastH = 0;
     var dockFrame = 0;
-    /* One update per frame. Scroll down folds the contact strip into the bar.
-       Scroll up opens it. A short lock stops the height change from reversing itself. */
+    /* One update per frame. Scroll down folds the contact strip. Scroll up opens it.
+       The bar's own height change is removed from the scroll delta, so a fast flick
+       cannot bounce the bar open and closed and pull its pieces apart. */
     var dockNavbar = function () {
-        if (!stickyNav) return;
+        if (!stickyNav || !mast) return;
         var y = window.scrollY || 0;
-        var delta = y - lastScrollY;
+        var h = mast.offsetHeight;
+        var layoutDelta = mastH ? h - mastH : 0;
+        mastH = h;
+        var delta = y - lastScrollY - layoutDelta;
         lastScrollY = y;
         var next = minimized;
         if (y <= 4) {
             next = false;
             scrollAccum = 0;
-        } else if (Date.now() >= dockLock && delta !== 0) {
+        } else if (delta !== 0) {
             scrollAccum += delta;
             if (scrollAccum > 18) {
                 next = true;
@@ -66,15 +70,11 @@
                 scrollAccum = 0;
             }
         }
-        if (next !== minimized) {
-            minimized = next;
-            dockLock = Date.now() + 200;
-        }
+        if (next !== minimized) minimized = next;
         var stuck = y > 8;
-        if (mast) {
-            if (mast.classList.contains("is-min") !== minimized) mast.classList.toggle("is-min", minimized);
-            if (mast.classList.contains("is-stuck") !== stuck) mast.classList.toggle("is-stuck", stuck);
-        }
+        if (mast.classList.contains("is-min") !== minimized) mast.classList.toggle("is-min", minimized);
+        if (mast.classList.contains("is-stuck") !== stuck) mast.classList.toggle("is-stuck", stuck);
+        mastH = mast.offsetHeight;
     };
     var measureTopbar = function () {
         topbarH = topbar ? topbar.offsetHeight : 0;
