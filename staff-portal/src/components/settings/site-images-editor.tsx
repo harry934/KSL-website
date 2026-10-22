@@ -14,6 +14,20 @@ type Override = { slot_id: string; source: string; public_url: string | null; st
 type LibraryImage = { url: string; storagePath: string | null; label: string };
 type HeroItem = { kind: "image" | "video"; url: string; storagePath: string | null; label: string };
 
+function slidePlace(index: number) {
+  const place = index + 1;
+  if (place === 1) return "Plays first";
+  if (place === 2) return "Plays second";
+  if (place === 3) return "Plays third";
+  return `Plays ${place}th`;
+}
+
+function heroFrameUrl(url: string, kind: HeroItem["kind"]) {
+  const full = siteAssetUrl(url);
+  if (kind !== "video" || full.includes("#")) return full;
+  return `${full}#t=0.1`;
+}
+
 function heroFromOverride(override: Override | undefined) {
   const parsed = parseHeroMedia(override?.media);
   const source = parsed.length
@@ -253,23 +267,27 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                 <p className="m-0 text-[14px] font-semibold text-[#0b1f3a]">{slot.label}</p>
                 <p className="mb-3 mt-1 text-[13px] text-[#5b6775]">
                   {heroListLive
-                    ? "The homepage shows these one at a time. Remove them all to bring back the original film."
+                    ? "The homepage shows these one at a time, in this order. The dots on the hero follow the same order. Remove them all to bring back the original film."
                     : heroItems.length
                       ? "This photo is already on the hero, under the original film. Add a video or another photo and the homepage will show your list one at a time instead."
                       : "The homepage is using its original film. Add photos, videos, or both, and it will show them one at a time."}
                 </p>
-                <div className="space-y-2">
+                <p className="m-0 mb-2 text-[12px] font-semibold uppercase tracking-wide text-[#6b7785]">Playback order</p>
+                <div className="grid gap-3 sm:grid-cols-2">
                   {heroItems.map((item, index) => (
-                    <div key={`${item.url}-${index}`} className="flex flex-wrap items-center gap-3 border border-[#eef1f4] p-2">
-                      {item.kind === "video" ? (
-                        <video src={siteAssetUrl(item.url)} muted playsInline preload="metadata" className="h-16 w-28 bg-[#0b1f3a] object-cover" />
-                      ) : (
-                        <img src={siteAssetUrl(item.url)} alt="" className="h-16 w-28 bg-[#f4f6f8] object-cover" />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="m-0 text-[13px] font-semibold text-[#0b1f3a]">{item.kind === "video" ? "Video" : "Photo"} {index + 1}</p>
-                        <p className="m-0 truncate text-[12px] text-[#6b7785]">{item.label}</p>
+                    <div key={`${item.url}-${index}`} className="border border-[#eef1f4] p-2">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="m-0 text-[13px] font-semibold text-[#0b1f3a]">
+                          {index + 1}. {item.kind === "video" ? "Video" : "Photo"}
+                        </p>
+                        <p className="m-0 text-[12px] text-[#0b1f3a]">{slidePlace(index)}</p>
                       </div>
+                      {item.kind === "video" ? (
+                        <video src={heroFrameUrl(item.url, item.kind)} muted controls playsInline preload="metadata" className="mb-2 block h-40 w-full bg-[#0b1f3a] object-cover" />
+                      ) : (
+                        <img src={heroFrameUrl(item.url, item.kind)} alt="" className="mb-2 block h-40 w-full bg-[#f4f6f8] object-cover" />
+                      )}
+                      <p className="m-0 mb-2 truncate text-[12px] text-[#6b7785]">{item.label}</p>
                       {canEdit && (
                         <div className="flex gap-1">
                           <Button type="button" variant="secondary" size="sm" aria-label="Move earlier" disabled={busy !== null || index === 0} onClick={() => {

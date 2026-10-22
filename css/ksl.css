@@ -4502,6 +4502,48 @@ html:not(.ksl-photos-ready) .ksl-hero::before {
     outline: none;
 }
 
+.ksl-hero-dots {
+    position: absolute;
+    z-index: 3;
+    top: 32%;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+}
+
+.ksl-hero-dot {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .4);
+    cursor: pointer;
+}
+
+.ksl-hero-dot.is-active {
+    background: #fff;
+}
+
+.ksl-hero-dot:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+}
+
+.ksl-hero:not(.is-revealed) .ksl-hero-dots {
+    opacity: 0;
+}
+
+@media (max-width: 767.98px) {
+    .ksl-hero-dots {
+        top: 18%;
+        right: 10px;
+    }
+}
+
 .ksl-hero:not(.is-revealed) .ksl-hero-intro > * {
     opacity: 0;
 }
