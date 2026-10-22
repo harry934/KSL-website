@@ -304,6 +304,10 @@ main {
     height: 28px;
 }
 
+.navbar .ksl-wordmark {
+    display: none;
+}
+
 .ksl-wordmark {
     font-family: Manrope, sans-serif;
     font-weight: 700;
@@ -6082,7 +6086,7 @@ html[lang="sw"] .download-button .download::after {
     }
 
     .ksl-mast.is-min .navbar.sticky-top {
-        height: 60px;
+        height: 48px;
     }
 
     .ksl-mast .navbar .navbar-brand,
@@ -6102,16 +6106,16 @@ html[lang="sw"] .download-button .download::after {
     }
 
     .ksl-mast.is-min .navbar .navbar-brand {
-        height: 60px;
+        height: 48px;
     }
 
     .ksl-mast.is-min .navbar .ksl-logo {
-        height: 40px;
+        height: 32px;
     }
 
     .ksl-mast.is-min .navbar .navbar-nav .nav-link {
-        padding-top: 16px;
-        padding-bottom: 16px;
+        padding-top: 12px;
+        padding-bottom: 12px;
     }
 
     .ksl-mast.is-min .ksl-doodle-note {

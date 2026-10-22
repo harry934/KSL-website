@@ -28,7 +28,10 @@
 
     function inScope(el) {
         if (!el || !el.closest) return false;
-        return el.matches(SCOPE) || !!el.closest(SCOPE);
+        if (el.matches(SCOPE) || el.closest(SCOPE)) return true;
+        if (el.matches('input[name="s"], textarea[name="s"], textarea[name="message"]')) return true;
+        if (el.matches("form") && el.querySelector('input[name="s"], textarea[name="message"]')) return true;
+        return !!el.closest("#searchModal, form");
     }
 
     function leave() {
