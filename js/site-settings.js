@@ -157,6 +157,7 @@
         if (!a || !a.enabled || !a.text) return;
         var endsOn = /^\d{4}-\d{2}-\d{2}$/.test(a.endsOn || "") ? a.endsOn : "";
         if (endsOn && todayInNairobi() > endsOn) return;
+        if (document.body.classList.contains("ksl-404")) return;
         var key = "ksl-announcement-dismissed:" + a.text;
         try {
             if (window.sessionStorage.getItem(key)) return;

@@ -2258,7 +2258,11 @@
                 })
             }).then(function (res) {
                 return res.json().catch(function () { return {}; }).then(function (data) {
-                    if (!res.ok) {
+                        if (!res.ok) {
+                        if (data.code === "blocked") {
+                            window.location.replace("404.html?blocked=1");
+                            return;
+                        }
                         if (data.code === "too_fast") {
                             return new Promise(function (resolve) {
                                 window.setTimeout(resolve, 2000);
@@ -2281,6 +2285,10 @@
                                 });
                             }).then(function (retry) {
                                 return retry.json().catch(function () { return {}; }).then(function (retryData) {
+                                    if (retryData.code === "blocked") {
+                                        window.location.replace("404.html?blocked=1");
+                                        return;
+                                    }
                                     if (!retry.ok) throw new Error(retryData.error || "Could not send the message.");
                                     return retryData;
                                 });

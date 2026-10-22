@@ -5,6 +5,7 @@ import { toPublicDownloadsPayload } from "./downloads.ts";
 import { matchesDeclaredType, mp4IsHevc } from "./file-bytes.ts";
 import { heroFrameOffset, parseHeroCrop, parseHeroTrim } from "./hero-frame.ts";
 import { issueContactToken, verifyContactToken } from "./contact-token.ts";
+import { looksLikeCode } from "./input-guard.ts";
 import { sanitizeRichHtml } from "./sanitize-html.ts";
 
 test("published careers stay public and drafts stay out", () => {
@@ -118,6 +119,15 @@ test("a hero trim stays inside the film", () => {
   assert.equal(parseHeroTrim({ start: 0, end: 30 }, 30), null);
   assert.deepEqual(parseHeroTrim({ start: 1.24, end: 8.09 }, 30), { start: 1.2, end: 8.1 });
   assert.equal(parseHeroTrim({ start: 4, end: 4.1 }), null);
+});
+
+test("code-like text is blocked and ordinary messages are not", () => {
+  assert.equal(looksLikeCode("Please tell me about dry dock dates."), false);
+  assert.equal(looksLikeCode("A price under 2 million is fine."), false);
+  assert.equal(looksLikeCode("<script>alert(1)</script>"), true);
+  assert.equal(looksLikeCode("javascript:alert(1)"), true);
+  assert.equal(looksLikeCode("&lt;iframe src=x&gt;"), true);
+  assert.equal(looksLikeCode("hello onerror=alert(1)"), true);
 });
 
 test("contact tokens expire into use and reject tampering", () => {

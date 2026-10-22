@@ -243,6 +243,8 @@
     }
 
     function handleViewportChange() {
+        var page = currentPage();
+        if (page === "404.html" || document.body.classList.contains("ksl-404")) return;
         if (mq.matches) {
             build();
         } else if (sheet && sheet.classList.contains("is-open")) {

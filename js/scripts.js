@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261022-15";
+    var ASSET_V = "20261022-18";
 
     var BUNDLES = {
         wow: [
@@ -21,6 +21,7 @@
     ];
 
     var TAIL = [
+        "js/input-guard.js",
         "js/sanitize.js",
         "js/ksl-content.js",
         "js/site-images.js",

@@ -10104,8 +10104,31 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     font-size: 14px;
 }
 
-.ksl-send-error { color: #C0392B; }
-.ksl-send-ok { color: #273272; }
+.ksl-send-error:not([hidden]),
+.ksl-send-ok:not([hidden]),
+.ksl-search-summary.is-error,
+.ksl-newsletter-msg.is-error:not(:empty) {
+    display: block;
+    margin-top: 8px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+.ksl-send-error:not([hidden]),
+.ksl-search-summary.is-error,
+.ksl-newsletter-msg.is-error:not(:empty) {
+    color: #7A271A;
+    background: #FDECEC;
+    border: 1px solid #F3C0BA;
+}
+
+.ksl-send-ok:not([hidden]) {
+    color: #0E3B2E;
+    background: #E7F6EF;
+    border: 1px solid #B7E0CC;
+}
 
 @media (prefers-reduced-motion: no-preference) {
     .ksl-contact-form .form-control.is-valid {
@@ -11927,6 +11950,90 @@ body[data-ksl-motif="waves"] main::after {
 
 .org-department-row::before {
     height: 3px;
+}
+
+body.ksl-404 {
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0;
+    overflow: hidden;
+    padding-bottom: 0 !important;
+    background:
+        radial-gradient(ellipse at 50% 38%, rgba(201, 169, 92, .18), transparent 52%),
+        #09296C;
+}
+
+body.ksl-404 .ksl-miss {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px 20px 40px;
+    text-align: center;
+    color: #fff;
+}
+
+body.ksl-404 .ksl-miss-mark {
+    position: absolute;
+    top: 22px;
+    left: 22px;
+}
+
+body.ksl-404 .ksl-miss-mark img {
+    height: 64px;
+    width: auto;
+}
+
+body.ksl-404 .ksl-miss-kicker {
+    margin: 10px 0 0;
+    color: #C4A35A;
+    font: 700 .78rem/1 Manrope, sans-serif;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+}
+
+body.ksl-404 .ksl-miss h1 {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1.1;
+}
+
+body.ksl-404 .ksl-miss-note {
+    max-width: 28rem;
+    margin: 4px 0 8px;
+    padding: 14px 18px;
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .08);
+    color: rgba(255, 255, 255, .92);
+    font-size: 1.05rem;
+    line-height: 1.5;
+}
+
+html.ksl-blocked body.ksl-404 .ksl-miss-note {
+    border-color: rgba(196, 163, 90, .7);
+    background: rgba(196, 163, 90, .16);
+}
+
+.ksl-miss-blocked-copy { display: none; }
+html.ksl-blocked .ksl-miss-lost-copy { display: none; }
+html.ksl-blocked .ksl-miss-blocked-copy { display: block; }
+
+body.ksl-404 .ksl-lost svg {
+    stroke: #fff;
+}
+
+body.ksl-404 .ksl-lost-needle path {
+    fill: #fff;
+}
+
+body.ksl-404 .ksl-lost-needle .is-north {
+    fill: #C4A35A;
 }
 
 .ksl-lost {

@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { clientIp } from "@/lib/auth-server";
 import { verifyContactToken, verifyTurnstile } from "@/lib/contact-token";
+import { looksLikeCode } from "@/lib/input-guard";
 import { NextRequest, NextResponse } from "next/server";
 
 const PREFERRED = new Set(["Phone Call", "Email", "Message / WhatsApp", ""]);
@@ -27,6 +28,9 @@ export async function POST(req: NextRequest) {
   const message = clip(body.message, 4000);
   const preferred = clip(body.preferredContact, 40);
 
+  if ([firstName, otherName, surname, email, subject, message].some(looksLikeCode)) {
+    return NextResponse.json({ error: "That text was blocked.", code: "blocked" }, { status: 400 });
+  }
   if (!firstName || !surname || !subject || !message) {
     return NextResponse.json({ error: "Please complete the required fields." }, { status: 400 });
   }
