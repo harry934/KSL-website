@@ -29,6 +29,44 @@ export function safeImageUrl(value: unknown) {
   }
 }
 
+export const HOME_HERO_SLOT = "chrome.home-hero";
+export const HERO_MEDIA_LIMIT = 8;
+
+export type HeroMediaItem = {
+  kind: "image" | "video";
+  public_url: string;
+  storage_path: string | null;
+};
+
 export function isImagePath(value: string) {
   return /\.(jpe?g|png|webp)(\?|#|$)/i.test(value);
+}
+
+export function isVideoPath(value: string) {
+  return /\.(mp4|webm)(\?|#|$)/i.test(value);
+}
+
+function storagePathOf(value: unknown) {
+  return typeof value === "string" && /^[\w./-]+$/.test(value) ? value : null;
+}
+
+/** Ordered home-hero photos and videos. Invalid rows are dropped. */
+export function parseHeroMedia(value: unknown): HeroMediaItem[] {
+  if (!Array.isArray(value)) return [];
+  const items: HeroMediaItem[] = [];
+  for (const row of value) {
+    if (!row || typeof row !== "object") continue;
+    const record = row as { kind?: unknown; public_url?: unknown; publicUrl?: unknown; storage_path?: unknown; storagePath?: unknown };
+    const url = safeImageUrl(record.public_url ?? record.publicUrl);
+    if (!url) continue;
+    const kind = isVideoPath(url) ? "video" : isImagePath(url) ? "image" : null;
+    if (!kind) continue;
+    items.push({
+      kind,
+      public_url: url,
+      storage_path: storagePathOf(record.storage_path ?? record.storagePath),
+    });
+    if (items.length >= HERO_MEDIA_LIMIT) break;
+  }
+  return items;
 }

@@ -96,6 +96,9 @@ test("file bytes must match the declared type", () => {
   assert.equal(matchesDeclaredType(Uint8Array.from([0xff, 0xd8, 0xff, 0x00]), "jpg"), true);
   assert.equal(matchesDeclaredType(Uint8Array.from([0x3c, 0x73, 0x63, 0x72]), "jpg"), false);
   assert.equal(matchesDeclaredType(Uint8Array.from([0x25, 0x50, 0x44, 0x46]), "pdf"), true);
+  assert.equal(matchesDeclaredType(Uint8Array.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70]), "mp4"), true);
+  assert.equal(matchesDeclaredType(Uint8Array.from([0x1a, 0x45, 0xdf, 0xa3]), "webm"), true);
+  assert.equal(matchesDeclaredType(Uint8Array.from([0xff, 0xd8, 0xff, 0x00]), "mp4"), false);
 });
 
 test("contact tokens expire into use and reject tampering", () => {

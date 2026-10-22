@@ -16,7 +16,7 @@ export default async function SiteImagesPage() {
     <>
       <PageHeader
         title="Website images"
-        description="Card photos and page headers. Pick a photo from the gallery, or upload a new one. It is added to the gallery so you can use it again."
+        description="Card photos and page headers. The home hero can be photos, videos, or both, and the homepage shows one at a time."
       />
       <SiteImagesEditor canEdit={canEdit} />
     </>

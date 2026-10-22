@@ -22,6 +22,12 @@ const ALLOWED_MODULES = new Set<ModuleKey>([
 
 const MAX_BYTES = 8 * 1024 * 1024;
 const MAX_DOC_BYTES = 25 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+
+const VIDEO_TYPES: Record<string, string> = {
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+};
 
 const TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -49,14 +55,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "file required" }, { status: 400 });
   }
 
-  const ext = TYPES[file.type];
+  const heroVideo = req.headers.get("x-ksl-hero") === "1" && moduleKey === "site_settings";
+  let ext = TYPES[file.type];
+  let video = false;
+  if (!ext && heroVideo) {
+    ext = VIDEO_TYPES[file.type];
+    if (!ext) {
+      const name = file.name.toLowerCase();
+      if ((file.type === "" || file.type === "application/octet-stream") && name.endsWith(".mp4")) ext = "mp4";
+      else if ((file.type === "" || file.type === "application/octet-stream") && name.endsWith(".webm")) ext = "webm";
+    }
+    video = Boolean(ext);
+  }
   if (!ext) {
     return NextResponse.json(
-      { error: "Only JPG, PNG or WebP images, or PDF / Word documents are allowed." },
+      {
+        error: heroVideo
+          ? "Use a JPG, PNG or WebP photo, or an MP4 or WebM video."
+          : "Only JPG, PNG or WebP images, or PDF / Word documents are allowed.",
+      },
       { status: 400 }
     );
   }
-  const limit = IMAGE_EXTS.has(ext) ? MAX_BYTES : MAX_DOC_BYTES;
+  const limit = video ? MAX_VIDEO_BYTES : IMAGE_EXTS.has(ext) ? MAX_BYTES : MAX_DOC_BYTES;
   if (file.size > limit) {
     return NextResponse.json({ error: `File is too large (max ${Math.round(limit / 1024 / 1024)} MB).` }, { status: 400 });
   }
@@ -68,16 +89,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "The file contents do not match the selected type." }, { status: 400 });
   }
   const image = IMAGE_EXTS.has(ext);
-  const bucket = image ? "media-public" : "downloads";
+  const bucket = image || video ? "media-public" : "downloads";
   const { error: upErr } = await admin.storage.from(bucket).upload(path, buffer, {
-    contentType: file.type,
-    cacheControl: image ? "31536000" : "3600",
+    contentType: video ? (ext === "webm" ? "video/webm" : "video/mp4") : file.type,
+    cacheControl: image || video ? "31536000" : "3600",
     upsert: false,
   });
 
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
 
-  if (!image) {
+  if (!image && !video) {
     const { data: signed } = await admin.storage.from(bucket).createSignedUrl(path, 3600);
     return NextResponse.json({
       storage_path: path,

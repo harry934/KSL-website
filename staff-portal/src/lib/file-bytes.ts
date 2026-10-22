@@ -12,6 +12,12 @@ function matches(bytes: Uint8Array, signature: number[]) {
 
 /** Checks the start of the file, not the browser-supplied Content-Type. */
 export function matchesDeclaredType(bytes: Uint8Array, ext: string) {
+  if (ext === "mp4") {
+    return bytes.length >= 8 && bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70;
+  }
+  if (ext === "webm") {
+    return bytes.length >= 4 && bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
+  }
   if (ext === "webp") {
     return (
       bytes.length >= 12 &&

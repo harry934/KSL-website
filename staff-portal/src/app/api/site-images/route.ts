@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
-import { isImagePath, isSiteImageSlot, safeImageUrl, SITE_IMAGE_SLOTS } from "@/lib/site-images";
+import { HOME_HERO_SLOT, isImagePath, isSiteImageSlot, parseHeroMedia, safeImageUrl, SITE_IMAGE_SLOTS } from "@/lib/site-images";
 import { siteAssetUrl } from "@/lib/site-url";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -17,6 +17,32 @@ function galleryFileUrl(
   if (path.startsWith("img/") || path.startsWith("/img/")) return siteAssetUrl(path);
   const { data } = admin.storage.from("media-public").getPublicUrl(path.replace(/^\/+/, ""));
   return data.publicUrl;
+}
+
+async function addGalleryPhoto(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  publicUrl: string,
+  storagePath: string | null,
+  title: unknown
+) {
+  const already = storagePath
+    ? await admin.from("gallery_photos").select("id").eq("storage_path", storagePath).limit(1)
+    : await admin.from("gallery_photos").select("id").eq("public_url", publicUrl).limit(1);
+  if (already.error) return dbError(already.error);
+  if (already.data?.length) return null;
+  const { data: latest } = await admin.from("gallery_photos").select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle();
+  const name = String(title || "Photo").replace(/\.[a-z0-9]+$/i, "").slice(0, 120) || "Photo";
+  const { error } = await admin.from("gallery_photos").insert({
+    title: name,
+    category: "all",
+    storage_path: storagePath,
+    public_url: publicUrl,
+    sort_order: (latest?.sort_order ?? 0) + 1,
+    status: "published",
+    updated_by: userId,
+  });
+  return error ? dbError(error) : null;
 }
 
 async function storedImages() {
@@ -47,7 +73,7 @@ export async function GET() {
   if (error) return error;
 
   const admin = createAdminClient();
-  const { data, error: loadErr } = await admin.from("site_image_overrides").select("slot_id, source, public_url, storage_path");
+  const { data, error: loadErr } = await admin.from("site_image_overrides").select("slot_id, source, public_url, storage_path, media");
   if (loadErr) return NextResponse.json({ error: dbError(loadErr) }, { status: 500 });
 
   const library = await storedImages();
@@ -78,6 +104,42 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  if (slotId === HOME_HERO_SLOT && Array.isArray(body.items)) {
+    const items = parseHeroMedia(body.items);
+    if (!items.length && body.items.length > 0) {
+      return NextResponse.json({ error: "Use a JPG, PNG, WebP, MP4, or WebM file." }, { status: 400 });
+    }
+    if (!items.length) {
+      const { error: delErr } = await admin.from("site_image_overrides").delete().eq("slot_id", slotId);
+      if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
+      await logActivity(session.userId, "site_settings", "update", "site_image", slotId);
+      return NextResponse.json({ ok: true });
+    }
+
+    const poster = items.find((item) => item.kind === "image") ?? null;
+    const { error: upErr } = await admin.from("site_image_overrides").upsert({
+      slot_id: slotId,
+      source: "storage",
+      public_url: poster?.public_url ?? null,
+      storage_path: poster?.storage_path ?? items[0].storage_path,
+      media: items,
+      updated_by: session.userId,
+    });
+    if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+
+    if (body.addToGallery) {
+      const galleryUrl = safeImageUrl(body.publicUrl);
+      const galleryPath = typeof body.storagePath === "string" && /^[\w./-]+$/.test(body.storagePath) ? body.storagePath : null;
+      if (galleryUrl && isImagePath(galleryUrl)) {
+        const galleryErr = await addGalleryPhoto(admin, session.userId, galleryUrl, galleryPath, body.title);
+        if (galleryErr) return NextResponse.json({ error: galleryErr }, { status: 500 });
+      }
+    }
+
+    await logActivity(session.userId, "site_settings", "update", "site_image", slotId);
+    return NextResponse.json({ ok: true });
+  }
+
   const publicUrl = safeImageUrl(body.publicUrl);
   if (!publicUrl || !isImagePath(publicUrl)) {
     return NextResponse.json({ error: "Choose an image file." }, { status: 400 });
@@ -85,23 +147,8 @@ export async function POST(req: NextRequest) {
   const storagePath = typeof body.storagePath === "string" && /^[\w./-]+$/.test(body.storagePath) ? body.storagePath : null;
 
   if (body.addToGallery) {
-    const already = storagePath
-      ? await admin.from("gallery_photos").select("id").eq("storage_path", storagePath).limit(1)
-      : await admin.from("gallery_photos").select("id").eq("public_url", publicUrl).limit(1);
-    if (!already.data?.length) {
-      const { data: latest } = await admin.from("gallery_photos").select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle();
-      const title = String(body.title || "Photo").replace(/\.[a-z0-9]+$/i, "").slice(0, 120) || "Photo";
-      const { error: galleryErr } = await admin.from("gallery_photos").insert({
-        title,
-        category: "all",
-        storage_path: storagePath,
-        public_url: publicUrl,
-        sort_order: (latest?.sort_order ?? 0) + 1,
-        status: "published",
-        updated_by: session.userId,
-      });
-      if (galleryErr) return NextResponse.json({ error: dbError(galleryErr) }, { status: 500 });
-    }
+    const galleryErr = await addGalleryPhoto(admin, session.userId, publicUrl, storagePath, body.title);
+    if (galleryErr) return NextResponse.json({ error: galleryErr }, { status: 500 });
   }
 
   const { error: upErr } = await admin.from("site_image_overrides").upsert({

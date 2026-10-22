@@ -3,7 +3,7 @@
     {
       "id": "chrome.home-hero",
       "page": "Home",
-      "label": "Home hero photo",
+      "label": "Home hero photo or video",
       "src": "img/ksl/mombasa.webp",
       "kind": "css",
       "variable": "--ksl-photo-home-hero"

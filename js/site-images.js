@@ -48,6 +48,25 @@
         document.documentElement.classList.add("ksl-photos-ready");
     }
 
+    function publishHero(data) {
+        var list = data && data.hero;
+        if (!Array.isArray(list) || !list.length) return;
+        var clean = [];
+        list.forEach(function (item) {
+            var url = safeUrl(item && item.url);
+            var kind = item && item.kind === "video" ? "video" : "image";
+            if (!url) return;
+            if (kind === "video" && !/\.(mp4|webm)(\?|#|$)/i.test(url)) return;
+            if (kind === "image" && !/\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i.test(url)) return;
+            clean.push({ kind: kind, url: url });
+        });
+        if (!clean.length) return;
+        window.KSL_HERO_MEDIA = clean;
+        try {
+            window.dispatchEvent(new CustomEvent("ksl-hero-media", { detail: clean }));
+        } catch (err) {}
+    }
+
     function take(data) {
         var images = data && data.images;
         if (images && typeof images === "object") {
@@ -57,6 +76,7 @@
             });
             apply(document);
         }
+        publishHero(data);
         ready();
     }
 

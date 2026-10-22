@@ -4686,6 +4686,39 @@ html:not(.ksl-photos-ready) .ksl-hero::before {
     opacity: 1;
 }
 
+.ksl-hero.has-custom-media > .ksl-hero-video {
+    opacity: 0 !important;
+    visibility: hidden;
+}
+
+.ksl-hero-slides {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    transition: opacity 1.15s cubic-bezier(.4, 0, .2, 1);
+}
+
+.ksl-hero-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity .9s ease;
+}
+
+.ksl-hero-slide.is-active {
+    opacity: 1;
+}
+
+.ksl-hero-slide img,
+.ksl-hero-slide video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 42%;
+}
+
 .ksl-hero.is-intro-crossfade .ksl-hero-shade {
     animation: kslHeroShadeIn .85s ease-out both;
 }
@@ -8731,7 +8764,8 @@ html.ksl-intro-active:not(.ksl-intro-pending) body {
     to { transform: translate3d(-50%, 0, 0); }
 }
 
-html.ksl-intro-active:not(.ksl-intro-handoff) .ksl-hero-video {
+html.ksl-intro-active:not(.ksl-intro-handoff) .ksl-hero-video,
+html.ksl-intro-active:not(.ksl-intro-handoff) .ksl-hero-slides {
     opacity: 0 !important;
 }
 

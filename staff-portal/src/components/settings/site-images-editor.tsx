@@ -1,22 +1,43 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Upload, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { sendJson, uploadFile } from "@/lib/upload-client";
 import { PhotoCropDialog } from "@/components/ui/photo-crop";
 import { siteAssetUrl } from "@/lib/site-url";
-import type { SiteImageSlot } from "@/lib/site-images";
+import { HERO_MEDIA_LIMIT, HOME_HERO_SLOT, isImagePath, parseHeroMedia, type SiteImageSlot } from "@/lib/site-images";
 
-type Override = { slot_id: string; source: string; public_url: string | null; storage_path: string | null };
+type Override = { slot_id: string; source: string; public_url: string | null; storage_path: string | null; media?: unknown };
 type LibraryImage = { url: string; storagePath: string | null; label: string };
+type HeroItem = { kind: "image" | "video"; url: string; storagePath: string | null; label: string };
+
+function heroFromOverride(override: Override | undefined) {
+  const parsed = parseHeroMedia(override?.media);
+  const source = parsed.length
+    ? parsed
+    : override?.public_url && isImagePath(override.public_url)
+      ? [{ kind: "image" as const, public_url: override.public_url, storage_path: override.storage_path }]
+      : [];
+  return {
+    live: parsed.length > 0,
+    items: source.map((item) => ({
+      kind: item.kind,
+      url: item.public_url,
+      storagePath: item.storage_path,
+      label: item.kind === "video" ? "Video" : "Photo",
+    })),
+  };
+}
 
 export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   const { toast } = useFeedback();
   const [slots, setSlots] = useState<SiteImageSlot[]>([]);
   const [overrides, setOverrides] = useState<Override[]>([]);
+  const [heroItems, setHeroItems] = useState<HeroItem[]>([]);
+  const [heroListLive, setHeroListLive] = useState(false);
   const [library, setLibrary] = useState<LibraryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -29,8 +50,12 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     try {
       const data = await sendJson("/api/site-images", "GET");
       const nextSlots: SiteImageSlot[] = data.slots ?? [];
+      const rows: Override[] = data.overrides ?? [];
       setSlots(nextSlots);
-      setOverrides(data.overrides ?? []);
+      setOverrides(rows);
+      const hero = heroFromOverride(rows.find((row) => row.slot_id === HOME_HERO_SLOT));
+      setHeroItems(hero.items);
+      setHeroListLive(hero.live);
       setLibrary(data.library ?? []);
       setPage((current) => (nextSlots.some((slot) => slot.page === current) ? current : nextSlots[0]?.page || ""));
     } catch (err) {
@@ -87,6 +112,95 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     setBusy(null);
   }
 
+  async function persistHero(next: HeroItem[], gallery?: HeroItem) {
+    setBusy(HOME_HERO_SLOT);
+    try {
+      if (!next.length) {
+        await sendJson("/api/site-images", "POST", { slotId: HOME_HERO_SLOT, source: "standard" });
+        toast("The original hero film is back on the website.");
+      } else {
+        await sendJson("/api/site-images", "POST", {
+          slotId: HOME_HERO_SLOT,
+          source: "storage",
+          items: next.map((item) => ({ kind: item.kind, publicUrl: item.url, storagePath: item.storagePath })),
+          addToGallery: Boolean(gallery && gallery.kind === "image"),
+          publicUrl: gallery?.url,
+          storagePath: gallery?.storagePath,
+          title: gallery?.label,
+        });
+        toast("Home hero updated. The website shows one at a time.");
+      }
+      setPicking(null);
+      await load();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    }
+    setBusy(null);
+  }
+
+  function heroRoom() {
+    if (heroItems.length < HERO_MEDIA_LIMIT) return true;
+    toast(`The home hero can hold up to ${HERO_MEDIA_LIMIT} photos and videos.`, "error");
+    return false;
+  }
+
+  async function addHeroImage(file: File) {
+    if (!heroRoom()) return;
+    setBusy(HOME_HERO_SLOT);
+    try {
+      const uploaded = await uploadFile("site_settings", file);
+      const item: HeroItem = {
+        kind: "image",
+        url: uploaded.public_url,
+        storagePath: uploaded.storage_path,
+        label: file.name.replace(/\.[a-z0-9]+$/i, "") || "Photo",
+      };
+      await persistHero([...heroItems, item], item);
+    } catch (err) {
+      toast((err as Error).message, "error");
+      setBusy(null);
+    }
+  }
+
+  async function addHeroVideo(file: File) {
+    const named = /\.(mp4|webm)$/i.test(file.name);
+    const typed = file.type === "video/mp4" || file.type === "video/webm" || ((file.type === "" || file.type === "application/octet-stream") && named);
+    if (!typed) {
+      toast("Use an MP4 or WebM video.", "error");
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      toast("Video is too large (max 50 MB).", "error");
+      return;
+    }
+    if (!heroRoom()) return;
+    setBusy(HOME_HERO_SLOT);
+    try {
+      const uploaded = await uploadFile("site_settings", file, { "x-ksl-hero": "1" });
+      await persistHero([
+        ...heroItems,
+        {
+          kind: "video",
+          url: uploaded.public_url,
+          storagePath: uploaded.storage_path,
+          label: file.name.replace(/\.[a-z0-9]+$/i, "") || "Video",
+        },
+      ]);
+    } catch (err) {
+      toast((err as Error).message, "error");
+      setBusy(null);
+    }
+  }
+
+  function appendHeroPhoto(image: LibraryImage) {
+    if (heroItems.some((item) => item.url === image.url)) {
+      toast("That photo is already in the home hero.", "error");
+      return;
+    }
+    if (!heroRoom()) return;
+    persistHero([...heroItems, { kind: "image", url: image.url, storagePath: image.storagePath, label: image.label }]);
+  }
+
   async function upload(slotId: string, file: File) {
     setBusy(slotId);
     try {
@@ -133,6 +247,101 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       </nav>
       <div className="space-y-3">
         {visible.map((slot) => {
+          if (slot.id === HOME_HERO_SLOT) {
+            return (
+              <article id={`slot-${slot.id}`} key={slot.id} className="border border-[#e3e8ee] bg-white p-3">
+                <p className="m-0 text-[14px] font-semibold text-[#0b1f3a]">{slot.label}</p>
+                <p className="mb-3 mt-1 text-[13px] text-[#5b6775]">
+                  {heroListLive
+                    ? "The homepage shows these one at a time. Remove them all to bring back the original film."
+                    : heroItems.length
+                      ? "This photo is already on the hero, under the original film. Add a video or another photo and the homepage will show your list one at a time instead."
+                      : "The homepage is using its original film. Add photos, videos, or both, and it will show them one at a time."}
+                </p>
+                <div className="space-y-2">
+                  {heroItems.map((item, index) => (
+                    <div key={`${item.url}-${index}`} className="flex flex-wrap items-center gap-3 border border-[#eef1f4] p-2">
+                      {item.kind === "video" ? (
+                        <video src={siteAssetUrl(item.url)} muted playsInline preload="metadata" className="h-16 w-28 bg-[#0b1f3a] object-cover" />
+                      ) : (
+                        <img src={siteAssetUrl(item.url)} alt="" className="h-16 w-28 bg-[#f4f6f8] object-cover" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="m-0 text-[13px] font-semibold text-[#0b1f3a]">{item.kind === "video" ? "Video" : "Photo"} {index + 1}</p>
+                        <p className="m-0 truncate text-[12px] text-[#6b7785]">{item.label}</p>
+                      </div>
+                      {canEdit && (
+                        <div className="flex gap-1">
+                          <Button type="button" variant="secondary" size="sm" aria-label="Move earlier" disabled={busy !== null || index === 0} onClick={() => {
+                            const next = heroItems.slice();
+                            const [moved] = next.splice(index, 1);
+                            next.splice(index - 1, 0, moved);
+                            persistHero(next);
+                          }}>
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          <Button type="button" variant="secondary" size="sm" aria-label="Move later" disabled={busy !== null || index === heroItems.length - 1} onClick={() => {
+                            const next = heroItems.slice();
+                            const [moved] = next.splice(index, 1);
+                            next.splice(index + 1, 0, moved);
+                            persistHero(next);
+                          }}>
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                          <Button type="button" variant="danger" size="sm" aria-label="Remove" disabled={busy !== null} onClick={() => persistHero(heroItems.filter((_, itemIndex) => itemIndex !== index))}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {canEdit && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <label className="inline-flex h-10 cursor-pointer items-center gap-2 border border-[#d5dce4] bg-white px-4 text-[14px] font-semibold text-[#0b1f3a]">
+                      <Upload className="h-4 w-4" />
+                      Upload photo
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="sr-only"
+                        disabled={busy !== null}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = "";
+                          if (file) setCrop({ slotId: slot.id, file });
+                        }}
+                      />
+                    </label>
+                    <label className="inline-flex h-10 cursor-pointer items-center gap-2 border border-[#d5dce4] bg-white px-4 text-[14px] font-semibold text-[#0b1f3a]">
+                      <Upload className="h-4 w-4" />
+                      Upload video
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,.mp4,.webm"
+                        className="sr-only"
+                        disabled={busy !== null}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = "";
+                          if (file) addHeroVideo(file);
+                        }}
+                      />
+                    </label>
+                    <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => setPicking(slot.id)}>
+                      {busy === slot.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                      Choose from gallery
+                    </Button>
+                    {heroItems.length > 0 && (
+                      <Button type="button" variant="ghost" disabled={busy !== null} onClick={() => persistHero([])}>
+                        Use the original film
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </article>
+            );
+          }
           const stored = overrideFor(slot.id);
           const current = stored?.public_url || slot.src;
           return (
@@ -176,7 +385,8 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
           onDone={(file) => {
             const slotId = crop.slotId;
             setCrop(null);
-            upload(slotId, file);
+            if (slotId === HOME_HERO_SLOT) addHeroImage(file);
+            else upload(slotId, file);
           }}
         />
       )}
@@ -197,7 +407,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                   key={image.url}
                   type="button"
                   disabled={busy !== null}
-                  onClick={() => save(picking, image)}
+                  onClick={() => (picking === HOME_HERO_SLOT ? appendHeroPhoto(image) : save(picking, image))}
                   className="border border-[#e3e8ee] bg-[#f6f8fa] text-left"
                 >
                   <img src={image.url} alt="" className="h-24 w-full object-cover" />

@@ -15,12 +15,17 @@ export async function withBusy<T>(message: string, work: () => Promise<T>): Prom
 
 export async function uploadFile(
   module: ModuleKey,
-  file: File
+  file: File,
+  extraHeaders?: Record<string, string>
 ): Promise<{ public_url: string; storage_path: string; preview_url?: string }> {
   const fd = new FormData();
   fd.append("file", file);
   return withBusy("Uploading…", async () => {
-    const res = await fetch("/api/upload", { method: "POST", headers: { "x-ksl-module": module }, body: fd });
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      headers: { "x-ksl-module": module, ...extraHeaders },
+      body: fd,
+    });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error ?? "The upload did not work. Please try again.");
     return data;

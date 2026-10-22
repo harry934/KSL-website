@@ -1,22 +1,32 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { safeImageUrl } from "@/lib/site-images";
+import { HOME_HERO_SLOT, isImagePath, parseHeroMedia, safeImageUrl } from "@/lib/site-images";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   const { data, error } = await createAdminClient()
     .from("site_image_overrides")
-    .select("slot_id, public_url")
+    .select("slot_id, public_url, media")
     .eq("source", "storage");
   if (error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
   const images: Record<string, string> = {};
+  let hero: { kind: "image" | "video"; url: string }[] = [];
   for (const row of data ?? []) {
+    if (row.slot_id === HOME_HERO_SLOT) {
+      const items = parseHeroMedia(row.media);
+      if (items.length) {
+        hero = items.map((item) => ({ kind: item.kind, url: item.public_url }));
+        const poster = hero.find((item) => item.kind === "image");
+        if (poster) images[HOME_HERO_SLOT] = poster.url;
+        continue;
+      }
+    }
     const url = safeImageUrl(row.public_url);
-    if (row.slot_id && url) images[row.slot_id] = url;
+    if (row.slot_id && url && isImagePath(url)) images[row.slot_id] = url;
   }
 
   return NextResponse.json(
-    { images },
+    { images, hero },
     { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } }
   );
 }
