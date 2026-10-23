@@ -102,16 +102,20 @@
         var stand = evt.image ? "" : ' data-ksl-image="content.missing-photo"';
         var when = bounds(evt);
         var parts = dateParts(evt.date);
-        var venue = evt.venue ? '<span class="ksl-count-venue">' + escapeHtml(evt.venue) + "</span>" : "";
+        var venue = evt.venue ? '<p class="ksl-count-venue">' + escapeHtml(evt.venue) + "</p>" : "";
+        var stamp = parts.day
+            ? '<time class="ksl-count-stamp" datetime="' + escapeHtml(evt.date || "") + '"><strong>' + escapeHtml(parts.day) + "</strong><span>" + escapeHtml(parts.month) + "</span></time>"
+            : "";
         return (
             '<article class="ksl-count-card" data-ksl-count data-start="' + (when ? when.start.toISOString() : "") + '" data-end="' + (when ? when.end.toISOString() : "") + '">' +
             '<a class="ksl-count-photo" href="' + href + '" aria-label="' + escapeHtml(evt.title || "Event") + '">' +
             "<img" + stand + ' src="' + escapeHtml(photo) + '" alt="" loading="lazy" decoding="async">' +
+            stamp +
             '<span class="ksl-count-badge" data-ksl-badge hidden>Starts soon</span>' +
             "</a>" +
             '<div class="ksl-count-body">' +
             '<h3><a href="' + href + '">' + escapeHtml(evt.title || "Event") + "</a></h3>" +
-            '<p class="ksl-count-meta"><time datetime="' + escapeHtml(evt.date || "") + '"><strong>' + escapeHtml(parts.day) + "</strong><span>" + escapeHtml(parts.month) + "</span></time>" + venue + "</p>" +
+            venue +
             clockMarkup() +
             '<a class="ksl-count-btn" href="' + href + '">Event details</a>' +
             "</div></article>"
