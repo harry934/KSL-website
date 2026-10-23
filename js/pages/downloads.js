@@ -121,7 +121,7 @@
                     return;
                 }
                 var sub = item.subtitle ? '<p class="text-muted small mb-1">' + escapeHtml(item.subtitle) + "</p>" : "";
-                var meta = [item.type, item.language, item.date].filter(Boolean).map(escapeHtml).join(" · ");
+                var meta = [item.type, item.size, item.language, item.date].filter(Boolean).map(escapeHtml).join(" · ");
                 html += "<li><div><h3>" + escapeHtml(item.title) + "</h3>" + sub + "<p>" + escapeHtml(displayFilename(item.filename)) + "</p>";
                 html += '<p class="ksl-downloads-meta">' + meta + "</p></div>";
                 html += window.kslDocButton(url, "Download") + "</li>";

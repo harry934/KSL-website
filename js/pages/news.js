@@ -25,7 +25,7 @@
     function feedCard(item) {
         return (
             '<a class="ksl-feed-card" href="' + escapeHtml(item.href) + '">' +
-            '<span class="ksl-feed-photo"><img' + (item.standIn ? ' data-ksl-image="content.missing-photo"' : '') + ' src="' + escapeHtml(item.image) + '" alt="" loading="lazy" decoding="async"></span>' +
+            '<span class="ksl-feed-photo"><img' + (item.standIn ? ' data-ksl-image="content.missing-photo"' : '') + ' src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.imageAlt || item.title || "") + '" loading="lazy" decoding="async"></span>' +
             '<span class="ksl-feed-body">' +
             '<span class="ksl-feed-top"><span class="ksl-feed-pill">' + escapeHtml(item.label) + "</span>" + arrow + "</span>" +
             '<span class="ksl-feed-name">' + escapeHtml(item.title) + "</span>" +
@@ -88,6 +88,7 @@
                 standIn: !item.image,
                 label: item.category || "News",
                 title: item.title,
+                imageAlt: item.imageAlt || item.title || "",
                 meta: formatDate(item.date),
                 sortDate: item.date || "",
                 excerpt: item.excerpt || ""
@@ -117,6 +118,7 @@
                 standIn: !item.image,
                 label: String(item.date || "") >= today ? "Event" : "Past event",
                 title: item.title,
+                imageAlt: item.imageAlt || item.title || "",
                 meta: when || item.summary || "",
                 sortDate: item.date || "",
                 excerpt: item.description || item.summary || item.theme || "",

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { purgeRecycle, restoreRow, softDelete, splitRemoved } from "@/lib/recycle";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -7,6 +8,7 @@ export async function GET() {
   if (error) return error;
 
   const admin = createAdminClient();
+  await purgeRecycle(admin, "download_items");
   const [settingsRes, itemsRes] = await Promise.all([
     admin.from("downloads_settings").select("*").eq("id", "default").maybeSingle(),
     admin.from("download_items").select("*").order("sort_order", { ascending: true }),
@@ -15,9 +17,11 @@ export async function GET() {
   if (settingsRes.error) return NextResponse.json({ error: settingsRes.error.message }, { status: 500 });
   if (itemsRes.error) return NextResponse.json({ error: itemsRes.error.message }, { status: 500 });
 
+  const split = splitRemoved(itemsRes.data ?? []);
   return NextResponse.json({
     settings: settingsRes.data,
-    items: itemsRes.data ?? [],
+    items: split.items,
+    removed: split.removed,
   });
 }
 
@@ -26,6 +30,12 @@ export async function POST(req: NextRequest) {
   if (error || !session) return error;
 
   const body = await req.json();
+  if (body.action === "restore") {
+    const { error: restoreErr } = await restoreRow(createAdminClient(), "download_items", String(body.id ?? ""));
+    if (restoreErr) return NextResponse.json({ error: dbError(restoreErr) }, { status: 500 });
+    await logActivity(session.userId, "downloads", "restore", "download_item", String(body.id ?? ""));
+    return NextResponse.json({ ok: true });
+  }
   const denied = publishGuard(session, "downloads", body.status ?? "draft");
   if (denied) return denied;
   const admin = createAdminClient();
@@ -67,6 +77,8 @@ export async function POST(req: NextRequest) {
     source,
     sort_order: body.sort_order ?? 0,
     status: body.status ?? "draft",
+    expires_on: body.expires_on ? String(body.expires_on).slice(0, 10) : null,
+    file_bytes: body.file_bytes ? Number(body.file_bytes) : null,
     updated_by: session.userId,
   };
 
@@ -84,7 +96,7 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
   const admin = createAdminClient();
-  const { error: delErr } = await admin.from("download_items").delete().eq("id", id);
+  const { error: delErr } = await softDelete(admin, "download_items", id);
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
   await logActivity(session.userId, "downloads", "delete", "download_item", id);
   return NextResponse.json({ ok: true });

@@ -15,7 +15,7 @@ const UUID = /^[0-9a-f-]{36}$/i;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const ACTION_GROUPS: Record<string, { label: string; actions: string[] }> = {
-  saved: { label: "Saved or added", actions: ["upsert", "update", "save", "create"] },
+  saved: { label: "Saved or added", actions: ["upsert", "update", "save", "create", "restore"] },
   published: { label: "Put on the website", actions: ["publish"] },
   deleted: { label: "Deleted", actions: ["delete"] },
   signin: { label: "Signed in", actions: ["sign in"] },
@@ -73,6 +73,9 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
   const filtered = Boolean(moduleFilter || who || what || from || to);
 
   const admin = createAdminClient();
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - 24);
+  await admin.from("activity_log").delete().lt("created_at", cutoff.toISOString());
   let query = admin
     .from("activity_log")
     .select("id, module_key, action, entity_type, entity_id, metadata, created_at, admin_profiles(display_name, username)", {
@@ -115,7 +118,10 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="flex flex-col gap-[14px]">
-      <PageHeader title="Audit log" description="Every sign-in and every change made in this portal, newest first." />
+      <PageHeader
+        title="Audit log"
+        description="Every sign-in and every change made in this portal, newest first. Entries are kept for 24 months, then removed."
+      />
 
       {entryId && (
         <section className="ksl-card border-[#c5a028] p-4">
@@ -186,6 +192,9 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
           <button type="submit" className={applyClass}>
             Apply
           </button>
+          <a className={pagerClass} href={`/api/activity/export${from || to ? `?from=${from}&to=${to}` : ""}`}>
+            Download spreadsheet
+          </a>
           {filtered && (
             <Link href="/activity" className={pagerClass}>
               Clear

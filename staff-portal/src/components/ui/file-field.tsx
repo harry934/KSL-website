@@ -24,7 +24,7 @@ export function FileField({
 }: {
   module: ModuleKey;
   value: string;
-  onChange: (href: string) => void;
+  onChange: (href: string, file?: File) => void;
   allowImages?: boolean;
   allowLink?: boolean;
 }) {
@@ -55,7 +55,7 @@ export function FileField({
     setError(null);
     try {
       const data = await uploadFile(module, file);
-      onChange(data.public_url);
+      onChange(data.public_url, file);
       if (data.preview_url) setOpenHref(data.preview_url);
       setPasting(false);
     } catch (e) {
@@ -113,7 +113,9 @@ export function FileField({
           </button>
         )}
       </div>
-      <p className="text-[12px] text-[#6b7785]">{allowImages ? "PDF, Word or an image (JPG, PNG, WebP)." : "PDF or Word, up to 25 MB."}</p>
+      <p className="text-[12px] text-[#6b7785]">
+        {allowImages ? "PDF, Word or an image (JPG, PNG, WebP)." : "PDF or Word, up to 25 MB."} A file whose contents do not match its extension is refused.
+      </p>
       {error && <p className="text-[12.5px] text-[#b42318]">{error}</p>}
     </div>
   );

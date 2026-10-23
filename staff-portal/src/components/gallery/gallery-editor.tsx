@@ -19,11 +19,6 @@ type VideoDraft = { id?: string; link: string; title: string; caption: string; f
 
 const EMPTY_VIDEO: VideoDraft = { link: "", title: "", caption: "", featured: false, status: "published", sort_order: 0 };
 
-function captionFromFile(name: string) {
-  const base = name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
-  return base.charAt(0).toUpperCase() + base.slice(1);
-}
-
 export function GalleryEditor() {
   const { toast, confirm } = useFeedback();
   const canEdit = useCan("gallery", "edit");
@@ -124,7 +119,7 @@ export function GalleryEditor() {
     const added = batch.current.added;
     batch.current = { total: 0, added: 0 };
     if (!added) return;
-    toast(added === 1 ? "Photo added." : `${added} photos added.`);
+    toast(added === 1 ? "Photo added. Write what it shows, then turn it on." : `${added} photos added. Write what each one shows, then turn them on.`);
     void load();
   }, [cropQueue, load, toast]);
 
@@ -137,12 +132,13 @@ export function GalleryEditor() {
       const up = await uploadFile("gallery", cropped);
       const order = photos.reduce((max, p) => Math.max(max, p.sort_order), 0) + batch.current.added + 1;
       await sendJson("/api/gallery", "POST", {
-        title: captionFromFile(source.name),
+        title: "",
+        alt_text: "",
         category: place === "any" ? "all" : place,
         public_url: up.public_url,
         storage_path: up.storage_path,
         sort_order: order,
-        status: canPublish ? "published" : "draft",
+        status: "draft",
       });
       finishQueued(true);
     } catch (e) {
@@ -401,14 +397,15 @@ export function GalleryEditor() {
                           />
                         </span>
                         <label className="min-w-[180px] flex-1">
-                          <span className="mb-1 block text-[12px] font-semibold text-[#5b6775]">Name under the photo</span>
+                          <span className="mb-1 block text-[12px] font-semibold text-[#5b6775]">What the photo shows</span>
                           <Input
-                            value={p.title ?? ""}
+                            value={p.alt_text || p.title || ""}
                             placeholder="e.g. MV Uhuru at Kisumu"
-                            onChange={(e) => patchPhoto(p.id, { title: e.target.value }, false)}
-                            onBlur={(e) => savePhoto({ ...p, title: e.target.value }, "Name saved.")}
-                            aria-label="Name under the photo"
+                            onChange={(e) => patchPhoto(p.id, { title: e.target.value, alt_text: e.target.value }, false)}
+                            onBlur={(e) => savePhoto({ ...p, title: e.target.value, alt_text: e.target.value }, "Description saved.")}
+                            aria-label="What the photo shows"
                           />
+                          <span className="mt-1 block text-[12px] text-[#6b7785]">Required before the photo can go on the website.</span>
                         </label>
                         <label className="w-full sm:w-[210px]">
                           <span className="mb-1 block text-[12px] font-semibold text-[#5b6775]">Where it appears</span>
@@ -438,9 +435,13 @@ export function GalleryEditor() {
                           <Switch
                             checked={p.status === "published"}
                             disabled={!canPublish}
-                            onChange={(on) =>
-                              patchPhoto(p.id, { status: on ? "published" : "draft" }, true, on ? "Photo is now on the website." : "Photo hidden.")
-                            }
+                            onChange={(on) => {
+                              if (on && !(p.alt_text || p.title || "").trim()) {
+                                toast("Write what the photo shows before it can go on the website.", "error");
+                                return;
+                              }
+                              patchPhoto(p.id, { status: on ? "published" : "draft", alt_text: p.alt_text || p.title || "" }, true, on ? "Photo is now on the website." : "Photo hidden.")
+                            }}
                             label={<span className="text-[13px]">{p.status === "published" ? "On the page" : "Hidden"}</span>}
                           />
                           {canDelete && (

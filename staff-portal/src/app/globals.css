@@ -527,6 +527,42 @@ body {
   color: #6b7785;
 }
 
+.status-history {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 28px;
+  margin-top: 12px;
+}
+
+.status-history i {
+  flex: 1;
+  height: 8px;
+  border-radius: 2px;
+  background: #e3e8ee;
+}
+
+.status-history i.is-up {
+  height: 18px;
+  background: #1b7a3d;
+}
+
+.status-history i.is-slow {
+  height: 28px;
+  background: #b8860b;
+}
+
+.status-history i.is-down {
+  height: 28px;
+  background: #b42318;
+}
+
+.status-history-note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #98a3b1;
+}
+
 .status-card-scan {
   position: absolute;
   left: 0;

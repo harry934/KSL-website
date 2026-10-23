@@ -11,8 +11,9 @@ export async function GET() {
 
   if (photosRes.error || videosRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
+  const photos = (photosRes.data ?? []).filter((row) => String(row.alt_text || row.title || "").trim());
   return NextResponse.json(
-    { photos: (photosRes.data ?? []).map(toPublicPhoto), videos: (videosRes.data ?? []).map(toPublicVideo) },
+    { photos: photos.map(toPublicPhoto), videos: (videosRes.data ?? []).map(toPublicVideo) },
     { headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600" } }
   );
 }

@@ -24,6 +24,7 @@ import { newsPublicUrl } from "@/lib/public-links";
 import { useOpenEdit } from "@/lib/open-edit";
 import { uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
+import { RecycleBin } from "@/components/portal/recycle-bin";
 
 function formatDate(value: string | null) {
   if (!value) return "";
@@ -35,6 +36,7 @@ export function NewsEditor() {
   const canPublish = useCan("news", "publish");
   const canDelete = useCan("news", "delete");
   const [items, setItems] = useState<NewsRow[]>([]);
+  const [removed, setRemoved] = useState<NewsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<NewsRow> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -42,7 +44,10 @@ export function NewsEditor() {
   const load = useCallback(async () => {
     const res = await fetch("/api/news");
     const data = await res.json().catch(() => ({}));
-    if (res.ok) setItems(data.items ?? []);
+    if (res.ok) {
+      setItems(data.items ?? []);
+      setRemoved(data.removed ?? []);
+    }
     else toast(data.error ?? "Could not load the news.", "error");
     setLoading(false);
   }, [toast]);
@@ -70,6 +75,7 @@ export function NewsEditor() {
       location: "",
       body_html: "",
       go_live_on: "",
+      image_alt: "",
       status: canPublish ? "published" : "draft",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -108,15 +114,17 @@ export function NewsEditor() {
   async function remove(id: string) {
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
-      title: "Delete this article?",
-      message: item ? `"${item.title}" will be removed from the website for good.` : undefined,
+      title: "Remove this article?",
+      message: item
+        ? `"${item.title}" leaves the website. You can restore it for 14 days.`
+        : "You can restore it for 14 days.",
       confirmLabel: "Delete article",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/news?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Article deleted.");
+      toast("Article removed. It can be restored for 14 days.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");
@@ -174,6 +182,11 @@ export function NewsEditor() {
             </FormSection>
             <FormSection title="Cover photo">
               <ImageField module="news" value={editing.image_path ?? ""} onChange={(image_path) => set({ image_path })} />
+              {editing.image_path ? (
+                <Field label="What the photo shows" hint="Required before a story with a photo can go on the website.">
+                  <Input value={editing.image_alt ?? ""} onChange={(e) => set({ image_alt: e.target.value })} />
+                </Field>
+              ) : null}
             </FormSection>
           </div>
         </div>
@@ -222,6 +235,17 @@ export function NewsEditor() {
         onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
         onDelete={canDelete ? remove : undefined}
         emptyText="No articles yet. Click New article to write the first one."
+      />
+      <RecycleBin
+        items={removed}
+        onRestore={(id) => {
+          sendJson("/api/news", "POST", { action: "restore", id })
+            .then(() => {
+              toast("Article restored.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        }}
       />
     </div>
   );

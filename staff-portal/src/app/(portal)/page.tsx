@@ -18,22 +18,60 @@ const QUICK_ACTIONS: { module: ModuleKey; label: string }[] = [
 
 type DueItem = { href: string; title: string; detail: string };
 
-async function closingSoon(session: NonNullable<Awaited<ReturnType<typeof getStaffSession>>>) {
+type FlagRow = {
+  id?: string;
+  title?: string;
+  status?: string;
+  published_date?: string | null;
+  event_date?: string | null;
+  go_live_on?: string | null;
+  closing_date?: string | null;
+  expires_on?: string | null;
+  deleted_at?: string | null;
+  featured?: boolean;
+  updated_at?: string | null;
+  label?: string;
+};
+
+async function rows(admin: ReturnType<typeof createAdminClient>, table: string, columns: string) {
+  const { data, error } = await admin.from(table).select(columns);
+  if (error || !data) return [] as FlagRow[];
+  return data as FlagRow[];
+}
+
+async function watchLists(session: NonNullable<Awaited<ReturnType<typeof getStaffSession>>>) {
   const admin = createAdminClient();
   const today = nairobiToday();
   const until = addDays(today, 14);
   const from = addDays(today, -7);
-  const items: DueItem[] = [];
+  const staleDraft = addDays(today, -30);
+  const staleFeatured = addDays(today, -90);
+  const due: DueItem[] = [];
+  const scheduled: DueItem[] = [];
+  const attention: DueItem[] = [];
 
   if (canAccess(session.permissions, "careers", "view", session.isSuperAdmin)) {
-    const { data } = await admin.from("career_listings").select("id, title, closing_date").eq("status", "published");
-    for (const row of data ?? []) {
+    for (const row of await rows(admin, "career_listings", "id, title, closing_date, status")) {
+      if (row.status !== "published") continue;
       const day = String(row.closing_date ?? "").slice(0, 10);
       if (!day || day < from || day > until) continue;
-      items.push({
+      due.push({
         href: `/careers?edit=${row.id}`,
-        title: row.title,
+        title: row.title || "Job",
         detail: day < today ? `The closing date was ${formatDay(day)}, and the job is still on the website.` : `Closes ${formatDay(day)}.`,
+      });
+    }
+  }
+
+  if (canAccess(session.permissions, "downloads", "view", session.isSuperAdmin)) {
+    for (const row of await rows(admin, "download_items", "id, title, status, expires_on, deleted_at")) {
+      if (row.deleted_at || row.status !== "published") continue;
+      const day = String(row.expires_on ?? "").slice(0, 10);
+      if (!day || day < from || day > until) continue;
+      due.push({
+        href: `/downloads?edit=${row.id}`,
+        title: row.title || "Document",
+        detail: day < today ? `The document expired on ${formatDay(day)}.` : `Leaves the website on ${formatDay(day)}.`,
       });
     }
   }
@@ -43,7 +81,7 @@ async function closingSoon(session: NonNullable<Awaited<ReturnType<typeof getSta
     const value = (data?.value ?? null) as { enabled?: boolean; endsOn?: string; label?: string } | null;
     const ends = String(value?.endsOn ?? "").slice(0, 10);
     if (value?.enabled && ends && ends >= from && ends <= until) {
-      items.push({
+      due.push({
         href: "/settings",
         title: value.label?.trim() || "Website banner",
         detail: ends < today ? `The banner ended on ${formatDay(ends)}.` : `The banner ends on ${formatDay(ends)}.`,
@@ -51,14 +89,84 @@ async function closingSoon(session: NonNullable<Awaited<ReturnType<typeof getSta
     }
   }
 
-  return items;
+  if (canAccess(session.permissions, "news", "view", session.isSuperAdmin)) {
+    for (const row of await rows(admin, "news_items", "id, title, status, published_date, go_live_on, deleted_at")) {
+      if (row.deleted_at) continue;
+      const live = String(row.go_live_on ?? "").slice(0, 10);
+      if (row.status === "published" && live > today) {
+        scheduled.push({ href: `/news?edit=${row.id}`, title: row.title || "Story", detail: `Appears ${formatDay(live)}.` });
+      }
+      const written = String(row.published_date ?? "").slice(0, 10);
+      if (row.status === "draft" && written && written < staleDraft) {
+        attention.push({
+          href: `/news?edit=${row.id}`,
+          title: row.title || "Story",
+          detail: `Still unpublished. The date on it is ${formatDay(written)}.`,
+        });
+      }
+    }
+  }
+
+  if (canAccess(session.permissions, "events", "view", session.isSuperAdmin)) {
+    for (const row of await rows(admin, "event_items", "id, title, status, event_date, go_live_on, deleted_at")) {
+      if (row.deleted_at) continue;
+      const live = String(row.go_live_on ?? "").slice(0, 10);
+      if (row.status === "published" && live > today) {
+        scheduled.push({ href: `/events?edit=${row.id}`, title: row.title || "Event", detail: `Appears ${formatDay(live)}.` });
+      }
+      const when = String(row.event_date ?? "").slice(0, 10);
+      if (row.status === "draft" && when && when < today) {
+        attention.push({
+          href: `/events?edit=${row.id}`,
+          title: row.title || "Event",
+          detail: `The date was ${formatDay(when)}, and it is still unpublished.`,
+        });
+      }
+    }
+  }
+
+  if (canAccess(session.permissions, "gallery", "view", session.isSuperAdmin)) {
+    for (const row of await rows(admin, "gallery_videos", "id, title, featured, status, updated_at")) {
+      if (!row.featured || row.status !== "published") continue;
+      const touched = String(row.updated_at ?? "").slice(0, 10);
+      if (!touched || touched > staleFeatured) continue;
+      attention.push({
+        href: "/gallery",
+        title: row.title || "Featured video",
+        detail: `Still featured. It was last changed on ${formatDay(touched)}.`,
+      });
+    }
+  }
+
+  return { due, scheduled, attention };
+}
+
+function WatchList({ title, items }: { title: string; items: DueItem[] }) {
+  if (!items.length) return null;
+  return (
+    <section className="ksl-card">
+      <div className="border-b border-[#eef1f4] px-5 py-4">
+        <h2 className="text-[15px] font-bold text-[#0b1f3a]">{title}</h2>
+      </div>
+      <ul className="divide-y divide-[#eef1f4]">
+        {items.map((item) => (
+          <li key={item.href + item.title}>
+            <Link href={item.href} className="block px-5 py-3 hover:bg-[#fafbfc]">
+              <p className="text-[14px] font-semibold text-[#0b1f3a]">{item.title}</p>
+              <p className="text-[13px] text-[#6b7785]">{item.detail}</p>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 export default async function DashboardPage() {
   const session = await getStaffSession();
   if (!session) return null;
 
-  const due = await closingSoon(session);
+  const { due, scheduled, attention } = await watchLists(session);
   const quick = QUICK_ACTIONS.filter((action) => {
     if (session.isSuperAdmin) return true;
     return session.permissions.some((p) => p.module_key === action.module && p.can_edit);
@@ -93,23 +201,9 @@ export default async function DashboardPage() {
         </section>
       )}
 
-      {due.length > 0 && (
-        <section className="ksl-card">
-          <div className="border-b border-[#eef1f4] px-5 py-4">
-            <h2 className="text-[15px] font-bold text-[#0b1f3a]">Closing soon</h2>
-          </div>
-          <ul className="divide-y divide-[#eef1f4]">
-            {due.map((item) => (
-              <li key={item.href + item.title}>
-                <Link href={item.href} className="block px-5 py-3 hover:bg-[#fafbfc]">
-                  <p className="text-[14px] font-semibold text-[#0b1f3a]">{item.title}</p>
-                  <p className="text-[13px] text-[#6b7785]">{item.detail}</p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <WatchList title="Closing soon" items={due} />
+      <WatchList title="Scheduled" items={scheduled} />
+      <WatchList title="Needs a look" items={attention} />
 
       {session.isSuperAdmin && <ServiceStatus />}
     </div>

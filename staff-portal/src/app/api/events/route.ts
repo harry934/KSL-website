@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { slugify } from "@/lib/events";
+import { purgeRecycle, restoreRow, softDelete, splitRemoved } from "@/lib/recycle";
 import { sanitizeRichHtml } from "@/lib/sanitize-html";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -9,13 +10,14 @@ export async function GET() {
   if (error) return error;
 
   const admin = createAdminClient();
+  await purgeRecycle(admin, "event_items");
   const { data, error: dbErr } = await admin
     .from("event_items")
     .select("*")
     .order("event_date", { ascending: false });
 
   if (dbErr) return NextResponse.json({ error: dbError(dbErr) }, { status: 500 });
-  return NextResponse.json({ items: data ?? [] });
+  return NextResponse.json(splitRemoved(data ?? []));
 }
 
 export async function POST(req: NextRequest) {
@@ -23,11 +25,24 @@ export async function POST(req: NextRequest) {
   if (error || !session) return error;
 
   const body = await req.json();
+  if (body.action === "restore") {
+    const { error: restoreErr } = await restoreRow(createAdminClient(), "event_items", String(body.id ?? ""));
+    if (restoreErr) return NextResponse.json({ error: dbError(restoreErr) }, { status: 500 });
+    await logActivity(session.userId, "events", "restore", "event_item", String(body.id ?? ""));
+    return NextResponse.json({ ok: true });
+  }
   const denied = publishGuard(session, "events", body.status ?? "draft");
   if (denied) return denied;
   const admin = createAdminClient();
   const slug = (body.slug || slugify(body.title || "event")).trim();
   const status = body.status ?? "draft";
+  const imageAlt = String(body.image_alt ?? "").trim();
+  if (status === "published" && String(body.image_path ?? "").trim() && !imageAlt) {
+    return NextResponse.json(
+      { error: "Write a short description of the cover photo before the event can go on the website." },
+      { status: 400 }
+    );
+  }
   const row = {
     id: body.id || crypto.randomUUID(),
     slug,
@@ -41,8 +56,10 @@ export async function POST(req: NextRequest) {
     description: body.description ?? null,
     summary: body.summary ?? null,
     image_path: body.image_path ?? null,
+    image_alt: imageAlt || null,
     body_html: body.body_html ? sanitizeRichHtml(body.body_html) : null,
     status,
+    go_live_on: body.go_live_on ? String(body.go_live_on).slice(0, 10) : null,
     published_at: status === "published" ? new Date().toISOString() : null,
     updated_by: session.userId,
   };
@@ -61,7 +78,7 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
   const admin = createAdminClient();
-  const { error: delErr } = await admin.from("event_items").delete().eq("id", id);
+  const { error: delErr } = await softDelete(admin, "event_items", id);
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
   await logActivity(session.userId, "events", "delete", "event_item", id);
   return NextResponse.json({ ok: true });

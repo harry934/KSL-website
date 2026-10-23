@@ -7,6 +7,7 @@ export type DownloadItemRow = {
   language: string | null;
   doc_date: string | null;
   file_type: string | null;
+  file_bytes: number | null;
   file_name: string | null;
   anchor: string | null;
   alias_of: string | null;
@@ -14,11 +15,21 @@ export type DownloadItemRow = {
   source: "standard" | "storage" | null;
   sort_order: number;
   status: string;
+  expires_on: string | null;
+  deleted_at?: string | null;
 };
 
 export function downloadSource(row: Pick<DownloadItemRow, "source" | "external_href">): "standard" | "storage" {
   if (row.source === "storage" || row.source === "standard") return row.source;
   return row.external_href?.trim() ? "storage" : "standard";
+}
+
+export function formatBytes(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  const mb = bytes / (1024 * 1024);
+  return `${mb >= 10 ? Math.round(mb) : mb.toFixed(1)} MB`;
 }
 
 export function toPublicDownloadItem(row: DownloadItemRow, baseUrl: string) {
@@ -33,6 +44,7 @@ export function toPublicDownloadItem(row: DownloadItemRow, baseUrl: string) {
     language: row.language ?? undefined,
     date: row.doc_date ?? undefined,
     type: row.file_type ?? undefined,
+    size: row.file_bytes ? formatBytes(Number(row.file_bytes)) || undefined : undefined,
     file: file || undefined,
     filename: file || undefined,
     anchor: row.anchor ?? undefined,

@@ -1714,7 +1714,7 @@
                 link.setAttribute("data-title", photo.title || "");
                 var img = document.createElement("img");
                 img.src = photo.src;
-                img.alt = photo.title || "Kenya Shipyards Limited gallery";
+                img.alt = photo.alt || photo.title || "Kenya Shipyards Limited gallery";
                 img.loading = "lazy";
                 img.decoding = "async";
                 link.appendChild(img);

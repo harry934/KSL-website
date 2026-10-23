@@ -12,8 +12,9 @@ import { useCan } from "@/components/portal/session-context";
 import { slugify } from "@/lib/news";
 import { keyFrom, reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
-import { downloadSource, type DownloadItemRow } from "@/lib/downloads";
+import { downloadSource, formatBytes, type DownloadItemRow } from "@/lib/downloads";
 import { useOpenEdit } from "@/lib/open-edit";
+import { RecycleBin } from "@/components/portal/recycle-bin";
 
 type Draft = Partial<DownloadItemRow> & { isNew?: boolean };
 
@@ -21,9 +22,10 @@ const LANGUAGES = ["English", "Kiswahili", "English and Kiswahili"];
 
 function fileTypeFor(href: string) {
   const ext = href.split(/[?#]/)[0].split(".").pop()?.toLowerCase();
+  if (!ext || ext.length > 5 || ext === href.toLowerCase()) return null;
   if (ext === "pdf") return "PDF";
   if (ext === "doc" || ext === "docx") return "Word";
-  return null;
+  return ext.toUpperCase();
 }
 
 function baseName(href: string) {
@@ -37,6 +39,7 @@ export function DownloadsEditor() {
   const canDelete = useCan("downloads", "delete");
   const [baseUrl, setBaseUrl] = useState("");
   const [items, setItems] = useState<DownloadItemRow[]>([]);
+  const [removed, setRemoved] = useState<DownloadItemRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
@@ -47,6 +50,7 @@ export function DownloadsEditor() {
     if (res.ok) {
       setBaseUrl((data.settings?.base_url ?? "").replace(/\/?$/, "/"));
       setItems(data.items ?? []);
+      setRemoved(data.removed ?? []);
     } else {
       toast(data.error ?? "Could not load the downloads.", "error");
     }
@@ -138,15 +142,15 @@ export function DownloadsEditor() {
   async function remove(id: string) {
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
-      title: "Delete this document?",
-      message: item ? `"${item.title}" will no longer be available to download.` : undefined,
+      title: "Remove this document?",
+      message: item ? `"${item.title}" leaves the website. You can restore it for 14 days.` : "You can restore it for 14 days.",
       confirmLabel: "Delete document",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/downloads?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Document deleted.");
+      toast("Document removed. It can be restored for 14 days.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");
@@ -212,12 +216,13 @@ export function DownloadsEditor() {
                   module="downloads"
                   allowLink={false}
                   value={editing.external_href || ""}
-                  onChange={(href) =>
+                  onChange={(href, file) =>
                     set({
                       source: "storage",
                       external_href: href,
                       file_name: href ? baseName(href) : "",
                       file_type: fileTypeFor(href) ?? editing.file_type,
+                      file_bytes: file ? file.size : editing.file_bytes,
                     })
                   }
                 />
@@ -267,6 +272,9 @@ export function DownloadsEditor() {
                 <Field label="Date" optional>
                   <Input value={editing.doc_date ?? ""} onChange={(e) => set({ doc_date: e.target.value })} placeholder="e.g. November 2024" />
                 </Field>
+                <Field label="Leave the website on" hint="Use this for tenders. The file stays up through this day, then it is removed.">
+                  <Input type="date" value={editing.expires_on ?? ""} onChange={(e) => set({ expires_on: e.target.value })} />
+                </Field>
               </FieldGrid>
             </FormSection>
           </div>
@@ -294,7 +302,9 @@ export function DownloadsEditor() {
         items={items.map((i) => ({
           id: i.id,
           title: i.title,
-          subtitle: [i.category_label, downloadSource(i) === "storage" ? "Storage" : "Standard", i.file_type].filter(Boolean).join(" · "),
+          subtitle: [i.category_label, i.file_type, i.file_bytes ? formatBytes(Number(i.file_bytes)) : "", i.expires_on ? `Until ${i.expires_on}` : ""]
+            .filter(Boolean)
+            .join(" · "),
           status: i.status,
         }))}
         onEdit={(id) => {
@@ -304,6 +314,17 @@ export function DownloadsEditor() {
         onDelete={canDelete ? remove : undefined}
         onReorder={move}
         emptyText="No documents yet. Click New document to add one."
+      />
+      <RecycleBin
+        items={removed}
+        onRestore={(id) => {
+          sendJson("/api/downloads", "POST", { action: "restore", id })
+            .then(() => {
+              toast("Document restored.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        }}
       />
     </div>
   );

@@ -14,9 +14,12 @@ export type EventRow = {
   description: string | null;
   summary: string | null;
   image_path: string | null;
+  image_alt: string | null;
   body_html: string | null;
   status: string;
   published_at: string | null;
+  go_live_on: string | null;
+  deleted_at?: string | null;
 };
 
 export { slugify };
@@ -35,6 +38,7 @@ export function toPublicEvent(row: EventRow) {
   if (row.description) item.description = row.description;
   if (row.summary) item.summary = row.summary;
   if (row.image_path) item.image = row.image_path;
+  if (row.image_alt) item.imageAlt = row.image_alt;
   if (row.body_html) item.body = sanitizeRichHtml(row.body_html);
   return item;
 }

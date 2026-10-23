@@ -20,7 +20,7 @@
         "News & Events": "Habari na Matukio",
         "News and Events": "Habari na Matukio",
         "Gallery": "Ghala la Picha",
-        "Video Gallery": "Ghala la Picha",
+        "Video Gallery": "Ghala la Video",
         "Photos": "Picha",
         "Videos": "Video",
         "Downloads": "Vipakuliwa",
@@ -218,7 +218,16 @@
         "World languages": "Lugha za dunia",
         "No language found": "Hakuna lugha iliyopatikana",
         "Close": "Funga",
-        "Languages other than English and Kiswahili are translated automatically by Google and may not be exact.": "Lugha zingine isipokuwa Kiingereza na Kiswahili zinatafsiriwa kiotomatiki na Google na huenda zisiwe sahihi kabisa."
+        "Languages other than English and Kiswahili are translated automatically by Google and may not be exact.": "Lugha zingine isipokuwa Kiingereza na Kiswahili zinatafsiriwa kiotomatiki na Google na huenda zisiwe sahihi kabisa.",
+        "Nothing on this site matches that.": "Hakuna kilicho kwenye tovuti hii kinacholingana na hicho.",
+        "That page is not on this site.": "Ukurasa huo haupo kwenye tovuti hii.",
+        "Not accepted": "Haukubaliwi",
+        "That text was blocked": "Maandishi hayo yalizuiwa",
+        "It looked like code, so it was not searched or sent. Write a normal message and try again.": "Yalionekana kama msimbo, kwa hiyo hayakutafutwa wala kutumwa. Andika ujumbe wa kawaida kisha ujaribu tena.",
+        "Back to Home": "Rudi nyumbani",
+        "Input blocked | Kenya Shipyards Limited": "Maingizo yamezuiwa | Kenya Shipyards Limited",
+        "Scroll to learn more about Kenya Shipyards Limited": "Sogeza chini ili kujifunza zaidi kuhusu Kenya Shipyards Limited",
+        "Page not found | Kenya Shipyards Limited": "Ukurasa haujapatikana | Kenya Shipyards Limited"
     };
 
     var LANGS = [

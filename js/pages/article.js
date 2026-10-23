@@ -53,7 +53,7 @@
     function storyCard(item) {
         return (
             '<a class="ksl-story-card" href="' + articleHref(item) + '">' +
-            '<span class="ksl-story-photo"><img src="' + escapeHtml(item.image) + '" alt="" loading="lazy" decoding="async"></span>' +
+            '<span class="ksl-story-photo"><img src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.imageAlt || item.title || "") + '" loading="lazy" decoding="async"></span>' +
             '<span class="ksl-story-body">' +
             '<span class="ksl-story-kicker">' + escapeHtml(item.category || "News") + (item.location ? " \u00b7 " + escapeHtml(item.location) : "") + "</span>" +
             '<span class="ksl-story-title">' + escapeHtml(item.title) + "</span>" +
@@ -69,7 +69,7 @@
         }
         return (
             '<a class="ksl-article-step is-' + dir + '" href="' + articleHref(item) + '">' +
-            '<img src="' + escapeHtml(item.image) + '" alt="" loading="lazy" decoding="async">' +
+            '<img src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.imageAlt || item.title || "") + '" loading="lazy" decoding="async">' +
             '<span class="ksl-article-step-text">' +
             '<span class="ksl-article-step-label">' + label + "</span>" +
             '<span class="ksl-article-step-title">' + escapeHtml(item.title) + "</span></span></a>"

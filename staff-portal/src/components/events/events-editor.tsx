@@ -15,6 +15,8 @@ import { useOpenEdit } from "@/lib/open-edit";
 import { uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import { EventsMonth } from "@/components/events/events-month";
+import { RecycleBin } from "@/components/portal/recycle-bin";
+import { nairobiToday } from "@/lib/dates";
 
 function formatDate(value: string | null) {
   if (!value) return "";
@@ -26,6 +28,7 @@ export function EventsEditor() {
   const canPublish = useCan("events", "publish");
   const canDelete = useCan("events", "delete");
   const [items, setItems] = useState<EventRow[]>([]);
+  const [removed, setRemoved] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<EventRow> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -34,7 +37,10 @@ export function EventsEditor() {
   const load = useCallback(async () => {
     const res = await fetch("/api/events");
     const data = await res.json().catch(() => ({}));
-    if (res.ok) setItems(data.items ?? []);
+    if (res.ok) {
+      setItems(data.items ?? []);
+      setRemoved(data.removed ?? []);
+    }
     else toast(data.error ?? "Could not load the events.", "error");
     setLoading(false);
   }, [toast]);
@@ -58,6 +64,8 @@ export function EventsEditor() {
       description: "",
       summary: "",
       image_path: "",
+      image_alt: "",
+      go_live_on: "",
       body_html: "",
       status: canPublish ? "published" : "draft",
     });
@@ -80,8 +88,15 @@ export function EventsEditor() {
       const slug =
         editing.slug?.trim() ||
         uniqueSlug(editing.title, items.filter((i) => i.id !== editing.id).map((i) => i.slug), "event");
-      await sendJson("/api/events", "POST", { ...editing, slug });
-      toast(editing.status === "published" ? "Event saved and shown on the website." : "Event saved as hidden (draft).");
+      await sendJson("/api/events", "POST", { ...editing, slug, go_live_on: editing.go_live_on || null });
+      const waiting = editing.status === "published" && editing.go_live_on && editing.go_live_on > nairobiToday();
+      toast(
+        waiting
+          ? "Saved. Visitors will see it on the morning you chose."
+          : editing.status === "published"
+            ? "Event saved and shown on the website."
+            : "Event saved as hidden (draft)."
+      );
       setEditing(null);
       load();
     } catch (err) {
@@ -94,15 +109,15 @@ export function EventsEditor() {
   async function remove(id: string) {
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
-      title: "Delete this event?",
-      message: item ? `"${item.title}" will be removed from the website for good.` : undefined,
+      title: "Remove this event?",
+      message: item ? `"${item.title}" leaves the website. You can restore it for 14 days.` : "You can restore it for 14 days.",
       confirmLabel: "Delete event",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/events?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Event deleted.");
+      toast("Event removed. It can be restored for 14 days.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");
@@ -149,6 +164,9 @@ export function EventsEditor() {
               <Field label="Date">
                 <Input type="date" value={editing.event_date ?? ""} onChange={(e) => set({ event_date: e.target.value })} />
               </Field>
+              <Field label="Show on the website from" hint="Leave this blank to show the event as soon as it is published.">
+                <Input type="date" value={editing.go_live_on ?? ""} onChange={(e) => set({ go_live_on: e.target.value })} />
+              </Field>
               <FieldGrid>
                 <Field label="Starts" optional>
                   <Input type="time" value={editing.time_start ?? ""} onChange={(e) => set({ time_start: e.target.value })} />
@@ -163,6 +181,11 @@ export function EventsEditor() {
             </FormSection>
             <FormSection title="Cover photo">
               <ImageField module="events" value={editing.image_path ?? ""} onChange={(image_path) => set({ image_path })} />
+              {editing.image_path ? (
+                <Field label="What the photo shows" hint="Required before an event with a photo can go on the website.">
+                  <Input value={editing.image_alt ?? ""} onChange={(e) => set({ image_alt: e.target.value })} />
+                </Field>
+              ) : null}
             </FormSection>
           </div>
         </div>
@@ -199,7 +222,12 @@ export function EventsEditor() {
         items={items.map((i) => ({
           id: i.id,
           title: i.title,
-          subtitle: [formatDate(i.event_date), i.venue].filter(Boolean).join(" · "),
+          subtitle: [
+            i.go_live_on && i.go_live_on > nairobiToday() ? `Appears ${formatDate(i.go_live_on)}` : formatDate(i.event_date),
+            i.venue,
+          ]
+            .filter(Boolean)
+            .join(" · "),
           image: i.image_path,
           status: i.status,
         }))}
@@ -207,6 +235,17 @@ export function EventsEditor() {
         onDelete={canDelete ? remove : undefined}
         emptyText="No events yet. Click New event to add one."
       />}
+      <RecycleBin
+        items={removed}
+        onRestore={(id) => {
+          sendJson("/api/events", "POST", { action: "restore", id })
+            .then(() => {
+              toast("Event restored.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        }}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 export type GalleryRow = {
   id: string;
   title: string | null;
+  alt_text: string | null;
   category: string | null;
   tags: string[] | null;
   storage_path: string | null;
@@ -38,6 +39,7 @@ export function toPublicPhoto(row: GalleryRow) {
   return {
     src: photoSrc(row),
     title: row.title || "",
+    alt: row.alt_text || row.title || "",
     category: row.category || "all",
     tags: row.tags || [],
   };

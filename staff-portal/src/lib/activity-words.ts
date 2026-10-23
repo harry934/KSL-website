@@ -4,6 +4,7 @@ const ACTION_WORDS: Record<string, string> = {
   save: "saved",
   publish: "put on the website",
   delete: "deleted",
+  restore: "restored",
   create: "added",
   permissions: "changed what can be done by",
   profile: "updated the details of",

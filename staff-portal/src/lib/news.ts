@@ -14,6 +14,8 @@ export type NewsRow = {
   status: string;
   published_at: string | null;
   go_live_on: string | null;
+  image_alt: string | null;
+  deleted_at?: string | null;
 };
 
 export function toPublicNewsItem(row: NewsRow) {
@@ -24,6 +26,7 @@ export function toPublicNewsItem(row: NewsRow) {
     category: row.category ?? "News",
     date: row.published_date ?? undefined,
     image: row.image_path ?? undefined,
+    imageAlt: row.image_alt ?? undefined,
     author: row.author ?? undefined,
     location: row.location ?? undefined,
   };

@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 
 type ServiceState = "up" | "slow" | "down";
 type Probe = { state: ServiceState; ms: number };
-type Report = { database: Probe; website: Probe; checkedAt: string };
+type Sample = { t: string; state: ServiceState | "none"; ms: number };
+type Report = {
+  database: Probe;
+  website: Probe;
+  portal: Probe;
+  history?: { database: Sample[]; website: Sample[]; portal: Sample[] };
+  checkedAt: string;
+};
 
 const LABEL: Record<ServiceState, string> = {
   up: "Running",
@@ -12,14 +19,27 @@ const LABEL: Record<ServiceState, string> = {
   down: "Not responding",
 };
 
+function History({ samples }: { samples: Sample[] | undefined }) {
+  if (!samples?.length) return null;
+  return (
+    <div className="status-history" aria-hidden>
+      {samples.map((sample) => (
+        <i key={sample.t} className={sample.state === "none" ? "" : `is-${sample.state}`} title={sample.state} />
+      ))}
+    </div>
+  );
+}
+
 function Card({
   name,
   detail,
   probe,
+  history,
 }: {
   name: string;
   detail: string;
   probe: Probe | null;
+  history?: Sample[];
 }) {
   const state = probe?.state ?? "checking";
   return (
@@ -35,6 +55,8 @@ function Card({
         {probe ? LABEL[probe.state] : "Checking"}
         {probe ? <span>{probe.ms} ms</span> : null}
       </p>
+      <History samples={history} />
+      <p className="status-history-note">Last 24 hours. Each bar is one hour.</p>
       <span className="status-card-scan" aria-hidden />
     </article>
   );
@@ -49,7 +71,7 @@ export function ServiceStatus() {
       const res = await fetch("/api/admin/status", { cache: "no-store" }).catch(() => null);
       if (!res?.ok || stopped) return;
       const json = (await res.json().catch(() => null)) as Report | null;
-      if (json?.database && json?.website) setReport(json);
+      if (json?.database && json?.website && json?.portal) setReport(json);
     }
     load();
     const timer = window.setInterval(() => {
@@ -62,9 +84,10 @@ export function ServiceStatus() {
   }, []);
 
   return (
-    <section className="grid gap-3 sm:grid-cols-2" aria-label="Live service status">
-      <Card name="Supabase" detail="Database for this portal" probe={report?.database ?? null} />
-      <Card name="Website" detail="ksl-website.vercel.app" probe={report?.website ?? null} />
+    <section className="grid gap-3 lg:grid-cols-3" aria-label="Live service status">
+      <Card name="Supabase" detail="Database for this portal" probe={report?.database ?? null} history={report?.history?.database} />
+      <Card name="Website" detail="ksl-website.vercel.app" probe={report?.website ?? null} history={report?.history?.website} />
+      <Card name="Staff portal" detail="ksl-websitemink.vercel.app" probe={report?.portal ?? null} history={report?.history?.portal} />
     </section>
   );
 }

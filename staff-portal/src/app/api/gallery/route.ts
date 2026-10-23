@@ -53,9 +53,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, id: data.id });
   }
 
+  const title = String(body.title ?? "").trim();
+  const alt = String(body.alt_text ?? "").trim() || title;
+  if (status === "published" && !alt) {
+    return NextResponse.json(
+      { error: "Write what the photo shows before it can go on the website." },
+      { status: 400 }
+    );
+  }
+
   const row = {
     ...(body.id ? { id: body.id } : {}),
-    title: body.title ?? "",
+    title,
+    alt_text: alt || null,
     category: body.category ?? "all",
     tags: body.tags ?? [],
     storage_path: body.storage_path ?? null,
