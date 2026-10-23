@@ -6,7 +6,7 @@ import kslLogo from "../../../public/ksl-logo.png";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { History, ImageIcon, LayoutDashboard, Trash2 } from "lucide-react";
+import { History, ImageIcon, LayoutDashboard, Megaphone, Trash2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { MODULE_GROUPS, MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import { RECYCLE_MODULES } from "@/lib/recycle-sources";
@@ -121,7 +121,10 @@ export function Sidebar({ session }: { session: StaffSession }) {
                 />
               ))}
               {group.label === "Administration" && canSee(session, "site_settings") && (
-                <NavLink href="/images" label="Website images" icon={ImageIcon} active={isActive("/images")} />
+                <>
+                  <NavLink href="/banner" label="Banner" icon={Megaphone} active={isActive("/banner")} />
+                  <NavLink href="/images" label="Website images" icon={ImageIcon} active={isActive("/images")} />
+                </>
               )}
             </div>
           );

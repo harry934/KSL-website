@@ -238,7 +238,7 @@ async function watchLists(session: NonNullable<Awaited<ReturnType<typeof getStaf
       const ends = String(item.endsOn ?? "").slice(0, 10);
       if (!ends || ends < from || ends > until) continue;
       due.push({
-        href: "/settings",
+        href: "/banner",
         title: item.label?.trim() || item.text?.trim() || "Website banner",
         detail: ends < today ? `The banner ended on ${formatDay(ends)}.` : `The banner ends on ${formatDay(ends)}.`,
       });

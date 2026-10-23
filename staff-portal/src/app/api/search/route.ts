@@ -4,10 +4,23 @@ import { credentialsCurrent } from "@/lib/api-auth";
 import { getStaffSession } from "@/lib/session";
 import { canAccess, MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 
-type Hit = { id: string; title: string; hint: string; href: string; area: string };
+type Hit = { id: string; title: string; hint: string; href: string; area: string; text?: string };
 
 function safeLike(value: string) {
-  return `%${value.replace(/[%_\\]/g, "").slice(0, 80)}%`;
+  return `%${value.replace(/[%_\\,]/g, "").slice(0, 80)}%`;
+}
+
+function rank(title: string, extra: string, query: string) {
+  const name = title.toLowerCase();
+  const hay = `${name} ${extra.toLowerCase()}`;
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length || !words.every((word) => hay.includes(word))) return 0;
+  const phrase = words.join(" ");
+  if (name === phrase) return 100;
+  if (name.startsWith(phrase)) return 80;
+  if (name.includes(phrase)) return 60;
+  if (words.every((word) => name.includes(word))) return 40;
+  return 15;
 }
 
 export async function GET(req: NextRequest) {
@@ -28,8 +41,8 @@ export async function GET(req: NextRequest) {
     jobs.push(
       admin
         .from("news_items")
-        .select("id, title, category")
-        .ilike("title", like)
+        .select("id, title, category, excerpt")
+        .or(`title.ilike.${like},excerpt.ilike.${like},category.ilike.${like}`)
         .is("deleted_at", null)
         .limit(6)
         .then(({ data }) =>
@@ -37,6 +50,7 @@ export async function GET(req: NextRequest) {
             id: `news:${row.id}`,
             title: row.title,
             hint: row.category || "News story",
+            text: row.excerpt || "",
             href: `/news?edit=${row.id}`,
             area: MODULE_LABELS.news,
           }))
@@ -77,7 +91,7 @@ export async function GET(req: NextRequest) {
             id: `photo:${row.id}`,
             title: row.title || "Untitled photo",
             hint: "Gallery photo",
-            href: "/gallery",
+            href: `/gallery?edit=${row.id}`,
             area: MODULE_LABELS.gallery,
           }))
         )
@@ -129,7 +143,7 @@ export async function GET(req: NextRequest) {
       admin
         .from("products")
         .select("id, name, category_label")
-        .ilike("name", like)
+        .or(`name.ilike.${like},category_label.ilike.${like}`)
         .is("deleted_at", null)
         .limit(6)
         .then(({ data }) =>
@@ -148,8 +162,8 @@ export async function GET(req: NextRequest) {
     jobs.push(
       admin
         .from("projects")
-        .select("id, title, category_label")
-        .ilike("title", like)
+        .select("id, title, category_label, subtitle")
+        .or(`title.ilike.${like},subtitle.ilike.${like},category_label.ilike.${like}`)
         .is("deleted_at", null)
         .limit(6)
         .then(({ data }) =>
@@ -157,6 +171,7 @@ export async function GET(req: NextRequest) {
             id: `project:${row.id}`,
             title: row.title,
             hint: row.category_label || "Project",
+            text: row.subtitle || "",
             href: `/projects?edit=${row.id}`,
             area: MODULE_LABELS.projects,
           }))
@@ -164,6 +179,100 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  if (can("services")) {
+    jobs.push(
+      admin
+        .from("service_items")
+        .select("id, title, excerpt")
+        .or(`title.ilike.${like},excerpt.ilike.${like}`)
+        .is("deleted_at", null)
+        .limit(6)
+        .then(({ data }) =>
+          (data ?? []).map((row) => ({
+            id: `service:${row.id}`,
+            title: row.title,
+            hint: "Service",
+            text: row.excerpt || "",
+            href: `/services?edit=${row.id}`,
+            area: MODULE_LABELS.services,
+          }))
+        )
+    );
+  }
+
+  if (can("faq")) {
+    jobs.push(
+      admin
+        .from("faq_items")
+        .select("id, question, answer")
+        .or(`question.ilike.${like},answer.ilike.${like}`)
+        .is("deleted_at", null)
+        .limit(6)
+        .then(({ data }) =>
+          (data ?? []).map((row) => ({
+            id: `faq:${row.id}`,
+            title: row.question,
+            hint: "Question",
+            text: String(row.answer || "").replace(/<[^>]+>/g, " "),
+            href: "/faq",
+            area: MODULE_LABELS.faq,
+          }))
+        )
+    );
+  }
+
+  if (can("csr")) {
+    jobs.push(
+      admin
+        .from("csr_projects")
+        .select("id, title, summary")
+        .or(`title.ilike.${like},summary.ilike.${like}`)
+        .is("deleted_at", null)
+        .limit(6)
+        .then(({ data }) =>
+          (data ?? []).map((row) => ({
+            id: `csr:${row.id}`,
+            title: row.title,
+            hint: "Community programme",
+            text: row.summary || "",
+            href: `/csr?edit=${row.id}`,
+            area: MODULE_LABELS.csr,
+          }))
+        )
+    );
+  }
+
+  if (can("organization")) {
+    jobs.push(
+      admin
+        .from("organization_board_members")
+        .select("id, full_name, role")
+        .or(`full_name.ilike.${like},role.ilike.${like}`)
+        .is("deleted_at", null)
+        .limit(6)
+        .then(({ data }) =>
+          (data ?? []).map((row) => ({
+            id: `board:${row.id}`,
+            title: row.full_name,
+            hint: row.role || "Board",
+            href: "/organization",
+            area: MODULE_LABELS.organization,
+          }))
+        )
+    );
+  }
+
   const groups = await Promise.all(jobs);
-  return NextResponse.json({ results: groups.flat().slice(0, 18) });
+  const results = groups
+    .flat()
+    .map((hit) => ({ hit, score: rank(hit.title, `${hit.hint} ${hit.text || ""}`, q) }))
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score || a.hit.title.length - b.hit.title.length)
+    .slice(0, 12)
+    .map(({ hit }) => {
+      const shown = { ...hit };
+      delete shown.text;
+      return shown;
+    });
+  return NextResponse.json({ results });
 }

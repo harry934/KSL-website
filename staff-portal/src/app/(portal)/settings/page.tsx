@@ -16,7 +16,7 @@ export default async function SiteSettingsPage() {
     <>
       <PageHeader
         title="Site settings"
-        description="The banner, contact details, social media links and footer shown on every page of the website."
+        description="Contact details, social media links and the footer shown on every page of the website."
       />
       <SiteSettingsEditor canEdit={canEdit} />
     </>

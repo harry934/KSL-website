@@ -1866,11 +1866,7 @@
         { title: "Sustainability", href: "sustainability.html", type: "Page", keys: "environment green" },
         { title: "Contact Us", href: "contact.html", type: "Page", keys: "email phone address quote mombasa kisumu nairobi herufi house head office" },
         { title: "Our yards", href: "index.html#yards", type: "Page", keys: "map location directions mombasa mtongwe kisumu nairobi herufi house headquarters" },
-        { title: "Shipyard Specifications", href: "about.html#yards", type: "Page", keys: "slipway dry dock graving dock cranes quay capacity tonnes" },
-        { title: "7.05 m Ambulance Boat", href: "products.html", type: "Product", keys: "medical ambulance boat 13 m" },
-        { title: "15 Ton Medium Scale Fishing Vessel", href: "products.html", type: "Product", keys: "fishing artisanal boat 30 ton" },
-        { title: "16 m Passenger Boat", href: "products.html", type: "Product", keys: "passenger ferry 29.05 m vip admiral barge" },
-        { title: "Patrol, pilot, and landing craft", href: "products.html", type: "Product", keys: "utility rhib dredger pier linkspan" }
+        { title: "Shipyard Specifications", href: "about.html#yards", type: "Page", keys: "slipway dry dock graving dock cranes quay capacity tonnes" }
     ];
 
     function escapeHtml(text) {
@@ -1889,6 +1885,9 @@
             }
             return fetch(fallbackPath).then(function (res) { return res.json(); }).catch(function () { return null; });
         }
+        function plain(value) {
+            return String(value || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        }
         searchIndexLoading = Promise.all([
             grab("/api/public/news", "data/news.json"),
             grab("/api/public/services", "data/services.json"),
@@ -1897,7 +1896,10 @@
             grab("/api/public/downloads", "data/downloads.json"),
             grab("/api/public/careers", "data/careers.json"),
             grab("/api/public/organization", "data/organization.json"),
-            grab("/api/public/gallery", "data/gallery.json")
+            grab("/api/public/gallery", "data/gallery.json"),
+            grab("/api/public/products", "data/products.json"),
+            grab("/api/public/projects", "data/projects.json"),
+            grab("/api/public/csr", "data/csr.json")
         ]).then(function (results) {
             var list = SEARCH_PAGES.slice();
             var news = results[0];
@@ -1908,6 +1910,9 @@
             var careers = results[5];
             var org = results[6];
             var gallery = results[7];
+            var products = results[8];
+            var projects = results[9];
+            var csr = results[10];
             ((downloads && downloads.items) || []).forEach(function (item) {
                 list.push({ title: item.title, href: "downloads.html", type: "Document", keys: (item.categoryLabel || "") + " " + (item.type || "") });
             });
@@ -1917,27 +1922,44 @@
             ((org && org.leadership) || []).forEach(function (item) {
                 list.push({ title: item.role, href: "organization.html", type: "People", keys: item.summary || "" });
             });
+            ((org && org.board) || []).forEach(function (item) {
+                if (!item.name) return;
+                list.push({ title: item.name, href: "board.html", type: "People", keys: (item.role || "") + " " + (item.summary || "") });
+            });
             ((gallery && gallery.videos) || []).forEach(function (item) {
                 list.push({ title: item.title, href: "videos.html", type: "Video", keys: item.caption || "" });
             });
+            ((gallery && gallery.photos) || []).forEach(function (item) {
+                var title = item.title || item.alt;
+                if (!title) return;
+                list.push({ title: title, href: "videos.html", type: "Photo", keys: (item.alt || "") + " " + ((item.tags || []).join(" ")) });
+            });
             ((news && news.items) || []).forEach(function (item) {
-                list.push({ title: item.title, href: "article.html?slug=" + encodeURIComponent(item.slug), type: "News", keys: item.excerpt || "" });
+                list.push({ title: item.title, href: "article.html?slug=" + encodeURIComponent(item.slug), type: "News", keys: plain(item.excerpt) + " " + plain(item.body).slice(0, 800) });
             });
             ((services && services.items) || []).forEach(function (item) {
-                list.push({ title: item.title, href: "service.html", type: "Service", keys: (item.category || "") + " " + (item.excerpt || "") });
+                list.push({ title: item.title, href: "service.html", type: "Service", keys: (item.category || "") + " " + plain(item.excerpt) + " " + plain(item.detail).slice(0, 400) });
+            });
+            ((products && products.items) || []).forEach(function (item) {
+                var specs = (item.keySpecs || []).concat(item.extraSpecs || []).map(function (spec) {
+                    return (spec.label || "") + " " + (spec.value || "");
+                }).join(" ");
+                list.push({ title: item.name, href: item.slug ? "products.html#" + encodeURIComponent(item.slug) : "products.html", type: "Product", keys: (item.categoryLabel || "") + " " + (item.eyebrow || "") + " " + specs });
+            });
+            ((projects && projects.items) || []).forEach(function (item) {
+                list.push({ title: item.title, href: "project.html", type: "Project", keys: (item.subtitle || "") + " " + (item.categoryLabel || "") });
+            });
+            ((csr && csr.programmes) || []).forEach(function (item) {
+                list.push({ title: item.title, href: "csr.html", type: "CSR", keys: (item.summary || "") + " " + (item.location || "") });
             });
             ((faq && faq.groups) || []).forEach(function (group) {
                 (group.items || []).forEach(function (item) {
-                    list.push({ title: item.q, href: "faq.html", type: "FAQ", keys: group.title || "" });
+                    list.push({ title: item.q, href: "faq.html", type: "FAQ", keys: (group.title || "") + " " + plain(item.a).slice(0, 400) });
                 });
             });
-            var eventToday = (function () {
-                try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Nairobi" }).format(new Date()); }
-                catch (e) { return new Date().toISOString().slice(0, 10); }
-            })();
             ((events && events.upcoming) || []).concat((events && events.past) || []).forEach(function (item) {
-                if (String(item.date || "") < eventToday) return;
-                list.push({ title: item.title, href: item.href || "event.html", type: "Event", keys: (item.venue || "") + " " + (item.theme || "") });
+                var href = item.slug ? "event.html?slug=" + encodeURIComponent(item.slug) : (item.href || "event.html");
+                list.push({ title: item.title, href: href, type: "Event", keys: (item.venue || "") + " " + (item.theme || "") + " " + (item.summary || "") });
             });
             searchIndex = list;
             return list;
@@ -1945,25 +1967,38 @@
         return searchIndexLoading;
     }
 
+    function hasWord(text, word) {
+        var escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        var pattern = word.length < 4
+            ? "(^|[^a-z0-9])" + escaped + "([^a-z0-9]|$)"
+            : "(^|[^a-z0-9])" + escaped;
+        return new RegExp(pattern, "i").test(text);
+    }
+
     function searchMatches(query) {
         var words = query.toLowerCase().split(/\s+/).filter(Boolean);
+        var phrase = words.join(" ");
         if (!words.length || !searchIndex) {
             return [];
         }
-        return searchIndex.map(function (item) {
-            var title = item.title.toLowerCase();
-            var hay = title + " " + item.keys.toLowerCase();
-            if (!words.every(function (w) { return hay.indexOf(w) !== -1; })) {
+        var ranked = searchIndex.map(function (item) {
+            var title = String(item.title || "").toLowerCase();
+            var keys = String(item.keys || "").toLowerCase();
+            var hay = title + " " + keys;
+            if (!words.every(function (word) { return hasWord(hay, word); })) {
                 return null;
             }
-            var score = title.indexOf(words[0]) === 0 ? 3 : title.indexOf(words[0]) !== -1 ? 2 : 1;
-            if (item.type === "Page") {
-                score += 0.5;
-            }
+            var score = 8;
+            if (title === phrase) score = 100;
+            else if (phrase && title.indexOf(phrase) !== -1) score = 70;
+            else if (words.every(function (word) { return hasWord(title, word); })) score = 45;
+            if (item.type === "Page" && score < 45) score -= 3;
             return { item: item, score: score };
-        }).filter(Boolean).sort(function (a, b) {
-            return b.score - a.score;
-        }).slice(0, 6).map(function (match) {
+        }).filter(Boolean);
+        var titled = ranked.filter(function (match) { return match.score >= 45; });
+        return (titled.length ? titled : ranked).sort(function (a, b) {
+            return b.score - a.score || a.item.title.length - b.item.title.length;
+        }).slice(0, 8).map(function (match) {
             return match.item;
         });
     }

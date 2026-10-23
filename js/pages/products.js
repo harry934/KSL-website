@@ -36,7 +36,7 @@
         var toggle = ' data-product-toggle="' + id + '" aria-controls="' + id + '" aria-expanded="false"';
         var hasExtra = item.extraSpecs && item.extraSpecs.length;
         return (
-            '<div class="col-lg-4 col-md-6 ksl-reveal is-visible" data-cat="' + escapeHtml(item.category) + '">' +
+            '<div class="col-lg-4 col-md-6 ksl-reveal is-visible" data-cat="' + escapeHtml(item.category) + '" data-slug="' + escapeHtml(item.slug) + '">' +
             '<article class="product-card h-100">' +
             (item.image
                 ? '<button class="product-media" type="button"' + toggle + '>' +
@@ -86,6 +86,18 @@
         }
 
         grid.innerHTML = items.map(card).join("");
+        var wanted = "";
+        try { wanted = decodeURIComponent((location.hash || "").replace(/^#/, "")); } catch (e) { wanted = ""; }
+        if (wanted) {
+            var match = Array.prototype.filter.call(grid.querySelectorAll("[data-slug]"), function (el) {
+                return el.getAttribute("data-slug") === wanted;
+            })[0];
+            if (match) {
+                match.scrollIntoView({ block: "center" });
+                var details = match.querySelector(".product-details-toggle");
+                if (details) details.click();
+            }
+        }
 
         var range = document.querySelector(".product-range");
         if (range) {
