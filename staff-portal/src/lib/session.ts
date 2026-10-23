@@ -38,6 +38,7 @@ type ProfileRow = {
   contact_email: string | null;
   is_super_admin: boolean;
   is_active: boolean;
+  deleted_at?: string | null;
   must_change_password: boolean;
   must_change_username: boolean;
   avatar_path: string | null;
@@ -65,13 +66,13 @@ export const staffGate = cache(async (): Promise<StaffGate> => {
   const { data } = await createAdminClient()
     .from("admin_profiles")
     .select(
-      "display_name, username, contact_email, is_super_admin, is_active, must_change_password, must_change_username, avatar_path, admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
+      "display_name, username, contact_email, is_super_admin, is_active, deleted_at, must_change_password, must_change_username, avatar_path, admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
     )
     .eq("id", user.id)
     .maybeSingle();
 
   const profile = data as ProfileRow | null;
-  if (!profile || !profile.is_active) return { state: "suspended" };
+  if (!profile || !profile.is_active || profile.deleted_at) return { state: "suspended" };
 
   const authEmail = user.email ?? "";
   const email = profile.contact_email || (isInternalEmail(authEmail) ? "" : authEmail);

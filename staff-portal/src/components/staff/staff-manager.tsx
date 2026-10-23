@@ -476,14 +476,14 @@ export function StaffManager() {
   async function remove(row: StaffRow) {
     const ok = await confirm({
       title: `Delete ${row.display_name || row.username}?`,
-      message: "The account is removed for good. This cannot be undone.",
+      message: "The account goes to the recycle bin. They cannot sign in until you restore it.",
       confirmLabel: "Delete account",
       danger: true,
     });
     if (!ok) return;
     const done = await run(() => sendJson(`/api/staff?id=${encodeURIComponent(row.id)}`, "DELETE"));
     if (done) {
-      toast(`${row.username} was deleted.`);
+      toast(`${row.username} was moved to the recycle bin.`);
       load();
     }
   }

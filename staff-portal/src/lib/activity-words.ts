@@ -64,7 +64,7 @@ export function describeActivity(row: {
     if (row.action === "create") {
       return row.metadata?.superAdmin ? `added ${who} as an administrator` : `added the staff account ${who}`;
     }
-    if (row.action === "delete") return `deleted the staff account ${who}`;
+    if (row.action === "delete") return `moved the staff account ${who} to the recycle bin`;
     return `${verb} ${who}`;
   }
   const thing = row.entity_type ? THING_WORDS[row.entity_type] ?? row.entity_type.replace(/_/g, " ") : "something";

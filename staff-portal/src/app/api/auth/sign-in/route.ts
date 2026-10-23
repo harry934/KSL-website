@@ -29,9 +29,13 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
   const { data: gate } = await admin
     .from("admin_profiles")
-    .select("id, is_active, must_change_password, one_time_password_expires_at")
+    .select("id, is_active, deleted_at, must_change_password, one_time_password_expires_at")
     .eq("username", username)
     .maybeSingle();
+  if (gate?.deleted_at) {
+    await recordAttempt(username, ip, false);
+    return NextResponse.json({ error: INVALID }, { status: 401 });
+  }
   const expiresAt = gate?.one_time_password_expires_at ? new Date(gate.one_time_password_expires_at).getTime() : 0;
   if (gate?.is_active && gate.must_change_password && expiresAt && expiresAt <= Date.now()) {
     const discarded = `${generateOneTimePassword()}${generateOneTimePassword()}`.replace(/-/g, "");
@@ -64,9 +68,15 @@ export async function POST(req: NextRequest) {
 
   const { data: profile } = await admin
     .from("admin_profiles")
-    .select("is_active")
+    .select("is_active, deleted_at")
     .eq("id", signIn.user.id)
     .maybeSingle();
+
+  if (profile?.deleted_at) {
+    await supabase.auth.signOut();
+    await recordAttempt(username, ip, false);
+    return NextResponse.json({ error: INVALID }, { status: 401 });
+  }
 
   if (!profile?.is_active) {
     await supabase.auth.signOut();

@@ -16,11 +16,11 @@ export async function POST(req: NextRequest) {
 
   const { data: profile } = await createAdminClient()
     .from("admin_profiles")
-    .select("is_active")
+    .select("is_active, deleted_at")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!profile?.is_active) {
+  if (!profile?.is_active || profile.deleted_at) {
     await supabase.auth.signOut();
     return NextResponse.json(
       { error: "This passkey is not linked to an active staff account." },

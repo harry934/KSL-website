@@ -48,6 +48,7 @@ export async function GET() {
     .select(
       "id, username, display_name, contact_email, is_super_admin, is_active, must_change_password, avatar_path, created_at, permissions:admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
     )
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (dbError) return NextResponse.json({ error: "Could not load the staff list." }, { status: 500 });
@@ -138,8 +139,9 @@ export async function PATCH(req: NextRequest) {
   const admin = createAdminClient();
   const { data: target } = await admin
     .from("admin_profiles")
-    .select("id, username, is_super_admin")
+    .select("id, username, is_super_admin, deleted_at")
     .eq("id", id)
+    .is("deleted_at", null)
     .maybeSingle();
   if (!target) return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
   if (target.id === session.userId) {
@@ -152,7 +154,8 @@ export async function PATCH(req: NextRequest) {
       const { count } = await admin
         .from("admin_profiles")
         .select("id", { count: "exact", head: true })
-        .eq("is_super_admin", true);
+        .eq("is_super_admin", true)
+        .is("deleted_at", null);
       if ((count ?? 0) <= 1) {
         return NextResponse.json({ error: "Keep at least one administrator." }, { status: 400 });
       }
@@ -231,22 +234,24 @@ export async function DELETE(req: NextRequest) {
   const admin = createAdminClient();
   const { data: target } = await admin
     .from("admin_profiles")
-    .select("id, username, is_super_admin")
+    .select("id, username, is_super_admin, deleted_at")
     .eq("id", id)
+    .is("deleted_at", null)
     .maybeSingle();
   if (!target) return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
   if (target.is_super_admin || target.id === session.userId) {
     return NextResponse.json({ error: "Super admin accounts cannot be deleted." }, { status: 403 });
   }
 
-  await admin.from("activity_log").update({ actor_id: null }).eq("actor_id", id);
-  const { error: delErr } = await admin.auth.admin.deleteUser(id);
-  if (delErr) {
-    return NextResponse.json(
-      { error: "This agent has edited website content, so the account cannot be deleted. Suspend it instead." },
-      { status: 409 }
-    );
-  }
+  const { error: binErr } = await admin
+    .from("admin_profiles")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("deleted_at", null);
+  if (binErr) return NextResponse.json({ error: "Could not delete the account. Please try again." }, { status: 500 });
+
+  await admin.from("staff_sessions").delete().eq("user_id", id);
+  await admin.auth.admin.updateUserById(id, { ban_duration: "876000h" });
 
   await logActivity(session.userId, "staff", "delete", "admin_profile", id, { username: target.username });
   return NextResponse.json({ ok: true });

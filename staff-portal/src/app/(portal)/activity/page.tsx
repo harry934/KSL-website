@@ -99,7 +99,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
 
   const [{ data, count }, { data: people }, { data: entryRow }] = await Promise.all([
     query,
-    admin.from("admin_profiles").select("id, display_name, username").order("display_name"),
+    admin.from("admin_profiles").select("id, display_name, username").is("deleted_at", null).order("display_name"),
     entryQuery,
   ]);
   const rows = (data ?? []) as unknown as Row[];

@@ -24,8 +24,10 @@ export default async function AccountPage() {
     <>
       <PageHeader title="My account" description="Your photo, name, contact email, password and passkey." />
       <FormSection
-        title="This sign-in"
-        description="One session is open for this account. A new sign-in replaces it."
+        title={session.isSuperAdmin ? "This sign-in" : "Signed in"}
+        description={
+          session.isSuperAdmin ? "One session is open for this account. A new sign-in replaces it." : undefined
+        }
         className="mb-4"
       >
         <p className="text-[14px] text-[#0b1f3a]">

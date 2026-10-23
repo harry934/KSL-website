@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { canAccess } from "@/lib/modules";
-import { applyBinDelete, restoreRow, type RecycleTable } from "@/lib/recycle";
+import { applyBinDelete, purgeStaffAccount, restoreRow, restoreStaffAccount, type RecycleTable } from "@/lib/recycle";
 import { RECYCLE_SOURCES } from "@/lib/recycle-sources";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -75,14 +75,25 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient();
   if (action === "restore") {
-    const { error: restoreErr } = await restoreRow(admin, source.table as RecycleTable, id);
+    const { error: restoreErr } =
+      source.table === "admin_profiles"
+        ? await restoreStaffAccount(admin, id)
+        : await restoreRow(admin, source.table as RecycleTable, id);
+    if (restoreErr?.code === "bin" || restoreErr?.code === "restore") {
+      return NextResponse.json({ error: restoreErr.message }, { status: restoreErr.code === "bin" ? 400 : 500 });
+    }
     if (restoreErr) return NextResponse.json({ error: dbError(restoreErr) }, { status: 500 });
     await logActivity(session.userId, source.module, "restore", source.entityType, id);
     return NextResponse.json({ ok: true });
   }
 
-  const { error: deleteErr } = await applyBinDelete(admin, source.table as RecycleTable, id, true);
-  if (deleteErr?.code === "bin") return NextResponse.json({ error: deleteErr.message }, { status: 400 });
+  const { error: deleteErr } =
+    source.table === "admin_profiles"
+      ? await purgeStaffAccount(admin, id)
+      : await applyBinDelete(admin, source.table as RecycleTable, id, true);
+  if (deleteErr?.code === "bin" || deleteErr?.code === "delete") {
+    return NextResponse.json({ error: deleteErr.message }, { status: deleteErr.code === "bin" ? 400 : 500 });
+  }
   if (deleteErr) return NextResponse.json({ error: dbError(deleteErr) }, { status: 500 });
   await logActivity(session.userId, source.module, "purge", source.entityType, id);
   return NextResponse.json({ ok: true });

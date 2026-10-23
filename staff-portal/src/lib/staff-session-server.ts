@@ -12,11 +12,11 @@ import {
 export async function readStaffSession(userId: string) {
   const admin = createAdminClient();
   const [{ data: profile }, { data: row }] = await Promise.all([
-    admin.from("admin_profiles").select("is_active").eq("id", userId).maybeSingle(),
+    admin.from("admin_profiles").select("is_active, deleted_at").eq("id", userId).maybeSingle(),
     admin.from("staff_sessions").select("session_key, seen_at").eq("user_id", userId).maybeSingle(),
   ]);
   return {
-    active: Boolean(profile?.is_active),
+    active: Boolean(profile?.is_active) && !profile?.deleted_at,
     key: (row?.session_key as string | null) ?? null,
     seenAt: (row?.seen_at as string | null) ?? null,
   };

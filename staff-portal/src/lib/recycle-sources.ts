@@ -28,6 +28,20 @@ export const RECYCLE_SOURCES: RecycleSource[] = [
   { table: "organization_leadership", module: "organization", section: "Organisation", entityType: "organization_leadership", restore: "edit", select: "id, role, deleted_at", title: (row) => text(row.role, "Leadership role") },
   { table: "organization_board_members", module: "organization", section: "Organisation", entityType: "organization_board_members", restore: "edit", select: "id, full_name, deleted_at", title: (row) => text(row.full_name, "Board member") },
   {
+    table: "admin_profiles",
+    module: "staff",
+    section: "Staff",
+    entityType: "admin_profile",
+    restore: "edit",
+    select: "id, display_name, username, deleted_at",
+    title: (row) => {
+      const name = text(row.display_name, "");
+      const username = text(row.username, "");
+      if (name && username) return `${name} (@${username})`;
+      return name || (username ? `@${username}` : "Staff account");
+    },
+  },
+  {
     table: "website_messages",
     module: "messages",
     section: "Messages",
