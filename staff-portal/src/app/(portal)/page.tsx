@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { canAccess, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import { addDays, formatDay, nairobiToday } from "@/lib/dates";
 import { formatBytes } from "@/lib/downloads";
+import { DashboardRefresh } from "@/components/portal/dashboard-refresh";
 import { PageHeader } from "@/components/portal/page-header";
 import { MODULE_ICONS } from "@/components/portal/module-icons";
 
@@ -325,6 +326,7 @@ export default async function DashboardPage() {
       <PageHeader
         title="Dashboard"
         description={`Welcome back, ${session.displayName}.`}
+        actions={<DashboardRefresh />}
       />
 
       {quick.length > 0 && (
