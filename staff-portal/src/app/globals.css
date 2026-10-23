@@ -988,7 +988,11 @@ body {
 .kb-preview.is-tide { background: #0b1f3a; color: #fff; }
 .kb-preview.is-tide .kb-preview-icon { color: #e6c56a; }
 .kb-preview.is-tide .kb-preview-cta { border-radius: 999px; background: #fff; color: #0b1f3a; }
-.kb-preview.is-quay { color: #fff; background: #09296C; }
+.kb-preview.is-quay {
+  color: #fff;
+  background: #09296C;
+  --ksl-banner-photo: url("https://ksl-website.vercel.app/img/ksl/mombasa.webp");
+}
 .kb-preview.is-quay::before {
   content: "";
   position: absolute;
@@ -998,12 +1002,16 @@ body {
   width: 120px;
   background:
     linear-gradient(90deg, transparent 62%, #09296C),
-    var(--ksl-banner-photo, url("https://ksl-website.vercel.app/img/ksl/mombasa.webp")) center 42% / cover no-repeat;
+    var(--ksl-banner-photo) center 42% / cover no-repeat;
 }
 .kb-preview.is-quay .kb-preview-inner { padding-left: 136px; }
 .kb-preview.is-quay .kb-preview-tag { color: #e6c56a; }
 .kb-preview.is-quay .kb-preview-cta { padding: 0 0 1px; color: #e6c56a; border-bottom: 1px solid #e6c56a; }
-.kb-preview.is-berth { color: #fff; background: #09296C; }
+.kb-preview.is-berth {
+  color: #fff;
+  background: #09296C;
+  --ksl-banner-photo: url("https://ksl-website.vercel.app/img/ksl/mombasa.webp");
+}
 .kb-preview.is-berth::before {
   content: "";
   position: absolute;
@@ -1013,14 +1021,15 @@ body {
   width: 110px;
   background:
     linear-gradient(270deg, transparent 62%, #09296C),
-    var(--ksl-banner-photo, url("https://ksl-website.vercel.app/img/ksl/mombasa.webp")) center 42% / cover no-repeat;
+    var(--ksl-banner-photo) center 42% / cover no-repeat;
 }
 .kb-preview.is-berth .kb-preview-inner { padding-right: 124px; }
 .kb-preview.is-berth .kb-preview-tag { color: #e6c56a; }
 .kb-preview.is-berth .kb-preview-cta { padding: 0 0 1px; color: #e6c56a; border-bottom: 1px solid #e6c56a; }
 .kb-preview.is-channel {
   color: #fff;
-  background: var(--ksl-banner-photo, url("https://ksl-website.vercel.app/img/ksl/mombasa.webp")) center 40% / cover no-repeat;
+  --ksl-banner-photo: url("https://ksl-website.vercel.app/img/ksl/mombasa.webp");
+  background: var(--ksl-banner-photo) center 40% / cover no-repeat;
 }
 .kb-preview.is-channel::before {
   content: "";
