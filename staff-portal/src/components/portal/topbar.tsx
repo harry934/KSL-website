@@ -14,7 +14,7 @@ import { UserAvatar } from "@/components/portal/user-avatar";
 const EXTRA_TITLES: Record<string, string> = {
   "/": "Dashboard",
   "/account": "My account",
-  "/activity": "Activity log",
+  "/activity": "Audit log",
 };
 
 function titleFor(pathname: string) {
@@ -74,7 +74,7 @@ export function Topbar({
       <PortalSearch />
 
       <div className="flex items-center gap-1.5">
-        <NotificationBell userId={session.userId} canSeeAll={session.isSuperAdmin} />
+        <NotificationBell userId={session.userId} />
 
         <div className="relative" ref={menuRef}>
           <button

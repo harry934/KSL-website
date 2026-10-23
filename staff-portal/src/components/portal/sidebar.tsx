@@ -97,8 +97,7 @@ export function Sidebar({ session }: { session: StaffSession }) {
 
         {MODULE_GROUPS.map((group) => {
           const keys = group.modules.filter((key) => canSee(session, key));
-          const showActivity = group.label === "Administration" && session.isSuperAdmin;
-          if (!keys.length && !showActivity) return null;
+          if (!keys.length) return null;
           return (
             <div key={group.label} className="nav-group">
               <p className="nav-group-label">{group.label}</p>
@@ -115,12 +114,16 @@ export function Sidebar({ session }: { session: StaffSession }) {
               {group.label === "Administration" && canSee(session, "site_settings") && (
                 <NavLink href="/images" label="Website images" icon={ImageIcon} active={isActive("/images")} />
               )}
-              {showActivity && (
-                <NavLink href="/activity" label="Activity log" icon={History} active={isActive("/activity")} />
-              )}
             </div>
           );
         })}
+
+        {session.isSuperAdmin && (
+          <div className="nav-group">
+            <p className="nav-group-label">Audit</p>
+            <NavLink href="/activity" label="Audit log" icon={History} active={isActive("/activity")} />
+          </div>
+        )}
       </nav>
 
       <p className="sidebar-footer">Ministry of Defence</p>

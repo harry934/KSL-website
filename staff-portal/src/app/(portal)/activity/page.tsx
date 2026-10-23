@@ -115,11 +115,11 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="flex flex-col gap-[14px]">
-      <PageHeader title="Activity log" description="Every sign-in and every change made in this portal, newest first." />
+      <PageHeader title="Audit log" description="Every sign-in and every change made in this portal, newest first." />
 
       {entryId && (
         <section className="ksl-card border-[#c5a028] p-4">
-          <p className="text-[12.5px] font-semibold uppercase tracking-wide text-[#99792c]">From your notification</p>
+          <p className="text-[12.5px] font-semibold uppercase tracking-wide text-[#99792c]">Selected entry</p>
           {featured ? (
             <p className="mt-2 text-[15px] text-[#0b1f3a]">
               <span className="font-semibold">{featured.admin_profiles?.display_name ?? "Removed account"}</span>

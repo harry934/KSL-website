@@ -29,7 +29,7 @@ function timeAgo(iso: string) {
   return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "Africa/Nairobi" }).format(new Date(iso));
 }
 
-export function NotificationBell({ userId, canSeeAll }: { userId: string; canSeeAll: boolean }) {
+export function NotificationBell({ userId }: { userId: string }) {
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [seenAt, setSeenAt] = useState(0);
@@ -179,27 +179,13 @@ export function NotificationBell({ userId, canSeeAll }: { userId: string; canSee
                   Mark all read
                 </button>
               )}
-              {canSeeAll && (
-                <button
-                  type="button"
-                  className="btn-quiet"
-                  onClick={() => {
-                    openRef.current = false;
-                    setOpen(false);
-                    dismissNotices(userId, items.map((item) => item.id));
-                    window.location.assign("/activity");
-                  }}
-                >
-                  View all
-                </button>
-              )}
             </div>
           </div>
           <div className="notification-dropdown-list">
             {!loaded && <p className="px-4 py-5 text-center text-[13px] text-[#6b7785]">Loading…</p>}
             {loaded && items.length === 0 && (
               <p className="px-4 py-6 text-center text-[13px] text-[#6b7785]">
-                {canSeeAll ? "No messages or staff changes to show." : "No updates on items you have added."}
+                No new messages.
               </p>
             )}
             {items.map((item) => (
