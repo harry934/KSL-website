@@ -105,16 +105,7 @@ h1, .h1, h2, .h2, .display-1, .display-3, .display-4, .display-5 {
 }
 
 img[data-ksl-image]:not([data-ksl-image="brand.logo"]) {
-    transition: opacity .8s cubic-bezier(.22, 1, .36, 1), transform .8s cubic-bezier(.22, 1, .36, 1);
-}
-
-html:not(.ksl-photos-ready) img[data-ksl-image]:not([data-ksl-image="brand.logo"]) {
-    opacity: 0;
-    transform: translateY(18px);
-}
-
-html:not(.ksl-photos-ready) .page-header::before {
-    opacity: 0;
+    transition: opacity .2s ease;
 }
 
 .page-header {
@@ -4389,7 +4380,7 @@ body {
     display: flex;
     flex-direction: column;
     height: auto;
-    min-height: clamp(820px, 100vh, 1180px);
+    min-height: clamp(1080px, 125vh, 1480px);
     overflow: hidden;
     background: #09296C;
 }
@@ -4401,12 +4392,7 @@ body {
     z-index: 0;
     background: var(--ksl-photo-home-hero) center 42% / cover no-repeat;
     pointer-events: none;
-    transition: opacity .9s cubic-bezier(.22, 1, .36, 1), transform .9s cubic-bezier(.22, 1, .36, 1);
-}
-
-html:not(.ksl-photos-ready) .ksl-hero::before {
-    opacity: 0;
-    transform: translateY(28px);
+    transition: opacity .35s ease;
 }
 
 .ksl-hero-shade {
@@ -5183,7 +5169,7 @@ html:not(.ksl-photos-ready) .ksl-hero::before {
 
 @media (max-width: 991.98px) {
     .ksl-hero {
-        min-height: clamp(720px, 92vh, 1000px);
+        min-height: clamp(920px, 112vh, 1240px);
     }
 
     .ksl-hero-copy {

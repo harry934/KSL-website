@@ -2022,7 +2022,7 @@
         }
         var results = searchMatches(query);
         if (!results.length) {
-            box.innerHTML = '<p class="ksl-suggest-empty">No quick matches. Press Enter to search news.</p>';
+            box.innerHTML = '<p class="ksl-suggest-empty">Nothing on this site matches that.</p>';
         } else {
             box.innerHTML = results.map(function (item, i) {
                 return '<a class="ksl-suggest-item" role="option" id="' + box.id + '-' + i + '" href="' + escapeHtml(item.href) + '">' +
@@ -2042,6 +2042,10 @@
         return el && el.matches && el.matches('input[name="s"], #kslMobileSearch');
     }
 
+    function isHeaderSearchForm(form) {
+        return !!(form && form.matches && (form.matches(".ksl-search, .ksl-mobile-menu-search") || form.closest("#searchModal")));
+    }
+
     document.addEventListener("input", function (event) {
         var input = event.target;
         if (!isSiteSearch(input)) {
@@ -2059,16 +2063,28 @@
     });
 
     document.addEventListener("submit", function (event) {
-        var input = event.target.querySelector('input[name="s"], #kslMobileSearch');
-        if (!input || !input.parentElement.querySelector(".ksl-suggest")) {
+        var form = event.target;
+        if (!isHeaderSearchForm(form)) {
             return;
         }
-        var first = suggestBoxFor(input).querySelector(".ksl-suggest-item.is-active, .ksl-suggest-item");
-        if (first) {
-            event.preventDefault();
-            window.location.href = first.getAttribute("href");
+        var input = form.querySelector('input[name="s"], #kslMobileSearch');
+        if (!input) {
+            return;
         }
-    });
+        event.preventDefault();
+        var query = input.value.trim();
+        if (query.length < 2) {
+            input.focus();
+            return;
+        }
+        loadSearchIndex().then(function () {
+            renderSuggest(input);
+            var chosen = suggestBoxFor(input).querySelector(".ksl-suggest-item.is-active, .ksl-suggest-item");
+            if (chosen) {
+                window.location.href = chosen.getAttribute("href");
+            }
+        });
+    }, true);
 
     document.addEventListener("focusout", function (event) {
         if (isSiteSearch(event.target)) {
@@ -2096,10 +2112,6 @@
             items[index].classList.add("is-active");
             input.setAttribute("aria-activedescendant", items[index].id);
             return;
-        }
-        if (event.key === "Enter" && (current || items.length)) {
-            event.preventDefault();
-            window.location.href = (current || items[0]).getAttribute("href");
         }
     });
 

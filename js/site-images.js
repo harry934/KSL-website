@@ -14,30 +14,43 @@
         return value.replace(/"/g, "");
     }
 
+    function whenLoaded(url, done) {
+        var img = new Image();
+        img.decoding = "async";
+        if (img.fetchPriority !== undefined) img.fetchPriority = "high";
+        img.onload = function () { done(); };
+        img.onerror = function () {};
+        img.src = url;
+    }
+
     function paint(el) {
         var id = el.getAttribute("data-ksl-image");
         var url = id && overrides[id];
         if (!url) return;
         if (el.classList && el.classList.contains("page-header")) {
-            el.style.setProperty("--ksl-photo-page-header", 'url("' + url + '")');
+            whenLoaded(url, function () {
+                el.style.setProperty("--ksl-photo-page-header", 'url("' + url + '")');
+            });
             return;
         }
         if (el.tagName !== "IMG" || el.getAttribute("src") === url) return;
-        if (el.tagName === "IMG") {
+        whenLoaded(url, function () {
             el.src = url;
             var parent = el.parentElement;
             var href = parent && parent.getAttribute && parent.getAttribute("href");
             if (parent && parent.tagName === "A" && href && /\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i.test(href)) {
                 parent.setAttribute("href", url);
             }
-        }
+        });
     }
 
     function apply(root) {
         Object.keys(CSS_SLOTS).forEach(function (id) {
-            if (overrides[id]) {
-                document.documentElement.style.setProperty(CSS_SLOTS[id], 'url("' + overrides[id] + '")');
-            }
+            var url = overrides[id];
+            if (!url) return;
+            whenLoaded(url, function () {
+                document.documentElement.style.setProperty(CSS_SLOTS[id], 'url("' + url + '")');
+            });
         });
         var scope = root && root.querySelectorAll ? root : document;
         if (scope.nodeType === 1 && scope.getAttribute && scope.getAttribute("data-ksl-image")) paint(scope);
@@ -47,6 +60,8 @@
     function ready() {
         document.documentElement.classList.add("ksl-photos-ready");
     }
+
+    ready();
 
     function heroCrop(value) {
         if (!value || typeof value !== "object") return null;

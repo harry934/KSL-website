@@ -106,7 +106,7 @@
 
         var panelHtml = '<div class="ksl-mobile-sheet-panel" tabindex="-1">';
         panelHtml += '<div class="ksl-mobile-sheet-head"><h2 id="kslMobileMenuTitle">Menu</h2><div class="ksl-mobile-sheet-tools"></div><button type="button" class="ksl-mobile-sheet-close" aria-label="Close menu">&times;</button></div>';
-        panelHtml += '<form class="ksl-mobile-menu-search" action="news.html" method="get" role="search"><label class="visually-hidden" for="kslMobileSearch">Search the site</label><input id="kslMobileSearch" name="s" type="search" placeholder="Search the site" required><button type="submit" aria-label="Submit search"><i class="bi bi-search" aria-hidden="true"></i></button></form>';
+        panelHtml += '<form class="ksl-mobile-menu-search" action="#" method="get" role="search"><label class="visually-hidden" for="kslMobileSearch">Search the site</label><input id="kslMobileSearch" name="s" type="search" placeholder="Search the site" required><button type="submit" aria-label="Submit search"><i class="bi bi-search" aria-hidden="true"></i></button></form>';
         panelHtml += '<div class="ksl-mobile-sheet-sections">';
         sections.forEach(function (section) {
             panelHtml += "<section><h3>" + section.title + "</h3>";
