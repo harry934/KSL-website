@@ -4,6 +4,8 @@ import { getStaffSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canAccess, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import { addDays, formatDay, nairobiToday } from "@/lib/dates";
+import { formatBytes } from "@/lib/downloads";
+import { IDLE_MS } from "@/lib/staff-session";
 import { PageHeader } from "@/components/portal/page-header";
 import { ServiceStatus } from "@/components/portal/service-status";
 import { MODULE_ICONS } from "@/components/portal/module-icons";
@@ -16,7 +18,113 @@ const QUICK_ACTIONS: { module: ModuleKey; label: string }[] = [
   { module: "downloads", label: "Add a document" },
 ];
 
-type DueItem = { href: string; title: string; detail: string };
+type StatCard = { href: string; label: string; value: string; note: string };
+
+function personName(row: { display_name?: string | null; username?: string | null } | null | undefined) {
+  return row?.display_name || row?.username || "Staff";
+}
+
+async function usedBytes(admin: ReturnType<typeof createAdminClient>, bucket: string) {
+  const { data, error } = await admin.schema("storage").from("objects").select("metadata").eq("bucket_id", bucket);
+  if (error || !data) return null;
+  return (data as { metadata?: { size?: number } | null }[]).reduce((sum, row) => {
+    const size = Number(row.metadata?.size ?? 0);
+    return sum + (Number.isFinite(size) ? size : 0);
+  }, 0);
+}
+
+function bytesLabel(bytes: number) {
+  return formatBytes(bytes) || "0 B";
+}
+
+async function dashboardCards(session: NonNullable<Awaited<ReturnType<typeof getStaffSession>>>) {
+  const admin = createAdminClient();
+  const cards: StatCard[] = [];
+
+  if (session.isSuperAdmin) {
+    const since = new Date(Date.now() - IDLE_MS).toISOString();
+    const withBrowser = await admin
+      .from("staff_sessions")
+      .select("seen_at, client_label, admin_profiles(display_name, username)")
+      .gte("seen_at", since);
+    const live = withBrowser.error
+      ? await admin.from("staff_sessions").select("seen_at, admin_profiles(display_name, username)").gte("seen_at", since)
+      : withBrowser;
+    const lines = ((live.data ?? []) as {
+      client_label?: string | null;
+      admin_profiles?: { display_name?: string | null; username?: string | null } | { display_name?: string | null; username?: string | null }[] | null;
+    }[]).map((row) => {
+      const profile = Array.isArray(row.admin_profiles) ? row.admin_profiles[0] : row.admin_profiles;
+      const name = personName(profile);
+      return row.client_label ? `${name}, ${row.client_label}` : name;
+    });
+    cards.push({
+      href: "/staff",
+      label: "Signed in now",
+      value: live.error ? "—" : String(lines.length),
+      note: live.error ? "Session records are not available yet." : lines.length ? lines.slice(0, 3).join(" · ") : "No open session.",
+    });
+
+    const { data: passwords, error: passwordError } = await admin
+      .from("admin_profiles")
+      .select("display_name, username")
+      .eq("must_change_password", true)
+      .eq("is_active", true);
+    const waiting = (passwords ?? []).map((row) => personName(row));
+    cards.push({
+      href: "/staff",
+      label: "One-time passwords",
+      value: passwordError ? "—" : String(waiting.length),
+      note: waiting.length ? waiting.slice(0, 3).join(", ") : "Every account has chosen a password.",
+    });
+  }
+
+  if (canAccess(session.permissions, "messages", "view", session.isSuperAdmin)) {
+    const { data, count, error } = await admin
+      .from("website_messages")
+      .select("first_name, surname, subject", { count: "exact" })
+      .is("read_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const newest = data?.[0];
+    const who = newest ? [newest.first_name, newest.surname].filter(Boolean).join(" ") : "";
+    cards.push({
+      href: "/messages",
+      label: "Unread messages",
+      value: error ? "—" : String(count ?? 0),
+      note: newest ? `${who || "Visitor"} · ${newest.subject || "No subject"}` : "Nothing waiting.",
+    });
+  }
+
+  if (canAccess(session.permissions, "careers", "view", session.isSuperAdmin)) {
+    const { data, error } = await admin.from("career_listings").select("closing_date").eq("status", "published");
+    const open = data ?? [];
+    const missing = open.filter((row) => !String(row.closing_date ?? "").trim()).length;
+    cards.push({
+      href: "/careers",
+      label: "Jobs on the website",
+      value: error ? "—" : String(open.length),
+      note: missing ? `${missing} with no closing date.` : "Each open job has a closing date.",
+    });
+  }
+
+  if (session.isSuperAdmin) {
+    const photos = await usedBytes(admin, "media-public");
+    const docs = await usedBytes(admin, "downloads");
+    const total = photos == null && docs == null ? null : (photos ?? 0) + (docs ?? 0);
+    cards.push({
+      href: "/gallery",
+      label: "Storage",
+      value: total == null ? "—" : bytesLabel(total),
+      note:
+        total == null
+          ? "Storage figures are not available."
+          : `Photos ${bytesLabel(photos ?? 0)}, up to 50 MB each. Documents ${bytesLabel(docs ?? 0)}, up to 25 MB each.`,
+    });
+  }
+
+  return cards;
+}
 
 type FlagRow = {
   id?: string;
@@ -38,6 +146,8 @@ async function rows(admin: ReturnType<typeof createAdminClient>, table: string, 
   if (error || !data) return [] as FlagRow[];
   return data as FlagRow[];
 }
+
+type DueItem = { href: string; title: string; detail: string };
 
 async function watchLists(session: NonNullable<Awaited<ReturnType<typeof getStaffSession>>>) {
   const admin = createAdminClient();
@@ -167,6 +277,7 @@ export default async function DashboardPage() {
   if (!session) return null;
 
   const { due, scheduled, attention } = await watchLists(session);
+  const stats = await dashboardCards(session);
   const quick = QUICK_ACTIONS.filter((action) => {
     if (session.isSuperAdmin) return true;
     return session.permissions.some((p) => p.module_key === action.module && p.can_edit);
@@ -198,6 +309,18 @@ export default async function DashboardPage() {
               );
             })}
           </div>
+        </section>
+      )}
+
+      {stats.length > 0 && (
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Dashboard figures">
+          {stats.map((card) => (
+            <Link key={card.label} href={card.href} className="dash-stat">
+              <p className="dash-stat-label">{card.label}</p>
+              <p className="dash-stat-value">{card.value}</p>
+              <p className="dash-stat-note">{card.note}</p>
+            </Link>
+          ))}
         </section>
       )}
 

@@ -36,6 +36,22 @@ export function sessionCookieOptions(maxAge = 60 * 60 * 12) {
   };
 }
 
+export function browserLabel(userAgent: string | null | undefined) {
+  const value = String(userAgent ?? "");
+  const browser = /Edg\//.test(value)
+    ? "Edge"
+    : /Chrome\//.test(value)
+      ? "Chrome"
+      : /Firefox\//.test(value)
+        ? "Firefox"
+        : /Safari\//.test(value)
+          ? "Safari"
+          : "";
+  if (!browser) return "";
+  const device = /iPhone|iPad|Android/.test(value) ? "phone" : "computer";
+  return `${browser} on a ${device}`;
+}
+
 export function signedOutMessage(reason: string | undefined) {
   if (reason === "idle") return "You were signed out after 30 minutes with no activity.";
   if (reason === "elsewhere") {

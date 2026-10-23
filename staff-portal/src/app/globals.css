@@ -466,26 +466,62 @@ body {
   transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease, transform var(--dur-fast) var(--ease);
 }
 
-.status-card {
-  position: relative;
-  overflow: hidden;
+.dash-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 14px 16px;
   background: var(--white);
   border: 1px solid #e3e8ee;
   border-radius: 10px;
-  padding: 16px 18px 18px;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(11, 31, 58, 0.04);
+}
+
+.dash-stat:hover {
+  border-color: #cfd8e2;
+}
+
+.dash-stat-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7785;
+}
+
+.dash-stat-value {
+  margin: 2px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #0b1f3a;
+}
+
+.dash-stat-note {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #3d4c5f;
+}
+
+.status-card {
+  background: var(--white);
+  border: 1px solid #e3e8ee;
+  border-radius: 10px;
+  padding: 14px 16px 12px;
   box-shadow: 0 1px 2px rgba(11, 31, 58, 0.04);
 }
 
 .status-card-top {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
 }
 
 .status-live-dot {
-  width: 12px;
-  height: 12px;
-  margin-top: 4px;
+  width: 8px;
+  height: 8px;
   flex: 0 0 auto;
   border-radius: 50%;
   background: #8b97a6;
@@ -515,10 +551,10 @@ body {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin: 14px 0 0;
-  font-size: 14px;
-  font-weight: 700;
-  color: #0b1f3a;
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3d4c5f;
 }
 
 .status-card-state span {
@@ -529,82 +565,40 @@ body {
 
 .status-history {
   display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 28px;
+  gap: 2px;
+  height: 4px;
   margin-top: 12px;
 }
 
 .status-history i {
   flex: 1;
-  height: 8px;
+  height: 4px;
   border-radius: 2px;
   background: #e3e8ee;
 }
 
 .status-history i.is-up {
-  height: 18px;
   background: #1b7a3d;
 }
 
 .status-history i.is-slow {
-  height: 28px;
   background: #b8860b;
 }
 
 .status-history i.is-down {
-  height: 28px;
   background: #b42318;
 }
 
-.status-history-note {
-  margin: 6px 0 0;
-  font-size: 11px;
-  color: #98a3b1;
-}
-
-.status-card-scan {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 3px;
-  background-image: linear-gradient(90deg, transparent, #1b7a3d, transparent);
-  background-size: 45% 100%;
-  background-repeat: no-repeat;
-  animation: status-scan 2.8s linear infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .status-live-dot,
-  .status-card-scan {
+  .status-live-dot {
     animation: none;
   }
 }
 
-.status-card.is-slow .status-card-scan {
-  background-image: linear-gradient(90deg, transparent, #b8860b, transparent);
-  animation-duration: 1.4s;
-}
-
-.status-card.is-down .status-card-scan {
-  background-image: linear-gradient(90deg, transparent, #b42318, transparent);
-  animation-duration: 0.8s;
-}
-
-.status-card.is-checking .status-card-scan {
-  background-image: linear-gradient(90deg, transparent, #5b6775, transparent);
-}
-
 @keyframes status-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(11, 31, 58, 0.28); }
-  70% { box-shadow: 0 0 0 8px rgba(11, 31, 58, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(11, 31, 58, 0.22); }
+  70% { box-shadow: 0 0 0 5px rgba(11, 31, 58, 0); }
   100% { box-shadow: 0 0 0 0 rgba(11, 31, 58, 0); }
-}
-
-@keyframes status-scan {
-  0% { background-position: -40% 0; }
-  100% { background-position: 140% 0; }
 }
 
 .ksl-kicker {

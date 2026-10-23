@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   STAFF_SESSION_COOKIE,
+  browserLabel,
   judgeSession,
   sessionCookieOptions,
   sessionNeedsTouch,
@@ -21,15 +22,20 @@ export async function readStaffSession(userId: string) {
   };
 }
 
-export async function openStaffSession(userId: string) {
+export async function openStaffSession(userId: string, userAgent?: string | null) {
   const key = crypto.randomUUID();
   const seenAt = new Date().toISOString();
-  const { error } = await createAdminClient().from("staff_sessions").upsert({
+  const admin = createAdminClient();
+  const { error } = await admin.from("staff_sessions").upsert({
     user_id: userId,
     session_key: key,
     seen_at: seenAt,
   });
   if (error) throw new Error(error.message);
+  const label = browserLabel(userAgent);
+  if (label) {
+    await admin.from("staff_sessions").update({ client_label: label }).eq("user_id", userId);
+  }
   const jar = await cookies();
   jar.set(STAFF_SESSION_COOKIE, key, sessionCookieOptions());
   return key;

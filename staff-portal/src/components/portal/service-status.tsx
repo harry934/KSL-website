@@ -56,8 +56,6 @@ function Card({
         {probe ? <span>{probe.ms} ms</span> : null}
       </p>
       <History samples={history} />
-      <p className="status-history-note">Last 24 hours. Each bar is one hour.</p>
-      <span className="status-card-scan" aria-hidden />
     </article>
   );
 }

@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     console.error("Could not close the other session", othersError.message);
   }
   try {
-    await openStaffSession(user.id);
+    await openStaffSession(user.id, req.headers.get("user-agent"));
   } catch {
     await supabase.auth.signOut();
     return NextResponse.json({ error: "Could not start a session. Try again." }, { status: 500 });
