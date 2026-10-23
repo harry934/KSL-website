@@ -506,41 +506,109 @@ body {
 }
 
 .storage-meter {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 0;
   background: var(--white);
   border: 1px solid #e3e8ee;
   border-radius: 10px;
-  padding: 14px 16px 12px;
+  padding: 18px 20px 16px;
   box-shadow: 0 1px 2px rgba(11, 31, 58, 0.04);
 }
 
+.storage-meter h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0b1f3a;
+}
+
+.storage-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.storage-head p,
+.storage-wait {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #6b7785;
+}
+
+.storage-figure {
+  margin: 0;
+  text-align: right;
+}
+
+.storage-figure strong {
+  display: block;
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 700;
+  color: #0b1f3a;
+}
+
+.storage-figure span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7785;
+}
+
 .storage-bar {
-  height: 8px;
-  margin-top: 12px;
+  display: flex;
+  height: 16px;
+  margin-top: 16px;
   border-radius: 999px;
-  background: #e3e8ee;
+  background: #e7edf3;
   overflow: hidden;
 }
 
-.storage-bar span {
+.storage-bar i {
   display: block;
   height: 100%;
-  border-radius: inherit;
-  background: #0b1f3a;
+  flex: none;
 }
 
-.storage-bar.is-full span {
-  background: #b42318;
+.storage-bar i.is-photos,
+.storage-swatch.is-photos { background: #0a3e95; }
+.storage-bar i.is-documents,
+.storage-swatch.is-documents { background: #99792c; }
+.storage-bar i.is-avatars,
+.storage-swatch.is-avatars { background: #1b7a3d; }
+.storage-bar i.is-database,
+.storage-swatch.is-database { background: #0b1f3a; }
+.storage-bar i.is-other,
+.storage-swatch.is-other { background: #5b6775; }
+.storage-swatch.is-free { background: #e7edf3; border: 1px solid #d5dde6; }
+
+.storage-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 24px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-.storage-split {
-  margin: 8px 0 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: #6b7785;
+.storage-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+  color: #3d4c5f;
+}
+
+.storage-legend strong {
+  margin-left: auto;
+  font-weight: 700;
+  color: #0b1f3a;
+}
+
+.storage-swatch {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 2px;
 }
 
 .status-card {
