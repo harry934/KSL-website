@@ -1744,7 +1744,7 @@ body {
 }
 @media (max-width: 1199.98px) { .ksl-wordmark { display: none; } }
 .navbar .nav-link { position: relative; }
-.navbar .nav-link.active::after {
+.navbar .nav-link.active:not(.dropdown-toggle)::after {
     content: ""; position: absolute; left: 50%; bottom: 4px; width: 24px; height: 2px;
     background: #99792c; transform: translateX(-50%);
 }
@@ -3896,6 +3896,22 @@ html.board-motion .board-card.is-in .board-card-body {
     margin-left: 10px;
 }
 
+.top-lang > button[data-lang] {
+    appearance: none;
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, .55);
+    border-radius: 999px;
+    height: 28px;
+    padding: 0 10px;
+    font: 700 12px/1 Manrope, sans-serif;
+    letter-spacing: .04em;
+}
+
+.top-lang > button[data-lang="sw"] {
+    display: none;
+}
+
 .ksl-lang-btn {
     display: inline-flex;
     align-items: center;
@@ -4380,7 +4396,20 @@ body {
     display: flex;
     flex-direction: column;
     height: auto;
-    min-height: clamp(1080px, 125vh, 1480px);
+    /* ADJUST THE HOME HEADLINE HERE (desktop).
+       Change only the line below.
+       50vh is the middle of the screen.
+       Subtract to move the title up. Add to move it down.
+       calc(50vh - 80px) sits a little above the middle.
+       50vh sits on the middle.
+       calc(50vh + 80px) sits a little below the middle. */
+    --ksl-hero-title-top: calc(50vh + 70px);
+    /* ADJUST THE HOME HERO HEIGHT HERE (desktop).
+       This sets the height of .ksl-hero-copy.
+       Bigger number = taller section. Smaller number = shorter section.
+       100vh is one full screen. 125vh is a quarter taller than the screen. */
+    --ksl-hero-height: clamp(950px, 125vh, 1480px); 
+    min-height: var(--ksl-hero-height);
     overflow: hidden;
     background: #09296C;
 }
@@ -4412,22 +4441,26 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
-    gap: clamp(100px, 20vh, 280px);
+    gap: 0;
     min-height: inherit;
     padding: 0;
     text-align: center;
 }
 
 .ksl-hero-intro {
+    position: absolute;
+    top: var(--ksl-hero-title-top);
+    left: 50%;
+    z-index: 2;
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-start;
     gap: 12px;
     width: min(100%, 680px);
-    align-self: center;
-    margin: clamp(-88px, -7vh, -52px) auto 0;
+    margin: 0;
+    transform: translate(-50%, -50%);
     padding: 0 clamp(16px, 4vw, 32px) clamp(6px, 1.2vh, 16px);
     box-sizing: border-box;
     text-align: center;
@@ -5169,11 +5202,13 @@ body {
 
 @media (max-width: 991.98px) {
     .ksl-hero {
-        min-height: clamp(920px, 112vh, 1240px);
-    }
-
-    .ksl-hero-copy {
-        gap: clamp(72px, 14vh, 180px);
+        /* ADJUST THE HOME HEADLINE HERE on phones and tablets only.
+           Desktop is --ksl-hero-title-top above, next to .ksl-hero.
+           Same idea: 50vh is the middle. Subtract to go up, add to go down. */
+        --ksl-hero-title-top: calc(40vh - 70px);
+        /* ADJUST THE HOME HERO HEIGHT HERE on phones and tablets only.
+           Desktop is --ksl-hero-height above. Bigger = taller. */
+        --ksl-hero-height: clamp(920px, 112vh, 1240px);
     }
 
     .ksl-hero-intro {
@@ -9343,11 +9378,26 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     transform: rotate(90deg) scale(.92);
 }
 
-.dropdown-toggle::after,
 .ksl-subdrop-arrow::before,
 .owl-nav .owl-prev i,
 .owl-nav .owl-next i {
     display: inline-block;
+    transition: transform .3s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.navbar .dropdown-toggle::after,
+.top-more > .dropdown-toggle::after {
+    content: "\f107";
+    display: inline-block;
+    width: auto;
+    height: auto;
+    margin-left: 8px;
+    vertical-align: middle;
+    border: 0;
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    font-size: 12px;
+    line-height: 1;
     transition: transform .3s cubic-bezier(.34, 1.56, .64, 1);
 }
 
