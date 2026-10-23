@@ -6,7 +6,7 @@ import { matchesDeclaredType, mp4IsHevc } from "./file-bytes.ts";
 import { heroFrameOffset, parseHeroCrop, parseHeroTrim } from "./hero-frame.ts";
 import { issueContactToken, verifyContactToken } from "./contact-token.ts";
 import { looksLikeCode } from "./input-guard.ts";
-import { IDLE_MS, judgeSession, signedOutMessage } from "./staff-session.ts";
+import { IDLE_MS, judgeSession } from "./staff-session.ts";
 import { sanitizeRichHtml } from "./sanitize-html.ts";
 
 test("published careers stay public and drafts stay out", () => {
@@ -140,9 +140,6 @@ test("a staff session stays open for one browser and 30 minutes of use", () => {
     judgeSession({ cookieKey: "abc", storedKey: "abc", seenAt: new Date(now - IDLE_MS - 1000).toISOString(), now }),
     "idle"
   );
-  assert.match(signedOutMessage("idle") ?? "", /30 minutes/);
-  assert.match(signedOutMessage("elsewhere") ?? "", /another device/);
-  assert.equal(signedOutMessage("signedout"), null);
 });
 
 test("contact tokens expire into use and reject tampering", () => {

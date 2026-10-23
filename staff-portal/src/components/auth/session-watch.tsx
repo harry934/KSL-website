@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { IDLE_MS } from "@/lib/staff-session";
-import { signOutNow, type SignOutReason } from "@/lib/sign-out-client";
+import { signOutNow } from "@/lib/sign-out-client";
 
 const CHECK_MS = 20 * 1000;
 
@@ -19,10 +19,8 @@ export function SessionWatch() {
       fetch("/api/auth/pulse", { method: "POST" })
         .then(async (res) => {
           if (res.ok || stopped) return;
-          const json = await res.json().catch(() => ({}));
-          const code = json.code === "idle" || json.code === "elsewhere" || json.code === "suspended" ? json.code : "signedout";
           stopped = true;
-          void signOutNow(code);
+          void signOutNow();
         })
         .catch(() => null);
     }
@@ -31,15 +29,13 @@ export function SessionWatch() {
       if (stopped) return;
       if (Date.now() - lastActive >= IDLE_MS) {
         stopped = true;
-        await signOutNow("idle");
+        await signOutNow();
         return;
       }
       const res = await fetch("/api/auth/session").catch(() => null);
       if (!res || res.ok || stopped) return;
-      const json = await res.json().catch(() => ({}));
-      const code: SignOutReason = json.code === "idle" || json.code === "elsewhere" || json.code === "suspended" ? json.code : "signedout";
       stopped = true;
-      await signOutNow(code);
+      await signOutNow();
     }
 
     const events = ["pointerdown", "keydown", "scroll", "touchstart"] as const;

@@ -1,5 +1,4 @@
 import { staffGate } from "@/lib/session";
-import { signedOutMessage } from "@/lib/staff-session";
 import { canAccess, type ModuleKey } from "@/lib/modules";
 import { NextResponse } from "next/server";
 
@@ -17,12 +16,7 @@ export async function requireStaff(
 ) {
   const gate = await staffGate();
   if (gate.state !== "ok") {
-    const code = gate.state === "suspended" ? "suspended" : gate.reason;
-    const error =
-      gate.state === "suspended"
-        ? "Your account is suspended. Contact an administrator."
-        : signedOutMessage(gate.reason) ?? "Please sign in again.";
-    return { error: NextResponse.json({ error, code }, { status: 401 }), session: null };
+    return { error: NextResponse.json({ error: "Please sign in again." }, { status: 401 }), session: null };
   }
   const session = gate.session;
   const blocked = credentialsCurrent(session);

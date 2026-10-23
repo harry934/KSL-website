@@ -13,7 +13,7 @@ export function SignOutButton({ className, children = "Sign out" }: { className?
       disabled={leaving}
       onClick={() => {
         setLeaving(true);
-        void signOutNow("signedout");
+        void signOutNow();
       }}
       className={cn("text-[13px] font-semibold text-[#5b6775] hover:text-[#0b1f3a] hover:underline disabled:cursor-wait disabled:no-underline", className)}
     >

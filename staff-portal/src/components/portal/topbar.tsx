@@ -121,7 +121,7 @@ export function Topbar({
           disabled={signingOut}
           onClick={() => {
             setSigningOut(true);
-            void signOutNow("signedout");
+            void signOutNow();
           }}
           title="Sign out"
         >

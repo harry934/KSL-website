@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { STAFF_SESSION_COOKIE, judgeSession, sessionCookieOptions, sessionNeedsTouch, signedOutMessage } from "@/lib/staff-session";
+import { STAFF_SESSION_COOKIE, judgeSession, sessionCookieOptions, sessionNeedsTouch } from "@/lib/staff-session";
 import { readStaffSession, touchStaffSession } from "@/lib/staff-session-server";
 
 const ALLOWED_ORIGINS = new Set([
@@ -46,6 +46,11 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/api/public/")) {
     return publicApi(request);
   }
+  if (pathname === "/login" && request.nextUrl.searchParams.has("reason")) {
+    const url = request.nextUrl.clone();
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
   if (pathname === "/api/auth/sign-in" || pathname === "/api/auth/passkey") {
     return NextResponse.next();
   }
@@ -90,7 +95,7 @@ export async function middleware(request: NextRequest) {
 
   if (!user && !isLogin) {
     if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Please sign in again.", code: "missing" }, { status: 401 });
+      return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
     }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -113,21 +118,12 @@ export async function middleware(request: NextRequest) {
     if (reason) {
       await supabase.auth.signOut();
       if (pathname.startsWith("/api/")) {
-        return endBrowserSession(NextResponse.json(
-          {
-            error: reason === "suspended"
-              ? "Your account is suspended. Contact an administrator."
-              : signedOutMessage(reason) ?? "Please sign in again.",
-            code: reason,
-          },
-          { status: 401 }
-        ));
+        return endBrowserSession(NextResponse.json({ error: "Please sign in again." }, { status: 401 }));
       }
       if (isLogin) return endBrowserSession(response);
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       url.search = "";
-      url.searchParams.set("reason", reason);
       return endBrowserSession(NextResponse.redirect(url));
     }
 

@@ -51,13 +51,3 @@ export function browserLabel(userAgent: string | null | undefined) {
   const device = /iPhone|iPad|Android/.test(value) ? "phone" : "computer";
   return `${browser} on a ${device}`;
 }
-
-export function signedOutMessage(reason: string | undefined) {
-  if (reason === "idle") return "You were signed out after 30 minutes with no activity.";
-  if (reason === "elsewhere") {
-    return "You were signed out because this account signed in on another device. Only one session can be open.";
-  }
-  if (reason === "suspended") return "Your account is suspended. Contact an administrator.";
-  if (reason === "missing") return "Please sign in again.";
-  return null;
-}

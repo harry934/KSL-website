@@ -29,7 +29,7 @@ function Gate({ title, intro, children }: { title: string; intro: string; childr
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const gate = await staffGate();
-  if (gate.state === "out") redirect(`/login?reason=${gate.reason}`);
+  if (gate.state === "out") redirect("/login");
   if (gate.state === "suspended") {
     return (
       <Gate title="Your account is suspended" intro="You cannot use the portal right now. Contact an administrator.">
