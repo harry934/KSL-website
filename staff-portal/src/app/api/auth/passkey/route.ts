@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { clientIp } from "@/lib/auth-server";
 import { logActivity } from "@/lib/api-auth";
+import { openStaffSession } from "@/lib/staff-session-server";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -30,6 +31,12 @@ export async function POST(req: NextRequest) {
   const { error: othersError } = await supabase.auth.signOut({ scope: "others" });
   if (othersError) {
     console.error("Could not close the other session", othersError.message);
+  }
+  try {
+    await openStaffSession(user.id);
+  } catch {
+    await supabase.auth.signOut();
+    return NextResponse.json({ error: "Could not start a session. Try again." }, { status: 500 });
   }
   await logActivity(user.id, "staff", "sign in", "session", user.id, {
     method: "passkey",

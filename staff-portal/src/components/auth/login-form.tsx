@@ -8,7 +8,7 @@ import { fieldLabel, Notice } from "@/components/ui/form-bits";
 import { createClient } from "@/lib/supabase/client";
 import { passkeyError } from "@/lib/passkey";
 
-export function LoginForm() {
+export function LoginForm({ notice }: { notice?: string | null }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -87,10 +87,14 @@ export function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
         />
       </div>
+      {notice && <Notice kind="info">{notice}</Notice>}
       {error && <Notice kind="error">{error}</Notice>}
       <Button type="submit" className="w-full" disabled={loading || passkeyLoading} aria-busy={loading}>
         {loading ? "Signing in…" : "Sign in"}
       </Button>
+      <p className="text-center text-[12.5px] leading-5 text-[#5b6775]">
+        Signing in here closes any other open session. The portal signs you out after 30 minutes with no activity.
+      </p>
       <Button type="button" variant="secondary" className="w-full" disabled={loading || passkeyLoading} onClick={onPasskey}>
         {passkeyLoading ? "Waiting for your passkey…" : "Sign in with a passkey"}
       </Button>

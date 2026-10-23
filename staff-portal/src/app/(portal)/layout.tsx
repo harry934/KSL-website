@@ -1,8 +1,10 @@
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import { PortalShell } from "@/components/portal/shell";
 import { ChangePasswordForm } from "@/components/account/change-password-form";
+import { SessionWatch } from "@/components/auth/session-watch";
 import { SignOutButton } from "@/components/auth/sign-out-button";
-import { getStaffSession } from "@/lib/session";
+import { staffGate } from "@/lib/session";
 import kslLogo from "../../../public/ksl-logo.png";
 
 function Gate({ title, intro, children }: { title: string; intro: string; children: React.ReactNode }) {
@@ -26,9 +28,9 @@ function Gate({ title, intro, children }: { title: string; intro: string; childr
 }
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
-  const session = await getStaffSession();
-
-  if (!session) {
+  const gate = await staffGate();
+  if (gate.state === "out") redirect(`/login?reason=${gate.reason}`);
+  if (gate.state === "suspended") {
     return (
       <Gate title="Your account is suspended" intro="You cannot use the portal right now. Contact an administrator.">
         <div className="text-center">
@@ -37,6 +39,8 @@ export default async function PortalLayout({ children }: { children: React.React
       </Gate>
     );
   }
+
+  const session = gate.session;
 
   if (session.mustChangePassword || session.mustChangeUsername) {
     const firstSignIn = session.mustChangeUsername;
@@ -49,6 +53,7 @@ export default async function PortalLayout({ children }: { children: React.React
             : "You signed in with a one-time password. Choose a password only you know to continue."
         }
       >
+        <SessionWatch />
         <ChangePasswordForm forced changeUsername={firstSignIn} />
         <div className="mt-4 text-center">
           <SignOutButton />
@@ -57,5 +62,10 @@ export default async function PortalLayout({ children }: { children: React.React
     );
   }
 
-  return <PortalShell session={session}>{children}</PortalShell>;
+  return (
+    <>
+      <SessionWatch />
+      <PortalShell session={session}>{children}</PortalShell>
+    </>
+  );
 }

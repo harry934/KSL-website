@@ -1,5 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { STAFF_SESSION_COOKIE, judgeSession, sessionCookieOptions, sessionNeedsTouch, signedOutMessage } from "@/lib/staff-session";
+import { readStaffSession, touchStaffSession } from "@/lib/staff-session-server";
 
 const ALLOWED_ORIGINS = new Set([
   "https://ksl-website.vercel.app",
@@ -51,6 +53,7 @@ export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: { headers: request.headers },
   });
+  const issued: { name: string; value: string; options?: Parameters<NextResponse["cookies"]["set"]>[2] }[] = [];
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -63,27 +66,74 @@ export async function middleware(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request: { headers: request.headers } });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+            issued.push({ name, value, options });
+          });
         },
       },
     }
   );
 
+  function endBrowserSession(target: NextResponse) {
+    issued.forEach(({ name, value, options }) => target.cookies.set(name, value, options));
+    target.cookies.set(STAFF_SESSION_COOKIE, "", sessionCookieOptions(0));
+    return target;
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isLogin = request.nextUrl.pathname === "/login";
+  const isLogin = pathname === "/login";
+  const quietPath = pathname === "/api/auth/session" || pathname === "/api/auth/sign-out";
 
   if (!user && !isLogin) {
     if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
+      return NextResponse.json({ error: "Please sign in again.", code: "missing" }, { status: 401 });
     }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
+  }
+
+  if (user && !quietPath) {
+    const row = await readStaffSession(user.id).catch(() => null);
+    const reason = !row || !row.active
+      ? row && !row.active
+        ? "suspended"
+        : "missing"
+      : judgeSession({
+          cookieKey: request.cookies.get(STAFF_SESSION_COOKIE)?.value,
+          storedKey: row.key,
+          seenAt: row.seenAt,
+          now: Date.now(),
+        });
+
+    if (reason) {
+      await supabase.auth.signOut();
+      if (pathname.startsWith("/api/")) {
+        return endBrowserSession(NextResponse.json(
+          {
+            error: reason === "suspended"
+              ? "Your account is suspended. Contact an administrator."
+              : signedOutMessage(reason) ?? "Please sign in again.",
+            code: reason,
+          },
+          { status: 401 }
+        ));
+      }
+      if (isLogin) return endBrowserSession(response);
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.search = "";
+      url.searchParams.set("reason", reason);
+      return endBrowserSession(NextResponse.redirect(url));
+    }
+
+    if (row && sessionNeedsTouch(row.seenAt, Date.now())) {
+      await touchStaffSession(user.id).catch(() => null);
+    }
   }
 
   if (user && isLogin) {

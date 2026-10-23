@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { clientIp, formatClock, generateOneTimePassword, lockedUntil, recordAttempt } from "@/lib/auth-server";
 import { normalizeUsername } from "@/lib/accounts";
 import { logActivity } from "@/lib/api-auth";
+import { openStaffSession } from "@/lib/staff-session-server";
 
 const INVALID = "Invalid username or password.";
 
@@ -74,10 +75,15 @@ export async function POST(req: NextRequest) {
   }
 
   await recordAttempt(username, ip, true);
-  // A new sign-in replaces any other open session for this account.
   const { error: othersError } = await supabase.auth.signOut({ scope: "others" });
   if (othersError) {
     console.error("Could not close the other session", othersError.message);
+  }
+  try {
+    await openStaffSession(signIn.user.id);
+  } catch {
+    await supabase.auth.signOut();
+    return NextResponse.json({ error: "Could not start a session. Try again." }, { status: 500 });
   }
   await logActivity(signIn.user.id, "staff", "sign in", "session", signIn.user.id, { ip });
   return NextResponse.json({ ok: true });

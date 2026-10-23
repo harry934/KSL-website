@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ModulePermission } from "@/lib/modules";
 import { isInternalEmail } from "@/lib/accounts";
+import { liveStaffSession } from "@/lib/staff-session-server";
+import type { SessionStop } from "@/lib/staff-session";
 
 export async function avatarUrl(path: string) {
   const admin = createAdminClient();
@@ -42,12 +44,23 @@ type ProfileRow = {
   admin_module_permissions: ModulePermission[] | null;
 };
 
-export const getStaffSession = cache(async (): Promise<StaffSession | null> => {
+export type StaffGate =
+  | { state: "ok"; session: StaffSession }
+  | { state: "suspended" }
+  | { state: "out"; reason: SessionStop };
+
+export const staffGate = cache(async (): Promise<StaffGate> => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) return { state: "out", reason: "missing" };
+
+  const live = await liveStaffSession(user.id, true);
+  if (!live.ok) {
+    if (live.reason === "suspended") return { state: "suspended" };
+    return { state: "out", reason: live.reason };
+  }
 
   const { data } = await createAdminClient()
     .from("admin_profiles")
@@ -58,21 +71,29 @@ export const getStaffSession = cache(async (): Promise<StaffSession | null> => {
     .maybeSingle();
 
   const profile = data as ProfileRow | null;
-  if (!profile || !profile.is_active) return null;
+  if (!profile || !profile.is_active) return { state: "suspended" };
 
   const authEmail = user.email ?? "";
   const email = profile.contact_email || (isInternalEmail(authEmail) ? "" : authEmail);
 
   return {
-    userId: user.id,
-    username: profile.username ?? "",
-    email,
-    displayName: profile.display_name || profile.username || email || "Staff",
-    isSuperAdmin: profile.is_super_admin,
-    isActive: profile.is_active,
-    mustChangePassword: profile.must_change_password,
-    mustChangeUsername: profile.must_change_username,
-    avatarUrl: profile.avatar_path ? await avatarUrl(profile.avatar_path) : null,
-    permissions: profile.admin_module_permissions ?? [],
+    state: "ok",
+    session: {
+      userId: user.id,
+      username: profile.username ?? "",
+      email,
+      displayName: profile.display_name || profile.username || email || "Staff",
+      isSuperAdmin: profile.is_super_admin,
+      isActive: profile.is_active,
+      mustChangePassword: profile.must_change_password,
+      mustChangeUsername: profile.must_change_username,
+      avatarUrl: profile.avatar_path ? await avatarUrl(profile.avatar_path) : null,
+      permissions: profile.admin_module_permissions ?? [],
+    },
   };
 });
+
+export async function getStaffSession(): Promise<StaffSession | null> {
+  const gate = await staffGate();
+  return gate.state === "ok" ? gate.session : null;
+}

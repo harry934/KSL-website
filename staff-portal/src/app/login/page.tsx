@@ -1,4 +1,5 @@
 import { LoginForm } from "@/components/auth/login-form";
+import { signedOutMessage } from "@/lib/staff-session";
 import Image from "next/image";
 import kslLogo from "../../../public/ksl-logo.png";
 
@@ -7,7 +8,13 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ reason?: string }>;
+}) {
+  const params = await searchParams;
+  const notice = signedOutMessage(typeof params.reason === "string" ? params.reason : undefined);
   return (
     <div className="relative min-h-screen bg-[#0b1f3a] pt-[6px]">
       <div className="kenya-stripe" aria-hidden>
@@ -32,7 +39,7 @@ export default function LoginPage() {
 
           <div className="rounded-[8px] border border-[#e3e8ee] bg-white p-4 text-left sm:p-5">
             <strong className="mb-3 block text-[15px] text-[#0b1f3a]">Sign in</strong>
-            <LoginForm />
+            <LoginForm notice={notice} />
           </div>
         </section>
       </div>

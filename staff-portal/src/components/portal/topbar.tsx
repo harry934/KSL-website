@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { ChevronDown, KeyRound, LogOut, PanelLeft } from "lucide-react";
 import { MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import type { StaffSession } from "@/lib/session";
-import { createClient } from "@/lib/supabase/client";
+import { signOutNow } from "@/lib/sign-out-client";
 import { NotificationBell } from "@/components/portal/notification-bell";
 import { PortalSearch } from "@/components/portal/portal-search";
 import { UserAvatar } from "@/components/portal/user-avatar";
@@ -53,11 +53,6 @@ export function Topbar({
       document.removeEventListener("keydown", onKey);
     };
   }, [menuOpen]);
-
-  async function signOut() {
-    await createClient().auth.signOut();
-    window.location.href = "/login";
-  }
 
   const role = session.isSuperAdmin ? "Administrator" : "Agent";
 
@@ -119,7 +114,7 @@ export function Topbar({
           )}
         </div>
 
-        <button type="button" className="btn-quiet" onClick={signOut} title="Sign out">
+        <button type="button" className="btn-quiet" onClick={() => void signOutNow("signedout")} title="Sign out">
           <LogOut className="h-4 w-4" />
           <span className="hidden md:inline">Sign out</span>
         </button>
