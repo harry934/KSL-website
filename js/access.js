@@ -70,7 +70,6 @@
         btn("grey", "Images Greyscale"),
         btn("invert", "Invert Colors"),
         btn("motion", "Remove Animations"),
-        btn("styles", "Remove styles"),
         btn("lights", "Lights Off"),
         '<button type="button" class="ksl-a11y-close" data-close>Close</button>',
         "</div></div>"
@@ -221,17 +220,16 @@
             button.classList.toggle("is-on", on);
         }
         if (CLASS[name]) document.documentElement.classList.toggle(CLASS[name], on);
-        if (name === "styles") setStyles(on);
         if (name === "motion") setMotion(on);
         if (name === "lights") {
             if (on) placeSpot(window.innerWidth / 2, window.innerHeight / 2);
         }
     }
 
-    function setStyles(off) {
+    function restoreStyles() {
         document.querySelectorAll('link[rel="stylesheet"], style').forEach(function (node) {
             if (node.id === "ksl-a11y-style") return;
-            node.disabled = off;
+            node.disabled = false;
         });
     }
 
@@ -244,7 +242,8 @@
     function clearAll() {
         fontStep = 0;
         paintFont();
-        Object.keys(CLASS).concat(["styles"]).forEach(function (name) { setFlag(name, false); });
+        Object.keys(CLASS).forEach(function (name) { setFlag(name, false); });
+        restoreStyles();
         document.cookie.split(";").forEach(function (part) {
             var name = part.split("=")[0].trim();
             if (name) document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
@@ -277,7 +276,13 @@
         var saved = JSON.parse(localStorage.getItem(KEY) || "{}");
         fontStep = saved.fontStep || 0;
         paintFont();
-        if (saved.flags) Object.keys(saved.flags).forEach(function (name) { if (saved.flags[name]) setFlag(name, true); });
+        restoreStyles();
+        if (saved.flags && saved.flags.styles) {
+            delete saved.flags.styles;
+            flags = saved.flags;
+            save();
+        }
+        if (saved.flags) Object.keys(saved.flags).forEach(function (name) { if (saved.flags[name] && name !== "styles") setFlag(name, true); });
     } catch (e) {}
 
     (function bindMobileTabIdle() {
