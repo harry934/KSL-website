@@ -505,6 +505,44 @@ body {
   color: #3d4c5f;
 }
 
+.storage-meter {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  background: var(--white);
+  border: 1px solid #e3e8ee;
+  border-radius: 10px;
+  padding: 14px 16px 12px;
+  box-shadow: 0 1px 2px rgba(11, 31, 58, 0.04);
+}
+
+.storage-bar {
+  height: 8px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: #e3e8ee;
+  overflow: hidden;
+}
+
+.storage-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #0b1f3a;
+}
+
+.storage-bar.is-full span {
+  background: #b42318;
+}
+
+.storage-split {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #6b7785;
+}
+
 .status-card {
   background: var(--white);
   border: 1px solid #e3e8ee;

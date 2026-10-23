@@ -20,21 +20,77 @@ const QUICK_ACTIONS: { module: ModuleKey; label: string }[] = [
 
 type StatCard = { href: string; label: string; value: string; note: string };
 
+const STORAGE_QUOTA = 1024 * 1024 * 1024;
+
+const BUCKET_LABELS: Record<string, string> = {
+  "media-public": "Photos",
+  downloads: "Documents",
+  avatars: "Account photos",
+};
+
 function personName(row: { display_name?: string | null; username?: string | null } | null | undefined) {
   return row?.display_name || row?.username || "Staff";
 }
 
-async function usedBytes(admin: ReturnType<typeof createAdminClient>, bucket: string) {
-  const { data, error } = await admin.schema("storage").from("objects").select("metadata").eq("bucket_id", bucket);
-  if (error || !data) return null;
-  return (data as { metadata?: { size?: number } | null }[]).reduce((sum, row) => {
-    const size = Number(row.metadata?.size ?? 0);
-    return sum + (Number.isFinite(size) ? size : 0);
-  }, 0);
+function storageLabel(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  const gb = bytes / STORAGE_QUOTA;
+  if (gb >= 1) {
+    const rounded = Math.round(gb * 10) / 10;
+    return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)} GB`;
+  }
+  return formatBytes(bytes) || "0 B";
 }
 
-function bytesLabel(bytes: number) {
-  return formatBytes(bytes) || "0 B";
+type StorageBucket = { bucket_id: string; bytes: number };
+
+async function loadStorageUsage() {
+  const { data, error } = await createAdminClient().rpc("storage_usage");
+  if (error) return null;
+  return ((data ?? []) as { bucket_id: string; bytes: number | string }[]).map((row) => ({
+    bucket_id: row.bucket_id,
+    bytes: Number(row.bytes) || 0,
+  }));
+}
+
+function StorageMeter({ buckets }: { buckets: StorageBucket[] | null }) {
+  if (!buckets) {
+    return (
+      <article className="storage-meter">
+        <h2 className="text-[15px] font-bold text-[#0b1f3a]">Storage</h2>
+        <p className="mt-2 text-[13px] text-[#6b7785]">
+          Run supabase/migrations/022_storage_usage.sql in Supabase to show used and free space.
+        </p>
+      </article>
+    );
+  }
+
+  const used = buckets.reduce((sum, row) => sum + row.bytes, 0);
+  const free = Math.max(0, STORAGE_QUOTA - used);
+  const percent = Math.min(100, Math.round((used / STORAGE_QUOTA) * 100));
+  const known = ["media-public", "downloads", "avatars"];
+  const parts = known
+    .map((id) => {
+      const bytes = buckets.find((row) => row.bucket_id === id)?.bytes ?? 0;
+      return bytes > 0 ? `${BUCKET_LABELS[id]} ${storageLabel(bytes)}` : "";
+    })
+    .filter(Boolean);
+  const other = buckets.filter((row) => !known.includes(row.bucket_id)).reduce((sum, row) => sum + row.bytes, 0);
+  if (other > 0) parts.push(`Other ${storageLabel(other)}`);
+
+  return (
+    <article className="storage-meter" aria-label="Supabase storage">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-[15px] font-bold text-[#0b1f3a]">Storage</h2>
+        <p className="text-[13px] font-semibold text-[#3d4c5f]">{storageLabel(free)} free</p>
+      </div>
+      <p className="mt-1 text-[13px] text-[#6b7785]">{storageLabel(used)} used of 1 GB</p>
+      <div className={`storage-bar${used > STORAGE_QUOTA ? " is-full" : ""}`} aria-hidden>
+        <span style={{ width: `${percent}%` }} />
+      </div>
+      {parts.length > 0 ? <p className="storage-split">{parts.join(" · ")}</p> : null}
+    </article>
+  );
 }
 
 async function dashboardCards(session: NonNullable<Awaited<ReturnType<typeof getStaffSession>>>) {
@@ -105,21 +161,6 @@ async function dashboardCards(session: NonNullable<Awaited<ReturnType<typeof get
       label: "Jobs on the website",
       value: error ? "—" : String(open.length),
       note: missing ? `${missing} with no closing date.` : "Each open job has a closing date.",
-    });
-  }
-
-  if (session.isSuperAdmin) {
-    const photos = await usedBytes(admin, "media-public");
-    const docs = await usedBytes(admin, "downloads");
-    const total = photos == null && docs == null ? null : (photos ?? 0) + (docs ?? 0);
-    cards.push({
-      href: "/gallery",
-      label: "Storage",
-      value: total == null ? "—" : bytesLabel(total),
-      note:
-        total == null
-          ? "Storage figures are not available."
-          : `Photos ${bytesLabel(photos ?? 0)}, up to 50 MB each. Documents ${bytesLabel(docs ?? 0)}, up to 25 MB each.`,
     });
   }
 
@@ -278,6 +319,7 @@ export default async function DashboardPage() {
 
   const { due, scheduled, attention } = await watchLists(session);
   const stats = await dashboardCards(session);
+  const storage = session.isSuperAdmin ? await loadStorageUsage() : null;
   const quick = QUICK_ACTIONS.filter((action) => {
     if (session.isSuperAdmin) return true;
     return session.permissions.some((p) => p.module_key === action.module && p.can_edit);
@@ -328,7 +370,12 @@ export default async function DashboardPage() {
       <WatchList title="Scheduled" items={scheduled} />
       <WatchList title="Needs a look" items={attention} />
 
-      {session.isSuperAdmin && <ServiceStatus />}
+      {session.isSuperAdmin && (
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Live service status">
+          <ServiceStatus />
+          <StorageMeter buckets={storage} />
+        </section>
+      )}
     </div>
   );
 }
