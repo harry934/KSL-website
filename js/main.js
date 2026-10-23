@@ -65,7 +65,7 @@
             if (scrollAccum > 18) {
                 next = true;
                 scrollAccum = 0;
-            } else if (scrollAccum < -24) {
+            } else if (scrollAccum < -12) {
                 next = false;
                 scrollAccum = 0;
             }

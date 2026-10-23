@@ -4263,20 +4263,20 @@ body {
 }
 
 .navbar .ksl-search {
-    width: 48px;
+    width: 42px;
     height: 42px;
     margin: 6px 16px 6px 0;
     display: inline-flex;
     align-items: center;
-    border: 1px solid #CCDDF9;
-    background: #fff;
+    border: 0;
+    background: transparent;
     overflow: hidden;
-    transition: width 260ms cubic-bezier(.2, .7, .2, 1), border-color 200ms ease;
+    transition: width 260ms cubic-bezier(.2, .7, .2, 1);
 }
 
 .navbar .ksl-search:focus-within {
-    width: 224px;
-    border-color: var(--ksl-blue-shade);
+    width: 220px;
+    border-bottom: 1px solid #CCDDF9;
 }
 
 .ksl-search-submit {
@@ -6086,7 +6086,7 @@ html[lang="sw"] .download-button .download::after {
     }
 
     .ksl-mast.is-min .navbar.sticky-top {
-        height: 48px;
+        height: 64px;
     }
 
     .ksl-mast .navbar .navbar-brand,
@@ -6106,16 +6106,16 @@ html[lang="sw"] .download-button .download::after {
     }
 
     .ksl-mast.is-min .navbar .navbar-brand {
-        height: 48px;
+        height: 64px;
     }
 
     .ksl-mast.is-min .navbar .ksl-logo {
-        height: 32px;
+        height: 44px;
     }
 
     .ksl-mast.is-min .navbar .navbar-nav .nav-link {
-        padding-top: 12px;
-        padding-bottom: 12px;
+        padding-top: 14px;
+        padding-bottom: 14px;
     }
 
     .ksl-mast.is-min .ksl-doodle-note {
