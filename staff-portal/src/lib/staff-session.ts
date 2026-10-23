@@ -41,7 +41,6 @@ export function signedOutMessage(reason: string | undefined) {
   if (reason === "elsewhere") {
     return "You were signed out because this account signed in on another device. Only one session can be open.";
   }
-  if (reason === "signedout") return "You have signed out.";
   if (reason === "suspended") return "Your account is suspended. Contact an administrator.";
   if (reason === "missing") return "Please sign in again.";
   return null;

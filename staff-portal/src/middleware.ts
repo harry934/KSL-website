@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/api/public/")) {
     return publicApi(request);
   }
-  if (pathname === "/api/auth/sign-in") {
+  if (pathname === "/api/auth/sign-in" || pathname === "/api/auth/passkey") {
     return NextResponse.next();
   }
 

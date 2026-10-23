@@ -142,7 +142,7 @@ test("a staff session stays open for one browser and 30 minutes of use", () => {
   );
   assert.match(signedOutMessage("idle") ?? "", /30 minutes/);
   assert.match(signedOutMessage("elsewhere") ?? "", /another device/);
-  assert.equal(signedOutMessage("signedout"), "You have signed out.");
+  assert.equal(signedOutMessage("signedout"), null);
 });
 
 test("contact tokens expire into use and reject tampering", () => {
