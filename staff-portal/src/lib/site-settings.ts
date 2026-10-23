@@ -133,6 +133,27 @@ export type AppearanceSettings = {
   menuStyle: MenuStyle;
 };
 
+export type YardPhotos = {
+  quay: string;
+  berth: string;
+  channel: string;
+};
+
+export type BannerItem = {
+  id: string;
+  enabled: boolean;
+  label: string;
+  text: string;
+  linkLabel: string;
+  linkUrl: string;
+  style: BannerDesign;
+  scroll: boolean;
+  /** YYYY-MM-DD. Empty means it may show as soon as it is switched on. */
+  startsOn: string;
+  /** YYYY-MM-DD. Empty means it stays up until it is switched off. */
+  endsOn: string;
+};
+
 export type AnnouncementSettings = {
   enabled: boolean;
   label: string;
@@ -141,9 +162,129 @@ export type AnnouncementSettings = {
   linkUrl: string;
   style: BannerStyle;
   scroll: boolean;
-  /** YYYY-MM-DD; the banner stops showing after this day. Empty means no end date. */
   endsOn: string;
+  startsOn: string;
+  photos: YardPhotos;
+  /** Banners in the order visitors should see them. Missing means the older single banner. */
+  queue: BannerItem[];
 };
+
+export const BANNER_QUEUE_LIMIT = 12;
+
+export function todayInNairobi() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Nairobi" }).format(new Date());
+}
+
+export function bannerInWindow(item: { startsOn?: string; endsOn?: string }, today = todayInNairobi()) {
+  if (item.startsOn && today < item.startsOn) return false;
+  if (item.endsOn && today > item.endsOn) return false;
+  return true;
+}
+
+function cleanDate(value: unknown) {
+  const day = String(value ?? "").trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : "";
+}
+
+export function acceptedBannerLink(value: string) {
+  const url = value.trim();
+  return !url || cleanLink(url) === url;
+}
+
+function cleanLink(value: unknown) {
+  const url = String(value ?? "").trim().slice(0, 500);
+  if (!url) return "";
+  if (/^https?:\/\/[^\s"'<>]+$/i.test(url)) return url;
+  if (/^[\w./#?=&%-]+$/.test(url) && !url.includes("..")) return url;
+  return "";
+}
+
+function cleanPhoto(value: unknown) {
+  const url = String(value ?? "").trim();
+  if (url.length > 500 || /[\s"'()\\]/.test(url)) return "";
+  if (/^https:\/\/[^/]+\/.+/i.test(url)) return url;
+  if (url.startsWith("/") && !url.startsWith("//")) return url;
+  return "";
+}
+
+export function cleanYardPhotos(value: unknown): YardPhotos {
+  const raw = value && typeof value === "object" ? (value as Partial<YardPhotos>) : {};
+  return {
+    quay: cleanPhoto(raw.quay),
+    berth: cleanPhoto(raw.berth),
+    channel: cleanPhoto(raw.channel),
+  };
+}
+
+function cleanBannerItem(
+  raw: {
+    id?: string;
+    enabled?: boolean;
+    label?: string;
+    text?: string;
+    linkLabel?: string;
+    linkUrl?: string;
+    style?: BannerStyle;
+    scroll?: boolean;
+    startsOn?: string;
+    endsOn?: string;
+  } | null | undefined,
+  index: number
+): BannerItem {
+  const source = raw ?? {};
+  const id = typeof source.id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(source.id) ? source.id : `banner-${index + 1}`;
+  return {
+    id,
+    enabled: typeof source.enabled === "boolean" ? source.enabled : false,
+    label: String(source.label ?? "Announcement").slice(0, 24),
+    text: String(source.text ?? "").slice(0, 220),
+    linkLabel: String(source.linkLabel ?? "").slice(0, 30),
+    linkUrl: cleanLink(source.linkUrl),
+    style: bannerDesign(source.style),
+    scroll: Boolean(source.scroll),
+    startsOn: cleanDate(source.startsOn),
+    endsOn: cleanDate(source.endsOn),
+  };
+}
+
+export function blankBanner(): BannerItem {
+  return {
+    id: `banner-${Date.now().toString(36)}`,
+    enabled: true,
+    label: "Announcement",
+    text: "",
+    linkLabel: "",
+    linkUrl: "",
+    style: "navy",
+    scroll: false,
+    startsOn: "",
+    endsOn: "",
+  };
+}
+
+/** Keeps a saved banner working, and turns a queue into the one banner older pages still understand. */
+export function normalizeAnnouncement(input: Partial<AnnouncementSettings> | null | undefined, hasQueue = Array.isArray(input?.queue)): AnnouncementSettings {
+  const raw = { ...DEFAULT_SITE_SETTINGS.announcement, ...(input ?? {}) };
+  const photos = cleanYardPhotos(input?.photos);
+  const queue = (hasQueue ? (input?.queue ?? []) : [raw])
+    .slice(0, BANNER_QUEUE_LIMIT)
+    .map((item, index) => cleanBannerItem(item, index));
+  const live = queue.find((item) => item.enabled && item.text.trim() && bannerInWindow(item)) ?? null;
+  const face = live ?? queue[0];
+  return {
+    enabled: Boolean(live),
+    label: face?.label || "Announcement",
+    text: live?.text ?? "",
+    linkLabel: live?.linkLabel ?? "",
+    linkUrl: live?.linkUrl ?? "",
+    style: bannerDesign(face?.style),
+    scroll: Boolean(face?.scroll),
+    startsOn: live?.startsOn ?? "",
+    endsOn: live?.endsOn ?? "",
+    photos,
+    queue,
+  };
+}
 
 export type SiteSettings = {
   contact: ContactSettings;
@@ -187,7 +328,10 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     linkUrl: "",
     style: "command-strip",
     scroll: false,
+    startsOn: "",
     endsOn: "",
+    photos: { quay: "", berth: "", channel: "" },
+    queue: [],
   },
   appearance: {
     menuStyle: "classic",
@@ -201,6 +345,11 @@ export function mergeSiteSettings(rows: { key: string; value: unknown }[]): Site
     const key = row.key as SiteSettingKey;
     merged[key] = { ...merged[key], ...(row.value as object) } as never;
   }
-  merged.announcement.style = bannerDesign(merged.announcement.style);
+  const rawAnnouncement = rows.find((row) => row.key === "announcement")?.value;
+  const hasQueue = !!rawAnnouncement && typeof rawAnnouncement === "object" && Array.isArray((rawAnnouncement as AnnouncementSettings).queue);
+  merged.announcement = normalizeAnnouncement(
+    { ...DEFAULT_SITE_SETTINGS.announcement, ...(rawAnnouncement && typeof rawAnnouncement === "object" ? rawAnnouncement : {}) },
+    hasQueue
+  );
   return merged;
 }

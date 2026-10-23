@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImageField } from "@/components/ui/image-field";
 import { ItemList } from "@/components/ui/item-list";
-import { RecycleBin } from "@/components/portal/recycle-bin";
 import { RowList } from "@/components/ui/row-list";
 import { Field, FieldGrid, FormSection, SaveBar, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
@@ -35,7 +34,6 @@ export function CsrEditor({ canPublish, canDelete }: { canPublish: boolean; canD
   const [settings, setSettings] = useState<CsrSettings>(EMPTY_SETTINGS);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [items, setItems] = useState<CsrProjectRow[]>([]);
-  const [removed, setRemoved] = useState<CsrProjectRow[]>([]);
   const [editing, setEditing] = useState<Partial<CsrProjectRow> | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -45,7 +43,6 @@ export function CsrEditor({ canPublish, canDelete }: { canPublish: boolean; canD
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setItems(data.items ?? []);
-      setRemoved(data.removed ?? []);
       if (data.settings) {
         const s = { ...EMPTY_SETTINGS, ...data.settings } as CsrSettings;
         setSettings(s);
@@ -305,25 +302,6 @@ export function CsrEditor({ canPublish, canDelete }: { canPublish: boolean; canD
           emptyText="No programmes yet. Click New programme to add one."
         />
       </div>
-      <RecycleBin
-        items={removed.map((item) => ({ id: item.id, title: item.title }))}
-        onRestore={(id) => {
-          sendJson("/api/csr", "POST", { action: "restore", id })
-            .then(() => {
-              toast("Programme restored.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
-        onDelete={(id) => {
-          sendJson(`/api/csr?id=${encodeURIComponent(id)}&permanent=1`, "DELETE")
-            .then(() => {
-              toast("Programme deleted.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
-      />
     </div>
   );
 }

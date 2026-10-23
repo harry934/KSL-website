@@ -15,7 +15,6 @@ import { useOpenEdit } from "@/lib/open-edit";
 import { uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import { EventsMonth } from "@/components/events/events-month";
-import { RecycleBin } from "@/components/portal/recycle-bin";
 import { nairobiToday } from "@/lib/dates";
 
 function formatDate(value: string | null) {
@@ -28,7 +27,6 @@ export function EventsEditor() {
   const canPublish = useCan("events", "publish");
   const canDelete = useCan("events", "delete");
   const [items, setItems] = useState<EventRow[]>([]);
-  const [removed, setRemoved] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<EventRow> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -39,7 +37,6 @@ export function EventsEditor() {
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setItems(data.items ?? []);
-      setRemoved(data.removed ?? []);
     }
     else toast(data.error ?? "Could not load the events.", "error");
     setLoading(false);
@@ -235,25 +232,6 @@ export function EventsEditor() {
         onDelete={canDelete ? remove : undefined}
         emptyText="No events yet. Click New event to add one."
       />}
-      <RecycleBin
-        items={removed.map((item) => ({ id: item.id, title: item.title }))}
-        onRestore={(id) => {
-          sendJson("/api/events", "POST", { action: "restore", id })
-            .then(() => {
-              toast("Event restored.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
-        onDelete={(id) => {
-          sendJson(`/api/events?id=${encodeURIComponent(id)}&permanent=1`, "DELETE")
-            .then(() => {
-              toast("Event deleted.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
-      />
     </div>
   );
 }

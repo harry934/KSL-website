@@ -13801,7 +13801,7 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     width: min(280px, 28vw);
     background:
         linear-gradient(90deg, transparent 62%, #09296C),
-        var(--ksl-photo-banner-mombasa) center 42% / cover no-repeat;
+        var(--ksl-banner-photo, var(--ksl-photo-banner-mombasa)) center 42% / cover no-repeat;
 }
 .ksl-banner.is-quay .ksl-banner-inner { padding-left: calc(min(280px, 28vw) + 22px); }
 .ksl-banner.is-quay .ksl-banner-tag { color: #e6c56a; }
@@ -13817,7 +13817,7 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     width: min(280px, 28vw);
     background:
         linear-gradient(270deg, transparent 62%, #09296C),
-        var(--ksl-photo-banner-mombasa) center 42% / cover no-repeat;
+        var(--ksl-banner-photo, var(--ksl-photo-banner-mombasa)) center 42% / cover no-repeat;
 }
 .ksl-banner.is-berth .ksl-banner-inner { padding-right: calc(min(280px, 28vw) + 22px); }
 .ksl-banner.is-berth .ksl-banner-tag { color: #e6c56a; }
@@ -13826,7 +13826,7 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 
 .ksl-banner.is-channel {
     color: #fff;
-    background: var(--ksl-photo-banner-mombasa) center 40% / cover no-repeat;
+    background: var(--ksl-banner-photo, var(--ksl-photo-banner-mombasa)) center 40% / cover no-repeat;
 }
 .ksl-banner.is-channel::before {
     content: "";

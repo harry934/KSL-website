@@ -6,7 +6,6 @@ import { useCan } from "@/components/portal/session-context";
 import { Button } from "@/components/ui/button";
 import { useFeedback } from "@/components/ui/feedback";
 import { Notice } from "@/components/ui/form-bits";
-import { RecycleBin } from "@/components/portal/recycle-bin";
 import { cn } from "@/lib/cn";
 
 type Message = {
@@ -39,7 +38,6 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
   const canDelete = useCan("messages", "delete");
   const { confirm, toast } = useFeedback();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [removed, setRemoved] = useState<Message[]>([]);
   const [openId, setOpenId] = useState<string | null>(initialId);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -52,7 +50,6 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
     if (!res.ok) setError(data.error ?? "Could not load messages.");
     else {
       setMessages(data.messages ?? []);
-      setRemoved(data.removed ?? []);
     }
     setLoading(false);
   }, []);
@@ -170,35 +167,6 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
           </article>
         )}
       </section>
-      <div className="lg:col-span-2">
-        <RecycleBin
-          items={removed.map((row) => ({ id: row.id, title: `${row.subject} — ${fullName(row)}` }))}
-          onRestore={(id) => {
-            fetch("/api/messages", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "restore", id }),
-            })
-              .then(async (res) => {
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) throw new Error(data.error ?? "Could not restore the message.");
-                toast("Message restored.");
-                load();
-              })
-              .catch((err) => toast((err as Error).message, "error"));
-          }}
-          onDelete={(id) => {
-            fetch(`/api/messages?id=${encodeURIComponent(id)}&permanent=1`, { method: "DELETE" })
-              .then(async (res) => {
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) throw new Error(data.error ?? "Could not delete the message.");
-                toast("Message deleted.");
-                load();
-              })
-              .catch((err) => toast((err as Error).message, "error"));
-          }}
-        />
-      </div>
     </div>
   );
 }

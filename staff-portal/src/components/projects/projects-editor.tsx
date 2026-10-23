@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImageField } from "@/components/ui/image-field";
 import { ItemList } from "@/components/ui/item-list";
-import { RecycleBin } from "@/components/portal/recycle-bin";
 import { Field, FormSection, SaveBar, Select, VisibilitySwitch } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { slugify } from "@/lib/news";
@@ -19,7 +18,6 @@ import { useOpenEdit } from "@/lib/open-edit";
 export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean; canDelete: boolean }) {
   const { toast, confirm } = useFeedback();
   const [items, setItems] = useState<ProjectRow[]>([]);
-  const [removed, setRemoved] = useState<ProjectRow[]>([]);
   const [editing, setEditing] = useState<Partial<ProjectRow> | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -29,7 +27,6 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setItems(data.items ?? []);
-      setRemoved(data.removed ?? []);
     } else toast(data.error ?? "Could not load the projects.", "error");
     setLoading(false);
   }, [toast]);
@@ -209,25 +206,6 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
           />
         </div>
       ))}
-      <RecycleBin
-        items={removed.map((item) => ({ id: item.id, title: item.title }))}
-        onRestore={(id) => {
-          sendJson("/api/projects", "POST", { action: "restore", id })
-            .then(() => {
-              toast("Project restored.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
-        onDelete={(id) => {
-          sendJson(`/api/projects?id=${encodeURIComponent(id)}&permanent=1`, "DELETE")
-            .then(() => {
-              toast("Project deleted.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
-      />
     </div>
   );
 }

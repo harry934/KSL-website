@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldGrid, FormSection, SaveBar, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
 import { ItemList } from "@/components/ui/item-list";
-import { RecycleBin } from "@/components/portal/recycle-bin";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { reorderItem } from "@/lib/list-utils";
@@ -33,7 +32,6 @@ export function CareersEditor() {
   const canDelete = useCan("careers", "delete");
   const [settings, setSettings] = useState<Settings>({ apply_email: "", apply_note: "" });
   const [listings, setListings] = useState<CareerListingRow[]>([]);
-  const [removed, setRemoved] = useState<CareerListingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<CareerListingRow> | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -44,7 +42,6 @@ export function CareersEditor() {
     if (res.ok) {
       setSettings({ apply_email: data.settings?.apply_email ?? "", apply_note: data.settings?.apply_note ?? "" });
       setListings(data.listings ?? []);
-      setRemoved(data.removed ?? []);
     } else {
       toast(data.error ?? "Could not load careers.", "error");
     }
@@ -220,25 +217,6 @@ export function CareersEditor() {
         );
       })}
 
-      <RecycleBin
-        items={removed.map((item) => ({ id: item.id, title: item.title }))}
-        onRestore={(id) => {
-          sendJson("/api/careers", "POST", { action: "restore", id })
-            .then(() => {
-              toast("Listing restored.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
-        onDelete={(id) => {
-          sendJson(`/api/careers?id=${encodeURIComponent(id)}&permanent=1`, "DELETE")
-            .then(() => {
-              toast("Listing deleted.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
-      />
 
       <FormSection title="How to apply" description="Shown on the Careers page under the listings.">
         <Field label="Email for applications">

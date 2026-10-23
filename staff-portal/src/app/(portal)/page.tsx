@@ -225,12 +225,21 @@ async function watchLists(session: NonNullable<Awaited<ReturnType<typeof getStaf
 
   if (canAccess(session.permissions, "site_settings", "view", session.isSuperAdmin)) {
     const { data } = await admin.from("site_settings").select("value").eq("key", "announcement").maybeSingle();
-    const value = (data?.value ?? null) as { enabled?: boolean; endsOn?: string; label?: string } | null;
-    const ends = String(value?.endsOn ?? "").slice(0, 10);
-    if (value?.enabled && ends && ends >= from && ends <= until) {
+    const value = (data?.value ?? null) as {
+      enabled?: boolean;
+      endsOn?: string;
+      label?: string;
+      text?: string;
+      queue?: { enabled?: boolean; endsOn?: string; label?: string; text?: string }[];
+    } | null;
+    const banners = value?.queue?.length ? value.queue : value ? [value] : [];
+    for (const item of banners) {
+      if (item.enabled === false) continue;
+      const ends = String(item.endsOn ?? "").slice(0, 10);
+      if (!ends || ends < from || ends > until) continue;
       due.push({
         href: "/settings",
-        title: value.label?.trim() || "Website banner",
+        title: item.label?.trim() || item.text?.trim() || "Website banner",
         detail: ends < today ? `The banner ended on ${formatDay(ends)}.` : `The banner ends on ${formatDay(ends)}.`,
       });
     }

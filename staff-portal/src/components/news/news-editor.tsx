@@ -24,7 +24,6 @@ import { newsPublicUrl } from "@/lib/public-links";
 import { useOpenEdit } from "@/lib/open-edit";
 import { uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
-import { RecycleBin } from "@/components/portal/recycle-bin";
 
 function formatDate(value: string | null) {
   if (!value) return "";
@@ -36,7 +35,6 @@ export function NewsEditor() {
   const canPublish = useCan("news", "publish");
   const canDelete = useCan("news", "delete");
   const [items, setItems] = useState<NewsRow[]>([]);
-  const [removed, setRemoved] = useState<NewsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<NewsRow> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -46,7 +44,6 @@ export function NewsEditor() {
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setItems(data.items ?? []);
-      setRemoved(data.removed ?? []);
     }
     else toast(data.error ?? "Could not load the news.", "error");
     setLoading(false);
@@ -235,25 +232,6 @@ export function NewsEditor() {
         onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
         onDelete={canDelete ? remove : undefined}
         emptyText="No articles yet. Click New article to write the first one."
-      />
-      <RecycleBin
-        items={removed.map((item) => ({ id: item.id, title: item.title }))}
-        onRestore={(id) => {
-          sendJson("/api/news", "POST", { action: "restore", id })
-            .then(() => {
-              toast("Article restored.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
-        onDelete={(id) => {
-          sendJson(`/api/news?id=${encodeURIComponent(id)}&permanent=1`, "DELETE")
-            .then(() => {
-              toast("Article deleted.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
       />
     </div>
   );

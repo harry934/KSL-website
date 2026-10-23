@@ -153,12 +153,42 @@
         }
     }
 
+    function cssImageUrl(value) {
+        var url = String(value || "").trim();
+        if (url.length > 500 || /[\s"'()\\]/.test(url)) return "";
+        if (/^https:\/\/[^/]+\/.+/i.test(url)) return 'url("' + url + '")';
+        if (url.charAt(0) === "/" && url.charAt(1) !== "/") return 'url("' + url + '")';
+        return "";
+    }
+
+    function bannerInWindow(item, today) {
+        var start = /^\d{4}-\d{2}-\d{2}$/.test(item.startsOn || "") ? item.startsOn : "";
+        var end = /^\d{4}-\d{2}-\d{2}$/.test(item.endsOn || "") ? item.endsOn : "";
+        if (start && today < start) return false;
+        if (end && today > end) return false;
+        return true;
+    }
+
+    function activeBanner(a) {
+        if (!a) return null;
+        var today = todayInNairobi();
+        var list = a.queue && a.queue.length ? a.queue : [a];
+        for (var i = 0; i < list.length; i++) {
+            var item = list[i];
+            if (!item || item.enabled === false || !String(item.text || "").trim()) continue;
+            if (!bannerInWindow(item, today)) continue;
+            item.photos = a.photos || {};
+            return item;
+        }
+        return null;
+    }
+
     function applyAnnouncement(a) {
         if (!a || !a.enabled || !a.text) return;
         var endsOn = /^\d{4}-\d{2}-\d{2}$/.test(a.endsOn || "") ? a.endsOn : "";
         if (endsOn && todayInNairobi() > endsOn) return;
         if (document.body.classList.contains("ksl-404")) return;
-        var key = "ksl-announcement-dismissed:" + a.text;
+        var key = "ksl-announcement-dismissed:" + (a.id || "") + ":" + a.text;
         try {
             if (window.sessionStorage.getItem(key)) return;
         } catch (e) {}
@@ -199,6 +229,10 @@
         if (ticker) {
             bar.style.setProperty("--kb-ticker-duration", Math.min(48, Math.max(26, a.text.length * 0.18)) + "s");
         }
+        if (style === "quay" || style === "berth" || style === "channel") {
+            var photo = cssImageUrl(a.photos && a.photos[style]);
+            if (photo) bar.style.setProperty("--ksl-banner-photo", photo);
+        }
 
         function dismiss() {
             try { window.sessionStorage.setItem(key, "1"); } catch (e) {}
@@ -232,6 +266,6 @@
         applyContact(data.contact);
         applySocial(data.social);
         applyFooter(data.footer);
-        applyAnnouncement(data.announcement);
+        applyAnnouncement(activeBanner(data.announcement));
     }).catch(function () {});
 })();

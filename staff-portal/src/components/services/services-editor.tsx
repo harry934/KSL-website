@@ -15,7 +15,6 @@ import {
 import { FileField } from "@/components/ui/file-field";
 import { ImageField } from "@/components/ui/image-field";
 import { ItemList } from "@/components/ui/item-list";
-import { RecycleBin } from "@/components/portal/recycle-bin";
 import { RowList } from "@/components/ui/row-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
@@ -47,7 +46,6 @@ export function ServicesEditor() {
   const [docs, setDocs] = useState<DocRow[]>([]);
   const [savedCatalog, setSavedCatalog] = useState<Record<string, { title: string; href: string }>>({});
   const [items, setItems] = useState<ServiceRow[]>([]);
-  const [removed, setRemoved] = useState<ServiceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<ServiceRow> | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -60,7 +58,6 @@ export function ServicesEditor() {
       setSavedCatalog(data.download_catalog ?? {});
       setDocs(catalogToRows(data.download_catalog ?? {}));
       setItems(data.items ?? []);
-      setRemoved(data.removed ?? []);
     } else {
       toast(data.error ?? "Could not load the services.", "error");
     }
@@ -295,25 +292,6 @@ export function ServicesEditor() {
         )}
       </div>
 
-      <RecycleBin
-        items={removed.map((item) => ({ id: item.id, title: item.title }))}
-        onRestore={(id) => {
-          sendJson("/api/services", "POST", { action: "restore", id })
-            .then(() => {
-              toast("Service restored.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
-        onDelete={(id) => {
-          sendJson(`/api/services?id=${encodeURIComponent(id)}&permanent=1`, "DELETE")
-            .then(() => {
-              toast("Service deleted.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
-      />
 
       <div className="grid items-start gap-4 xl:grid-cols-2">
         <FormSection title="Page introduction" description="The paragraph at the top of the Services page.">

@@ -998,7 +998,7 @@ body {
   width: 120px;
   background:
     linear-gradient(90deg, transparent 62%, #09296C),
-    url("https://ksl-website.vercel.app/img/ksl/mombasa.webp") center 42% / cover no-repeat;
+    var(--ksl-banner-photo, url("https://ksl-website.vercel.app/img/ksl/mombasa.webp")) center 42% / cover no-repeat;
 }
 .kb-preview.is-quay .kb-preview-inner { padding-left: 136px; }
 .kb-preview.is-quay .kb-preview-tag { color: #e6c56a; }
@@ -1013,14 +1013,14 @@ body {
   width: 110px;
   background:
     linear-gradient(270deg, transparent 62%, #09296C),
-    url("https://ksl-website.vercel.app/img/ksl/mombasa.webp") center 42% / cover no-repeat;
+    var(--ksl-banner-photo, url("https://ksl-website.vercel.app/img/ksl/mombasa.webp")) center 42% / cover no-repeat;
 }
 .kb-preview.is-berth .kb-preview-inner { padding-right: 124px; }
 .kb-preview.is-berth .kb-preview-tag { color: #e6c56a; }
 .kb-preview.is-berth .kb-preview-cta { padding: 0 0 1px; color: #e6c56a; border-bottom: 1px solid #e6c56a; }
 .kb-preview.is-channel {
   color: #fff;
-  background: url("https://ksl-website.vercel.app/img/ksl/mombasa.webp") center 40% / cover no-repeat;
+  background: var(--ksl-banner-photo, url("https://ksl-website.vercel.app/img/ksl/mombasa.webp")) center 40% / cover no-repeat;
 }
 .kb-preview.is-channel::before {
   content: "";

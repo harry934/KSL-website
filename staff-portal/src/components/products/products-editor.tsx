@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { ImageField } from "@/components/ui/image-field";
 import { FileField } from "@/components/ui/file-field";
 import { ItemList } from "@/components/ui/item-list";
-import { RecycleBin } from "@/components/portal/recycle-bin";
 import { RowList } from "@/components/ui/row-list";
 import {
   ChoiceField,
@@ -68,7 +67,6 @@ function SpecRows({ specs, onChange, addLabel }: { specs: Spec[]; onChange: (spe
 export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean; canDelete: boolean }) {
   const { toast, confirm } = useFeedback();
   const [items, setItems] = useState<ProductRow[]>([]);
-  const [removed, setRemoved] = useState<ProductRow[]>([]);
   const [settings, setSettings] = useState<ProductsSettings>(EMPTY_SETTINGS);
   const [groups, setGroups] = useState<GroupDraft[]>([]);
   const [editing, setEditing] = useState<Partial<ProductRow> | null>(null);
@@ -80,7 +78,6 @@ export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean;
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setItems(data.items ?? []);
-      setRemoved(data.removed ?? []);
       if (data.settings) {
         setSettings({ ...EMPTY_SETTINGS, ...data.settings });
         setGroups(
@@ -325,25 +322,6 @@ export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean;
         )}
       </div>
 
-      <RecycleBin
-        items={removed.map((item) => ({ id: item.id, title: item.name }))}
-        onRestore={(id) => {
-          sendJson("/api/products", "POST", { action: "restore", id })
-            .then(() => {
-              toast("Product restored.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
-        onDelete={(id) => {
-          sendJson(`/api/products?id=${encodeURIComponent(id)}&permanent=1`, "DELETE")
-            .then(() => {
-              toast("Product deleted.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
-      />
 
       <FormSection title="Page text" description="The words at the top of the Products page.">
         <FieldGrid>

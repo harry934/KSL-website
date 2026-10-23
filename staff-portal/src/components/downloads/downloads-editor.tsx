@@ -14,7 +14,6 @@ import { keyFrom, reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import { downloadSource, formatBytes, type DownloadItemRow } from "@/lib/downloads";
 import { useOpenEdit } from "@/lib/open-edit";
-import { RecycleBin } from "@/components/portal/recycle-bin";
 
 type Draft = Partial<DownloadItemRow> & { isNew?: boolean };
 
@@ -39,7 +38,6 @@ export function DownloadsEditor() {
   const canDelete = useCan("downloads", "delete");
   const [baseUrl, setBaseUrl] = useState("");
   const [items, setItems] = useState<DownloadItemRow[]>([]);
-  const [removed, setRemoved] = useState<DownloadItemRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
@@ -50,7 +48,6 @@ export function DownloadsEditor() {
     if (res.ok) {
       setBaseUrl((data.settings?.base_url ?? "").replace(/\/?$/, "/"));
       setItems(data.items ?? []);
-      setRemoved(data.removed ?? []);
     } else {
       toast(data.error ?? "Could not load the downloads.", "error");
     }
@@ -314,25 +311,6 @@ export function DownloadsEditor() {
         onDelete={canDelete ? remove : undefined}
         onReorder={move}
         emptyText="No documents yet. Click New document to add one."
-      />
-      <RecycleBin
-        items={removed.map((item) => ({ id: item.id, title: item.title }))}
-        onRestore={(id) => {
-          sendJson("/api/downloads", "POST", { action: "restore", id })
-            .then(() => {
-              toast("Document restored.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
-        onDelete={(id) => {
-          sendJson(`/api/downloads?id=${encodeURIComponent(id)}&permanent=1`, "DELETE")
-            .then(() => {
-              toast("Document deleted.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        }}
       />
     </div>
   );

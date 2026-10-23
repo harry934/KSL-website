@@ -6,9 +6,10 @@ import kslLogo from "../../../public/ksl-logo.png";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { History, ImageIcon, LayoutDashboard } from "lucide-react";
+import { History, ImageIcon, LayoutDashboard, Trash2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { MODULE_GROUPS, MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
+import { RECYCLE_MODULES } from "@/lib/recycle-sources";
 import type { StaffSession } from "@/lib/session";
 import { MODULE_ICONS as ICONS, type IconType } from "@/components/portal/module-icons";
 import { useNoticeBadges } from "@/components/portal/use-notice-badges";
@@ -17,6 +18,14 @@ function canSee(session: StaffSession, key: ModuleKey) {
   if (session.isSuperAdmin) return true;
   if (key === "staff") return false;
   return session.permissions.some((p) => p.module_key === key && p.can_view);
+}
+
+function canOpenBin(session: StaffSession) {
+  if (session.isSuperAdmin) return true;
+  return session.permissions.some(
+    (permission) =>
+      RECYCLE_MODULES.includes(permission.module_key) && (permission.can_view || permission.can_delete)
+  );
 }
 
 function NavLink({
@@ -117,6 +126,12 @@ export function Sidebar({ session }: { session: StaffSession }) {
             </div>
           );
         })}
+
+        {canOpenBin(session) && (
+          <div className="nav-group">
+            <NavLink href="/recycle" label="Recycle bin" icon={Trash2} active={isActive("/recycle")} />
+          </div>
+        )}
 
         {session.isSuperAdmin && (
           <div className="nav-group">

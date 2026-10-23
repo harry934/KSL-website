@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
-import { mergeSiteSettings, SITE_SETTING_KEYS, type SiteSettingKey } from "@/lib/site-settings";
+import { mergeSiteSettings, normalizeAnnouncement, SITE_SETTING_KEYS, type AnnouncementSettings, type SiteSettingKey } from "@/lib/site-settings";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -24,9 +24,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid setting" }, { status: 400 });
   }
 
+  const hasQueue = key === "announcement" && Array.isArray((body.value as AnnouncementSettings).queue);
+  const value = key === "announcement" ? normalizeAnnouncement(body.value as AnnouncementSettings, hasQueue) : body.value;
+
   const { error: upErr } = await createAdminClient().from("site_settings").upsert({
     key,
-    value: body.value,
+    value,
     status: "published",
     updated_by: session.userId,
   });
