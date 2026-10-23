@@ -46,10 +46,3 @@ export function signedOutMessage(reason: string | undefined) {
   if (reason === "missing") return "Please sign in again.";
   return null;
 }
-
-export function signingOutCopy(reason: "signedout" | "idle" | "elsewhere" | "suspended") {
-  if (reason === "idle") return "Signing out. This session was idle for 30 minutes.";
-  if (reason === "elsewhere") return "Signing out. This account signed in on another device.";
-  if (reason === "suspended") return "Signing out. This account is suspended.";
-  return "Signing out.";
-}

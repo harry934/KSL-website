@@ -36,6 +36,7 @@ export function Topbar({
 }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -114,9 +115,18 @@ export function Topbar({
           )}
         </div>
 
-        <button type="button" className="btn-quiet" onClick={() => void signOutNow("signedout")} title="Sign out">
+        <button
+          type="button"
+          className="btn-quiet"
+          disabled={signingOut}
+          onClick={() => {
+            setSigningOut(true);
+            void signOutNow("signedout");
+          }}
+          title="Sign out"
+        >
           <LogOut className="h-4 w-4" />
-          <span className="hidden md:inline">Sign out</span>
+          <span className={signingOut ? "inline" : "hidden md:inline"}>{signingOut ? "Signing out…" : "Sign out"}</span>
         </button>
       </div>
     </header>
