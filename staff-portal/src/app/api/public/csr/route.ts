@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPublicCsrPayload, type CsrProjectRow, type CsrSettings } from "@/lib/csr";
+import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -12,7 +13,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unavailable" }, { status: 500 });
   }
 
-  const payload = toPublicCsrPayload(settingsRes.data as CsrSettings | null, (itemsRes.data ?? []) as CsrProjectRow[]);
+  const payload = toPublicCsrPayload(settingsRes.data as CsrSettings | null, kept((itemsRes.data ?? []) as Array<CsrProjectRow & { deleted_at?: string | null }>));
   return NextResponse.json(payload, {
     headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
   });

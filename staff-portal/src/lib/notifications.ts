@@ -23,6 +23,7 @@ type MessageRow = {
   subject: string;
   created_at: string;
   read_at: string | null;
+  deleted_at?: string | null;
 };
 
 function canSeeMessages(session: StaffSession) {
@@ -37,11 +38,11 @@ export async function loadNotifications(session: StaffSession): Promise<NoticeIt
   const admin = createAdminClient();
   const { data } = await admin
     .from("website_messages")
-    .select("id, first_name, surname, subject, created_at, read_at")
+    .select("id, first_name, surname, subject, created_at, read_at, deleted_at")
     .order("created_at", { ascending: false })
     .limit(MARK_LIMIT);
 
-  return ((data ?? []) as MessageRow[]).map((row) => ({
+  return ((data ?? []) as MessageRow[]).filter((row) => !row.deleted_at).map((row) => ({
     id: `message:${row.id}`,
     kind: "message" as const,
     module: "messages" as const,

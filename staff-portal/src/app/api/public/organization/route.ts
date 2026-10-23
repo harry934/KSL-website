@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPublicOrganization, type BoardMemberRow, type LeadershipRow } from "@/lib/organization";
+import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -16,8 +17,8 @@ export async function GET() {
 
   const payload = toPublicOrganization(
     settingsRes.data?.chart_download_id ?? null,
-    (leadershipRes.data ?? []) as LeadershipRow[],
-    (boardRes.data ?? []) as BoardMemberRow[]
+    kept((leadershipRes.data ?? []) as Array<LeadershipRow & { deleted_at?: string | null }>),
+    kept((boardRes.data ?? []) as Array<BoardMemberRow & { deleted_at?: string | null }>)
   );
 
   return NextResponse.json(payload, {

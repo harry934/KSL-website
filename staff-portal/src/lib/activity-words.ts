@@ -4,6 +4,7 @@ const ACTION_WORDS: Record<string, string> = {
   save: "saved",
   publish: "put on the website",
   delete: "deleted",
+  purge: "deleted permanently",
   restore: "restored",
   create: "added",
   permissions: "changed what can be done by",
@@ -38,6 +39,7 @@ const THING_WORDS: Record<string, string> = {
   career_listing: "a job or internship",
   gallery_photo: "a photo",
   gallery_video: "a video",
+  website_message: "a message",
   admin_profile: "a staff account",
 };
 

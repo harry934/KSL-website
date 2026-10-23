@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
-import { purgeRecycle, restoreRow, softDelete, splitRemoved } from "@/lib/recycle";
+import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -8,7 +8,6 @@ export async function GET() {
   if (error) return error;
 
   const admin = createAdminClient();
-  await purgeRecycle(admin, "download_items");
   const [settingsRes, itemsRes] = await Promise.all([
     admin.from("downloads_settings").select("*").eq("id", "default").maybeSingle(),
     admin.from("download_items").select("*").order("sort_order", { ascending: true }),
@@ -95,9 +94,10 @@ export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
-  const admin = createAdminClient();
-  const { error: delErr } = await softDelete(admin, "download_items", id);
+  const permanent = new URL(req.url).searchParams.get("permanent") === "1";
+  const { error: delErr } = await applyBinDelete(createAdminClient(), "download_items", id, permanent);
+  if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
-  await logActivity(session.userId, "downloads", "delete", "download_item", id);
+  await logActivity(session.userId, "downloads", permanent ? "purge" : "delete", "download_item", id);
   return NextResponse.json({ ok: true });
 }

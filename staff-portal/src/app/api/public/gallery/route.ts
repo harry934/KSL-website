@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPublicPhoto, toPublicVideo } from "@/lib/gallery";
+import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -11,9 +12,10 @@ export async function GET() {
 
   if (photosRes.error || videosRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
-  const photos = (photosRes.data ?? []).filter((row) => String(row.alt_text || row.title || "").trim());
+  const photos = kept(photosRes.data).filter((row) => String(row.alt_text || row.title || "").trim());
+  const videos = kept(videosRes.data);
   return NextResponse.json(
-    { photos: photos.map(toPublicPhoto), videos: (videosRes.data ?? []).map(toPublicVideo) },
+    { photos: photos.map(toPublicPhoto), videos: videos.map(toPublicVideo) },
     { headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600" } }
   );
 }

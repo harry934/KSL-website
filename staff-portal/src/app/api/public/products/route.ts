@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPublicProductsPayload, type ProductRow, type ProductsSettings } from "@/lib/products";
 import { signPayload } from "@/lib/stored-file";
+import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -15,7 +16,7 @@ export async function GET() {
 
   const payload = await signPayload(
     admin,
-    toPublicProductsPayload(settingsRes.data as ProductsSettings | null, (itemsRes.data ?? []) as ProductRow[])
+    toPublicProductsPayload(settingsRes.data as ProductsSettings | null, kept((itemsRes.data ?? []) as Array<ProductRow & { deleted_at?: string | null }>))
   );
   return NextResponse.json(payload, {
     headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },

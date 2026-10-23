@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { slugify } from "@/lib/news";
 import { projectGroup } from "@/lib/projects";
+import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -11,7 +12,8 @@ export async function GET() {
   const admin = createAdminClient();
   const { data, error: loadErr } = await admin.from("projects").select("*").order("sort_order", { ascending: true });
   if (loadErr) return NextResponse.json({ error: dbError(loadErr) }, { status: 500 });
-  return NextResponse.json({ items: data ?? [] });
+  const split = splitRemoved(data ?? []);
+  return NextResponse.json({ items: split.items, removed: split.removed });
 }
 
 export async function POST(req: NextRequest) {
@@ -19,6 +21,12 @@ export async function POST(req: NextRequest) {
   if (error || !session) return error;
 
   const body = await req.json().catch(() => ({}));
+  if (body.action === "restore") {
+    const { error: restoreErr } = await restoreRow(createAdminClient(), "projects", String(body.id ?? ""));
+    if (restoreErr) return NextResponse.json({ error: dbError(restoreErr) }, { status: 500 });
+    await logActivity(session.userId, "projects", "restore", "project", String(body.id ?? ""));
+    return NextResponse.json({ ok: true });
+  }
   const title = String(body.title ?? "").trim();
   if (!title) return NextResponse.json({ error: "Give the project a name." }, { status: 400 });
 
@@ -54,8 +62,10 @@ export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
-  const { error: delErr } = await createAdminClient().from("projects").delete().eq("id", id);
+  const permanent = new URL(req.url).searchParams.get("permanent") === "1";
+  const { error: delErr } = await applyBinDelete(createAdminClient(), "projects", id, permanent);
+  if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
-  await logActivity(session.userId, "projects", "delete", "project", id);
+  await logActivity(session.userId, "projects", permanent ? "purge" : "delete", "project", id);
   return NextResponse.json({ ok: true });
 }

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ChoiceField, Field, FieldGrid, FormSection, SaveBar, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
 import { FileField } from "@/components/ui/file-field";
 import { ItemList } from "@/components/ui/item-list";
+import { RecycleBin } from "@/components/portal/recycle-bin";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { reorderItem } from "@/lib/list-utils";
@@ -49,6 +50,7 @@ export function PressEditor() {
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [assets, setAssets] = useState<PressAssetRow[]>([]);
+  const [removed, setRemoved] = useState<PressAssetRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Draft | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -61,6 +63,7 @@ export function PressEditor() {
       setContactEmail(data.settings?.contact_email ?? "");
       setContactPhone(data.settings?.contact_phone ?? "");
       setAssets(data.assets ?? []);
+      setRemoved(data.removed ?? []);
     } else {
       toast(data.error ?? "Could not load the press page.", "error");
     }
@@ -152,14 +155,14 @@ export function PressEditor() {
     const item = assets.find((a) => a.id === id);
     const ok = await confirm({
       title: "Remove this item?",
-      message: item ? `"${item.title}" will be removed from the press kit.` : undefined,
+      message: item ? `"${item.title}" leaves the press kit and goes to the recycle bin.` : "It goes to the recycle bin.",
       confirmLabel: "Remove",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/press?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Removed.");
+      toast("Moved to the recycle bin.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");
@@ -277,6 +280,26 @@ export function PressEditor() {
           emptyText="Nothing in the press kit yet. Click Add item to start."
         />
       </div>
+
+      <RecycleBin
+        items={removed.map((item) => ({ id: item.id, title: item.title }))}
+        onRestore={(id) => {
+          sendJson("/api/press", "POST", { action: "restore", id })
+            .then(() => {
+              toast("Item restored.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        }}
+        onDelete={(id) => {
+          sendJson(`/api/press?id=${encodeURIComponent(id)}&permanent=1`, "DELETE")
+            .then(() => {
+              toast("Item deleted.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        }}
+      />
 
       <FormSection title="Press contact" description="Shown to journalists on the Press page.">
         <Field label="About Kenya Shipyards" hint="A short paragraph journalists can copy into their stories.">

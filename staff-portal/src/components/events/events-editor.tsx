@@ -110,14 +110,14 @@ export function EventsEditor() {
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
       title: "Remove this event?",
-      message: item ? `"${item.title}" leaves the website. You can restore it for 14 days.` : "You can restore it for 14 days.",
+      message: item ? `"${item.title}" leaves the website and goes to the recycle bin.` : "It goes to the recycle bin. You can restore it from there.",
       confirmLabel: "Delete event",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/events?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Event removed. It can be restored for 14 days.");
+      toast("Event moved to the recycle bin.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");
@@ -236,11 +236,19 @@ export function EventsEditor() {
         emptyText="No events yet. Click New event to add one."
       />}
       <RecycleBin
-        items={removed}
+        items={removed.map((item) => ({ id: item.id, title: item.title }))}
         onRestore={(id) => {
           sendJson("/api/events", "POST", { action: "restore", id })
             .then(() => {
               toast("Event restored.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        }}
+        onDelete={(id) => {
+          sendJson(`/api/events?id=${encodeURIComponent(id)}&permanent=1`, "DELETE")
+            .then(() => {
+              toast("Event deleted.");
               load();
             })
             .catch((err) => toast((err as Error).message, "error"));

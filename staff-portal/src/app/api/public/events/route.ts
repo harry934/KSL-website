@@ -16,7 +16,7 @@ export async function GET() {
   if (error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
   const live = ((data ?? []) as EventRow[]).filter(
-    (row) => !row.go_live_on || String(row.go_live_on).slice(0, 10) <= today
+    (row) => !row.deleted_at && (!row.go_live_on || String(row.go_live_on).slice(0, 10) <= today)
   );
   const split = splitEventsByDate(live, today);
   const payload = { upcoming: split.upcoming, past: [] };

@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPublicServicesPayload, type ServiceRow, type ServicesSettings } from "@/lib/services";
 import { signPayload } from "@/lib/stored-file";
+import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -15,7 +16,7 @@ export async function GET() {
 
   const payload = await signPayload(
     admin,
-    toPublicServicesPayload(settingsRes.data as ServicesSettings | null, (itemsRes.data ?? []) as ServiceRow[])
+    toPublicServicesPayload(settingsRes.data as ServicesSettings | null, kept((itemsRes.data ?? []) as Array<ServiceRow & { deleted_at?: string | null }>))
   );
 
   return NextResponse.json(payload, {

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPublicCareersPayload, type CareerListingRow, type CareersSettings } from "@/lib/careers";
+import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -14,7 +15,7 @@ export async function GET() {
 
   const payload = toPublicCareersPayload(
     settingsRes.data as CareersSettings | null,
-    (listingsRes.data ?? []) as CareerListingRow[]
+    kept((listingsRes.data ?? []) as Array<CareerListingRow & { deleted_at?: string | null }>)
   );
 
   return NextResponse.json(payload, {

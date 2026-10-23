@@ -17,7 +17,7 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ACTION_GROUPS: Record<string, { label: string; actions: string[] }> = {
   saved: { label: "Saved or added", actions: ["upsert", "update", "save", "create", "restore"] },
   published: { label: "Put on the website", actions: ["publish"] },
-  deleted: { label: "Deleted", actions: ["delete"] },
+  deleted: { label: "Deleted", actions: ["delete", "purge"] },
   signin: { label: "Signed in", actions: ["sign in"] },
   account: {
     label: "Account and password changes",

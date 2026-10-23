@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPublicPress, type PressAssetRow, type PressSettings } from "@/lib/press";
 import { signPayload } from "@/lib/stored-file";
+import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -15,7 +16,7 @@ export async function GET() {
 
   const payload = await signPayload(
     admin,
-    toPublicPress(settingsRes.data as PressSettings | null, (assetsRes.data ?? []) as PressAssetRow[])
+    toPublicPress(settingsRes.data as PressSettings | null, kept((assetsRes.data ?? []) as Array<PressAssetRow & { deleted_at?: string | null }>))
   );
 
   return NextResponse.json(payload, {

@@ -116,15 +116,15 @@ export function NewsEditor() {
     const ok = await confirm({
       title: "Remove this article?",
       message: item
-        ? `"${item.title}" leaves the website. You can restore it for 14 days.`
-        : "You can restore it for 14 days.",
+        ? `"${item.title}" leaves the website and goes to the recycle bin.`
+        : "It goes to the recycle bin. You can restore it from there.",
       confirmLabel: "Delete article",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/news?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Article removed. It can be restored for 14 days.");
+      toast("Article moved to the recycle bin.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");
@@ -237,11 +237,19 @@ export function NewsEditor() {
         emptyText="No articles yet. Click New article to write the first one."
       />
       <RecycleBin
-        items={removed}
+        items={removed.map((item) => ({ id: item.id, title: item.title }))}
         onRestore={(id) => {
           sendJson("/api/news", "POST", { action: "restore", id })
             .then(() => {
               toast("Article restored.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        }}
+        onDelete={(id) => {
+          sendJson(`/api/news?id=${encodeURIComponent(id)}&permanent=1`, "DELETE")
+            .then(() => {
+              toast("Article deleted.");
               load();
             })
             .catch((err) => toast((err as Error).message, "error"));

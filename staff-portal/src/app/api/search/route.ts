@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
         .from("news_items")
         .select("id, title, category")
         .ilike("title", like)
+        .is("deleted_at", null)
         .limit(6)
         .then(({ data }) =>
           (data ?? []).map((row) => ({
@@ -49,6 +50,7 @@ export async function GET(req: NextRequest) {
         .from("event_items")
         .select("id, title, event_date")
         .ilike("title", like)
+        .is("deleted_at", null)
         .limit(6)
         .then(({ data }) =>
           (data ?? []).map((row) => ({
@@ -68,6 +70,7 @@ export async function GET(req: NextRequest) {
         .from("gallery_photos")
         .select("id, title")
         .ilike("title", like)
+        .is("deleted_at", null)
         .limit(6)
         .then(({ data }) =>
           (data ?? []).map((row) => ({
@@ -87,6 +90,7 @@ export async function GET(req: NextRequest) {
         .from("career_listings")
         .select("id, title, kind")
         .ilike("title", like)
+        .is("deleted_at", null)
         .limit(6)
         .then(({ data }) =>
           (data ?? []).map((row) => ({
@@ -106,6 +110,7 @@ export async function GET(req: NextRequest) {
         .from("download_items")
         .select("id, title, category_label")
         .ilike("title", like)
+        .is("deleted_at", null)
         .limit(6)
         .then(({ data }) =>
           (data ?? []).map((row) => ({
@@ -125,6 +130,7 @@ export async function GET(req: NextRequest) {
         .from("products")
         .select("id, name, category_label")
         .ilike("name", like)
+        .is("deleted_at", null)
         .limit(6)
         .then(({ data }) =>
           (data ?? []).map((row) => ({
@@ -144,6 +150,7 @@ export async function GET(req: NextRequest) {
         .from("projects")
         .select("id, title, category_label")
         .ilike("title", like)
+        .is("deleted_at", null)
         .limit(6)
         .then(({ data }) =>
           (data ?? []).map((row) => ({

@@ -198,8 +198,8 @@ async function watchLists(session: NonNullable<Awaited<ReturnType<typeof getStaf
   const attention: DueItem[] = [];
 
   if (canAccess(session.permissions, "careers", "view", session.isSuperAdmin)) {
-    for (const row of await rows(admin, "career_listings", "id, title, closing_date, status")) {
-      if (row.status !== "published") continue;
+    for (const row of await rows(admin, "career_listings", "id, title, closing_date, status, deleted_at")) {
+      if (row.deleted_at || row.status !== "published") continue;
       const day = String(row.closing_date ?? "").slice(0, 10);
       if (!day || day < from || day > until) continue;
       due.push({
@@ -273,8 +273,8 @@ async function watchLists(session: NonNullable<Awaited<ReturnType<typeof getStaf
   }
 
   if (canAccess(session.permissions, "gallery", "view", session.isSuperAdmin)) {
-    for (const row of await rows(admin, "gallery_videos", "id, title, featured, status, updated_at")) {
-      if (!row.featured || row.status !== "published") continue;
+    for (const row of await rows(admin, "gallery_videos", "id, title, featured, status, updated_at, deleted_at")) {
+      if (row.deleted_at || !row.featured || row.status !== "published") continue;
       const touched = String(row.updated_at ?? "").slice(0, 10);
       if (!touched || touched > staleFeatured) continue;
       attention.push({

@@ -13,6 +13,7 @@ import { reorderItem } from "@/lib/list-utils";
 import { siteAssetUrl } from "@/lib/site-url";
 import { sendJson, uploadFile } from "@/lib/upload-client";
 import { PhotoCropDialog } from "@/components/ui/photo-crop";
+import { RecycleBin } from "@/components/portal/recycle-bin";
 import { cn } from "@/lib/cn";
 
 type VideoDraft = { id?: string; link: string; title: string; caption: string; featured: boolean; status: string; sort_order: number };
@@ -27,6 +28,7 @@ export function GalleryEditor() {
 
   const [photos, setPhotos] = useState<GalleryRow[]>([]);
   const [videos, setVideos] = useState<GalleryVideoRow[]>([]);
+  const [removed, setRemoved] = useState<{ id: string; title: string; kind: "photo" | "video" }[]>([]);
   const [loading, setLoading] = useState(true);
   const [place, setPlace] = useState("any");
   const [progress, setProgress] = useState<string | null>(null);
@@ -43,6 +45,10 @@ export function GalleryEditor() {
     if (res.ok) {
       setPhotos(data.photos ?? []);
       setVideos(data.videos ?? []);
+      setRemoved([
+        ...(data.removedPhotos ?? []).map((row: GalleryRow) => ({ id: row.id, title: row.title || "Untitled photo", kind: "photo" as const })),
+        ...(data.removedVideos ?? []).map((row: GalleryVideoRow) => ({ id: row.id, title: row.title || "Untitled video", kind: "video" as const })),
+      ]);
     } else {
       toast(data.error ?? "Could not load the gallery.", "error");
     }
@@ -187,7 +193,7 @@ export function GalleryEditor() {
   async function removePhoto(row: GalleryRow) {
     const ok = await confirm({
       title: "Remove this photo?",
-      message: "It will leave the Gallery page. You can bring it back for a few seconds.",
+      message: "It leaves the Gallery page and goes to the recycle bin.",
       confirmLabel: "Remove photo",
       danger: true,
     });
@@ -195,17 +201,8 @@ export function GalleryEditor() {
     try {
       await sendJson(`/api/gallery?id=${encodeURIComponent(row.id)}`, "DELETE");
       setPhotos((list) => list.filter((p) => p.id !== row.id));
-      toast("Photo removed.", "success", {
-        label: "Bring it back",
-        onClick: () => {
-          sendJson("/api/gallery", "POST", row)
-            .then(() => {
-              toast("Photo brought back.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        },
-      });
+      toast("Photo moved to the recycle bin.");
+      load();
     } catch (e) {
       toast((e as Error).message, "error");
     }
@@ -292,25 +289,16 @@ export function GalleryEditor() {
   async function removeVideo(row: GalleryVideoRow) {
     const ok = await confirm({
       title: "Remove this video?",
-      message: `"${row.title}" will no longer show on the website. The video stays on YouTube.`,
+      message: `"${row.title}" leaves the website and goes to the recycle bin. The film stays on YouTube.`,
       confirmLabel: "Remove video",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/gallery?id=${encodeURIComponent(row.id)}&type=video`, "DELETE");
-      toast("Video removed.", "success", {
-        label: "Bring it back",
-        onClick: () => {
-          sendJson("/api/gallery", "POST", { ...row, type: "video", youtube_id: row.youtube_id })
-            .then(() => {
-              toast("Video brought back.");
-              load();
-            })
-            .catch((err) => toast((err as Error).message, "error"));
-        },
-      });
       setVideos((list) => list.filter((v) => v.id !== row.id));
+      toast("Video moved to the recycle bin.");
+      load();
     } catch (e) {
       toast((e as Error).message, "error");
     }
@@ -600,6 +588,26 @@ export function GalleryEditor() {
           </ul>
         )}
       </FormSection>
+      <RecycleBin
+        items={removed}
+        onRestore={(id, kind) => {
+          sendJson("/api/gallery", "POST", { action: "restore", id, type: kind === "video" ? "video" : "photo" })
+            .then(() => {
+              toast(kind === "video" ? "Video restored." : "Photo restored.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        }}
+        onDelete={(id, kind) => {
+          const type = kind === "video" ? "&type=video" : "";
+          sendJson(`/api/gallery?id=${encodeURIComponent(id)}${type}&permanent=1`, "DELETE")
+            .then(() => {
+              toast(kind === "video" ? "Video deleted." : "Photo deleted.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        }}
+      />
       {cropQueue[0] && !progress && !trimFile && (
         <PhotoCropDialog
           file={cropQueue[0]}

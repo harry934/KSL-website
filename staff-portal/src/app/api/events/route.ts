@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { slugify } from "@/lib/events";
-import { purgeRecycle, restoreRow, softDelete, splitRemoved } from "@/lib/recycle";
+import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { sanitizeRichHtml } from "@/lib/sanitize-html";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -10,7 +10,6 @@ export async function GET() {
   if (error) return error;
 
   const admin = createAdminClient();
-  await purgeRecycle(admin, "event_items");
   const { data, error: dbErr } = await admin
     .from("event_items")
     .select("*")
@@ -77,9 +76,10 @@ export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
-  const admin = createAdminClient();
-  const { error: delErr } = await softDelete(admin, "event_items", id);
+  const permanent = new URL(req.url).searchParams.get("permanent") === "1";
+  const { error: delErr } = await applyBinDelete(createAdminClient(), "event_items", id, permanent);
+  if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
-  await logActivity(session.userId, "events", "delete", "event_item", id);
+  await logActivity(session.userId, "events", permanent ? "purge" : "delete", "event_item", id);
   return NextResponse.json({ ok: true });
 }

@@ -143,14 +143,14 @@ export function DownloadsEditor() {
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
       title: "Remove this document?",
-      message: item ? `"${item.title}" leaves the website. You can restore it for 14 days.` : "You can restore it for 14 days.",
+      message: item ? `"${item.title}" leaves the website and goes to the recycle bin.` : "It goes to the recycle bin. You can restore it from there.",
       confirmLabel: "Delete document",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/downloads?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Document removed. It can be restored for 14 days.");
+      toast("Document moved to the recycle bin.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");
@@ -316,11 +316,19 @@ export function DownloadsEditor() {
         emptyText="No documents yet. Click New document to add one."
       />
       <RecycleBin
-        items={removed}
+        items={removed.map((item) => ({ id: item.id, title: item.title }))}
         onRestore={(id) => {
           sendJson("/api/downloads", "POST", { action: "restore", id })
             .then(() => {
               toast("Document restored.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        }}
+        onDelete={(id) => {
+          sendJson(`/api/downloads?id=${encodeURIComponent(id)}&permanent=1`, "DELETE")
+            .then(() => {
+              toast("Document deleted.");
               load();
             })
             .catch((err) => toast((err as Error).message, "error"));

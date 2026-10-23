@@ -2,20 +2,31 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 type Admin = ReturnType<typeof createAdminClient>;
 
-export const RECYCLE_DAYS = 14;
+export const RECYCLE_TABLES = [
+  "news_items",
+  "event_items",
+  "download_items",
+  "gallery_photos",
+  "gallery_videos",
+  "products",
+  "projects",
+  "career_listings",
+  "csr_projects",
+  "press_assets",
+  "service_items",
+  "faq_groups",
+  "faq_items",
+  "organization_leadership",
+  "organization_board_members",
+  "website_messages",
+] as const;
 
-export async function purgeRecycle(admin: Admin, table: "news_items" | "event_items" | "download_items") {
-  const cutoff = new Date(Date.now() - RECYCLE_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  await admin.from(table).delete().lt("deleted_at", cutoff);
-}
+export type RecycleTable = (typeof RECYCLE_TABLES)[number];
 
-export async function softDelete(admin: Admin, table: "news_items" | "event_items" | "download_items", id: string) {
-  await purgeRecycle(admin, table);
-  return admin.from(table).update({ deleted_at: new Date().toISOString() }).eq("id", id);
-}
+type BinError = { message?: string; code?: string } | null;
 
-export async function restoreRow(admin: Admin, table: "news_items" | "event_items" | "download_items", id: string) {
-  return admin.from(table).update({ deleted_at: null }).eq("id", id);
+export function kept<T extends { deleted_at?: string | null }>(rows: T[] | null | undefined) {
+  return (rows ?? []).filter((row) => !row.deleted_at);
 }
 
 export function splitRemoved<T extends { deleted_at?: string | null }>(rows: T[]) {
@@ -23,4 +34,24 @@ export function splitRemoved<T extends { deleted_at?: string | null }>(rows: T[]
     items: rows.filter((row) => !row.deleted_at),
     removed: rows.filter((row) => row.deleted_at),
   };
+}
+
+export async function softDelete(admin: Admin, table: RecycleTable, id: string) {
+  return admin.from(table).update({ deleted_at: new Date().toISOString() }).eq("id", id).is("deleted_at", null);
+}
+
+export async function restoreRow(admin: Admin, table: RecycleTable, id: string) {
+  return admin.from(table).update({ deleted_at: null }).eq("id", id).not("deleted_at", "is", null);
+}
+
+/** Removes a row that is already in the recycle bin. */
+export async function applyBinDelete(admin: Admin, table: RecycleTable, id: string, permanent: boolean) {
+  if (!permanent) {
+    const { error } = await softDelete(admin, table, id);
+    return { error: error as BinError };
+  }
+  const { data, error } = await admin.from(table).delete().eq("id", id).not("deleted_at", "is", null).select("id");
+  if (error) return { error: error as BinError };
+  if (!data?.length) return { error: { message: "That item is not in the recycle bin.", code: "bin" } };
+  return { error: null };
 }

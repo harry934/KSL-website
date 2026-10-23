@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -17,10 +18,16 @@ export async function GET() {
   if (leadershipRes.error) return NextResponse.json({ error: leadershipRes.error.message }, { status: 500 });
   if (boardRes.error) return NextResponse.json({ error: boardRes.error.message }, { status: 500 });
 
+  const leadership = splitRemoved(leadershipRes.data ?? []);
+  const board = splitRemoved(boardRes.data ?? []);
   return NextResponse.json({
     settings: settingsRes.data,
-    leadership: leadershipRes.data ?? [],
-    board: boardRes.data ?? [],
+    leadership: leadership.items,
+    board: board.items,
+    removed: [
+      ...leadership.removed.map((row) => ({ id: row.id, title: row.role || "Leadership role", kind: "leadership" })),
+      ...board.removed.map((row) => ({ id: row.id, title: row.full_name || "Board member", kind: "board" })),
+    ],
   });
 }
 
@@ -29,9 +36,16 @@ export async function POST(req: NextRequest) {
   if (error || !session) return error;
 
   const body = await req.json();
+  const admin = createAdminClient();
+  if (body.action === "restore") {
+    const table = body.scope === "board" ? "organization_board_members" : "organization_leadership";
+    const { error: restoreErr } = await restoreRow(admin, table, String(body.id ?? ""));
+    if (restoreErr) return NextResponse.json({ error: dbError(restoreErr) }, { status: 500 });
+    await logActivity(session.userId, "organization", "restore", table, String(body.id ?? ""));
+    return NextResponse.json({ ok: true });
+  }
   const denied = publishGuard(session, "organization", body.status ?? "draft");
   if (denied) return denied;
-  const admin = createAdminClient();
 
   if (body.scope === "settings") {
     const { error: upErr } = await admin.from("organization_settings").upsert({
@@ -98,10 +112,11 @@ export async function DELETE(req: NextRequest) {
   const scope = new URL(req.url).searchParams.get("scope");
   if (!id || !scope) return NextResponse.json({ error: "id and scope required" }, { status: 400 });
 
+  const permanent = new URL(req.url).searchParams.get("permanent") === "1";
   const table = scope === "board" ? "organization_board_members" : "organization_leadership";
-  const admin = createAdminClient();
-  const { error: delErr } = await admin.from(table).delete().eq("id", id);
+  const { error: delErr } = await applyBinDelete(createAdminClient(), table, id, permanent);
+  if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
-  await logActivity(session.userId, "organization", "delete", table, id);
+  await logActivity(session.userId, "organization", permanent ? "purge" : "delete", table, id);
   return NextResponse.json({ ok: true });
 }

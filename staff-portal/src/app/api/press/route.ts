@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -15,9 +16,11 @@ export async function GET() {
   if (settingsRes.error) return NextResponse.json({ error: settingsRes.error.message }, { status: 500 });
   if (assetsRes.error) return NextResponse.json({ error: assetsRes.error.message }, { status: 500 });
 
+  const split = splitRemoved(assetsRes.data ?? []);
   return NextResponse.json({
     settings: settingsRes.data,
-    assets: assetsRes.data ?? [],
+    assets: split.items,
+    removed: split.removed,
   });
 }
 
@@ -26,9 +29,15 @@ export async function POST(req: NextRequest) {
   if (error || !session) return error;
 
   const body = await req.json();
+  const admin = createAdminClient();
+  if (body.action === "restore") {
+    const { error: restoreErr } = await restoreRow(admin, "press_assets", String(body.id ?? ""));
+    if (restoreErr) return NextResponse.json({ error: dbError(restoreErr) }, { status: 500 });
+    await logActivity(session.userId, "press", "restore", "press_asset", String(body.id ?? ""));
+    return NextResponse.json({ ok: true });
+  }
   const denied = publishGuard(session, "press", body.status ?? "draft");
   if (denied) return denied;
-  const admin = createAdminClient();
 
   if (body.scope === "settings") {
     const { error: upErr } = await admin.from("press_settings").upsert({
@@ -66,9 +75,10 @@ export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
-  const admin = createAdminClient();
-  const { error: delErr } = await admin.from("press_assets").delete().eq("id", id);
+  const permanent = new URL(req.url).searchParams.get("permanent") === "1";
+  const { error: delErr } = await applyBinDelete(createAdminClient(), "press_assets", id, permanent);
+  if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
-  await logActivity(session.userId, "press", "delete", "press_asset", id);
+  await logActivity(session.userId, "press", permanent ? "purge" : "delete", "press_asset", id);
   return NextResponse.json({ ok: true });
 }

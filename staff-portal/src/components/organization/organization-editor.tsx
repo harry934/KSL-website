@@ -8,6 +8,7 @@ import { Field, FormSection, SaveBar, Select, Textarea, VisibilitySwitch } from 
 import { ImageField } from "@/components/ui/image-field";
 import { SearchSelect } from "@/components/ui/search-select";
 import { ItemList } from "@/components/ui/item-list";
+import { RecycleBin } from "@/components/portal/recycle-bin";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { reorderItem } from "@/lib/list-utils";
@@ -50,6 +51,7 @@ export function OrganizationEditor() {
   const [chartDownloadId, setChartDownloadId] = useState("");
   const [leadership, setLeadership] = useState<LeadershipRow[]>([]);
   const [board, setBoard] = useState<BoardMemberRow[]>([]);
+  const [removed, setRemoved] = useState<{ id: string; title: string; kind: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Draft | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -61,6 +63,7 @@ export function OrganizationEditor() {
       setChartDownloadId(data.settings?.chart_download_id ?? "");
       setLeadership(data.leadership ?? []);
       setBoard(data.board ?? []);
+      setRemoved(data.removed ?? []);
     } else {
       toast(data.error ?? "Could not load the organisation page.", "error");
     }
@@ -144,27 +147,14 @@ export function OrganizationEditor() {
   async function remove(id: string, scope: Scope) {
     const ok = await confirm({
       title: "Delete this entry?",
-      message: "It will leave the website. You can bring it back for a few seconds.",
+      message: "It leaves the website and goes to the recycle bin.",
       confirmLabel: "Delete",
       danger: true,
     });
     if (!ok) return;
-    const row = (scope === "board" ? board : leadership).find((item) => item.id === id);
     try {
       await sendJson(`/api/organization?id=${encodeURIComponent(id)}&scope=${scope}`, "DELETE");
-      toast("Deleted.", "success", row
-        ? {
-            label: "Bring it back",
-            onClick: () => {
-              sendJson("/api/organization", "POST", { ...row, scope })
-                .then(() => {
-                  toast("Brought back.");
-                  load();
-                })
-                .catch((err) => toast((err as Error).message, "error"));
-            },
-          }
-        : undefined);
+      toast("Moved to the recycle bin.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");
@@ -298,6 +288,27 @@ export function OrganizationEditor() {
           emptyText="No board members yet."
         />
       </div>
+
+      <RecycleBin
+        items={removed}
+        onRestore={(id, kind) => {
+          sendJson("/api/organization", "POST", { action: "restore", id, scope: kind === "board" ? "board" : "leadership" })
+            .then(() => {
+              toast("Restored.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        }}
+        onDelete={(id, kind) => {
+          const scope = kind === "board" ? "board" : "leadership";
+          sendJson(`/api/organization?id=${encodeURIComponent(id)}&scope=${scope}&permanent=1`, "DELETE")
+            .then(() => {
+              toast("Deleted.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        }}
+      />
 
       <FormSection title="Organisation chart document" description="The document visitors download from the Organisation page.">
         <Field label="Document">

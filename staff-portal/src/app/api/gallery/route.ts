@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard } from "@/lib/api-auth";
 import { youtubeIdFrom } from "@/lib/gallery";
+import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -16,7 +17,14 @@ export async function GET() {
   if (photosRes.error || videosRes.error) {
     return NextResponse.json({ error: "Could not load the gallery." }, { status: 500 });
   }
-  return NextResponse.json({ photos: photosRes.data ?? [], videos: videosRes.data ?? [] });
+  const photos = splitRemoved(photosRes.data ?? []);
+  const videos = splitRemoved(videosRes.data ?? []);
+  return NextResponse.json({
+    photos: photos.items,
+    videos: videos.items,
+    removedPhotos: photos.removed,
+    removedVideos: videos.removed,
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -24,10 +32,17 @@ export async function POST(req: NextRequest) {
   if (error || !session) return error;
 
   const body = await req.json();
+  const admin = createAdminClient();
+  if (body.action === "restore") {
+    const table = body.type === "video" ? "gallery_videos" : "gallery_photos";
+    const { error: restoreErr } = await restoreRow(admin, table, String(body.id ?? ""));
+    if (restoreErr) return NextResponse.json({ error: "Could not restore it." }, { status: 500 });
+    await logActivity(session.userId, "gallery", "restore", table === "gallery_videos" ? "gallery_video" : "gallery_photo", String(body.id ?? ""));
+    return NextResponse.json({ ok: true });
+  }
   const status = body.status ?? "published";
   const denied = publishGuard(session, "gallery", status);
   if (denied) return denied;
-  const admin = createAdminClient();
 
   if (body.type === "video") {
     const youtubeId = youtubeIdFrom(String(body.youtube_id ?? ""));
@@ -90,10 +105,12 @@ export async function DELETE(req: NextRequest) {
   const isVideo = params.get("type") === "video";
   if (!id) return NextResponse.json({ error: "Nothing selected." }, { status: 400 });
 
+  const permanent = params.get("permanent") === "1";
   const admin = createAdminClient();
   const table = isVideo ? "gallery_videos" : "gallery_photos";
-  const { error: delErr } = await admin.from(table).delete().eq("id", id);
+  const { error: delErr } = await applyBinDelete(admin, table, id, permanent);
+  if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: "Could not remove it." }, { status: 500 });
-  await logActivity(session.userId, "gallery", "delete", isVideo ? "gallery_video" : "gallery_photo", id);
+  await logActivity(session.userId, "gallery", permanent ? "purge" : "delete", isVideo ? "gallery_video" : "gallery_photo", id);
   return NextResponse.json({ ok: true });
 }

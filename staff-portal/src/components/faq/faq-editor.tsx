@@ -14,6 +14,7 @@ import {
   VisibilitySwitch,
 } from "@/components/ui/form-bits";
 import { ItemList } from "@/components/ui/item-list";
+import { RecycleBin } from "@/components/portal/recycle-bin";
 import { DRAG_FROM, useLiveDrag } from "@/components/ui/live-drag";
 import { SearchSelect } from "@/components/ui/search-select";
 import { useFeedback } from "@/components/ui/feedback";
@@ -51,6 +52,7 @@ export function FaqEditor() {
   const canDelete = useCan("faq", "delete");
   const [groups, setGroups] = useState<FaqGroup[]>([]);
   const [items, setItems] = useState<FaqItem[]>([]);
+  const [removed, setRemoved] = useState<{ id: string; title: string; kind: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Editing>(null);
   const [saving, setSaving] = useState(false);
@@ -60,6 +62,7 @@ export function FaqEditor() {
       const data = await sendJson("/api/faq", "GET");
       setGroups(data.groups ?? []);
       setItems(data.items ?? []);
+      setRemoved(data.removed ?? []);
     } catch (err) {
       toast((err as Error).message, "error");
     }
@@ -175,15 +178,15 @@ export function FaqEditor() {
       title: "Delete this group?",
       message:
         count > 0
-          ? `"${group.title}" and its ${count} question${count === 1 ? "" : "s"} will be removed from the website for good.`
-          : `"${group.title}" will be removed for good.`,
+          ? `"${group.title}" and its ${count} question${count === 1 ? "" : "s"} go to the recycle bin.`
+          : `"${group.title}" goes to the recycle bin.`,
       confirmLabel: "Delete group",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/faq?type=group&id=${encodeURIComponent(group.id)}`, "DELETE");
-      toast("Group deleted.");
+      toast("Group moved to the recycle bin.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");
@@ -194,14 +197,14 @@ export function FaqEditor() {
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
       title: "Delete this question?",
-      message: item ? `"${shorten(item.question, 80)}" will be removed from the website for good.` : undefined,
+      message: item ? `"${shorten(item.question, 80)}" goes to the recycle bin.` : "It goes to the recycle bin.",
       confirmLabel: "Delete",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/faq?type=item&id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Question deleted.");
+      toast("Question moved to the recycle bin.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");
@@ -365,6 +368,25 @@ export function FaqEditor() {
           </div>
         );
       })}
+      <RecycleBin
+        items={removed}
+        onRestore={(id, kind) => {
+          sendJson("/api/faq", "PUT", { action: "restore", id, type: kind === "group" ? "group" : "item" })
+            .then(() => {
+              toast("Restored.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        }}
+        onDelete={(id, kind) => {
+          sendJson(`/api/faq?type=${kind === "group" ? "group" : "item"}&id=${encodeURIComponent(id)}&permanent=1`, "DELETE")
+            .then(() => {
+              toast("Deleted.");
+              load();
+            })
+            .catch((err) => toast((err as Error).message, "error"));
+        }}
+      />
     </div>
   );
 }
