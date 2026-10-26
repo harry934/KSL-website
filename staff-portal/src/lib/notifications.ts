@@ -1,8 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ModuleKey } from "@/lib/modules";
 import type { StaffSession } from "@/lib/session";
-import { formatDay } from "@/lib/dates";
-import { loadWatchNotices } from "@/lib/watch-lists";
 import type { NotificationIcon, NotificationTone } from "@/components/ui/notification-center";
 
 const MARK_LIMIT = 80;
@@ -110,38 +108,11 @@ async function loadAccountRequests(): Promise<NoticeItem[]> {
   });
 }
 
-async function loadWatchItems(session: StaffSession): Promise<NoticeItem[]> {
-  const notices = await loadWatchNotices(session);
-  return notices.map((item) => ({
-    id: item.id,
-    kind: "watch" as const,
-    module: item.module,
-    who: item.title,
-    text: item.detail,
-    area: item.source,
-    href: item.href,
-    createdAt: `${item.day}T09:00:00+03:00`,
-    icon: item.icon,
-    tone: item.tone,
-    source: item.source,
-    time: formatDay(item.day),
-  }));
-}
-
-function rank(item: NoticeItem) {
-  if (item.kind === "request") return 0;
-  if (item.kind === "watch") return 1;
-  return 2;
-}
-
-/** Password and username requests, website dates that need attention, and messages. */
+/** Password and username requests, then website messages. */
 export async function loadNotifications(session: StaffSession): Promise<NoticeItem[]> {
-  const [messages, requests, watches] = await Promise.all([
+  const [messages, requests] = await Promise.all([
     loadMessages(session),
     session.isSuperAdmin ? loadAccountRequests() : Promise.resolve([]),
-    loadWatchItems(session),
   ]);
-  return [...requests, ...watches, ...messages].sort(
-    (a, b) => rank(a) - rank(b) || (a.createdAt < b.createdAt ? 1 : -1)
-  );
+  return [...requests, ...messages].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }

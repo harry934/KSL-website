@@ -4,16 +4,12 @@ import { getStaffSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import { permissionNavLinks, usesSidebar } from "@/lib/portal-nav";
-import { formatDay } from "@/lib/dates";
 import { formatBytes } from "@/lib/downloads";
-import { loadWatchNotices } from "@/lib/watch-lists";
 import { DashboardRefresh } from "@/components/portal/dashboard-refresh";
 import { ShipyardMark } from "@/components/portal/shipyard-mark";
 import { PageHeader } from "@/components/portal/page-header";
 import { SectionCards } from "@/components/portal/section-cards";
-import { NoticeBoard } from "@/components/portal/notice-board";
 import { MODULE_ICONS } from "@/components/portal/module-icons";
-import type { NotificationItem } from "@/components/ui/notification-center";
 
 const QUICK_ACTIONS: { module: ModuleKey; label: string }[] = [
   { module: "news", label: "Add a news story" },
@@ -169,27 +165,10 @@ function DatabaseMeter({ bytes }: { bytes: number | null }) {
   );
 }
 
-function asNotice(item: Awaited<ReturnType<typeof loadWatchNotices>>[number]): NotificationItem {
-  return {
-    id: item.id,
-    icon: item.icon,
-    title: item.title,
-    body: item.detail,
-    time: formatDay(item.day),
-    unread: false,
-    tone: item.tone,
-    href: item.href,
-  };
-}
-
 export default async function DashboardPage() {
   const session = await getStaffSession();
   if (!session) return null;
 
-  const notices = await loadWatchNotices(session);
-  const closing = notices.filter((item) => item.source === "Closing soon").map(asNotice);
-  const scheduled = notices.filter((item) => item.source === "Scheduled").map(asNotice);
-  const attention = notices.filter((item) => item.source === "Needs a look").map(asNotice);
   const storage = session.isSuperAdmin ? await loadStorageUsage() : null;
   const database = session.isSuperAdmin ? await loadDatabaseSize() : null;
   const cards = !usesSidebar(session);
@@ -234,10 +213,6 @@ export default async function DashboardPage() {
           </div>
         </section>
       )}
-
-      <NoticeBoard title="Closing soon" items={closing} />
-      <NoticeBoard title="Scheduled" items={scheduled} />
-      <NoticeBoard title="Needs a look" items={attention} />
 
       {session.isSuperAdmin && (
         <section className="grid gap-3 lg:grid-cols-2" aria-label="Supabase usage">
