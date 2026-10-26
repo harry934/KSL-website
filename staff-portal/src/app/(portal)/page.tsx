@@ -7,6 +7,7 @@ import { permissionNavLinks, usesSidebar } from "@/lib/portal-nav";
 import { addDays, formatDay, nairobiToday } from "@/lib/dates";
 import { formatBytes } from "@/lib/downloads";
 import { DashboardRefresh } from "@/components/portal/dashboard-refresh";
+import { ShipyardMark } from "@/components/portal/shipyard-mark";
 import { PageHeader } from "@/components/portal/page-header";
 import { SectionCards } from "@/components/portal/section-cards";
 import { MODULE_ICONS } from "@/components/portal/module-icons";
@@ -335,7 +336,7 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="flex flex-col gap-[18px]">
+    <div className="dash-stage">
       <PageHeader
         title="Dashboard"
         description={
@@ -380,6 +381,7 @@ export default async function DashboardPage() {
           <DatabaseMeter bytes={database} />
         </section>
       )}
+      <ShipyardMark />
     </div>
   );
 }

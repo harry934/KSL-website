@@ -116,32 +116,26 @@ export function LoginForm({ notice }: { notice?: string | null }) {
       </div>
       {notice && <Notice kind="info">{notice}</Notice>}
       {error && <Notice kind="error">{error}</Notice>}
-      <div className="flex flex-col gap-2">
-        <Button type="submit" className="w-full" disabled={loading || passkeyLoading || forgotLoading} aria-busy={loading}>
-          {loading ? "Signing in…" : "Sign in"}
-        </Button>
-        <Button type="button" variant="secondary" className="w-full" disabled={loading || passkeyLoading || forgotLoading} onClick={onPasskey}>
-          {passkeyLoading ? "Waiting for your passkey…" : "Sign in with a passkey"}
-        </Button>
-      </div>
+      {forgotMessage && <Notice kind="info">{forgotMessage}</Notice>}
+      <Button type="submit" className="w-full" disabled={loading || passkeyLoading || forgotLoading} aria-busy={loading}>
+        {loading ? "Signing in…" : "Sign in"}
+      </Button>
+      <Button type="button" variant="secondary" className="w-full" disabled={loading || passkeyLoading || forgotLoading} onClick={onPasskey}>
+        {passkeyLoading ? "Waiting for your passkey…" : "Sign in with a passkey"}
+      </Button>
       {forgot ? (
-        <section className="space-y-3 rounded-[8px] border border-[#e3e8ee] bg-[#f7f9fb] p-3.5" aria-label="Request a new password">
-          <p className="text-[13px] font-semibold text-[#0b1f3a]">Request a new password</p>
-          {forgotMessage ? (
-            <Notice kind="success">{forgotMessage}</Notice>
-          ) : (
-            <p className="text-[13.5px] leading-relaxed text-[#5b6775]">
-              An administrator will send a new password by email or message. You will need to wait for that. The username above is the one this request uses.
-            </p>
-          )}
-          <Button type="button" variant="secondary" className="w-full" disabled={loading || forgotLoading} onClick={onForgot}>
+        <div className="space-y-3 border-t border-[#eef1f4] pt-3">
+          <p className="text-[13.5px] text-[#5b6775]">
+            An administrator will send a new password by email or message. You will need to wait for that. The username above is the one the request uses.
+          </p>
+          <Button type="button" className="w-full" disabled={loading || forgotLoading} onClick={onForgot}>
             {forgotLoading ? "Sending…" : "Request a new password"}
           </Button>
-        </section>
+        </div>
       ) : (
         <button
           type="button"
-          className="block w-full text-center text-[13.5px] font-semibold text-[#0b1f3a] underline decoration-[#c5a028] underline-offset-4"
+          className="block w-full text-center text-[13.5px] font-semibold text-[#0b1f3a] underline"
           onClick={() => {
             setError(null);
             setForgot(true);

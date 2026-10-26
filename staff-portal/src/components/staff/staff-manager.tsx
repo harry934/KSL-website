@@ -10,6 +10,7 @@ import { SearchBox, matchesSearch } from "@/components/ui/list-tools";
 import { UserAvatar } from "@/components/portal/user-avatar";
 import { usePortalSession } from "@/components/portal/session-context";
 import { MODULE_GROUPS, MODULE_LABELS, type ModuleKey } from "@/lib/modules";
+import { STAFF_ROLES, levelForRole, roleFromAccess, roleTitle, type StaffRole } from "@/lib/staff-role";
 import { SIDEBAR_ITEM_LIMIT, permissionNavLinks } from "@/lib/portal-nav";
 import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
 import { sendJson } from "@/lib/upload-client";
@@ -190,20 +191,22 @@ function AccessEditor({
   );
 }
 
-function RoleChoice({ value, onChange }: { value: "agent" | "admin"; onChange: (next: "agent" | "admin") => void }) {
+function RoleChoice({ value, onChange }: { value: StaffRole; onChange: (next: StaffRole) => void }) {
   return (
-    <fieldset className="grid gap-2 sm:grid-cols-2">
+    <fieldset>
       <legend className="mb-2 text-[13px] font-semibold text-[#1f2933]">Role</legend>
-      <label className={cn("rounded-[10px] border px-3 py-3", value === "agent" ? "border-[#0b1f3a] bg-[#f4f7fb]" : "border-[#e3e8ee]")}>
-        <input className="mr-2" type="radio" name="staff-role" checked={value === "agent"} onChange={() => onChange("agent")} />
-        <span className="font-semibold text-[#0b1f3a]">Agent</span>
-        <span className="mt-1 block text-[12.5px] text-[#6b7785]">Access is limited to the sections you choose below.</span>
-      </label>
-      <label className={cn("rounded-[10px] border px-3 py-3", value === "admin" ? "border-[#0b1f3a] bg-[#f4f7fb]" : "border-[#e3e8ee]")}>
-        <input className="mr-2" type="radio" name="staff-role" checked={value === "admin"} onChange={() => onChange("admin")} />
-        <span className="font-semibold text-[#0b1f3a]">Administrator</span>
-        <span className="mt-1 block text-[12.5px] text-[#6b7785]">Full access to every section, including staff.</span>
-      </label>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {STAFF_ROLES.map((item) => (
+          <label
+            key={item.id}
+            className={cn("rounded-[10px] border px-3 py-3", value === item.id ? "border-[#0b1f3a] bg-[#f4f7fb]" : "border-[#e3e8ee]")}
+          >
+            <input className="mr-2" type="radio" name="staff-role" checked={value === item.id} onChange={() => onChange(item.id)} />
+            <span className="font-semibold text-[#0b1f3a]">{item.label}</span>
+            <span className="mt-1 block text-[12.5px] text-[#6b7785]">{item.detail}</span>
+          </label>
+        ))}
+      </div>
     </fieldset>
   );
 }
@@ -346,7 +349,7 @@ export function StaffManager() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [permissions, setPermissions] = useState<PermRow[]>(emptyPerms());
-  const [role, setRole] = useState<"agent" | "admin">("agent");
+  const [role, setRole] = useState<StaffRole>("custom");
   const [requests, setRequests] = useState<AccountRequest[]>([]);
   const [reasons, setReasons] = useState<Record<string, string>>({});
 
@@ -364,13 +367,25 @@ export function StaffManager() {
     load();
   }, [load]);
 
+  function chooseRole(next: StaffRole) {
+    setRole(next);
+    const level = levelForRole(next);
+    if (!level) return;
+    setPermissions(emptyPerms().map((row) => applyLevel(row, level)));
+  }
+
+  function editAccess(next: PermRow[]) {
+    setPermissions(next);
+    setRole(roleFromAccess(false, next));
+  }
+
   function openCreate() {
     setUsername("");
     setDisplayName("");
     setEmail("");
     setPhone("");
     setPermissions(emptyPerms());
-    setRole("agent");
+    setRole("custom");
     setError(null);
     setIssued(null);
     setPanel({ kind: "create" });
@@ -380,8 +395,9 @@ export function StaffManager() {
     setUsername(row.username);
     setDisplayName(row.display_name);
     setEmail(row.contact_email ?? "");
-    setPermissions(permsFrom(row));
-    setRole(row.is_super_admin ? "admin" : "agent");
+    const nextPermissions = permsFrom(row);
+    setPermissions(nextPermissions);
+    setRole(roleFromAccess(row.is_super_admin, nextPermissions));
     setError(null);
     setIssued(null);
     setPanel({ kind: "edit", row });
@@ -443,7 +459,7 @@ export function StaffManager() {
       if ((role === "admin") !== panel.row.is_super_admin) {
         await sendJson("/api/staff", "PATCH", { id, action: "set_role", superAdmin: role === "admin" });
       }
-      if (role === "agent") {
+      if (role !== "admin") {
         await sendJson("/api/staff", "PATCH", { id, action: "permissions", permissions });
       }
       return true;
@@ -543,7 +559,7 @@ export function StaffManager() {
   }
 
   const shownStaff = staff.filter((row) =>
-    matchesSearch(query, row.display_name, row.username, row.contact_email, row.is_super_admin ? "administrator" : "agent")
+    matchesSearch(query, row.display_name, row.username, row.contact_email, roleTitle(row.is_super_admin, row.permissions))
   );
 
   if (loading) {
@@ -627,26 +643,26 @@ export function StaffManager() {
 
       {panel?.kind === "create" && (
         <form onSubmit={submitCreate}>
-          <FormSection title="New staff account" description="A username and one-time password are created when you save. An administrator can do everything. An agent only gets the sections you set below.">
+          <FormSection title="New staff account" description="A username and one-time password are created when you save. The role sets every section. You can still adjust a single section afterwards.">
             <FieldGrid className="lg:grid-cols-3">
               {nameAndEmail}
               <Field label="Mobile number" optional hint="Used if you send the sign-in details on WhatsApp. You can still pick a contact if this is blank.">
                 <Input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="e.g. 0712 345 678" />
               </Field>
             </FieldGrid>
-            <RoleChoice value={role} onChange={setRole} />
-            {role === "agent" ? (
-              <div>
-                <p className="mb-2 text-[13px] font-semibold text-[#1f2933]">What can this agent do?</p>
-                <p className="mb-2 text-[13px] text-[#5b6775]">{layoutHint(permissions)}</p>
-                <AccessEditor permissions={permissions} onChange={setPermissions} />
-              </div>
-            ) : (
+            <RoleChoice value={role} onChange={chooseRole} />
+            {role === "admin" ? (
               <p className="text-[13.5px] text-[#5b6775]">This person will be able to open, change, publish, and remove items in every section, and manage other staff.</p>
+            ) : (
+              <div>
+                <p className="mb-2 text-[13px] font-semibold text-[#1f2933]">Access for every section</p>
+                <p className="mb-2 text-[13px] text-[#5b6775]">{layoutHint(permissions)}</p>
+                <AccessEditor permissions={permissions} onChange={editAccess} />
+              </div>
             )}
             <div className="flex gap-2">
               <Button type="submit" disabled={saving}>
-                {saving ? "Creating…" : role === "admin" ? "Create administrator" : "Create agent"}
+                {saving ? "Creating…" : "Create account"}
               </Button>
               <Button variant="secondary" onClick={() => setPanel(null)}>
                 Cancel
@@ -671,15 +687,15 @@ export function StaffManager() {
               </Field>
               {nameAndEmail}
             </FieldGrid>
-            <RoleChoice value={role} onChange={setRole} />
-            {role === "agent" ? (
-              <div>
-                <p className="mb-2 text-[13px] font-semibold text-[#1f2933]">What can this agent do?</p>
-                <p className="mb-2 text-[13px] text-[#5b6775]">{layoutHint(permissions)}</p>
-                <AccessEditor permissions={permissions} onChange={setPermissions} />
-              </div>
+            <RoleChoice value={role} onChange={chooseRole} />
+            {role === "admin" ? (
+              <p className="text-[13.5px] text-[#5b6775]">Administrators can do everything. Choose another role to set the sections.</p>
             ) : (
-              <p className="text-[13.5px] text-[#5b6775]">Administrators can do everything. Change the role to Agent if you want to limit the sections.</p>
+              <div>
+                <p className="mb-2 text-[13px] font-semibold text-[#1f2933]">Access for every section</p>
+                <p className="mb-2 text-[13px] text-[#5b6775]">{layoutHint(permissions)}</p>
+                <AccessEditor permissions={permissions} onChange={editAccess} />
+              </div>
             )}
             <div className="flex gap-2">
               <Button type="submit" disabled={saving}>
@@ -729,7 +745,7 @@ export function StaffManager() {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-[#5b6775]">{row.is_super_admin ? "Administrator" : "Agent"}</td>
+                <td className="px-4 py-3 text-[#5b6775]">{roleTitle(row.is_super_admin, row.permissions)}</td>
                 <td className="px-4 py-3">
                   <span
                     className={cn(
