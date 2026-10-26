@@ -76,8 +76,9 @@ export function Topbar({
             <PanelLeft className="h-4 w-4" />
           </button>
         ) : pathname !== "/" ? (
-          <Link href="/" className="icon-button" aria-label="Dashboard">
+          <Link href="/" className="icon-button gap-1.5" aria-label="Dashboard">
             <LayoutDashboard className="h-4 w-4" />
+            <span className="text-[13px] font-semibold">Dashboard</span>
           </Link>
         ) : null}
         <p className={cn("truncate text-[15px] font-bold text-[#0b1f3a]", showSidebar && "hidden sm:block")}>{titleFor(pathname)}</p>

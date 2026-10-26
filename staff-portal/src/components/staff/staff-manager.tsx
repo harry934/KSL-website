@@ -10,6 +10,7 @@ import { SearchBox, matchesSearch } from "@/components/ui/list-tools";
 import { UserAvatar } from "@/components/portal/user-avatar";
 import { usePortalSession } from "@/components/portal/session-context";
 import { MODULE_GROUPS, MODULE_LABELS, type ModuleKey } from "@/lib/modules";
+import { SIDEBAR_ITEM_LIMIT, permissionNavLinks } from "@/lib/portal-nav";
 import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
 import { sendJson } from "@/lib/upload-client";
 import { cn } from "@/lib/cn";
@@ -34,6 +35,13 @@ type StaffRow = {
 
 type Panel = { kind: "create" } | { kind: "edit"; row: StaffRow } | null;
 type Issued = { username: string; password: string; email: string; phone: string; isNew: boolean; expiresAt: string };
+
+function layoutHint(permissions: PermRow[]) {
+  const count = permissionNavLinks({ isSuperAdmin: false, permissions }).length;
+  if (count > SIDEBAR_ITEM_LIMIT) return "More than six sections, so this person will have a sidebar.";
+  if (count === 0) return "No sections yet, so the dashboard stays empty and there is no sidebar.";
+  return "Six sections or fewer, so there is no sidebar. The dashboard shows a card for each section.";
+}
 
 function emptyPerms(): PermRow[] {
   return EDITABLE_MODULES.map((key) => ({
@@ -540,6 +548,7 @@ export function StaffManager() {
             {role === "agent" ? (
               <div>
                 <p className="mb-2 text-[13px] font-semibold text-[#1f2933]">What can this agent do?</p>
+                <p className="mb-2 text-[13px] text-[#5b6775]">{layoutHint(permissions)}</p>
                 <AccessEditor permissions={permissions} onChange={setPermissions} />
               </div>
             ) : (
@@ -576,6 +585,7 @@ export function StaffManager() {
             {role === "agent" ? (
               <div>
                 <p className="mb-2 text-[13px] font-semibold text-[#1f2933]">What can this agent do?</p>
+                <p className="mb-2 text-[13px] text-[#5b6775]">{layoutHint(permissions)}</p>
                 <AccessEditor permissions={permissions} onChange={setPermissions} />
               </div>
             ) : (
