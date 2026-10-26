@@ -3,10 +3,12 @@ import { Plus } from "lucide-react";
 import { getStaffSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canAccess, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
+import { permissionNavLinks, usesSidebar } from "@/lib/portal-nav";
 import { addDays, formatDay, nairobiToday } from "@/lib/dates";
 import { formatBytes } from "@/lib/downloads";
 import { DashboardRefresh } from "@/components/portal/dashboard-refresh";
 import { PageHeader } from "@/components/portal/page-header";
+import { SectionCards } from "@/components/portal/section-cards";
 import { MODULE_ICONS } from "@/components/portal/module-icons";
 
 const QUICK_ACTIONS: { module: ModuleKey; label: string }[] = [
@@ -325,6 +327,8 @@ export default async function DashboardPage() {
   const { due, scheduled, attention } = await watchLists(session);
   const storage = session.isSuperAdmin ? await loadStorageUsage() : null;
   const database = session.isSuperAdmin ? await loadDatabaseSize() : null;
+  const cards = !usesSidebar(session);
+  const sections = cards ? permissionNavLinks(session) : [];
   const quick = QUICK_ACTIONS.filter((action) => {
     if (session.isSuperAdmin) return true;
     return session.permissions.some((p) => p.module_key === action.module && p.can_edit);
@@ -334,9 +338,15 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-[18px]">
       <PageHeader
         title="Dashboard"
-        description={`Welcome back, ${session.displayName}.`}
+        description={
+          cards && sections.length
+            ? `Welcome back, ${session.displayName}. Open a section below.`
+            : `Welcome back, ${session.displayName}.`
+        }
         actions={<DashboardRefresh />}
       />
+
+      {cards && <SectionCards links={sections} userId={session.userId} />}
 
       {quick.length > 0 && (
         <section>

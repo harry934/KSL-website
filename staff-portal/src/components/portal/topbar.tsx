@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, KeyRound, LogOut, PanelLeft } from "lucide-react";
+import { ChevronDown, KeyRound, LayoutDashboard, LogOut, PanelLeft } from "lucide-react";
+import { cn } from "@/lib/cn";
 import { MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import type { StaffSession } from "@/lib/session";
 import { signOutNow } from "@/lib/sign-out-client";
@@ -15,6 +16,9 @@ const EXTRA_TITLES: Record<string, string> = {
   "/": "Dashboard",
   "/account": "My account",
   "/activity": "Audit log",
+  "/banner": "Banner",
+  "/images": "Website images",
+  "/recycle": "Recycle bin",
 };
 
 function titleFor(pathname: string) {
@@ -28,10 +32,12 @@ function titleFor(pathname: string) {
 export function Topbar({
   session,
   collapsed,
+  showSidebar = true,
   onToggleSidebar,
 }: {
   session: StaffSession;
   collapsed: boolean;
+  showSidebar?: boolean;
   onToggleSidebar: () => void;
 }) {
   const pathname = usePathname();
@@ -60,15 +66,21 @@ export function Topbar({
   return (
     <header className="app-topbar">
       <div className="flex min-w-0 items-center gap-3">
-        <button
-          type="button"
-          className="icon-button"
-          onClick={onToggleSidebar}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          <PanelLeft className="h-4 w-4" />
-        </button>
-        <p className="hidden truncate text-[15px] font-bold text-[#0b1f3a] sm:block">{titleFor(pathname)}</p>
+        {showSidebar ? (
+          <button
+            type="button"
+            className="icon-button"
+            onClick={onToggleSidebar}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <PanelLeft className="h-4 w-4" />
+          </button>
+        ) : pathname !== "/" ? (
+          <Link href="/" className="icon-button" aria-label="Dashboard">
+            <LayoutDashboard className="h-4 w-4" />
+          </Link>
+        ) : null}
+        <p className={cn("truncate text-[15px] font-bold text-[#0b1f3a]", showSidebar && "hidden sm:block")}>{titleFor(pathname)}</p>
       </div>
 
       <PortalSearch />

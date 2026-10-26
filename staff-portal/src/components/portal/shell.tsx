@@ -8,6 +8,7 @@ import { Topbar } from "@/components/portal/topbar";
 import { SessionProvider } from "@/components/portal/session-context";
 import { FeedbackProvider } from "@/components/ui/feedback";
 import { cn } from "@/lib/cn";
+import { usesSidebar } from "@/lib/portal-nav";
 import type { StaffSession } from "@/lib/session";
 
 const COLLAPSE_KEY = "ksl-sidebar-collapsed";
@@ -24,6 +25,7 @@ export function PortalShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const sidebarOn = usesSidebar(session);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT);
@@ -97,7 +99,12 @@ export function PortalShell({
     <SessionProvider session={session}>
       <FeedbackProvider>
         <div
-          className={cn(collapsed && "app-collapsed", mobileOpen && "app-mobile-open", resizing && "is-resizing")}
+          className={cn(
+            sidebarOn && collapsed && "app-collapsed",
+            sidebarOn && mobileOpen && "app-mobile-open",
+            sidebarOn && resizing && "is-resizing",
+            !sidebarOn && "app-no-sidebar"
+          )}
           style={{ "--sidebar-w": `${sidebarWidth}px` } as React.CSSProperties}
         >
           <div className="kenya-stripe" aria-hidden>
@@ -108,28 +115,30 @@ export function PortalShell({
           <Suspense fallback={null}>
             <ActivityIndicators />
           </Suspense>
-          <Sidebar session={session} />
-          <div
-            className={cn("sidebar-resizer", resizing && "is-dragging")}
-            role="separator"
-            aria-orientation="vertical"
-            tabIndex={0}
-            aria-label="Resize sidebar"
-            aria-valuemin={SIDEBAR_MIN}
-            aria-valuemax={SIDEBAR_MAX}
-            aria-valuenow={sidebarWidth}
-            onPointerDown={startResize}
-            onDoubleClick={() => nudgeWidth(SIDEBAR_DEFAULT - widthRef.current)}
-            onKeyDown={(event) => {
-              if (event.key === "ArrowLeft") nudgeWidth(-16);
-              if (event.key === "ArrowRight") nudgeWidth(16);
-              if (event.key === "Home") nudgeWidth(SIDEBAR_MIN - widthRef.current);
-              if (event.key === "End") nudgeWidth(SIDEBAR_MAX - widthRef.current);
-            }}
-          />
-          <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} aria-hidden />
+          {sidebarOn && <Sidebar session={session} />}
+          {sidebarOn && (
+            <div
+              className={cn("sidebar-resizer", resizing && "is-dragging")}
+              role="separator"
+              aria-orientation="vertical"
+              tabIndex={0}
+              aria-label="Resize sidebar"
+              aria-valuemin={SIDEBAR_MIN}
+              aria-valuemax={SIDEBAR_MAX}
+              aria-valuenow={sidebarWidth}
+              onPointerDown={startResize}
+              onDoubleClick={() => nudgeWidth(SIDEBAR_DEFAULT - widthRef.current)}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowLeft") nudgeWidth(-16);
+                if (event.key === "ArrowRight") nudgeWidth(16);
+                if (event.key === "Home") nudgeWidth(SIDEBAR_MIN - widthRef.current);
+                if (event.key === "End") nudgeWidth(SIDEBAR_MAX - widthRef.current);
+              }}
+            />
+          )}
+          {sidebarOn && <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} aria-hidden />}
           <div className="app-main">
-            <Topbar session={session} collapsed={collapsed} onToggleSidebar={toggleSidebar} />
+            <Topbar session={session} collapsed={collapsed} showSidebar={sidebarOn} onToggleSidebar={toggleSidebar} />
             <main className="app-content">{children}</main>
           </div>
         </div>

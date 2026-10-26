@@ -6,27 +6,11 @@ import kslLogo from "../../../public/ksl-logo.png";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { History, ImageIcon, LayoutDashboard, Megaphone, Trash2 } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { MODULE_GROUPS, MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
-import { RECYCLE_MODULES } from "@/lib/recycle-sources";
+import { portalNavGroups } from "@/lib/portal-nav";
 import type { StaffSession } from "@/lib/session";
-import { MODULE_ICONS as ICONS, type IconType } from "@/components/portal/module-icons";
+import { iconForNav, type IconType } from "@/components/portal/module-icons";
 import { useNoticeBadges } from "@/components/portal/use-notice-badges";
-
-function canSee(session: StaffSession, key: ModuleKey) {
-  if (session.isSuperAdmin) return true;
-  if (key === "staff") return false;
-  return session.permissions.some((p) => p.module_key === key && p.can_view);
-}
-
-function canOpenBin(session: StaffSession) {
-  if (session.isSuperAdmin) return true;
-  return session.permissions.some(
-    (permission) =>
-      RECYCLE_MODULES.includes(permission.module_key) && (permission.can_view || permission.can_delete)
-  );
-}
 
 function NavLink({
   href,
@@ -99,49 +83,21 @@ export function Sidebar({ session }: { session: StaffSession }) {
       </div>
 
       <nav className="flex flex-1 flex-col pb-4">
-        <div className="nav-group">
-          <p className="nav-group-label">Overview</p>
-          <NavLink href="/" label="Dashboard" icon={LayoutDashboard} active={isActive("/")} />
-        </div>
-
-        {MODULE_GROUPS.map((group) => {
-          const keys = group.modules.filter((key) => canSee(session, key));
-          if (!keys.length) return null;
-          return (
-            <div key={group.label} className="nav-group">
-              <p className="nav-group-label">{group.label}</p>
-              {keys.map((key) => (
-                <NavLink
-                  key={key}
-                  href={MODULE_ROUTES[key]}
-                  label={MODULE_LABELS[key]}
-                  icon={ICONS[key]}
-                  active={isActive(MODULE_ROUTES[key])}
-                  count={badges[key] ?? 0}
-                />
-              ))}
-              {group.label === "Administration" && canSee(session, "site_settings") && (
-                <>
-                  <NavLink href="/banner" label="Banner" icon={Megaphone} active={isActive("/banner")} />
-                  <NavLink href="/images" label="Website images" icon={ImageIcon} active={isActive("/images")} />
-                </>
-              )}
-            </div>
-          );
-        })}
-
-        {canOpenBin(session) && (
-          <div className="nav-group">
-            <NavLink href="/recycle" label="Recycle bin" icon={Trash2} active={isActive("/recycle")} />
+        {portalNavGroups(session).map((group) => (
+          <div key={group.label ?? group.links[0].href} className="nav-group">
+            {group.label ? <p className="nav-group-label">{group.label}</p> : null}
+            {group.links.map((link) => (
+              <NavLink
+                key={link.href}
+                href={link.href}
+                label={link.label}
+                icon={iconForNav(link)}
+                active={isActive(link.href)}
+                count={link.module ? (badges[link.module] ?? 0) : 0}
+              />
+            ))}
           </div>
-        )}
-
-        {session.isSuperAdmin && (
-          <div className="nav-group">
-            <p className="nav-group-label">Audit</p>
-            <NavLink href="/activity" label="Audit log" icon={History} active={isActive("/activity")} />
-          </div>
-        )}
+        ))}
       </nav>
 
       <p className="sidebar-footer">Ministry of Defence</p>

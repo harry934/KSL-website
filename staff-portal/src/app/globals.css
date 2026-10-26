@@ -194,6 +194,11 @@ body {
   margin-left: var(--sidebar-w-collapsed);
 }
 
+.app-no-sidebar .app-main,
+.app-no-sidebar.app-collapsed .app-main {
+  margin-left: 0;
+}
+
 .app-collapsed .brand-text,
 .app-collapsed .nav-link-label,
 .app-collapsed .nav-group-label,
@@ -503,6 +508,53 @@ body {
   font-size: 13px;
   line-height: 1.4;
   color: #3d4c5f;
+}
+
+.dash-launch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.dash-launch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 76px;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+.dash-launch:hover {
+  border-color: #cfd8e2;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(11, 31, 58, 0.08);
+}
+
+.dash-launch-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: #f4f6f8;
+  color: var(--navy);
+}
+
+.dash-launch-label {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0b1f3a;
+}
+
+.dash-launch-note {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: #6b7785;
 }
 
 .storage-meter {
