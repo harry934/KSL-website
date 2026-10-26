@@ -15,8 +15,8 @@ export default function LoginPage() {
         <span />
         <span />
       </div>
-      <div className="grid min-h-[calc(100vh-6px)] place-items-center px-4 py-9 sm:px-6">
-        <section className="w-full max-w-[500px] rounded-[10px] border border-[#d6dee8] bg-white px-[18px] pb-[18px] pt-[22px] shadow-[0_14px_34px_rgba(11,31,58,0.22)] sm:px-[30px] sm:pb-6 sm:pt-[30px]">
+      <div className="flex min-h-[calc(100vh-6px)] flex-col items-center px-4 py-8 sm:px-6">
+        <section className="my-auto w-full max-w-[500px] rounded-[10px] border border-[#d6dee8] bg-white px-[18px] pb-[18px] pt-[22px] shadow-[0_14px_34px_rgba(11,31,58,0.22)] sm:px-[30px] sm:pb-6 sm:pt-[30px]">
           <Image
             src={kslLogo}
             alt="Kenya Shipyards Limited"
