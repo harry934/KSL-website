@@ -7,7 +7,15 @@ import { Field, Notice } from "@/components/ui/form-bits";
 import { validatePassword, validateUsername, normalizeUsername } from "@/lib/accounts";
 import { Input } from "@/components/ui/input";
 
-export function ChangePasswordForm({ forced = false, changeUsername = false }: { forced?: boolean; changeUsername?: boolean }) {
+export function ChangePasswordForm({
+  forced = false,
+  changeUsername = false,
+  accountUsername = "",
+}: {
+  forced?: boolean;
+  changeUsername?: boolean;
+  accountUsername?: string;
+}) {
   const [current, setCurrent] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -72,6 +80,7 @@ export function ChangePasswordForm({ forced = false, changeUsername = false }: {
       {changeUsername && (
         <Field label="New username" hint="Lowercase letters and numbers. This replaces the username you were given.">
           <Input
+            name="username"
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
             autoCapitalize="none"
@@ -81,11 +90,15 @@ export function ChangePasswordForm({ forced = false, changeUsername = false }: {
           />
         </Field>
       )}
+      {!changeUsername && accountUsername ? (
+        <input className="sr-only" type="text" name="username" autoComplete="username" defaultValue={accountUsername} tabIndex={-1} aria-hidden />
+      ) : null}
       <Field label={forced ? "One-time password" : "Current password"} hint={forced ? "The password the administrator gave you." : undefined}>
-        <PasswordInput autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
+        <PasswordInput name="current-password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
       </Field>
       <Field label="New password">
         <PasswordInput
+          name="new-password"
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -95,6 +108,7 @@ export function ChangePasswordForm({ forced = false, changeUsername = false }: {
       </Field>
       <Field label="Confirm new password">
         <PasswordInput
+          name="confirm-password"
           autoComplete="new-password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}

@@ -34,6 +34,15 @@ type StaffRow = {
 };
 
 type Panel = { kind: "create" } | { kind: "edit"; row: StaffRow } | null;
+type AccountRequest = {
+  id: string;
+  kind: "username" | "password";
+  requestedUsername: string | null;
+  createdAt: string;
+  displayName: string;
+  username: string;
+  email: string;
+};
 type Issued = { username: string; password: string; email: string; phone: string; isNew: boolean; expiresAt: string };
 
 function layoutHint(permissions: PermRow[]) {
@@ -338,12 +347,16 @@ export function StaffManager() {
   const [phone, setPhone] = useState("");
   const [permissions, setPermissions] = useState<PermRow[]>(emptyPerms());
   const [role, setRole] = useState<"agent" | "admin">("agent");
+  const [requests, setRequests] = useState<AccountRequest[]>([]);
+  const [reasons, setReasons] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/staff");
+    const [res, requestRes] = await Promise.all([fetch("/api/staff"), fetch("/api/staff/requests")]);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) setError(data.error ?? "Could not load the staff list.");
     else setStaff(data.staff);
+    const requestData = await requestRes.json().catch(() => ({}));
+    if (requestRes.ok) setRequests(requestData.requests ?? []);
     setLoading(false);
   }, []);
 
@@ -442,6 +455,39 @@ export function StaffManager() {
     }
   }
 
+  async function approveUsername(request: AccountRequest) {
+    const data = await run(() => sendJson("/api/staff/requests", "POST", { id: request.id, action: "approve-username" }));
+    if (data) toast(`${request.displayName || request.username} can now sign in as @${request.requestedUsername}.`);
+    load();
+  }
+
+  async function sendRequestedPassword(request: AccountRequest) {
+    const data = await run(() => sendJson("/api/staff/requests", "POST", { id: request.id, action: "approve-password" }));
+    if (!data) return;
+    setIssued({
+      username: data.username,
+      password: data.oneTimePassword,
+      email: data.email ?? "",
+      phone: "",
+      isNew: false,
+      expiresAt: data.expiresAt,
+    });
+    load();
+  }
+
+  async function rejectRequest(request: AccountRequest) {
+    const reason = (reasons[request.id] ?? "").trim();
+    if (!reason) {
+      setError("Write a reason for the rejection.");
+      return;
+    }
+    const ok = await run(() => sendJson("/api/staff/requests", "POST", { id: request.id, action: "reject", reason }));
+    if (ok) {
+      toast("The request was rejected.");
+      load();
+    }
+  }
+
   async function resetPassword(row: StaffRow) {
     const ok = await confirm({
       title: `Give ${row.display_name || row.username} a new one-time password?`,
@@ -521,6 +567,50 @@ export function StaffManager() {
 
   return (
     <div className="flex flex-col gap-4">
+      {requests.length > 0 && !issued && (
+        <section className="ksl-card p-5">
+          <h2 className="text-[15px] font-bold text-[#0b1f3a]">Requests</h2>
+          <p className="mt-1 text-[13.5px] text-[#5b6775]">
+            Username changes are approved only when the name is free. A password request is answered by sending a new one-time password.
+          </p>
+          <ul className="mt-4 divide-y divide-[#eef1f4]">
+            {requests.map((request) => (
+              <li key={request.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0">
+                <div>
+                  <p className="text-[14px] font-semibold text-[#0b1f3a]">
+                    {request.displayName || request.username}
+                    <span className="font-normal text-[#6b7785]"> @{request.username}</span>
+                  </p>
+                  <p className="text-[13.5px] text-[#3d4c5f]">
+                    {request.kind === "username"
+                      ? `Wants to sign in as @${request.requestedUsername}.`
+                      : "Forgot their password and is waiting for a new one."}
+                  </p>
+                </div>
+                <Input
+                  value={reasons[request.id] ?? ""}
+                  onChange={(e) => setReasons((current) => ({ ...current, [request.id]: e.target.value }))}
+                  placeholder="Reason, if you reject this"
+                />
+                <div className="flex flex-wrap gap-2">
+                  {request.kind === "username" ? (
+                    <Button onClick={() => approveUsername(request)} disabled={saving}>
+                      Approve
+                    </Button>
+                  ) : (
+                    <Button onClick={() => sendRequestedPassword(request)} disabled={saving}>
+                      Send a new password
+                    </Button>
+                  )}
+                  <Button variant="secondary" onClick={() => rejectRequest(request)} disabled={saving}>
+                    Reject
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {!panel && !issued && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Button onClick={openCreate}>

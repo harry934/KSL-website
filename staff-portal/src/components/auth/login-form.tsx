@@ -14,6 +14,9 @@ export function LoginForm({ notice }: { notice?: string | null }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [forgot, setForgot] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState<string | null>(null);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -56,6 +59,28 @@ export function LoginForm({ notice }: { notice?: string | null }) {
     window.location.href = "/";
   }
 
+  async function onForgot() {
+    setError(null);
+    setForgotMessage(null);
+    if (!username.trim()) {
+      setError("Enter the username you sign in with.");
+      return;
+    }
+    setForgotLoading(true);
+    const res = await fetch("/api/auth/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username }),
+    }).catch(() => null);
+    const json = res ? await res.json().catch(() => ({})) : {};
+    setForgotLoading(false);
+    if (!res || !res.ok) {
+      setError(json.error ?? "Could not send the request. Please try again.");
+      return;
+    }
+    setForgotMessage(json.message ?? "Your request has been sent. Wait for an email or message from an administrator.");
+  }
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
@@ -64,6 +89,7 @@ export function LoginForm({ notice }: { notice?: string | null }) {
         </label>
         <Input
           id="login-username"
+          name="username"
           type="text"
           autoComplete="username"
           autoCapitalize="none"
@@ -80,6 +106,7 @@ export function LoginForm({ notice }: { notice?: string | null }) {
         </label>
         <PasswordInput
           id="login-password"
+          name="current-password"
           autoComplete="current-password"
           required
           disabled={loading}
@@ -89,12 +116,34 @@ export function LoginForm({ notice }: { notice?: string | null }) {
       </div>
       {notice && <Notice kind="info">{notice}</Notice>}
       {error && <Notice kind="error">{error}</Notice>}
-      <Button type="submit" className="w-full" disabled={loading || passkeyLoading} aria-busy={loading}>
+      {forgotMessage && <Notice kind="info">{forgotMessage}</Notice>}
+      <Button type="submit" className="w-full" disabled={loading || passkeyLoading || forgotLoading} aria-busy={loading}>
         {loading ? "Signing in…" : "Sign in"}
       </Button>
-      <Button type="button" variant="secondary" className="w-full" disabled={loading || passkeyLoading} onClick={onPasskey}>
+      <Button type="button" variant="secondary" className="w-full" disabled={loading || passkeyLoading || forgotLoading} onClick={onPasskey}>
         {passkeyLoading ? "Waiting for your passkey…" : "Sign in with a passkey"}
       </Button>
+      {forgot ? (
+        <div className="space-y-3 border-t border-[#eef1f4] pt-3">
+          <p className="text-[13.5px] text-[#5b6775]">
+            An administrator will send a new password by email or message. You will need to wait for that. The username above is the one the request uses.
+          </p>
+          <Button type="button" className="w-full" disabled={loading || forgotLoading} onClick={onForgot}>
+            {forgotLoading ? "Sending…" : "Request a new password"}
+          </Button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="block w-full text-center text-[13.5px] font-semibold text-[#0b1f3a] underline"
+          onClick={() => {
+            setError(null);
+            setForgot(true);
+          }}
+        >
+          Forgot password?
+        </button>
+      )}
     </form>
   );
 }

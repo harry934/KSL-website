@@ -54,7 +54,7 @@ export default async function PortalLayout({ children }: { children: React.React
         }
       >
         <SessionWatch />
-        <ChangePasswordForm forced changeUsername={firstSignIn} />
+        <ChangePasswordForm forced changeUsername={firstSignIn} accountUsername={session.username} />
         <div className="mt-4 text-center">
           <SignOutButton />
         </div>

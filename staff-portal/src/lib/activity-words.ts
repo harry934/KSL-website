@@ -57,6 +57,12 @@ export function describeActivity(row: {
   }
   if (row.action === "change password") return "changed their password";
   if (row.action === "update profile") return "updated their details";
+  if (row.action === "request username") {
+    return username ? `asked to sign in as @${username}` : "asked for a new username";
+  }
+  if (row.action === "request password") return "asked for a new password";
+  if (row.action === "approve username") return username ? `approved the username @${username}` : "approved a username change";
+  if (row.action === "reject request") return "rejected an account request";
 
   const verb = ACTION_WORDS[row.action] ?? row.action.replace(/_/g, " ");
   if (row.entity_type === "admin_profile") {

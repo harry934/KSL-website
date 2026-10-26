@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
     url.search = "";
     return NextResponse.redirect(url);
   }
-  if (pathname === "/api/auth/sign-in" || pathname === "/api/auth/passkey") {
+  if (pathname === "/api/auth/sign-in" || pathname === "/api/auth/passkey" || pathname === "/api/auth/forgot-password") {
     return NextResponse.next();
   }
 
