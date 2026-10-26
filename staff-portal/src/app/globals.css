@@ -526,18 +526,23 @@ body {
 
 .shipyard-mark {
   position: absolute;
-  right: -8px;
-  bottom: 0;
+  right: 0;
+  bottom: 8px;
   z-index: 0;
-  width: min(520px, 78%);
+  width: min(440px, 72%);
   height: auto;
-  color: var(--navy);
-  opacity: 0.16;
+  color: #0a3e95;
+  opacity: 0.11;
   pointer-events: none;
 }
 
-.shipyard-mark-gold {
-  stroke: var(--gold);
+.shipyard-mark path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
 }
 
 .dash-launch-grid {
@@ -546,49 +551,16 @@ body {
   gap: 12px;
 }
 
-.dash-launch {
+.dash-section {
   display: flex;
   align-items: center;
-  gap: 14px;
-  min-height: 84px;
-  padding: 16px;
+  gap: 12px;
+  padding: 14px 16px;
   text-decoration: none;
-  background: #fff;
-  box-shadow: inset 3px 0 0 rgba(197, 160, 40, 0.9), 0 1px 2px rgba(11, 31, 58, 0.04);
 }
 
-.dash-launch:hover {
-  border-color: #e4d7a8;
-  transform: translateY(-1px);
-  box-shadow: inset 3px 0 0 var(--gold), 0 10px 22px rgba(11, 31, 58, 0.08);
-}
-
-.dash-launch-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  border-radius: 10px;
-  border: 1px solid #e6ebf1;
-  background: linear-gradient(180deg, #fff, #f3f6f9);
-  color: var(--navy);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
-}
-
-.dash-launch-label {
-  display: block;
-  font-size: 15px;
-  font-weight: 700;
-  color: #0b1f3a;
-}
-
-.dash-launch-note {
-  display: block;
-  margin-top: 2px;
-  font-size: 12.5px;
-  color: #6b7785;
+.dash-section:hover {
+  border-color: #cfd8e2;
 }
 
 .storage-meter {

@@ -33,13 +33,11 @@ export function SectionCards({ links, userId }: { links: PortalNavLink[]; userId
           const count = link.module ? (badges[link.module] ?? 0) : 0;
           const note = noteFor(link);
           return (
-            <Link key={link.href} href={link.href} className="ksl-card dash-launch">
-              <span className="dash-launch-icon" aria-hidden>
-                <Icon className="h-5 w-5" />
-              </span>
+            <Link key={link.href} href={link.href} className="ksl-card dash-section">
+              <Icon className="h-4 w-4 shrink-0 text-[#5b6775]" aria-hidden />
               <span className="min-w-0 flex-1">
-                <span className="dash-launch-label">{link.label}</span>
-                {note ? <span className="dash-launch-note">{note}</span> : null}
+                <span className="block text-[14px] font-semibold text-[#0b1f3a]">{link.label}</span>
+                {note ? <span className="mt-0.5 block text-[12.5px] text-[#6b7785]">{note}</span> : null}
               </span>
               {count > 0 ? (
                 <span className="nav-badge" aria-label={`${count} unread`}>
