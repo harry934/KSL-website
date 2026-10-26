@@ -4,6 +4,7 @@ import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accoun
 import { authEmailFor, generateOneTimePassword, oneTimePasswordExpiry, usernameChoices } from "@/lib/auth-server";
 import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 import { avatarUrl } from "@/lib/session";
+import { parseRoleTitle } from "@/lib/staff-role";
 import { NextRequest, NextResponse } from "next/server";
 
 type PermInput = {
@@ -46,7 +47,7 @@ export async function GET() {
   const { data, error: dbError } = await admin
     .from("admin_profiles")
     .select(
-      "id, username, display_name, contact_email, is_super_admin, is_active, must_change_password, avatar_path, created_at, permissions:admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
+      "id, username, display_name, contact_email, is_super_admin, role_title, is_active, must_change_password, avatar_path, created_at, permissions:admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
     )
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -72,6 +73,9 @@ export async function POST(req: NextRequest) {
   if (!displayName) return NextResponse.json({ error: "Write the agent's full name." }, { status: 400 });
   const emailProblem = validateEmail(contactEmail ?? "");
   if (emailProblem) return NextResponse.json({ error: emailProblem }, { status: 400 });
+  const superAdmin = body.superAdmin === true;
+  const role = superAdmin ? { title: null, error: null } : parseRoleTitle(body.roleTitle);
+  if (role.error) return NextResponse.json({ error: role.error }, { status: 400 });
 
   const admin = createAdminClient();
   let username = "";
@@ -98,13 +102,13 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = created.user.id;
-  const superAdmin = body.superAdmin === true;
   const expiresAt = oneTimePasswordExpiry();
   const { error: profileError } = await admin.from("admin_profiles").insert({
     id: userId,
     username,
     contact_email: contactEmail,
     display_name: displayName,
+    role_title: role.title,
     is_super_admin: superAdmin,
     is_active: true,
     must_change_password: true,
@@ -189,6 +193,9 @@ export async function PATCH(req: NextRequest) {
     const contactEmail = String(body.email ?? "").trim().toLowerCase() || null;
     const problem = validateUsername(username) ?? validateEmail(contactEmail ?? "");
     if (problem) return NextResponse.json({ error: problem }, { status: 400 });
+    const willBeAdmin = body.superAdmin === true;
+    const role = willBeAdmin ? { title: null, error: null } : parseRoleTitle(body.roleTitle);
+    if (role.error) return NextResponse.json({ error: role.error }, { status: 400 });
     if (username !== target.username) {
       const { data: taken } = await admin.from("admin_profiles").select("id").eq("username", username).neq("id", id).maybeSingle();
       if (taken) return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
@@ -203,7 +210,7 @@ export async function PATCH(req: NextRequest) {
     }
     await admin
       .from("admin_profiles")
-      .update({ username, display_name: displayName, contact_email: contactEmail })
+      .update({ username, display_name: displayName, contact_email: contactEmail, role_title: role.title })
       .eq("id", id);
   } else if (action === "reset_password") {
     const password = generateOneTimePassword();

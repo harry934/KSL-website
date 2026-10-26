@@ -36,7 +36,12 @@ export function PasswordRequest({
           Waiting for an administrator. Your password stays as it is until they send you a one-time password.
         </Notice>
       )}
-      {state?.status === "rejected" && state.reason ? <Notice kind="error">{state.reason}</Notice> : null}
+      {state?.status === "rejected" ? (
+        <Notice kind="error">
+          {state.reason ? `${state.reason} ` : ""}
+          Your password was not changed.
+        </Notice>
+      ) : null}
       <Button type="button" onClick={send} disabled={sending || waiting}>
         {sending ? "Sending…" : waiting ? "Request sent" : "Request a password change"}
       </Button>

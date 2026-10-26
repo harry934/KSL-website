@@ -24,6 +24,7 @@ export type StaffSession = {
   username: string;
   email: string;
   displayName: string;
+  roleTitle: string | null;
   isSuperAdmin: boolean;
   isActive: boolean;
   mustChangePassword: boolean;
@@ -36,6 +37,7 @@ type ProfileRow = {
   display_name: string;
   username: string | null;
   contact_email: string | null;
+  role_title: string | null;
   is_super_admin: boolean;
   is_active: boolean;
   deleted_at?: string | null;
@@ -66,7 +68,7 @@ export const staffGate = cache(async (): Promise<StaffGate> => {
   const { data } = await createAdminClient()
     .from("admin_profiles")
     .select(
-      "display_name, username, contact_email, is_super_admin, is_active, deleted_at, must_change_password, must_change_username, avatar_path, admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
+      "display_name, username, contact_email, role_title, is_super_admin, is_active, deleted_at, must_change_password, must_change_username, avatar_path, admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -84,6 +86,7 @@ export const staffGate = cache(async (): Promise<StaffGate> => {
       username: profile.username ?? "",
       email,
       displayName: profile.display_name || profile.username || email || "Staff",
+      roleTitle: profile.role_title,
       isSuperAdmin: profile.is_super_admin,
       isActive: profile.is_active,
       mustChangePassword: profile.must_change_password,

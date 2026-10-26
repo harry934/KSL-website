@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { ChevronDown, KeyRound, LayoutDashboard, LogOut, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
-import { roleTitle } from "@/lib/staff-role";
+import { roleLabel } from "@/lib/staff-role";
 import type { StaffSession } from "@/lib/session";
 import { signOutNow } from "@/lib/sign-out-client";
 import { NotificationBell } from "@/components/portal/notification-bell";
@@ -62,7 +62,7 @@ export function Topbar({
     };
   }, [menuOpen]);
 
-  const role = roleTitle(session.isSuperAdmin, session.permissions);
+  const role = roleLabel(session.isSuperAdmin, session.roleTitle);
 
   return (
     <header className="app-topbar">

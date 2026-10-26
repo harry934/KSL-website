@@ -10,7 +10,7 @@ import { SearchBox, matchesSearch } from "@/components/ui/list-tools";
 import { UserAvatar } from "@/components/portal/user-avatar";
 import { usePortalSession } from "@/components/portal/session-context";
 import { MODULE_GROUPS, MODULE_LABELS, type ModuleKey } from "@/lib/modules";
-import { STAFF_ROLES, levelForRole, roleFromAccess, roleTitle, type StaffRole } from "@/lib/staff-role";
+import { parseRoleTitle, roleLabel } from "@/lib/staff-role";
 import { SIDEBAR_ITEM_LIMIT, permissionNavLinks } from "@/lib/portal-nav";
 import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
 import { sendJson } from "@/lib/upload-client";
@@ -28,6 +28,7 @@ type StaffRow = {
   display_name: string;
   contact_email: string | null;
   is_super_admin: boolean;
+  role_title: string | null;
   is_active: boolean;
   must_change_password: boolean;
   avatar_url: string | null;
@@ -191,23 +192,32 @@ function AccessEditor({
   );
 }
 
-function RoleChoice({ value, onChange }: { value: StaffRole; onChange: (next: StaffRole) => void }) {
+function RoleFields({
+  isAdmin,
+  jobTitle,
+  onAdmin,
+  onTitle,
+}: {
+  isAdmin: boolean;
+  jobTitle: string;
+  onAdmin: (next: boolean) => void;
+  onTitle: (next: string) => void;
+}) {
   return (
-    <fieldset>
-      <legend className="mb-2 text-[13px] font-semibold text-[#1f2933]">Role</legend>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {STAFF_ROLES.map((item) => (
-          <label
-            key={item.id}
-            className={cn("rounded-[10px] border px-3 py-3", value === item.id ? "border-[#0b1f3a] bg-[#f4f7fb]" : "border-[#e3e8ee]")}
-          >
-            <input className="mr-2" type="radio" name="staff-role" checked={value === item.id} onChange={() => onChange(item.id)} />
-            <span className="font-semibold text-[#0b1f3a]">{item.label}</span>
-            <span className="mt-1 block text-[12.5px] text-[#6b7785]">{item.detail}</span>
-          </label>
-        ))}
-      </div>
-    </fieldset>
+    <div className="grid gap-3">
+      <label className="flex items-start gap-2 text-[14px] text-[#0b1f3a]">
+        <input type="checkbox" className="mt-1" checked={isAdmin} onChange={(event) => onAdmin(event.target.checked)} />
+        <span>
+          <span className="font-semibold">Administrator</span>
+          <span className="mt-0.5 block text-[12.5px] text-[#6b7785]">Every section, including other staff.</span>
+        </span>
+      </label>
+      {!isAdmin && (
+        <Field label="Role" hint="Type the role. Then set what they can do in each section.">
+          <Input value={jobTitle} onChange={(event) => onTitle(event.target.value)} placeholder="e.g. News officer" maxLength={40} required />
+        </Field>
+      )}
+    </div>
   );
 }
 
@@ -349,7 +359,8 @@ export function StaffManager() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [permissions, setPermissions] = useState<PermRow[]>(emptyPerms());
-  const [role, setRole] = useState<StaffRole>("custom");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [jobTitle, setJobTitle] = useState("");
   const [requests, setRequests] = useState<AccountRequest[]>([]);
   const [reasons, setReasons] = useState<Record<string, string>>({});
 
@@ -367,16 +378,8 @@ export function StaffManager() {
     load();
   }, [load]);
 
-  function chooseRole(next: StaffRole) {
-    setRole(next);
-    const level = levelForRole(next);
-    if (!level) return;
-    setPermissions(emptyPerms().map((row) => applyLevel(row, level)));
-  }
-
   function editAccess(next: PermRow[]) {
     setPermissions(next);
-    setRole(roleFromAccess(false, next));
   }
 
   function openCreate() {
@@ -385,7 +388,8 @@ export function StaffManager() {
     setEmail("");
     setPhone("");
     setPermissions(emptyPerms());
-    setRole("custom");
+    setIsAdmin(false);
+    setJobTitle("");
     setError(null);
     setIssued(null);
     setPanel({ kind: "create" });
@@ -397,7 +401,8 @@ export function StaffManager() {
     setEmail(row.contact_email ?? "");
     const nextPermissions = permsFrom(row);
     setPermissions(nextPermissions);
-    setRole(roleFromAccess(row.is_super_admin, nextPermissions));
+    setIsAdmin(row.is_super_admin);
+    setJobTitle(row.role_title ?? "");
     setError(null);
     setIssued(null);
     setPanel({ kind: "edit", row });
@@ -427,8 +432,13 @@ export function StaffManager() {
       setError(problem);
       return;
     }
+    const role = isAdmin ? { title: null, error: null } : parseRoleTitle(jobTitle);
+    if (role.error) {
+      setError(role.error);
+      return;
+    }
     const data = await run(() =>
-      sendJson("/api/staff", "POST", { displayName, email, permissions, superAdmin: role === "admin" })
+      sendJson("/api/staff", "POST", { displayName, email, permissions, superAdmin: isAdmin, roleTitle: role.title })
     );
     if (data) {
       setPanel(null);
@@ -449,17 +459,18 @@ export function StaffManager() {
     if (panel?.kind !== "edit") return;
     const id = panel.row.id;
     const name = normalizeUsername(username);
-    const problem = validateUsername(name) ?? validateEmail(email.trim());
+    const role = isAdmin ? { title: null, error: null } : parseRoleTitle(jobTitle);
+    const problem = validateUsername(name) ?? validateEmail(email.trim()) ?? role.error;
     if (problem) {
       setError(problem);
       return;
     }
     const ok = await run(async () => {
-      await sendJson("/api/staff", "PATCH", { id, action: "profile", username: name, displayName, email });
-      if ((role === "admin") !== panel.row.is_super_admin) {
-        await sendJson("/api/staff", "PATCH", { id, action: "set_role", superAdmin: role === "admin" });
+      await sendJson("/api/staff", "PATCH", { id, action: "profile", username: name, displayName, email, roleTitle: role.title, superAdmin: isAdmin });
+      if (isAdmin !== panel.row.is_super_admin) {
+        await sendJson("/api/staff", "PATCH", { id, action: "set_role", superAdmin: isAdmin });
       }
-      if (role !== "admin") {
+      if (!isAdmin) {
         await sendJson("/api/staff", "PATCH", { id, action: "permissions", permissions });
       }
       return true;
@@ -499,7 +510,7 @@ export function StaffManager() {
     }
     const ok = await run(() => sendJson("/api/staff/requests", "POST", { id: request.id, action: "reject", reason }));
     if (ok) {
-      toast("The request was rejected.");
+      toast(request.kind === "password" ? "Rejected. Their password is still the same." : "The request was rejected.");
       load();
     }
   }
@@ -559,7 +570,7 @@ export function StaffManager() {
   }
 
   const shownStaff = staff.filter((row) =>
-    matchesSearch(query, row.display_name, row.username, row.contact_email, roleTitle(row.is_super_admin, row.permissions))
+    matchesSearch(query, row.display_name, row.username, row.contact_email, roleLabel(row.is_super_admin, row.role_title))
   );
 
   if (loading) {
@@ -600,7 +611,7 @@ export function StaffManager() {
                   <p className="text-[13.5px] text-[#3d4c5f]">
                     {request.kind === "username"
                       ? `Wants to sign in as @${request.requestedUsername}.`
-                      : "Asked for a password change. Send a one-time password before they can choose a new one."}
+                      : "Asked for a password change. Rejecting leaves their password as it is. Sending a new password is what changes it."}
                   </p>
                 </div>
                 <Input
@@ -643,15 +654,15 @@ export function StaffManager() {
 
       {panel?.kind === "create" && (
         <form onSubmit={submitCreate}>
-          <FormSection title="New staff account" description="A username and one-time password are created when you save. The role sets every section. You can still adjust a single section afterwards.">
+          <FormSection title="New staff account" description="A username and one-time password are created when you save. Type their role, then set each section.">
             <FieldGrid className="lg:grid-cols-3">
               {nameAndEmail}
               <Field label="Mobile number" optional hint="Used if you send the sign-in details on WhatsApp. You can still pick a contact if this is blank.">
                 <Input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="e.g. 0712 345 678" />
               </Field>
             </FieldGrid>
-            <RoleChoice value={role} onChange={chooseRole} />
-            {role === "admin" ? (
+            <RoleFields isAdmin={isAdmin} jobTitle={jobTitle} onAdmin={setIsAdmin} onTitle={setJobTitle} />
+            {isAdmin ? (
               <p className="text-[13.5px] text-[#5b6775]">This person will be able to open, change, publish, and remove items in every section, and manage other staff.</p>
             ) : (
               <div>
@@ -687,9 +698,9 @@ export function StaffManager() {
               </Field>
               {nameAndEmail}
             </FieldGrid>
-            <RoleChoice value={role} onChange={chooseRole} />
-            {role === "admin" ? (
-              <p className="text-[13.5px] text-[#5b6775]">Administrators can do everything. Choose another role to set the sections.</p>
+            <RoleFields isAdmin={isAdmin} jobTitle={jobTitle} onAdmin={setIsAdmin} onTitle={setJobTitle} />
+            {isAdmin ? (
+              <p className="text-[13.5px] text-[#5b6775]">Administrators can do everything. Clear Administrator to type a role and set the sections.</p>
             ) : (
               <div>
                 <p className="mb-2 text-[13px] font-semibold text-[#1f2933]">Access for every section</p>
@@ -745,7 +756,7 @@ export function StaffManager() {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-[#5b6775]">{roleTitle(row.is_super_admin, row.permissions)}</td>
+                <td className="px-4 py-3 text-[#5b6775]">{roleLabel(row.is_super_admin, row.role_title)}</td>
                 <td className="px-4 py-3">
                   <span
                     className={cn(

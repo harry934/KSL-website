@@ -132,6 +132,7 @@ export async function rejectAccountRequest(actorId: string, id: string, reason: 
     .eq("id", id)
     .eq("status", "pending");
   if (error) return { error: "Could not reject the request. Please try again.", status: 500 as const };
+  // A rejected password request leaves the password, sign-in, and access exactly as they are.
   await logActivity(actorId, "staff", "reject request", "admin_profile", row.user_id, { kind: row.kind, reason: text });
   return { error: null, status: 200 as const };
 }
