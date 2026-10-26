@@ -65,9 +65,9 @@ export async function saveUsernameRequest(userId: string, currentUsername: strin
 }
 
 /** Records a password request for a real, active account. Unknown names are ignored. */
-export async function savePasswordRequest(username: string) {
+export async function savePasswordRequest(username: string): Promise<{ error: string | null }> {
   const name = normalizeUsername(username);
-  if (!name) return;
+  if (!name) return { error: null };
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from("admin_profiles")
@@ -76,7 +76,7 @@ export async function savePasswordRequest(username: string) {
     .eq("is_active", true)
     .is("deleted_at", null)
     .maybeSingle();
-  if (!profile) return;
+  if (!profile) return { error: null };
 
   const { data: pending } = await admin
     .from("staff_account_requests")
@@ -85,14 +85,23 @@ export async function savePasswordRequest(username: string) {
     .eq("kind", "password")
     .eq("status", "pending")
     .maybeSingle();
-  if (pending) return;
+  if (pending?.id) {
+    const { error } = await admin
+      .from("staff_account_requests")
+      .update({ created_at: new Date().toISOString(), reason: null })
+      .eq("id", pending.id);
+    if (error) return { error: "Could not send the request. Please try again." };
+  } else {
+    const { error } = await admin.from("staff_account_requests").insert({
+      user_id: profile.id,
+      kind: "password",
+      status: "pending",
+    });
+    if (error) return { error: "Could not send the request. Please try again." };
+  }
 
-  await admin.from("staff_account_requests").insert({
-    user_id: profile.id,
-    kind: "password",
-    status: "pending",
-  });
   await logActivity(profile.id, "staff", "request password", "admin_profile", profile.id);
+  return { error: null };
 }
 
 async function pendingRequest(id: string) {

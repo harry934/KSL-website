@@ -9,6 +9,12 @@ import { logActivity } from "@/lib/api-auth";
 export async function POST(req: NextRequest) {
   const session = await getStaffSession();
   if (!session) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
+  if (!session.isSuperAdmin && !session.mustChangePassword) {
+    return NextResponse.json(
+      { error: "Ask an administrator to approve a password change first." },
+      { status: 403 }
+    );
+  }
 
   const body = await req.json().catch(() => ({}));
   const currentPassword = String(body.currentPassword ?? "");

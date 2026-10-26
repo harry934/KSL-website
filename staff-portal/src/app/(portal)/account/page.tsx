@@ -1,5 +1,6 @@
 import { AvatarField } from "@/components/account/avatar-field";
 import { ChangePasswordForm } from "@/components/account/change-password-form";
+import { PasswordRequest } from "@/components/account/password-request";
 import { PasskeysField } from "@/components/account/passkeys-field";
 import { ProfileForm } from "@/components/account/profile-form";
 import { PageHeader } from "@/components/portal/page-header";
@@ -18,16 +19,28 @@ export default async function AccountPage() {
   const seen = !error && data?.seen_at
     ? new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Nairobi" }).format(new Date(data.seen_at))
     : null;
-  const { data: usernameRequest } = session.isSuperAdmin
-    ? { data: null }
-    : await admin
-        .from("staff_account_requests")
-        .select("requested_username, status, reason")
-        .eq("user_id", session.userId)
-        .eq("kind", "username")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+  const [usernameResult, passwordResult] = session.isSuperAdmin
+    ? [{ data: null }, { data: null }]
+    : await Promise.all([
+        admin
+          .from("staff_account_requests")
+          .select("requested_username, status, reason")
+          .eq("user_id", session.userId)
+          .eq("kind", "username")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        admin
+          .from("staff_account_requests")
+          .select("status, reason")
+          .eq("user_id", session.userId)
+          .eq("kind", "password")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+  const usernameRequest = usernameResult.data;
+  const passwordRequest = passwordResult.data?.status === "approved" ? null : passwordResult.data;
 
   return (
     <>
@@ -72,8 +85,19 @@ export default async function AccountPage() {
             }
           />
         </FormSection>
-        <FormSection title="Change password">
-          <ChangePasswordForm accountUsername={session.username} />
+        <FormSection
+          title="Change password"
+          description={
+            session.isSuperAdmin
+              ? undefined
+              : "An administrator has to approve this before your password can change."
+          }
+        >
+          {session.isSuperAdmin ? (
+            <ChangePasswordForm accountUsername={session.username} />
+          ) : (
+            <PasswordRequest request={passwordRequest} />
+          )}
         </FormSection>
         <FormSection
           title="Passkey"

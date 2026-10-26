@@ -5,7 +5,7 @@ import type { ModuleKey } from "@/lib/modules";
 import type { NoticeItem } from "@/lib/notifications";
 import { SEEN_EVENT, readDismissed, readSeen } from "@/lib/notification-seen";
 
-const POLL_MS = 60_000;
+const POLL_MS = 15_000;
 
 /** Unread count per sidebar section, using the same rows as the notification bell. */
 export function useNoticeBadges(userId: string) {
@@ -49,7 +49,12 @@ export function useNoticeBadges(userId: string) {
       if (!mark.module) continue;
       if (mark.module === "messages" && mark.kind !== "message") continue;
       if (dismissed.includes(mark.id)) continue;
-      const unread = mark.kind === "message" ? !!mark.unread : new Date(mark.createdAt).getTime() > seenAt;
+      const unread =
+        mark.kind === "message"
+          ? !!mark.unread
+          : mark.kind === "request"
+            ? true
+            : new Date(mark.createdAt).getTime() > seenAt;
       if (!unread) continue;
       counts[mark.module] = (counts[mark.module] ?? 0) + 1;
     }

@@ -7,7 +7,7 @@ import { dismissNotices, readDismissed, readSeen, SEEN_EVENT } from "@/lib/notif
 
 type Item = {
   id: string;
-  kind?: "activity" | "message";
+  kind?: "activity" | "message" | "request";
   who: string;
   text: string;
   area: string | null;
@@ -16,7 +16,7 @@ type Item = {
   unread?: boolean;
 };
 
-const POLL_MS = 60_000;
+const POLL_MS = 15_000;
 
 function timeAgo(iso: string) {
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -61,11 +61,16 @@ export function NotificationBell({ userId }: { userId: string }) {
       setDismissed(readDismissed(userId));
     }
     window.addEventListener(SEEN_EVENT, onSeen);
+    function onVisible() {
+      if (document.visibilityState === "visible") load();
+    }
+    document.addEventListener("visibilitychange", onVisible);
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") load();
     }, POLL_MS);
     return () => {
       window.removeEventListener(SEEN_EVENT, onSeen);
+      document.removeEventListener("visibilitychange", onVisible);
       window.clearInterval(timer);
     };
   }, [load, userId]);
@@ -92,15 +97,18 @@ export function NotificationBell({ userId }: { userId: string }) {
 
   const isUnread = (item: Item) => {
     if (dismissed.includes(item.id)) return false;
+    if (item.kind === "request") return true;
     return item.kind === "message" ? !!item.unread : new Date(item.createdAt).getTime() > seenAt;
   };
-  const changes = items.filter((item) => item.kind !== "message" && isUnread(item)).length;
+  const requests = items.filter((item) => item.kind === "request" && isUnread(item)).length;
   const messages = items.filter((item) => item.kind === "message" && isUnread(item)).length;
-  const unread = changes + messages;
+  const changes = items.filter((item) => item.kind !== "message" && item.kind !== "request" && isUnread(item)).length;
+  const unread = changes + messages + requests;
 
   function summary() {
     if (!unread) return "You are up to date";
     const parts: string[] = [];
+    if (requests) parts.push(`${requests} new ${requests === 1 ? "request" : "requests"}`);
     if (changes) parts.push(`${changes} new ${changes === 1 ? "change" : "changes"}`);
     if (messages) parts.push(`${messages} new ${messages === 1 ? "message" : "messages"}`);
     return parts.join(", ");
@@ -145,6 +153,10 @@ export function NotificationBell({ userId }: { userId: string }) {
         body: JSON.stringify({ id }),
       }).catch(() => undefined);
     }
+    if (item.kind === "request") {
+      window.location.assign(item.href || "/staff");
+      return;
+    }
     if (item.href && item.href !== window.location.pathname + window.location.search) {
       window.location.assign(item.href);
       return;
@@ -185,7 +197,7 @@ export function NotificationBell({ userId }: { userId: string }) {
             {!loaded && <p className="px-4 py-5 text-center text-[13px] text-[#6b7785]">Loading…</p>}
             {loaded && items.length === 0 && (
               <p className="px-4 py-6 text-center text-[13px] text-[#6b7785]">
-                No new messages.
+                Nothing new.
               </p>
             )}
             {items.map((item) => (

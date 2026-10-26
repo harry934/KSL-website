@@ -600,7 +600,7 @@ export function StaffManager() {
                   <p className="text-[13.5px] text-[#3d4c5f]">
                     {request.kind === "username"
                       ? `Wants to sign in as @${request.requestedUsername}.`
-                      : "Forgot their password and is waiting for a new one."}
+                      : "Asked for a password change. Send a one-time password before they can choose a new one."}
                   </p>
                 </div>
                 <Input
