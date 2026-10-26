@@ -1,44 +1,47 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import { dismissNotices, readDismissed, readSeen, SEEN_EVENT } from "@/lib/notification-seen";
+import { NotificationCenter, type NotificationIcon, type NotificationItem, type NotificationTone } from "@/components/ui/notification-center";
 
 type Item = {
   id: string;
-  kind?: "activity" | "message" | "request";
+  kind?: "activity" | "message" | "request" | "watch";
   who: string;
   text: string;
   area: string | null;
   href: string;
   createdAt: string;
   unread?: boolean;
+  icon?: NotificationIcon;
+  tone?: NotificationTone;
+  source?: string;
+  time?: string;
 };
 
 const POLL_MS = 15_000;
 
 function timeAgo(iso: string) {
-  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return "";
+  const minutes = Math.round((Date.now() - then) / 60000);
   if (minutes < 1) return "Just now";
   if (minutes < 60) return `${minutes} min ago`;
   const hours = Math.round(minutes / 60);
   if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
   const days = Math.round(hours / 24);
-  if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
+  if (days < 14) return `${days} day${days === 1 ? "" : "s"} ago`;
   return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "Africa/Nairobi" }).format(new Date(iso));
 }
 
 export function NotificationBell({ userId }: { userId: string }) {
-  const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [seenAt, setSeenAt] = useState(0);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
-  const [glance, setGlance] = useState("");
   const [loaded, setLoaded] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
-  const openRef = useRef(false);
 
   const load = useCallback(async () => {
     try {
@@ -46,11 +49,10 @@ export function NotificationBell({ userId }: { userId: string }) {
       if (!res.ok) return;
       const next = ((await res.json()).items ?? []) as Item[];
       setItems(next);
-      if (openRef.current) dismissNotices(userId, next.map((item) => item.id));
     } finally {
       setLoaded(true);
     }
-  }, [userId]);
+  }, []);
 
   useEffect(() => {
     setSeenAt(readSeen(userId));
@@ -77,91 +79,67 @@ export function NotificationBell({ userId }: { userId: string }) {
 
   useEffect(() => {
     if (!open) return;
-    function close() {
-      openRef.current = false;
-      setOpen(false);
-    }
-    function onClick(event: MouseEvent) {
-      if (!wrap.current?.contains(event.target as Node)) close();
+    function close(event: MouseEvent) {
+      if (!wrap.current?.contains(event.target as Node)) setOpen(false);
     }
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") close();
+      if (event.key === "Escape") setOpen(false);
     }
-    document.addEventListener("mousedown", onClick);
+    document.addEventListener("mousedown", close);
     document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("mousedown", close);
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
   const isUnread = (item: Item) => {
     if (dismissed.includes(item.id)) return false;
-    if (item.kind === "request") return true;
+    if (item.kind === "request" || item.kind === "watch") return true;
     return item.kind === "message" ? !!item.unread : new Date(item.createdAt).getTime() > seenAt;
   };
-  const requests = items.filter((item) => item.kind === "request" && isUnread(item)).length;
-  const messages = items.filter((item) => item.kind === "message" && isUnread(item)).length;
-  const changes = items.filter((item) => item.kind !== "message" && item.kind !== "request" && isUnread(item)).length;
-  const unread = changes + messages + requests;
 
-  function summary() {
-    if (!unread) return "You are up to date";
-    const parts: string[] = [];
-    if (requests) parts.push(`${requests} new ${requests === 1 ? "request" : "requests"}`);
-    if (changes) parts.push(`${changes} new ${changes === 1 ? "change" : "changes"}`);
-    if (messages) parts.push(`${messages} new ${messages === 1 ? "message" : "messages"}`);
-    return parts.join(", ");
-  }
+  const shown = items.filter((item) => !dismissed.includes(item.id));
+  const unread = shown.filter(isUnread).length;
+  const stack: NotificationItem[] = shown.map((item) => ({
+    id: item.id,
+    source: item.source || item.area || undefined,
+    icon: item.icon,
+    title: item.who,
+    body: item.text,
+    time: item.time || timeAgo(item.createdAt),
+    unread: isUnread(item),
+    tone: item.tone,
+    href: item.href,
+  }));
 
-  function markAllRead() {
-    dismissNotices(userId, items.map((item) => item.id));
-    if (items.some((item) => item.kind === "message" && item.unread)) {
+  function markMessages(ids: string[]) {
+    const messageIds = items
+      .filter((item) => ids.includes(item.id) && item.kind === "message" && item.unread)
+      .map((item) => item.id.replace(/^message:/, ""));
+    if (!messageIds.length) return;
+    if (messageIds.length === items.filter((item) => item.kind === "message" && item.unread).length) {
       fetch("/api/messages", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ all: true }),
-      })
-        .then(() => load())
-        .catch(() => undefined);
+      }).catch(() => undefined);
+      return;
     }
-  }
-
-  function openBell() {
-    const next = !open;
-    openRef.current = next;
-    setOpen(next);
-    if (next) {
-      setGlance(summary());
-      dismissNotices(
-        userId,
-        items.filter(isUnread).map((item) => item.id)
-      );
-      load();
-    }
-  }
-
-  function openItem(item: Item) {
-    dismissNotices(userId, [item.id]);
-    openRef.current = false;
-    setOpen(false);
-    if (item.kind === "message" && item.unread) {
-      const id = item.id.replace(/^message:/, "");
+    for (const id of messageIds) {
       fetch("/api/messages", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       }).catch(() => undefined);
     }
-    if (item.kind === "request") {
-      window.location.assign(item.href || "/staff");
-      return;
-    }
-    if (item.href && item.href !== window.location.pathname + window.location.search) {
-      window.location.assign(item.href);
-      return;
-    }
-    router.push(item.href || "/");
+  }
+
+  function openItem(item: NotificationItem) {
+    dismissNotices(userId, [item.id]);
+    markMessages([item.id]);
+    setOpen(false);
+    if (item.href) window.location.assign(item.href);
   }
 
   return (
@@ -172,50 +150,36 @@ export function NotificationBell({ userId }: { userId: string }) {
         title="Notifications"
         aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
         aria-expanded={open}
-        onClick={openBell}
+        onClick={() => setOpen((value) => !value)}
       >
         <Bell className="h-[18px] w-[18px]" />
         {unread > 0 && <span className="notify-badge">{unread > 9 ? "9+" : unread}</span>}
       </button>
 
       {open && (
-        <div className="notification-dropdown" role="dialog" aria-label="Notifications">
-          <div className="notification-dropdown-header">
-            <div>
-              <strong>Notifications</strong>
-              <span className="notification-count">{open && glance ? glance : summary()}</span>
-            </div>
-            <div className="flex shrink-0 items-center gap-0.5">
-              {unread > 0 && (
-                <button type="button" className="btn-quiet" onClick={markAllRead}>
-                  Mark all read
-                </button>
-              )}
-            </div>
-          </div>
-          <div className="notification-dropdown-list">
-            {!loaded && <p className="px-4 py-5 text-center text-[13px] text-[#6b7785]">Loading…</p>}
-            {loaded && items.length === 0 && (
-              <p className="px-4 py-6 text-center text-[13px] text-[#6b7785]">
-                Nothing new.
-              </p>
-            )}
-            {items.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`notification-item${isUnread(item) ? " is-unread" : ""}`}
-                onClick={() => openItem(item)}
-              >
-                <strong>{item.who}</strong>
-                <span>
-                  {item.text}
-                  {item.area ? ` in ${item.area}` : ""}
-                </span>
-                <em>{timeAgo(item.createdAt)}</em>
-              </button>
-            ))}
-          </div>
+        <div className="notification-dropdown !w-[min(420px,92vw)] !border-0 !bg-transparent !p-0 !shadow-none" role="dialog" aria-label="Notifications">
+          {!loaded ? (
+            <p className="rounded-2xl border border-[#e3e8ee] bg-white px-4 py-5 text-center text-[13px] text-[#6b7785]">Loading…</p>
+          ) : (
+            <NotificationCenter
+              items={stack}
+              title="Notifications"
+              className="max-w-none"
+              onDismiss={(id) => {
+                dismissNotices(userId, [id]);
+                markMessages([id]);
+              }}
+              onClearAll={() => {
+                dismissNotices(userId, shown.map((item) => item.id));
+                markMessages(shown.map((item) => item.id));
+              }}
+              onMarkAllRead={() => {
+                dismissNotices(userId, shown.filter(isUnread).map((item) => item.id));
+                markMessages(shown.map((item) => item.id));
+              }}
+              onSelect={openItem}
+            />
+          )}
         </div>
       )}
     </div>

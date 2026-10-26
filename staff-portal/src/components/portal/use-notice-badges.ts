@@ -52,7 +52,7 @@ export function useNoticeBadges(userId: string) {
       const unread =
         mark.kind === "message"
           ? !!mark.unread
-          : mark.kind === "request"
+          : mark.kind === "request" || mark.kind === "watch"
             ? true
             : new Date(mark.createdAt).getTime() > seenAt;
       if (!unread) continue;

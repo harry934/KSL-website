@@ -1,12 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ModuleKey } from "@/lib/modules";
 import type { StaffSession } from "@/lib/session";
+import { formatDay } from "@/lib/dates";
+import { loadWatchNotices } from "@/lib/watch-lists";
+import type { NotificationIcon, NotificationTone } from "@/components/ui/notification-center";
 
 const MARK_LIMIT = 80;
 
 export type NoticeItem = {
   id: string;
-  kind: "message" | "request";
+  kind: "message" | "request" | "watch";
   module: ModuleKey | null;
   who: string;
   text: string;
@@ -14,6 +17,10 @@ export type NoticeItem = {
   href: string;
   createdAt: string;
   unread?: boolean;
+  icon: NotificationIcon;
+  tone: NotificationTone;
+  source: string;
+  time?: string;
 };
 
 type MessageRow = {
@@ -51,6 +58,9 @@ async function loadMessages(session: StaffSession): Promise<NoticeItem[]> {
     href: `/messages?id=${row.id}`,
     createdAt: row.created_at,
     unread: !row.read_at,
+    icon: "message" as const,
+    tone: "info" as const,
+    source: "Message",
   }));
 }
 
@@ -93,15 +103,45 @@ async function loadAccountRequests(): Promise<NoticeItem[]> {
       area: "Staff",
       href: "/staff",
       createdAt: row.created_at,
+      icon: username ? ("username" as const) : ("password" as const),
+      tone: username ? ("info" as const) : ("warning" as const),
+      source: username ? "Username" : "Password change",
     };
   });
 }
 
-/** Website messages, plus account requests for an administrator. */
+async function loadWatchItems(session: StaffSession): Promise<NoticeItem[]> {
+  const notices = await loadWatchNotices(session);
+  return notices.map((item) => ({
+    id: item.id,
+    kind: "watch" as const,
+    module: item.module,
+    who: item.title,
+    text: item.detail,
+    area: item.source,
+    href: item.href,
+    createdAt: `${item.day}T09:00:00+03:00`,
+    icon: item.icon,
+    tone: item.tone,
+    source: item.source,
+    time: formatDay(item.day),
+  }));
+}
+
+function rank(item: NoticeItem) {
+  if (item.kind === "request") return 0;
+  if (item.kind === "watch") return 1;
+  return 2;
+}
+
+/** Password and username requests, website dates that need attention, and messages. */
 export async function loadNotifications(session: StaffSession): Promise<NoticeItem[]> {
-  const [messages, requests] = await Promise.all([
+  const [messages, requests, watches] = await Promise.all([
     loadMessages(session),
     session.isSuperAdmin ? loadAccountRequests() : Promise.resolve([]),
+    loadWatchItems(session),
   ]);
-  return [...requests, ...messages].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return [...requests, ...watches, ...messages].sort(
+    (a, b) => rank(a) - rank(b) || (a.createdAt < b.createdAt ? 1 : -1)
+  );
 }

@@ -3,7 +3,7 @@ import { credentialsCurrent } from "@/lib/api-auth";
 import { getStaffSession } from "@/lib/session";
 import { loadNotifications } from "@/lib/notifications";
 
-/** Bell items are website messages and, for an administrator, account requests. */
+/** Bell items are account requests, dates that need attention, and website messages. */
 export async function GET() {
   const session = await getStaffSession();
   if (!session) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
