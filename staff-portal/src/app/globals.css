@@ -626,6 +626,8 @@ body {
 .storage-swatch.is-database { background: #0b1f3a; }
 .storage-bar i.is-other,
 .storage-swatch.is-other { background: #5b6775; }
+.storage-bar i.is-bin,
+.storage-swatch.is-bin { background: #b45309; }
 .storage-swatch.is-free { background: #e7edf3; border: 1px solid #d5dde6; }
 
 .storage-legend {

@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
+import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -81,8 +82,10 @@ export async function POST(req: NextRequest) {
     updated_by: session.userId,
   };
 
+  const previous = await rememberFiles(admin, "download_items", id, ["external_href"]);
   const { error: upErr } = await admin.from("download_items").upsert(row);
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+  await releaseUnusedValues(admin, previous);
   await logActivity(session.userId, "downloads", "upsert", "download_item", id);
   return NextResponse.json({ ok: true, id });
 }

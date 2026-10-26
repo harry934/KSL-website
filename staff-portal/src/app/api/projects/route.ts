@@ -3,6 +3,7 @@ import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth
 import { slugify } from "@/lib/news";
 import { projectGroup } from "@/lib/projects";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
+import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -49,8 +50,10 @@ export async function POST(req: NextRequest) {
   };
 
   const admin = createAdminClient();
+  const previous = await rememberFiles(admin, "projects", body.id, ["image_path"]);
   const { data, error: upErr } = await admin.from("projects").upsert(row).select("id").single();
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+  await releaseUnusedValues(admin, previous);
   await logActivity(session.userId, "projects", status === "published" ? "publish" : "save", "project", data?.id);
   return NextResponse.json({ ok: true, id: data?.id });
 }

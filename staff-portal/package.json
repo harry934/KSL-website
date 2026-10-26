@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --import ./test-register.mjs --test src/lib/security.test.ts src/lib/portal-nav.test.ts",
+    "test": "node --experimental-strip-types --import ./test-register.mjs --test src/lib/security.test.ts src/lib/portal-nav.test.ts src/lib/storage-path.test.ts",
     "bootstrap:admin": "node scripts/bootstrap-super-admin.mjs",
     "import:faq": "node scripts/import-faq-from-json.mjs",
     "import:news": "node scripts/import-news-from-json.mjs"

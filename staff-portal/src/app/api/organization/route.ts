@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
+import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest) {
     if (!name || !role) return NextResponse.json({ error: "A name and a role are required." }, { status: 400 });
     const group = ["defence", "ps", "independent"].includes(body.board_group) ? body.board_group : "independent";
     const section = ["featured", "audit", "risk", "strategy"].includes(body.section) ? body.section : "audit";
+    const previous = await rememberFiles(admin, "organization_board_members", body.id, ["photo_url"]);
     const { data, error: upErr } = await admin
       .from("organization_board_members")
       .upsert({
@@ -83,6 +85,7 @@ export async function POST(req: NextRequest) {
       .select("id")
       .single();
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await releaseUnusedValues(admin, previous);
     await logActivity(session.userId, "organization", "upsert", "organization_board_members", data?.id ?? id);
     return NextResponse.json({ ok: true, id: data?.id });
   }

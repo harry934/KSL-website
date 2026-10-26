@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { HOME_HERO_SLOT, isImagePath, isSiteImageSlot, parseHeroMedia, safeImageUrl, SITE_IMAGE_SLOTS } from "@/lib/site-images";
 import { siteAssetUrl } from "@/lib/site-url";
+import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { NextRequest, NextResponse } from "next/server";
 
 function galleryFileUrl(
@@ -97,9 +98,11 @@ export async function POST(req: NextRequest) {
   }
 
   const admin = createAdminClient();
+  const previous = await rememberFiles(admin, "site_image_overrides", slotId, ["storage_path", "public_url", "media"], "slot_id");
   if (body.source !== "storage") {
     const { error: delErr } = await admin.from("site_image_overrides").delete().eq("slot_id", slotId);
     if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
+    await releaseUnusedValues(admin, previous);
     await logActivity(session.userId, "site_settings", "update", "site_image", slotId);
     return NextResponse.json({ ok: true });
   }
@@ -112,6 +115,7 @@ export async function POST(req: NextRequest) {
     if (!items.length) {
       const { error: delErr } = await admin.from("site_image_overrides").delete().eq("slot_id", slotId);
       if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
+      await releaseUnusedValues(admin, previous);
       await logActivity(session.userId, "site_settings", "update", "site_image", slotId);
       return NextResponse.json({ ok: true });
     }
@@ -126,6 +130,7 @@ export async function POST(req: NextRequest) {
       updated_by: session.userId,
     });
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await releaseUnusedValues(admin, previous);
 
     if (body.addToGallery) {
       const galleryUrl = safeImageUrl(body.publicUrl);
@@ -159,6 +164,7 @@ export async function POST(req: NextRequest) {
     updated_by: session.userId,
   });
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+  await releaseUnusedValues(admin, previous);
   await logActivity(session.userId, "site_settings", "update", "site_image", slotId);
   return NextResponse.json({ ok: true });
 }

@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 import { Plus } from "lucide-react";
 import { getStaffSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import { permissionNavLinks, usesSidebar } from "@/lib/portal-nav";
 import { formatBytes } from "@/lib/downloads";
+import { loadStorageBreakdown, type StorageBreakdown } from "@/lib/storage-files";
 import { DashboardRefresh } from "@/components/portal/dashboard-refresh";
 import { ShipyardMark } from "@/components/portal/shipyard-mark";
 import { PageHeader } from "@/components/portal/page-header";
@@ -30,27 +32,34 @@ const BUCKETS = [
 
 function storageLabel(bytes: number) {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
-  const gb = bytes / STORAGE_QUOTA;
-  if (gb >= 1) {
+  if (bytes >= STORAGE_QUOTA) {
+    const gb = bytes / STORAGE_QUOTA;
     const rounded = Math.round(gb * 10) / 10;
     return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)} GB`;
   }
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return formatBytes(bytes) || "0 B";
 }
 
-type StorageBucket = { bucket_id: string; bytes: number };
-
-async function loadStorageUsage() {
-  const { data, error } = await createAdminClient().rpc("storage_usage");
+async function loadStorageUsage(): Promise<StorageBreakdown | null> {
+  noStore();
+  const admin = createAdminClient();
+  const breakdown = await loadStorageBreakdown(admin);
+  if (breakdown) return breakdown;
+  const { data, error } = await admin.rpc("storage_usage");
   if (error) return null;
-  return ((data ?? []) as { bucket_id: string; bytes: number | string }[]).map((row) => ({
-    bucket_id: row.bucket_id,
-    bytes: Number(row.bytes) || 0,
-  }));
+  return {
+    buckets: ((data ?? []) as { bucket_id: string; bytes: number | string }[]).map((row) => ({
+      bucket_id: row.bucket_id,
+      bytes: Number(row.bytes) || 0,
+    })),
+    bin: 0,
+    spare: 0,
+  };
 }
 
-function StorageMeter({ buckets }: { buckets: StorageBucket[] | null }) {
-  if (!buckets) {
+function StorageMeter({ usage }: { usage: StorageBreakdown | null }) {
+  if (!usage) {
     return (
       <article className="storage-meter">
         <h2>Storage</h2>
@@ -61,22 +70,23 @@ function StorageMeter({ buckets }: { buckets: StorageBucket[] | null }) {
 
   const slices = BUCKETS.map((bucket) => ({
     ...bucket,
-    bytes: buckets.find((row) => row.bucket_id === bucket.id)?.bytes ?? 0,
+    bytes: usage.buckets.find((row) => row.bucket_id === bucket.id)?.bytes ?? 0,
   }));
-  const other = buckets
+  const other = usage.buckets
     .filter((row) => !BUCKETS.some((bucket) => bucket.id === row.bucket_id))
     .reduce((sum, row) => sum + row.bytes, 0);
   const used = slices.reduce((sum, row) => sum + row.bytes, 0) + other;
-  const free = Math.max(0, STORAGE_QUOTA - used);
-  const scale = Math.max(used, STORAGE_QUOTA, 1);
+  const stored = used + usage.bin + usage.spare;
+  const free = Math.max(0, STORAGE_QUOTA - stored);
+  const scale = Math.max(stored, STORAGE_QUOTA, 1);
   const width = (bytes: number) => `${(bytes / scale) * 100}%`;
 
   return (
-    <article className="storage-meter" aria-label={`Storage, ${storageLabel(used)} used, ${storageLabel(free)} free of 1 GB`}>
+    <article className="storage-meter" aria-label={`Storage, ${storageLabel(used)} in use, ${storageLabel(free)} free of 1 GB`}>
       <div className="storage-head">
         <div>
           <h2>Storage</h2>
-          <p>Supabase files, of the 1 GB allowance</p>
+          <p>Files still attached to items, of the 1 GB allowance. Delete an item and this drops. Free space returns when you remove it from the recycle bin.</p>
         </div>
         <p className="storage-figure">
           <strong>{storageLabel(used)}</strong>
@@ -88,6 +98,8 @@ function StorageMeter({ buckets }: { buckets: StorageBucket[] | null }) {
           slice.bytes > 0 ? <i key={slice.id} className={`is-${slice.tone}`} style={{ width: width(slice.bytes) }} /> : null
         )}
         {other > 0 ? <i className="is-other" style={{ width: width(other) }} /> : null}
+        {usage.bin > 0 ? <i className="is-bin" style={{ width: width(usage.bin) }} /> : null}
+        {usage.spare > 0 ? <i className="is-other" style={{ width: width(usage.spare) }} /> : null}
       </div>
       <ul className="storage-legend">
         {slices.map((slice) => (
@@ -102,6 +114,20 @@ function StorageMeter({ buckets }: { buckets: StorageBucket[] | null }) {
             <span className="storage-swatch is-other" />
             <span>Other</span>
             <strong>{storageLabel(other)}</strong>
+          </li>
+        ) : null}
+        {usage.bin > 0 ? (
+          <li>
+            <span className="storage-swatch is-bin" />
+            <span>Recycle bin</span>
+            <strong>{storageLabel(usage.bin)}</strong>
+          </li>
+        ) : null}
+        {usage.spare > 0 ? (
+          <li>
+            <span className="storage-swatch is-other" />
+            <span>Not linked</span>
+            <strong>{storageLabel(usage.spare)}</strong>
           </li>
         ) : null}
         <li>
@@ -165,6 +191,8 @@ function DatabaseMeter({ bytes }: { bytes: number | null }) {
   );
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const session = await getStaffSession();
   if (!session) return null;
@@ -216,7 +244,7 @@ export default async function DashboardPage() {
 
       {session.isSuperAdmin && (
         <section className="grid gap-3 lg:grid-cols-2" aria-label="Supabase usage">
-          <StorageMeter buckets={storage} />
+          <StorageMeter usage={storage} />
           <DatabaseMeter bytes={database} />
         </section>
       )}

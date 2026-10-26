@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard } from "@/lib/api-auth";
 import { youtubeIdFrom } from "@/lib/gallery";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
+import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -90,8 +91,10 @@ export async function POST(req: NextRequest) {
     updated_by: session.userId,
   };
 
+  const previous = await rememberFiles(admin, "gallery_photos", body.id, ["storage_path", "public_url"]);
   const { data, error: upErr } = await admin.from("gallery_photos").upsert(row).select("id").single();
   if (upErr) return NextResponse.json({ error: "Could not save the photo." }, { status: 500 });
+  await releaseUnusedValues(admin, previous);
   await logActivity(session.userId, "gallery", "upsert", "gallery_photo", data.id);
   return NextResponse.json({ ok: true, id: data.id });
 }

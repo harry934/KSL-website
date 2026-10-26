@@ -1,4 +1,6 @@
+import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { releaseUnusedValues } from "@/lib/storage-files";
 
 type Admin = ReturnType<typeof createAdminClient>;
 
@@ -42,18 +44,23 @@ export async function softDelete(admin: Admin, table: RecycleTable, id: string) 
 }
 
 export async function restoreRow(admin: Admin, table: RecycleTable, id: string) {
-  return admin.from(table).update({ deleted_at: null }).eq("id", id).not("deleted_at", "is", null);
+  const result = await admin.from(table).update({ deleted_at: null }).eq("id", id).not("deleted_at", "is", null);
+  if (!result.error) revalidatePath("/");
+  return result;
 }
 
-/** Removes a row that is already in the recycle bin. */
+/** Removes a row that is already in the recycle bin. A permanent delete also frees its file. */
 export async function applyBinDelete(admin: Admin, table: RecycleTable, id: string, permanent: boolean) {
   if (!permanent) {
     const { error } = await softDelete(admin, table, id);
+    if (!error) revalidatePath("/");
     return { error: error as BinError };
   }
-  const { data, error } = await admin.from(table).delete().eq("id", id).not("deleted_at", "is", null).select("id");
+  const { data, error } = await admin.from(table).delete().eq("id", id).not("deleted_at", "is", null).select("*");
   if (error) return { error: error as BinError };
   if (!data?.length) return { error: { message: "That item is not in the recycle bin.", code: "bin" } };
+  await releaseUnusedValues(admin, data[0]);
+  revalidatePath("/");
   return { error: null };
 }
 
@@ -69,6 +76,7 @@ export async function restoreStaffAccount(admin: Admin, id: string) {
   if (!data?.length) return { error: { message: "That item is not in the recycle bin.", code: "bin" } };
   const { error: banErr } = await admin.auth.admin.updateUserById(id, { ban_duration: "none" });
   if (banErr) return { error: { message: "Could not restore this account.", code: "restore" } };
+  revalidatePath("/");
   return { error: null };
 }
 
@@ -85,8 +93,10 @@ export async function purgeStaffAccount(admin: Admin, id: string) {
   }
   if (data.avatar_path) {
     await admin.storage.from("avatars").remove([data.avatar_path]);
+    await admin.storage.from("media-public").remove([data.avatar_path]);
   }
   const { error: deleteErr } = await admin.auth.admin.deleteUser(id);
+  if (!deleteErr) revalidatePath("/");
   if (deleteErr) return { error: { message: "Could not delete this account.", code: "delete" } };
   return { error: null };
 }

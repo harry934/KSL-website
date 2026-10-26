@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { slugify } from "@/lib/events";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
+import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { sanitizeRichHtml } from "@/lib/sanitize-html";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -63,8 +64,10 @@ export async function POST(req: NextRequest) {
     updated_by: session.userId,
   };
 
+  const previous = await rememberFiles(admin, "event_items", body.id, ["image_path"]);
   const { data, error: upErr } = await admin.from("event_items").upsert(row).select("id").single();
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+  await releaseUnusedValues(admin, previous);
   await logActivity(session.userId, "events", "upsert", "event_item", data?.id ?? slug);
   return NextResponse.json({ ok: true, id: data?.id });
 }
