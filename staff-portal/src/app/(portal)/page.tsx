@@ -86,7 +86,6 @@ function StorageMeter({ usage }: { usage: StorageBreakdown | null }) {
       <div className="storage-head">
         <div>
           <h2>Storage</h2>
-          <p>Files still attached to items, of the 1 GB allowance. Delete an item and this drops. Free space returns when you remove it from the recycle bin.</p>
         </div>
         <p className="storage-figure">
           <strong>{storageLabel(used)}</strong>
