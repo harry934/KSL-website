@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Outlook">
+  <path fill="#106EBE" d="M20 10h20.5A3.5 3.5 0 0 1 44 13.5v21a3.5 3.5 0 0 1-3.5 3.5H20V10Z"/>
+  <path fill="#0078D4" d="M20 10h6v28h-6V10Z"/>
+  <path fill="#28A8EA" d="M26 10h14.5A3.5 3.5 0 0 1 44 13.5V18H26V10Z"/>
+  <path fill="#50D9FF" d="M26 18h18v6H26v-6Z" opacity=".55"/>
+  <path fill="#188CE5" d="M26 24h18v6H26v-6Z" opacity=".7"/>
+  <path fill="#0078D4" d="M26 30h18v4.5a3.5 3.5 0 0 1-3.5 3.5H26V30Z"/>
+  <rect x="2" y="14" width="24" height="20" rx="4" fill="#0A66C2"/>
+  <circle cx="14" cy="24" r="6.2" fill="#fff"/>
+  <circle cx="14" cy="24" r="3.5" fill="#0A66C2"/>
+</svg>
