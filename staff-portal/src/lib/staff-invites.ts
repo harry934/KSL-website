@@ -103,9 +103,10 @@ function newToken() {
 
 async function cancelOpenInvites(filter: { kind: InviteKind; targetProfileId?: string; email?: string | null; phone?: string | null }) {
   const admin = createAdminClient();
+  // Remove superseded open rows so Resend/Create does not leave cancelled duplicates in the list.
   let query = admin
     .from("staff_invites")
-    .update({ used_at: new Date().toISOString() })
+    .delete()
     .eq("kind", filter.kind)
     .is("used_at", null)
     .gt("expires_at", new Date().toISOString());
@@ -297,6 +298,105 @@ export async function cancelInvite(actorId: string, id: string) {
     phone: data.phone,
   });
   return { error: null, status: 200 as const };
+}
+
+/** Permanently remove an invite from the list (any status). */
+export async function deleteInvite(actorId: string, id: string) {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("staff_invites")
+    .delete()
+    .eq("id", id)
+    .select("id, kind, contact_email, phone")
+    .maybeSingle();
+  if (error) return { error: "Could not delete the invite. Please try again.", status: 500 as const };
+  if (!data) return { error: "That invite was not found.", status: 404 as const };
+  await logActivity(actorId, "staff", "delete invite", "staff_invite", id, {
+    kind: data.kind,
+    email: data.contact_email,
+    phone: data.phone,
+  });
+  return { error: null, status: 200 as const };
+}
+
+/** Fresh passcode + link on the same invite row (no duplicate list entry). */
+export async function resendStaffInvite(actorId: string, id: string) {
+  const admin = createAdminClient();
+  const { data: existing, error: loadError } = await admin
+    .from("staff_invites")
+    .select(
+      "id, kind, contact_email, phone, is_super_admin, role_title, permissions, target_profile_id, used_at, expires_at"
+    )
+    .eq("id", id)
+    .maybeSingle();
+  if (loadError) return { error: "Could not load that invite.", status: 500 as const };
+  if (!existing) return { error: "That invite was not found.", status: 404 as const };
+
+  if (existing.kind === "create" && existing.contact_email) {
+    const { data: taken } = await admin
+      .from("admin_profiles")
+      .select("id")
+      .eq("contact_email", existing.contact_email)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (taken) {
+      return { error: "That contact already finished sign-up. Delete this invite if you no longer need it.", status: 400 as const };
+    }
+  }
+
+  if (existing.kind === "password_reset") {
+    const targetId = existing.target_profile_id as string | null;
+    if (!targetId) return { error: "That reset invite is incomplete.", status: 400 as const };
+    const { data: profile } = await admin
+      .from("admin_profiles")
+      .select("id, is_active, deleted_at")
+      .eq("id", targetId)
+      .maybeSingle();
+    if (!profile || profile.deleted_at || !profile.is_active) {
+      return { error: "That account is not active.", status: 400 as const };
+    }
+  }
+
+  const passcode = generateNumericPasscode();
+  const token = newToken();
+  const expiresAt = oneTimePasswordExpiry();
+  const { data, error } = await admin
+    .from("staff_invites")
+    .update({
+      token,
+      passcode_hash: hashPasscode(passcode),
+      expires_at: expiresAt,
+      used_at: null,
+      created_by: actorId,
+    })
+    .eq("id", id)
+    .select("id, expires_at")
+    .single();
+
+  if (error || !data) return { error: "Could not refresh the invite. Please try again.", status: 500 as const };
+
+  const contactEmail = (existing.contact_email as string | null) ?? "";
+  const phone = (existing.phone as string | null) ?? "";
+  const kind = existing.kind as InviteKind;
+
+  await logActivity(actorId, "staff", "resend invite", "staff_invite", id, {
+    kind,
+    email: contactEmail || null,
+    phone: phone || null,
+  });
+
+  return {
+    error: null,
+    status: 200 as const,
+    id: data.id as string,
+    token,
+    passcode,
+    expiresAt,
+    signupUrl: signupUrlFor(token),
+    email: contactEmail,
+    phone,
+    kind,
+  };
 }
 
 export async function loadOpenInvite(token: string) {

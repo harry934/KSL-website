@@ -258,21 +258,112 @@ function expiryLabel(iso: string) {
   }
 }
 
-function inviteText(issued: Issued) {
+function inviteSubject(issued: Issued) {
+  return issued.isNew
+    ? "Kenya Shipyards staff portal invite"
+    : "Kenya Shipyards staff portal password reset";
+}
+
+function logoUrl() {
+  if (typeof window === "undefined") return "/ksl-logo.png";
+  return `${window.location.origin}/ksl-logo.png`;
+}
+
+function invitePlainText(issued: Issued) {
   const until = expiryLabel(issued.expiresAt);
+  const steps = issued.isNew
+    ? [
+        "1. Open the sign-up link below.",
+        "2. Enter the one-time passcode.",
+        "3. Choose your username and password.",
+      ]
+    : [
+        "1. Open the sign-up link below.",
+        "2. Enter the one-time passcode.",
+        "3. Choose a new password (your username stays the same).",
+      ];
+
   return [
-    "Kenya Shipyards staff portal",
+    "Kenya Shipyards Limited",
+    "Staff portal",
     "",
-    `One-time passcode: ${issued.passcode}`,
-    `Sign-up link: ${issued.signupUrl}`,
+    issued.isNew
+      ? "You have been invited to join the Kenya Shipyards staff portal."
+      : "Use this invite to set a new password for the Kenya Shipyards staff portal.",
+    "",
+    "One-time passcode",
+    issued.passcode,
+    "",
+    "Sign-up link",
+    issued.signupUrl,
+    "",
+    ...steps,
     "",
     until
-      ? `This passcode stops working at ${until} East Africa Time (10 minutes after it was created).`
-      : "This passcode stops working after 10 minutes.",
-    issued.isNew
-      ? "Open the link, enter the passcode, then choose your own username and password."
-      : "Open the link, enter the passcode, then choose a new password. Your username stays the same.",
+      ? `This passcode and link expire at ${until} East Africa Time (valid for 10 minutes).`
+      : "This passcode and link expire after 10 minutes.",
+    "",
+    "If you did not expect this message, you can ignore it.",
+    "",
+    "Kenya Shipyards Limited",
   ].join("\n");
+}
+
+function inviteHtmlEmail(issued: Issued) {
+  const until = expiryLabel(issued.expiresAt);
+  const logo = logoUrl();
+  const headline = issued.isNew ? "You are invited to the staff portal" : "Reset your staff portal password";
+  const intro = issued.isNew
+    ? "Kenya Shipyards Limited has invited you to join the staff portal. Use the passcode and link below to finish set-up."
+    : "Use the passcode and link below to choose a new password. Your username stays the same.";
+  const steps = issued.isNew
+    ? "<li>Open the sign-up link</li><li>Enter the one-time passcode</li><li>Choose your username and password</li>"
+    : "<li>Open the sign-up link</li><li>Enter the one-time passcode</li><li>Choose a new password</li>";
+  const expiry = until
+    ? `This passcode and link expire at <strong>${until} East Africa Time</strong> (valid for 10 minutes).`
+    : "This passcode and link expire after <strong>10 minutes</strong>.";
+
+  return `<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f4f6f8;font-family:Segoe UI,Helvetica,Arial,sans-serif;color:#0b1f3a;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f6f8;padding:28px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;width:100%;background:#ffffff;border:1px solid #e5e9ef;">
+          <tr>
+            <td style="padding:28px 32px 12px;text-align:center;border-bottom:3px solid #0b1f3a;">
+              <img src="${logo}" alt="Kenya Shipyards Limited" width="72" height="72" style="display:block;margin:0 auto 14px;border:0;" />
+              <p style="margin:0;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#5b6775;font-weight:600;">Kenya Shipyards Limited</p>
+              <p style="margin:6px 0 0;font-size:20px;font-weight:700;color:#0b1f3a;">${headline}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 32px;">
+              <p style="margin:0 0 18px;font-size:15px;line-height:1.55;color:#3d4c5f;">${intro}</p>
+              <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6b7785;font-weight:600;">One-time passcode</p>
+              <p style="margin:0 0 20px;font-size:28px;letter-spacing:0.28em;font-weight:700;color:#0b1f3a;font-family:ui-monospace,Consolas,monospace;">${issued.passcode}</p>
+              <p style="margin:0 0 10px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6b7785;font-weight:600;">Sign-up link</p>
+              <p style="margin:0 0 22px;">
+                <a href="${issued.signupUrl}" style="display:inline-block;background:#0b1f3a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 20px;">Open sign-up page</a>
+              </p>
+              <p style="margin:0 0 8px;font-size:13px;color:#6b7785;">Or copy this link:</p>
+              <p style="margin:0 0 22px;font-size:13px;line-height:1.5;word-break:break-all;"><a href="${issued.signupUrl}" style="color:#0b4f8a;">${issued.signupUrl}</a></p>
+              <ol style="margin:0 0 18px;padding-left:18px;font-size:14px;line-height:1.6;color:#3d4c5f;">${steps}</ol>
+              <p style="margin:0;font-size:13px;line-height:1.55;color:#5b6775;">${expiry}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 32px 24px;border-top:1px solid #eef1f4;">
+              <p style="margin:0;font-size:12px;line-height:1.5;color:#8a96a3;">If you did not expect this message, you can ignore it.</p>
+              <p style="margin:10px 0 0;font-size:12px;color:#6b7785;">© Kenya Shipyards Limited · Staff portal</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
 function whatsAppNumber(phone: string) {
@@ -282,8 +373,7 @@ function whatsAppNumber(phone: string) {
   return digits;
 }
 
-function mailComposeUrl(kind: "gmail" | "outlook", email: string, body: string) {
-  const subject = "Your Kenya Shipyards portal sign-up";
+function mailComposeUrl(kind: "gmail" | "outlook", email: string, subject: string, body: string) {
   if (kind === "gmail") {
     return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
@@ -291,13 +381,14 @@ function mailComposeUrl(kind: "gmail" | "outlook", email: string, body: string) 
 }
 
 function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () => void }) {
-  const [copied, setCopied] = useState<"passcode" | "link" | "message" | null>(null);
+  const [copied, setCopied] = useState<"passcode" | "link" | "message" | "email" | null>(null);
 
-  const details = inviteText(issued);
+  const plain = invitePlainText(issued);
+  const subject = inviteSubject(issued);
   const hasEmail = issued.email.includes("@");
   const hasPhone = !!issued.phone.replace(/\D/g, "");
 
-  async function copyText(value: string, which: "passcode" | "link" | "message") {
+  async function copyText(value: string, which: "passcode" | "link" | "message" | "email") {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(which);
@@ -307,30 +398,53 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
     }
   }
 
+  async function copyRichEmail() {
+    const html = inviteHtmlEmail(issued);
+    try {
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([plain], { type: "text/plain" }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(plain);
+      }
+      setCopied("email");
+      window.setTimeout(() => setCopied(null), 2500);
+    } catch {
+      try {
+        await navigator.clipboard.writeText(plain);
+        setCopied("email");
+        window.setTimeout(() => setCopied(null), 2500);
+      } catch {
+        setCopied(null);
+      }
+    }
+  }
+
   function sendMail(kind: "gmail" | "outlook") {
     if (!hasEmail) return;
-    window.open(mailComposeUrl(kind, issued.email, details), "_blank", "noopener");
+    window.open(mailComposeUrl(kind, issued.email, subject, plain), "_blank", "noopener");
   }
 
   function sendWhatsApp() {
     const number = whatsAppNumber(issued.phone);
-    const text = encodeURIComponent(details);
+    const text = encodeURIComponent(plain);
     window.open(number ? `https://wa.me/${number}?text=${text}` : `https://wa.me/?text=${text}`, "_blank", "noopener");
   }
 
   return (
     <section className="ksl-card p-5">
       <h2 className="text-[15px] font-bold text-[#0b1f3a]">
-        {issued.isNew ? "Invite ready" : "Password reset invite"}
+        {issued.isNew ? "Invite ready: send it now" : "Password reset ready: send it now"}
       </h2>
       <p className="mt-1 text-[13.5px] text-[#5b6775]">
-        Send the passcode and sign-up link.{" "}
+        Nothing is emailed automatically. Use Gmail, Outlook, or WhatsApp below. Each opens a draft with the message filled in. Press Send in that app.
         {expiryLabel(issued.expiresAt)
-          ? `They stop working at ${expiryLabel(issued.expiresAt)} East Africa Time.`
-          : "They stop working after 10 minutes."}{" "}
-        {issued.isNew
-          ? "They open the link, enter the passcode, then choose a username and password."
-          : "They open the link, enter the passcode, then choose a new password."}
+          ? ` Passcode expires at ${expiryLabel(issued.expiresAt)} East Africa Time.`
+          : " Passcode expires in 10 minutes."}
       </p>
       <div className="mt-4 grid gap-3">
         <div className="rounded-[8px] bg-[#f6f8fa] px-4 py-3">
@@ -357,22 +471,26 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
         </div>
       </div>
       <p className="mt-3 text-[12.5px] text-[#6b7785]">
-        These details are shown only once. Gmail and Outlook open a new message with the passcode and link already written.
-        {!hasEmail ? " Add an email to use those buttons." : ""}
-        {!hasPhone ? " Add a mobile number to open WhatsApp with their number filled in." : ""}
+        Prefer a branded email with the KSL logo? Use{" "}
+        <span className="font-semibold text-[#3d4c5f]">Copy email (with logo)</span>, then paste into a new Gmail or Outlook message.
+        {!hasEmail ? " Add an email on the invite to use Gmail/Outlook." : ""}
+        {!hasPhone ? " Add a mobile number to pre-fill WhatsApp." : ""}
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button variant="secondary" onClick={() => copyText(details, "message")}>
-          <Copy className="h-4 w-4" /> {copied === "message" ? "Message copied" : "Copy message"}
+        <Button variant="secondary" onClick={copyRichEmail}>
+          <Copy className="h-4 w-4" /> {copied === "email" ? "Email copied" : "Copy email (with logo)"}
+        </Button>
+        <Button variant="secondary" onClick={() => copyText(plain, "message")}>
+          <Copy className="h-4 w-4" /> {copied === "message" ? "Text copied" : "Copy plain text"}
         </Button>
         <Button variant="secondary" onClick={() => sendMail("gmail")} disabled={!hasEmail}>
-          <Mail className="h-4 w-4" /> Send with Gmail
+          <Mail className="h-4 w-4" /> Open in Gmail
         </Button>
         <Button variant="secondary" onClick={() => sendMail("outlook")} disabled={!hasEmail}>
-          <Mail className="h-4 w-4" /> Send with Outlook
+          <Mail className="h-4 w-4" /> Open in Outlook
         </Button>
         <Button variant="secondary" onClick={sendWhatsApp}>
-          <MessageCircle className="h-4 w-4" /> Send on WhatsApp
+          <MessageCircle className="h-4 w-4" /> Open in WhatsApp
         </Button>
         <Button onClick={onClose}>Done</Button>
       </div>
@@ -634,18 +752,19 @@ export function StaffManager() {
     }
   }
 
-  async function cancelPendingInvite(invite: PendingInvite) {
+  async function deletePendingInvite(invite: PendingInvite) {
     const label = invite.email || invite.phone || invite.targetUsername || "this invite";
     const ok = await confirm({
-      title: `Cancel invite for ${label}?`,
-      message: "The passcode and sign-up link will stop working. The invite stays on this list so you can send another one later.",
-      confirmLabel: "Cancel invite",
+      title: `Delete invite for ${label}?`,
+      message: "Removes it from this list. Any open passcode and sign-up link for it stop working immediately. You can delete waiting, expired, cancelled, or completed invites anytime.",
+      confirmLabel: "Delete invite",
       danger: true,
     });
     if (!ok) return;
     const done = await run(() => sendJson(`/api/staff/invites?id=${encodeURIComponent(invite.id)}`, "DELETE"));
     if (done) {
-      toast("Invite cancelled. You can resend anytime.");
+      toast("Invite deleted.");
+      if (issued) setIssued(null);
       load();
     }
   }
@@ -653,13 +772,8 @@ export function StaffManager() {
   async function resendInvite(invite: PendingInvite) {
     const data = await run(() =>
       sendJson("/api/staff/invites", "POST", {
-        kind: invite.kind,
-        email: invite.email || undefined,
-        phone: invite.phone || undefined,
-        superAdmin: invite.isSuperAdmin,
-        roleTitle: invite.roleTitle,
-        permissions: invite.permissions ?? [],
-        targetProfileId: invite.targetProfileId || undefined,
+        action: "resend",
+        id: invite.id,
       })
     );
     if (!data) return;
@@ -673,6 +787,7 @@ export function StaffManager() {
       expiresAt: data.expiresAt,
       username: invite.targetUsername || undefined,
     });
+    toast("Fresh passcode ready. Open Gmail, Outlook, or WhatsApp below to send it.");
     load();
   }
 
@@ -725,11 +840,15 @@ export function StaffManager() {
 
   return (
     <div className="flex flex-col gap-4">
-      {invites.length > 0 && !panel && (
+      {error && <Notice kind="error">{error}</Notice>}
+
+      {issued && <OneTimePasscodeBox issued={issued} onClose={() => setIssued(null)} />}
+
+      {invites.length > 0 && !panel && !issued && (
         <section className="ksl-card p-5">
           <h2 className="text-[15px] font-bold text-[#0b1f3a]">Sent invites</h2>
           <p className="mt-1 text-[13.5px] text-[#5b6775]">
-            Invites stay here after you send them. Resend anytime for a fresh passcode and link. Cancel only stops the current passcode.
+            Resend refreshes the same invite with a new passcode and opens the send panel again (Gmail, Outlook, WhatsApp, or copy). You can delete any invite on this list at any time.
           </p>
           <ul className="mt-4 divide-y divide-[#eef1f4]">
             {invites.map((invite) => (
@@ -793,11 +912,9 @@ export function StaffManager() {
                       <KeyRound className="h-3.5 w-3.5" /> Resend
                     </Button>
                   ) : null}
-                  {invite.status === "waiting" ? (
-                    <Button variant="danger" size="sm" onClick={() => cancelPendingInvite(invite)} disabled={saving} aria-label="Cancel invite">
-                      <Trash2 className="h-3.5 w-3.5" /> Cancel
-                    </Button>
-                  ) : null}
+                  <Button variant="danger" size="sm" onClick={() => deletePendingInvite(invite)} disabled={saving} aria-label="Delete invite">
+                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                  </Button>
                 </div>
               </li>
             ))}
@@ -858,10 +975,6 @@ export function StaffManager() {
           <SearchBox value={query} onChange={setQuery} placeholder="Search by name, username or email" className="sm:w-[300px]" />
         </div>
       )}
-
-      {error && <Notice kind="error">{error}</Notice>}
-
-      {issued && <OneTimePasscodeBox issued={issued} onClose={() => setIssued(null)} />}
 
       {panel?.kind === "create" && (
         <form onSubmit={submitCreate}>

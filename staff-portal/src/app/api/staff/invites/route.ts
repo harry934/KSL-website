@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStaff } from "@/lib/api-auth";
-import { cancelInvite, createStaffInvite, listOpenInvites } from "@/lib/staff-invites";
+import { createStaffInvite, deleteInvite, listOpenInvites, resendStaffInvite } from "@/lib/staff-invites";
 
 async function requireSuperAdmin(action: "view" | "edit" | "delete" = "edit") {
   const { error, session } = await requireStaff("staff", action);
@@ -24,6 +24,25 @@ export async function POST(req: NextRequest) {
   if (error || !session) return error;
 
   const body = await req.json().catch(() => ({}));
+
+  if (body.action === "resend") {
+    const id = String(body.id ?? "");
+    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    const result = await resendStaffInvite(session.userId, id);
+    if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
+    return NextResponse.json({
+      ok: true,
+      id: result.id,
+      token: result.token,
+      passcode: result.passcode,
+      expiresAt: result.expiresAt,
+      signupUrl: result.signupUrl,
+      email: result.email,
+      phone: result.phone,
+      kind: result.kind,
+    });
+  }
+
   const kind = body.kind === "password_reset" ? "password_reset" : "create";
   const result = await createStaffInvite({
     actorId: session.userId,
@@ -58,7 +77,7 @@ export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const result = await cancelInvite(session.userId, id);
+  const result = await deleteInvite(session.userId, id);
   if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json({ ok: true });
 }
