@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Crop, GripVertical, Loader2, Scissors, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, Notice } from "@/components/ui/form-bits";
+import { Field, Notice, Select } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { sendJson, uploadFile } from "@/lib/upload-client";
 import { PhotoCropDialog } from "@/components/ui/photo-crop";
@@ -35,6 +35,24 @@ const DEFAULT_HERO_COPY = {
   buttonLabel: "Read our story",
   buttonUrl: "about.html",
 };
+
+const HERO_PAGES = [
+  { value: "index.html", label: "Home" },
+  { value: "about.html", label: "About" },
+  { value: "board.html", label: "Board" },
+  { value: "organization.html", label: "Organization" },
+  { value: "service.html", label: "Services" },
+  { value: "products.html", label: "Products" },
+  { value: "project.html", label: "Projects" },
+  { value: "news.html", label: "News" },
+  { value: "videos.html", label: "Gallery" },
+  { value: "downloads.html", label: "Downloads" },
+  { value: "careers.html", label: "Careers" },
+  { value: "csr.html", label: "CSR" },
+  { value: "sustainability.html", label: "Sustainability" },
+  { value: "faq.html", label: "FAQ" },
+  { value: "contact.html", label: "Contact" },
+];
 
 function clock(seconds: number) {
   const whole = Math.max(0, Math.round(seconds));
@@ -143,6 +161,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   const [videoCrop, setVideoCrop] = useState<number | null>(null);
   const [videoTrim, setVideoTrim] = useState<number | null>(null);
   const [lift, setLift] = useState<{ from: number; over: number; stride: number } | null>(null);
+  const [customLinkFor, setCustomLinkFor] = useState<number | null>(null);
   const liftRef = useRef<{ from: number; over: number; startY: number; stride: number; node: HTMLDivElement } | null>(null);
 
   const load = useCallback(async () => {
@@ -254,9 +273,10 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     setHeroItems((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)));
   }
 
-  async function saveHeroCopy(index: number) {
-    const next = heroItems.slice();
+  async function saveHeroCopy(index: number, patch?: Partial<HeroItem>) {
+    const next = heroItems.map((item, itemIndex) => (itemIndex === index && patch ? { ...item, ...patch } : item));
     if (!next[index]) return;
+    if (patch) setHeroItems(next);
     await persistHero(next);
   }
 
@@ -454,6 +474,9 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                   {heroItems.map((item, index) => {
                     const nudge = rowNudge(index);
                     const lifted = lift?.from === index;
+                    const customLink =
+                      customLinkFor === index ||
+                      Boolean(item.buttonUrl && !HERO_PAGES.some((page) => page.value === item.buttonUrl));
                     return (
                       <div
                         key={`${item.kind}-${item.url}-${index}`}
@@ -555,15 +578,45 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                               onBlur={() => canEdit && saveHeroCopy(index)}
                             />
                           </Field>
-                          <Field label="Button link" hint="Page on this site (about.html) or a full https:// address" className="sm:col-span-2">
-                            <Input
-                              value={item.buttonUrl}
+                          <Field label="Button link" hint="Pick a page on this site, or a web address of your own." className="sm:col-span-2">
+                            <Select
+                              value={customLink ? "custom" : item.buttonUrl}
                               disabled={!canEdit || busy !== null}
-                              maxLength={240}
-                              placeholder="about.html"
-                              onChange={(event) => patchHero(index, { buttonUrl: event.target.value })}
-                              onBlur={() => canEdit && saveHeroCopy(index)}
-                            />
+                              onChange={(event) => {
+                                const value = event.target.value;
+                                if (value === "custom") {
+                                  setCustomLinkFor(index);
+                                  if (HERO_PAGES.some((page) => page.value === item.buttonUrl)) {
+                                    patchHero(index, { buttonUrl: "" });
+                                  }
+                                  return;
+                                }
+                                setCustomLinkFor(null);
+                                if (canEdit) void saveHeroCopy(index, { buttonUrl: value });
+                                else patchHero(index, { buttonUrl: value });
+                              }}
+                            >
+                              <option value="">Choose a page</option>
+                              {HERO_PAGES.map((page) => (
+                                <option key={page.value} value={page.value}>
+                                  {page.label}
+                                </option>
+                              ))}
+                              <option value="custom">Custom web address</option>
+                            </Select>
+                            {customLink ? (
+                              <Input
+                                className="mt-2"
+                                value={item.buttonUrl}
+                                disabled={!canEdit || busy !== null}
+                                maxLength={240}
+                                autoCapitalize="none"
+                                spellCheck={false}
+                                placeholder="https://"
+                                onChange={(event) => patchHero(index, { buttonUrl: event.target.value.trim() })}
+                                onBlur={() => canEdit && saveHeroCopy(index)}
+                              />
+                            ) : null}
                           </Field>
                         </div>
                       </div>

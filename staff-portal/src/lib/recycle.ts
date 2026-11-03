@@ -84,11 +84,11 @@ export async function restoreStaffAccount(admin: Admin, id: string) {
 export async function purgeStaffAccount(admin: Admin, id: string) {
   const { data, error } = await admin
     .from("admin_profiles")
-    .select("id, is_super_admin, deleted_at, avatar_path")
+    .select("id, deleted_at, avatar_path")
     .eq("id", id)
     .maybeSingle();
   if (error) return { error: error as BinError };
-  if (!data?.deleted_at || data.is_super_admin) {
+  if (!data?.deleted_at) {
     return { error: { message: "That item is not in the recycle bin.", code: "bin" } };
   }
   if (data.avatar_path) {
@@ -96,7 +96,19 @@ export async function purgeStaffAccount(admin: Admin, id: string) {
     await admin.storage.from("media-public").remove([data.avatar_path]);
   }
   const { error: deleteErr } = await admin.auth.admin.deleteUser(id);
-  if (!deleteErr) revalidatePath("/");
-  if (deleteErr) return { error: { message: "Could not delete this account.", code: "delete" } };
+  if (!deleteErr) {
+    revalidatePath("/");
+    return { error: null };
+  }
+  // Auth user may already be gone; still clear the profile row so the bin can empty.
+  const { data: removed, error: profileErr } = await admin
+    .from("admin_profiles")
+    .delete()
+    .eq("id", id)
+    .not("deleted_at", "is", null)
+    .select("id");
+  if (profileErr) return { error: { message: "Could not delete this account.", code: "delete" } };
+  if (!removed?.length) return { error: { message: "That item is not in the recycle bin.", code: "bin" } };
+  revalidatePath("/");
   return { error: null };
 }

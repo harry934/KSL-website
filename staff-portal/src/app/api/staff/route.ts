@@ -209,7 +209,11 @@ export async function DELETE(req: NextRequest) {
 
   const { error: binErr } = await admin
     .from("admin_profiles")
-    .update({ deleted_at: new Date().toISOString() })
+    .update({
+      deleted_at: new Date().toISOString(),
+      // Drop admin flag so a binned incomplete invite can be purged for good.
+      ...(target.is_super_admin && target.must_change_password ? { is_super_admin: false } : {}),
+    })
     .eq("id", id)
     .is("deleted_at", null);
   if (binErr) return NextResponse.json({ error: "Could not delete the account. Please try again." }, { status: 500 });
