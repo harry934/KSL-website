@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Check, Copy, KeyRound, Loader2, Pencil, Trash2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -372,58 +372,136 @@ function whatsAppNumber(phone: string) {
   return digits;
 }
 
-function mailComposeUrl(kind: "gmail" | "outlook", email: string, subject: string) {
-  if (kind === "gmail") {
-    return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}`;
-  }
-  return `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(email)}&subject=${encodeURIComponent(subject)}`;
+function encodeUtf8Base64(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
+function buildInviteEml(to: string, subject: string, html: string, plain: string) {
+  const boundary = `ksl_${Date.now().toString(36)}`;
+  const encodedSubject = `=?UTF-8?B?${encodeUtf8Base64(subject)}?=`;
+  return [
+    "MIME-Version: 1.0",
+    `To: ${to}`,
+    `Subject: ${encodedSubject}`,
+    "X-Unsent: 1",
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    "",
+    `--${boundary}`,
+    'Content-Type: text/plain; charset="UTF-8"',
+    "Content-Transfer-Encoding: 8bit",
+    "",
+    plain,
+    "",
+    `--${boundary}`,
+    'Content-Type: text/html; charset="UTF-8"',
+    "Content-Transfer-Encoding: 8bit",
+    "",
+    html,
+    "",
+    `--${boundary}--`,
+    "",
+  ].join("\r\n");
+}
+
+function openInviteEml(filename: string, eml: string) {
+  const blob = new Blob([eml], { type: "message/rfc822" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.rel = "noopener";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 function GmailIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <path fill="#EA4335" d="M3 5.5v13A1.5 1.5 0 0 0 4.5 20H7V11.2l5 3.75 5-3.75V20h2.5A1.5 1.5 0 0 0 21 18.5v-13L12 12 3 5.5Z" />
-      <path fill="#C5221F" d="M3 5.5 12 12l9-6.5V5a1.5 1.5 0 0 0-1.5-1.5H4.5A1.5 1.5 0 0 0 3 5v.5Z" />
-      <path fill="#4285F4" d="M7 11.2V20H4.5A1.5 1.5 0 0 1 3 18.5v-13L7 11.2Z" />
-      <path fill="#34A853" d="M21 5.5v13a1.5 1.5 0 0 1-1.5 1.5H17V11.2l4-5.7Z" />
+    <svg viewBox="0 0 48 48" className={className} aria-hidden>
+      <path fill="#EA4335" d="M6 10.5v27A3.5 3.5 0 0 0 9.5 41H14V22.1l10 7.7 10-7.7V41h4.5a3.5 3.5 0 0 0 3.5-3.5v-27L24 24 6 10.5Z" />
+      <path fill="#C5221F" d="M6 10.5 24 24l18-13.5V9A3.5 3.5 0 0 0 38.5 5.5h-29A3.5 3.5 0 0 0 6 9v1.5Z" />
+      <path fill="#4285F4" d="M14 22.1V41H9.5A3.5 3.5 0 0 1 6 37.5v-27L14 22.1Z" />
+      <path fill="#34A853" d="M42 10.5v27a3.5 3.5 0 0 1-3.5 3.5H34V22.1L42 10.5Z" />
+      <path fill="#FBBC04" d="M14 22.1 24 29.8l10-7.7V41H14V22.1Z" />
     </svg>
   );
 }
 
 function OutlookIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <path fill="#0078D4" d="M12.8 5h7.7A1.5 1.5 0 0 1 22 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-7.7V5Z" />
-      <path fill="#28A8EA" d="M12.8 5H14v14h-1.2V5Z" />
-      <path fill="#0A66C2" d="M2.5 7.2h11.3v9.6H2.5A1.7 1.7 0 0 1 .8 15.1V8.9A1.7 1.7 0 0 1 2.5 7.2Z" />
-      <circle cx="8.1" cy="12" r="3.1" fill="#fff" />
-      <circle cx="8.1" cy="12" r="1.85" fill="#0A66C2" />
+    <svg viewBox="0 0 48 48" className={className} aria-hidden>
+      <path fill="#0078D4" d="M24 8h16.5A3.5 3.5 0 0 1 44 11.5v25a3.5 3.5 0 0 1-3.5 3.5H24V8Z" />
+      <path fill="#50D9FF" d="M24 8h3v32h-3V8Z" />
+      <path fill="#0A66C2" d="M4.5 13h22v22h-22A3.5 3.5 0 0 1 1 31.5v-15A3.5 3.5 0 0 1 4.5 13Z" />
+      <circle cx="15.5" cy="24" r="7" fill="#fff" />
+      <circle cx="15.5" cy="24" r="4.2" fill="#0A66C2" />
     </svg>
   );
 }
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden>
+    <svg viewBox="0 0 48 48" className={className} aria-hidden>
       <path
         fill="#25D366"
-        d="M12.04 2C6.58 2 2.15 6.37 2.15 11.75c0 1.92.52 3.72 1.44 5.27L2 22l5.16-1.54a10.1 10.1 0 0 0 4.88 1.25h.01c5.46 0 9.89-4.37 9.89-9.75S17.5 2 12.04 2Z"
+        d="M24.08 4C13.16 4 4.3 12.74 4.3 23.5c0 3.84 1.04 7.44 2.88 10.54L4 44l10.32-3.08A20.1 20.1 0 0 0 24.08 43h.02C35.02 43 43.9 34.26 43.9 23.5S35.02 4 24.08 4Z"
       />
       <path
         fill="#fff"
-        d="M17.2 14.55c-.24-.12-1.42-.7-1.64-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.02-.37-1.94-1.2-.72-.63-1.2-1.4-1.34-1.64-.14-.24-.02-.37.1-.49.11-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.48-.4-.4-.54-.4h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.6 4.12 3.64.58.24 1.02.38 1.38.5.58.18 1.1.16 1.52.1.46-.06 1.42-.58 1.62-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"
+        d="M34.4 29.1c-.48-.24-2.84-1.4-3.28-1.56-.44-.16-.76-.24-1.08.24-.32.48-1.24 1.56-1.52 1.88-.28.32-.56.36-1.04.12-.48-.24-2.04-.74-3.88-2.4-1.44-1.26-2.4-2.8-2.68-3.28-.28-.48-.04-.74.2-.98.22-.2.48-.56.72-.84.24-.28.32-.48.48-.8.16-.32.08-.6-.04-.84-.12-.24-1.08-2.6-1.48-3.56-.4-.96-.8-.8-1.08-.8h-.92c-.32 0-.84.12-1.28.6-.44.48-1.68 1.64-1.68 4s1.72 4.64 1.96 4.96c.24.32 3.4 5.2 8.24 7.28 1.16.48 2.04.76 2.76 1 .1.16 2.2.32 3.04.2.92-.12 2.84-1.16 3.24-2.28.4-1.12.4-2.08.28-2.28-.12-.2-.44-.32-.92-.56Z"
       />
     </svg>
   );
 }
 
+function ShareIconButton({
+  label,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="inline-flex h-14 w-14 items-center justify-center rounded-full transition hover:bg-[#f0f3f7] hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b1f3a]/25 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:scale-100 disabled:hover:bg-transparent"
+    >
+      {children}
+    </button>
+  );
+}
+
 function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () => void }) {
   const [copied, setCopied] = useState<"passcode" | "link" | null>(null);
-  const [hint, setHint] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string>("");
 
   const plain = invitePlainText(issued);
   const subject = inviteSubject(issued);
   const hasEmail = issued.email.includes("@");
+
+  useEffect(() => {
+    let alive = true;
+    inviteHtmlEmail(issued).then((html) => {
+      if (alive) setPreviewHtml(html);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [issued]);
 
   async function copyText(value: string, which: "passcode" | "link") {
     try {
@@ -435,30 +513,13 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
     }
   }
 
-  async function copyBrandedEmail() {
-    const html = await inviteHtmlEmail(issued);
-    if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          "text/html": new Blob([html], { type: "text/html" }),
-          "text/plain": new Blob([plain], { type: "text/plain" }),
-        }),
-      ]);
-      return;
-    }
-    await navigator.clipboard.writeText(plain);
-  }
-
-  async function sendMail(kind: "gmail" | "outlook") {
+  async function openMailDraft() {
     if (!hasEmail) return;
-    try {
-      await copyBrandedEmail();
-      setHint("Press Ctrl+V in the message");
-      window.setTimeout(() => setHint(null), 5000);
-    } catch {
-      setHint(null);
-    }
-    window.open(mailComposeUrl(kind, issued.email, subject), "_blank", "noopener");
+    const html = previewHtml || (await inviteHtmlEmail(issued));
+    openInviteEml(
+      `Kenya-Shipyards-${issued.isNew ? "invite" : "reset"}.eml`,
+      buildInviteEml(issued.email, subject, html, plain)
+    );
   }
 
   function sendWhatsApp() {
@@ -497,22 +558,26 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
         <p className="mt-2 break-all font-mono text-[13px] text-[#0b1f3a]">{issued.signupUrl}</p>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button variant="secondary" onClick={() => sendMail("gmail")} disabled={!hasEmail} aria-label="Gmail">
-          <GmailIcon className="h-5 w-5" />
-          Gmail
+      {previewHtml ? (
+        <div className="mt-4 overflow-hidden rounded-[8px] border border-[#d7dee7] bg-[#eef2f6]">
+          <iframe title="Invite email" srcDoc={previewHtml} className="h-[420px] w-full border-0 bg-white" />
+        </div>
+      ) : null}
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <ShareIconButton label="Gmail" disabled={!hasEmail} onClick={openMailDraft}>
+          <GmailIcon className="h-11 w-11" />
+        </ShareIconButton>
+        <ShareIconButton label="Outlook" disabled={!hasEmail} onClick={openMailDraft}>
+          <OutlookIcon className="h-11 w-11" />
+        </ShareIconButton>
+        <ShareIconButton label="WhatsApp" onClick={sendWhatsApp}>
+          <WhatsAppIcon className="h-11 w-11" />
+        </ShareIconButton>
+        <Button className="ml-auto" onClick={onClose}>
+          Done
         </Button>
-        <Button variant="secondary" onClick={() => sendMail("outlook")} disabled={!hasEmail} aria-label="Outlook">
-          <OutlookIcon className="h-5 w-5" />
-          Outlook
-        </Button>
-        <Button variant="secondary" onClick={sendWhatsApp} aria-label="WhatsApp">
-          <WhatsAppIcon className="h-5 w-5" />
-          WhatsApp
-        </Button>
-        <Button onClick={onClose}>Done</Button>
       </div>
-      {hint ? <p className="mt-2 text-[12.5px] text-[#5b6775]">{hint}</p> : null}
     </section>
   );
 }
