@@ -126,10 +126,10 @@ export function LoginForm({ notice }: { notice?: string | null }) {
       {forgot ? (
         <div className="space-y-3 border-t border-[#eef1f4] pt-3">
           <p className="text-[13.5px] text-[#5b6775]">
-            An administrator will send a new one-time passcode by email or message. You will need to wait for that. The username above is the one the request uses.
+            An administrator will send a sign-up link and a one-time passcode by email or message. You will need to wait for that. The username above is the one the request uses.
           </p>
           <Button type="button" className="w-full" disabled={loading || forgotLoading} onClick={onForgot}>
-            {forgotLoading ? "Sending…" : "Request a new passcode"}
+            {forgotLoading ? "Sending…" : "Request a password reset"}
           </Button>
         </div>
       ) : (

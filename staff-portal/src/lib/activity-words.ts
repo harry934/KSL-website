@@ -9,7 +9,8 @@ const ACTION_WORDS: Record<string, string> = {
   create: "added",
   permissions: "changed what can be done by",
   profile: "updated the details of",
-  "reset password": "gave a new one-time passcode to",
+  "reset password": "sent a password reset invite to",
+  invite: "invited",
   "set active": "changed the access of",
 };
 
@@ -41,6 +42,7 @@ const THING_WORDS: Record<string, string> = {
   gallery_video: "a video",
   website_message: "a message",
   admin_profile: "a staff account",
+  staff_invite: "a staff invite",
 };
 
 /** Turns an activity log row into a short plain-English phrase, e.g. "saved a news story". */
@@ -63,6 +65,7 @@ export function describeActivity(row: {
   if (row.action === "request password") return "asked for a new password";
   if (row.action === "approve username") return username ? `approved the username @${username}` : "approved a username change";
   if (row.action === "reject request") return "rejected an account request";
+  if (row.action === "invite") return "sent a staff invite";
 
   const verb = ACTION_WORDS[row.action] ?? row.action.replace(/_/g, " ");
   if (row.entity_type === "admin_profile") {

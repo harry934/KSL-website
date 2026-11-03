@@ -76,10 +76,14 @@ export async function POST(req: NextRequest) {
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
     return NextResponse.json({
       ok: true,
-      oneTimePassword: result.oneTimePassword,
+      passcode: result.passcode,
       expiresAt: result.expiresAt,
+      signupUrl: result.signupUrl,
+      token: result.token,
       username: result.username,
       email: result.email,
+      phone: result.phone,
+      kind: result.kind,
     });
   }
 

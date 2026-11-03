@@ -3,7 +3,7 @@ import { savePasswordRequest } from "@/lib/account-requests";
 import { normalizeUsername } from "@/lib/accounts";
 import { clientIp, formatClock, lockedUntil, recordAttempt } from "@/lib/auth-server";
 
-const WAITING = "Your request has been sent. Wait for an email or message from an administrator. They will send you a new one-time passcode.";
+const WAITING = "Your request has been sent. Wait for an email or message from an administrator. They will send a sign-up link and a one-time passcode.";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));

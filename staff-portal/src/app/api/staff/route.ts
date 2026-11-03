@@ -1,35 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity } from "@/lib/api-auth";
 import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
-import { authEmailFor, generateOneTimePassword, oneTimePasswordExpiry, usernameChoices } from "@/lib/auth-server";
-import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
+import { authEmailFor } from "@/lib/auth-server";
+import { createStaffInvite, permissionRows } from "@/lib/staff-invites";
 import { avatarUrl } from "@/lib/session";
 import { parseRoleTitle } from "@/lib/staff-role";
 import { NextRequest, NextResponse } from "next/server";
-
-type PermInput = {
-  module_key: ModuleKey;
-  can_view?: boolean;
-  can_edit?: boolean;
-  can_publish?: boolean;
-  can_delete?: boolean;
-};
-
-function permissionRows(profileId: string, input: unknown) {
-  if (!Array.isArray(input)) return [];
-  return (input as PermInput[])
-    .filter((p) => p && p.module_key in MODULE_LABELS && p.module_key !== "staff")
-    .filter((p) => p.can_view || p.can_edit || p.can_publish || p.can_delete)
-    .map((p) => ({
-      profile_id: profileId,
-      module_key: p.module_key,
-      // Edit, publish or delete rights imply the agent can open the module.
-      can_view: !!(p.can_view || p.can_edit || p.can_publish || p.can_delete),
-      can_edit: !!p.can_edit,
-      can_publish: !!p.can_publish,
-      can_delete: !!p.can_delete,
-    }));
-}
 
 async function requireSuperAdmin(action: "view" | "edit" | "delete") {
   const { error, session } = await requireStaff("staff", action);
@@ -67,68 +43,28 @@ export async function POST(req: NextRequest) {
   if (error || !session) return error;
 
   const body = await req.json().catch(() => ({}));
-  const contactEmail = String(body.email ?? "").trim().toLowerCase() || null;
-  const password = generateOneTimePassword();
-  const displayName = String(body.displayName ?? "").trim();
-  if (!displayName) return NextResponse.json({ error: "Write the agent's full name." }, { status: 400 });
-  const emailProblem = validateEmail(contactEmail ?? "");
-  if (emailProblem) return NextResponse.json({ error: emailProblem }, { status: 400 });
-  const superAdmin = body.superAdmin === true;
-  const role = superAdmin ? { title: null, error: null } : parseRoleTitle(body.roleTitle);
-  if (role.error) return NextResponse.json({ error: role.error }, { status: 400 });
-
-  const admin = createAdminClient();
-  let username = "";
-  for (const candidate of usernameChoices(displayName)) {
-    const { data: taken } = await admin.from("admin_profiles").select("id").eq("username", candidate).maybeSingle();
-    if (!taken) {
-      username = candidate;
-      break;
-    }
-  }
-  if (!username) return NextResponse.json({ error: "Could not create a username. Please try again." }, { status: 500 });
-
-  const { data: created, error: createError } = await admin.auth.admin.createUser({
-    email: authEmailFor(username, contactEmail),
-    password,
-    email_confirm: true,
+  const result = await createStaffInvite({
+    actorId: session.userId,
+    kind: "create",
+    email: body.email,
+    phone: body.phone,
+    superAdmin: body.superAdmin === true,
+    roleTitle: body.roleTitle,
+    permissions: body.permissions,
   });
+  if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
 
-  if (createError || !created.user) {
-    const message = /already/i.test(createError?.message ?? "")
-      ? "That contact email is already used by another account."
-      : "Could not create the account. Please try again.";
-    return NextResponse.json({ error: message }, { status: 400 });
-  }
-
-  const userId = created.user.id;
-  const expiresAt = oneTimePasswordExpiry();
-  const { error: profileError } = await admin.from("admin_profiles").insert({
-    id: userId,
-    username,
-    contact_email: contactEmail,
-    display_name: displayName,
-    role_title: role.title,
-    is_super_admin: superAdmin,
-    is_active: true,
-    must_change_password: true,
-    must_change_username: true,
-    one_time_password_expires_at: expiresAt,
-    created_by: session.userId,
+  return NextResponse.json({
+    ok: true,
+    id: result.id,
+    token: result.token,
+    passcode: result.passcode,
+    expiresAt: result.expiresAt,
+    signupUrl: result.signupUrl,
+    email: result.email,
+    phone: result.phone,
+    kind: result.kind,
   });
-
-  if (profileError) {
-    await admin.auth.admin.deleteUser(userId);
-    return NextResponse.json({ error: "Could not create the account. Please try again." }, { status: 500 });
-  }
-
-  if (!superAdmin) {
-    const rows = permissionRows(userId, body.permissions);
-    if (rows.length) await admin.from("admin_module_permissions").insert(rows);
-  }
-
-  await logActivity(session.userId, "staff", "create", "admin_profile", userId, { username, superAdmin });
-  return NextResponse.json({ id: userId, username, oneTimePassword: password, expiresAt });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -213,13 +149,30 @@ export async function PATCH(req: NextRequest) {
       .update({ username, display_name: displayName, contact_email: contactEmail, role_title: role.title })
       .eq("id", id);
   } else if (action === "reset_password") {
-    const password = generateOneTimePassword();
-    const expiresAt = oneTimePasswordExpiry();
-    const { error: authErr } = await admin.auth.admin.updateUserById(id, { password });
-    if (authErr) return NextResponse.json({ error: "Could not reset the password. Please try again." }, { status: 400 });
-    await admin.from("admin_profiles").update({ must_change_password: true, one_time_password_expires_at: expiresAt }).eq("id", id);
-    await logActivity(session.userId, "staff", "reset password", "admin_profile", id, { username: target.username });
-    return NextResponse.json({ ok: true, oneTimePassword: password, expiresAt });
+    const { data: profile } = await admin
+      .from("admin_profiles")
+      .select("contact_email")
+      .eq("id", id)
+      .maybeSingle();
+    const result = await createStaffInvite({
+      actorId: session.userId,
+      kind: "password_reset",
+      email: profile?.contact_email,
+      phone: body.phone,
+      targetProfileId: id,
+    });
+    if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
+    return NextResponse.json({
+      ok: true,
+      token: result.token,
+      passcode: result.passcode,
+      expiresAt: result.expiresAt,
+      signupUrl: result.signupUrl,
+      email: result.email,
+      phone: result.phone,
+      kind: result.kind,
+      username: target.username,
+    });
   } else if (action === "set_active") {
     const active = !!body.active;
     await admin.from("admin_profiles").update({ is_active: active }).eq("id", id);

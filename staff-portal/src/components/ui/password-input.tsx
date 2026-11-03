@@ -97,9 +97,15 @@ export function PasswordHints({ password, confirm }: { password: string; confirm
   );
 }
 
-/** Read-only one-time passcode shown as character boxes, grouped like XXXX-XXXX-XXXX. */
+/** Read-only passcode boxes. Groups on "-" when present; 6-digit codes show as 3 + 3. */
 export function PasscodeDisplay({ value, accepted = false }: { value: string; accepted?: boolean }) {
-  const groups = useMemo(() => value.split("-").filter(Boolean), [value]);
+  const groups = useMemo(() => {
+    const raw = value.trim();
+    if (!raw) return [] as string[];
+    if (raw.includes("-")) return raw.split("-").filter(Boolean);
+    if (/^\d{6}$/.test(raw)) return [raw.slice(0, 3), raw.slice(3)];
+    return [raw];
+  }, [value]);
 
   return (
     <div className="passcode-display">
@@ -113,6 +119,114 @@ export function PasscodeDisplay({ value, accepted = false }: { value: string; ac
             ))}
           </div>
         ))}
+      </div>
+      {accepted ? <p className="passcode-accepted">Code accepted.</p> : null}
+    </div>
+  );
+}
+
+/** Interactive 6-digit passcode entry. */
+export function PasscodeInput({
+  value,
+  onChange,
+  disabled,
+  accepted = false,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  disabled?: boolean;
+  accepted?: boolean;
+}) {
+  const digits = value.replace(/\D/g, "").slice(0, 6).split("");
+  while (digits.length < 6) digits.push("");
+
+  function setAt(index: number, char: string) {
+    const next = digits.map((d, i) => (i === index ? char : d));
+    onChange(next.join("").replace(/\D/g, "").slice(0, 6));
+  }
+
+  function focusIndex(index: number) {
+    const el = document.getElementById(`passcode-digit-${index}`) as HTMLInputElement | null;
+    el?.focus();
+    el?.select();
+  }
+
+  return (
+    <div className="passcode-display">
+      <div className="passcode-groups" role="group" aria-label="One-time passcode">
+        <div className="passcode-group">
+          {digits.slice(0, 3).map((digit, i) => (
+            <input
+              key={i}
+              id={`passcode-digit-${i}`}
+              className={cn("passcode-cell passcode-input-cell", accepted && "is-accepted")}
+              inputMode="numeric"
+              autoComplete={i === 0 ? "one-time-code" : "off"}
+              maxLength={1}
+              disabled={disabled}
+              value={digit}
+              onChange={(e) => {
+                const char = e.target.value.replace(/\D/g, "").slice(-1);
+                setAt(i, char);
+                if (char && i < 5) focusIndex(i + 1);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Backspace" && !digits[i] && i > 0) {
+                  e.preventDefault();
+                  setAt(i - 1, "");
+                  focusIndex(i - 1);
+                }
+                if (e.key === "ArrowLeft" && i > 0) focusIndex(i - 1);
+                if (e.key === "ArrowRight" && i < 5) focusIndex(i + 1);
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+                if (!pasted) return;
+                onChange(pasted);
+                focusIndex(Math.min(pasted.length, 5));
+              }}
+            />
+          ))}
+        </div>
+        <div className="passcode-group">
+          {digits.slice(3).map((digit, offset) => {
+            const i = offset + 3;
+            return (
+              <input
+                key={i}
+                id={`passcode-digit-${i}`}
+                className={cn("passcode-cell passcode-input-cell", accepted && "is-accepted")}
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={1}
+                disabled={disabled}
+                value={digit}
+                onChange={(e) => {
+                  const char = e.target.value.replace(/\D/g, "").slice(-1);
+                  setAt(i, char);
+                  if (char && i < 5) focusIndex(i + 1);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Backspace" && !digits[i] && i > 0) {
+                    e.preventDefault();
+                    setAt(i - 1, "");
+                    focusIndex(i - 1);
+                  }
+                  if (e.key === "ArrowLeft" && i > 0) focusIndex(i - 1);
+                  if (e.key === "ArrowRight" && i < 5) focusIndex(i + 1);
+                }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+                  if (!pasted) return;
+                  onChange(pasted);
+                  focusIndex(Math.min(pasted.length, 5));
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
       {accepted ? <p className="passcode-accepted">Code accepted.</p> : null}
     </div>

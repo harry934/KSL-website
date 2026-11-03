@@ -33,7 +33,7 @@ export function PasswordRequest({
     <div className="space-y-3">
       {waiting && (
         <Notice kind="info">
-          Waiting for an administrator. Your password stays as it is until they send you a one-time passcode.
+          Waiting for an administrator. Your password stays as it is until they send you a sign-up link and one-time passcode.
         </Notice>
       )}
       {state?.status === "rejected" ? (

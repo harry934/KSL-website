@@ -7,7 +7,20 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function LoginPage() {
+function noticeText(value: string | undefined) {
+  if (value === "account-ready") return "Your account is ready. Sign in with the username and password you chose.";
+  if (value === "password-ready") return "Your password was updated. Sign in with your username and new password.";
+  return null;
+}
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ notice?: string }>;
+}) {
+  const params = await searchParams;
+  const notice = noticeText(params.notice);
+
   return (
     <div className="relative min-h-screen bg-[#0b1f3a] pt-[6px]">
       <div className="kenya-stripe" aria-hidden>
@@ -32,7 +45,7 @@ export default function LoginPage() {
 
           <div className="rounded-[8px] border border-[#e3e8ee] bg-white p-4 text-left sm:p-5">
             <strong className="mb-3 block text-[15px] text-[#0b1f3a]">Sign in</strong>
-            <LoginForm />
+            <LoginForm notice={notice} />
           </div>
         </section>
       </div>

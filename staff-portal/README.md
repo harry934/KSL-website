@@ -56,7 +56,9 @@ Optional: `npx skills add supabase/agent-skills` for Supabase-focused agent skil
 
 Production: https://ksl-websitemink.vercel.app/login — sign in with **username and password**.
 
-New agents: Staff → Add agent. The portal shows a one-time passcode once; give it to the agent, who chooses their own password at first sign-in. "New passcode" on a staff row does the same for a forgotten password.
+New agents: Staff → Invite staff. Add email and/or mobile plus their role. The portal shows a 6-digit passcode and `/signup` link once; send both. They enter the passcode, choose username and password, then use normal `/login`. "Reset invite" on a staff row (or approving a password request) sends the same style of link for a new password only.
+
+Apply `supabase/migrations/029_staff_invites.sql` in Supabase before using invites. Optional env: `NEXT_PUBLIC_PORTAL_URL` (defaults to the Vercel URL / `https://ksl-websitemink.vercel.app`).
 
 Shared form pieces live in `src/components/ui/` (`form-bits`, `image-field`, `file-field`, `row-list`, `item-list`, `list-tools`, `search-select`, `password-input`, `rich-text`, `feedback`). Use them for new editors so wording and styling stay consistent.
 

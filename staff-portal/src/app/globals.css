@@ -1679,6 +1679,18 @@ body {
   user-select: all;
 }
 
+.passcode-input-cell {
+  text-align: center;
+  padding: 0;
+  outline: none;
+  user-select: text;
+}
+
+.passcode-input-cell:focus {
+  border-color: #0b1f3a;
+  box-shadow: 0 0 0 3px rgba(11, 31, 58, 0.1);
+}
+
 .passcode-cell.is-accepted {
   border-color: #12b76a;
   color: #344054;

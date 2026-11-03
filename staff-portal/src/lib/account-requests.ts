@@ -1,7 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeUsername, validateUsername } from "@/lib/accounts";
-import { authEmailFor, generateOneTimePassword, oneTimePasswordExpiry } from "@/lib/auth-server";
+import { authEmailFor } from "@/lib/auth-server";
 import { logActivity } from "@/lib/api-auth";
+import { createStaffInvite } from "@/lib/staff-invites";
 
 export const USERNAME_TAKEN = "That username is already taken.";
 
@@ -207,27 +208,29 @@ export async function approvePasswordRequest(actorId: string, id: string) {
     return { error: "That account is not active.", status: 400 as const };
   }
 
-  const password = generateOneTimePassword();
-  const expiresAt = oneTimePasswordExpiry();
-  const { error: authErr } = await admin.auth.admin.updateUserById(profile.id, { password });
-  if (authErr) return { error: "Could not reset the password. Please try again.", status: 400 as const };
+  const invite = await createStaffInvite({
+    actorId,
+    kind: "password_reset",
+    email: profile.contact_email,
+    targetProfileId: profile.id,
+  });
+  if (invite.error) return { error: invite.error, status: invite.status };
 
-  await admin
-    .from("admin_profiles")
-    .update({ must_change_password: true, one_time_password_expires_at: expiresAt })
-    .eq("id", profile.id);
   await admin
     .from("staff_account_requests")
     .update({ status: "approved", resolved_at: new Date().toISOString(), resolved_by: actorId, reason: null })
     .eq("id", id);
-  await logActivity(actorId, "staff", "reset password", "admin_profile", profile.id, { username: profile.username });
 
   return {
     error: null,
     status: 200 as const,
-    oneTimePassword: password,
-    expiresAt,
+    passcode: invite.passcode,
+    expiresAt: invite.expiresAt,
+    signupUrl: invite.signupUrl,
+    token: invite.token,
     username: profile.username as string,
-    email: (profile.contact_email as string | null) ?? "",
+    email: invite.email,
+    phone: invite.phone,
+    kind: invite.kind,
   };
 }

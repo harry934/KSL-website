@@ -38,7 +38,7 @@ export function ChangePasswordForm({
       return;
     }
     if (password === current) {
-      setError(forced ? "Choose a password different from the one-time passcode." : "Choose a password different from the current one.");
+      setError(forced ? "Choose a password different from your current temporary password." : "Choose a password different from the current one.");
       return;
     }
     const nextUsername = normalizeUsername(username);
@@ -93,7 +93,7 @@ export function ChangePasswordForm({
       {!changeUsername && accountUsername ? (
         <input className="sr-only" type="text" name="username" autoComplete="username" defaultValue={accountUsername} tabIndex={-1} aria-hidden />
       ) : null}
-      <Field label={forced ? "One-time passcode" : "Current password"} hint={forced ? "The passcode the administrator gave you." : undefined}>
+      <Field label="Current password" hint={forced ? "The temporary password still on your account, if you have one." : undefined}>
         <PasswordInput name="current-password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
       </Field>
       <Field label="New password">

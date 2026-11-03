@@ -51,7 +51,13 @@ export async function middleware(request: NextRequest) {
     url.search = "";
     return NextResponse.redirect(url);
   }
-  if (pathname === "/api/auth/sign-in" || pathname === "/api/auth/passkey" || pathname === "/api/auth/forgot-password") {
+  if (
+    pathname === "/api/auth/sign-in" ||
+    pathname === "/api/auth/passkey" ||
+    pathname === "/api/auth/forgot-password" ||
+    pathname === "/api/auth/invite/verify" ||
+    pathname === "/api/auth/invite/complete"
+  ) {
     return NextResponse.next();
   }
 
@@ -91,9 +97,11 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isLogin = pathname === "/login";
+  const isSignup = pathname === "/signup";
+  const publicPage = isLogin || isSignup;
   const quietPath = pathname === "/api/auth/session" || pathname === "/api/auth/sign-out";
 
-  if (!user && !isLogin) {
+  if (!user && !publicPage) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
     }
@@ -120,7 +128,7 @@ export async function middleware(request: NextRequest) {
       if (pathname.startsWith("/api/")) {
         return endBrowserSession(NextResponse.json({ error: "Please sign in again." }, { status: 401 }));
       }
-      if (isLogin) return endBrowserSession(response);
+      if (publicPage) return endBrowserSession(response);
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       url.search = "";
@@ -132,9 +140,10 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (user && isLogin) {
+  if (user && publicPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
+    url.search = "";
     return NextResponse.redirect(url);
   }
 

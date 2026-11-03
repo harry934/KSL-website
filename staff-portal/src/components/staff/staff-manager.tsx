@@ -46,7 +46,15 @@ type AccountRequest = {
   username: string;
   email: string;
 };
-type Issued = { username: string; password: string; email: string; phone: string; isNew: boolean; expiresAt: string };
+type Issued = {
+  passcode: string;
+  signupUrl: string;
+  email: string;
+  phone: string;
+  isNew: boolean;
+  expiresAt: string;
+  username?: string;
+};
 
 function layoutHint(permissions: PermRow[]) {
   const count = permissionNavLinks({ isSuperAdmin: false, permissions }).length;
@@ -234,20 +242,20 @@ function expiryLabel(iso: string) {
   }
 }
 
-function signInText(issued: Issued) {
+function inviteText(issued: Issued) {
   const until = expiryLabel(issued.expiresAt);
   return [
     "Kenya Shipyards staff portal",
     "",
-    `Username: ${issued.username}`,
-    `One-time passcode: ${issued.password}`,
+    `One-time passcode: ${issued.passcode}`,
+    `Sign-up link: ${issued.signupUrl}`,
     "",
     until
       ? `This passcode stops working at ${until} East Africa Time (10 minutes after it was created).`
       : "This passcode stops working after 10 minutes.",
     issued.isNew
-      ? "Sign in and choose your own username and password."
-      : "Sign in with this one-time passcode and choose a new password.",
+      ? "Open the link, enter the passcode, then choose your own username and password."
+      : "Open the link, enter the passcode, then choose a new password. Your username stays the same.",
   ].join("\n");
 }
 
@@ -259,7 +267,7 @@ function whatsAppNumber(phone: string) {
 }
 
 function mailComposeUrl(kind: "gmail" | "outlook", email: string, body: string) {
-  const subject = "Your Kenya Shipyards portal sign in";
+  const subject = "Your Kenya Shipyards portal sign-up";
   if (kind === "gmail") {
     return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
@@ -267,12 +275,13 @@ function mailComposeUrl(kind: "gmail" | "outlook", email: string, body: string) 
 }
 
 function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () => void }) {
-  const [copied, setCopied] = useState<"passcode" | "message" | null>(null);
+  const [copied, setCopied] = useState<"passcode" | "link" | "message" | null>(null);
 
-  const details = signInText(issued);
+  const details = inviteText(issued);
   const hasEmail = issued.email.includes("@");
+  const hasPhone = !!issued.phone.replace(/\D/g, "");
 
-  async function copyText(value: string, which: "passcode" | "message") {
+  async function copyText(value: string, which: "passcode" | "link" | "message") {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(which);
@@ -296,36 +305,45 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
   return (
     <section className="ksl-card p-5">
       <h2 className="text-[15px] font-bold text-[#0b1f3a]">
-        {issued.isNew ? "Agent created" : "New one-time passcode"}
+        {issued.isNew ? "Invite ready" : "Password reset invite"}
       </h2>
       <p className="mt-1 text-[13.5px] text-[#5b6775]">
-        Give this to the agent.{" "}
+        Send the passcode and sign-up link.{" "}
         {expiryLabel(issued.expiresAt)
-          ? `It stops working at ${expiryLabel(issued.expiresAt)} East Africa Time.`
-          : "It stops working after 10 minutes."}{" "}
-        {issued.isNew ? "They will choose their own username and password the first time they sign in." : "They will choose a new password the next time they sign in."}
+          ? `They stop working at ${expiryLabel(issued.expiresAt)} East Africa Time.`
+          : "They stop working after 10 minutes."}{" "}
+        {issued.isNew
+          ? "They open the link, enter the passcode, then choose a username and password."
+          : "They open the link, enter the passcode, then choose a new password."}
       </p>
       <div className="mt-4 grid gap-3">
-        <div className="rounded-[8px] bg-[#f6f8fa] px-4 py-3 sm:max-w-sm">
-          <p className="text-[12.5px] text-[#6b7785]">Username</p>
-          <p className="mt-0.5 font-mono text-[16px] font-semibold text-[#0b1f3a]">{issued.username}</p>
-        </div>
         <div className="rounded-[8px] bg-[#f6f8fa] px-4 py-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <p className="text-[12.5px] text-[#6b7785]">One-time passcode</p>
-            <Button variant="secondary" size="sm" onClick={() => copyText(issued.password, "passcode")}>
+            <Button variant="secondary" size="sm" onClick={() => copyText(issued.passcode, "passcode")}>
               {copied === "passcode" ? <Check className="h-4 w-4 text-[#12b76a]" /> : <Copy className="h-4 w-4" />}
               {copied === "passcode" ? "Copied" : "Copy passcode"}
             </Button>
           </div>
           <div className="mt-3">
-            <PasscodeDisplay value={issued.password} accepted={copied === "passcode"} />
+            <PasscodeDisplay value={issued.passcode} accepted={copied === "passcode"} />
           </div>
+        </div>
+        <div className="rounded-[8px] bg-[#f6f8fa] px-4 py-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <p className="text-[12.5px] text-[#6b7785]">Sign-up link</p>
+            <Button variant="secondary" size="sm" onClick={() => copyText(issued.signupUrl, "link")}>
+              {copied === "link" ? <Check className="h-4 w-4 text-[#12b76a]" /> : <Copy className="h-4 w-4" />}
+              {copied === "link" ? "Copied" : "Copy link"}
+            </Button>
+          </div>
+          <p className="mt-2 break-all font-mono text-[13px] text-[#0b1f3a]">{issued.signupUrl}</p>
         </div>
       </div>
       <p className="mt-3 text-[12.5px] text-[#6b7785]">
-        These details are shown only once. Gmail and Outlook open a new message with the username and passcode already written. Press Send there.
-        {hasEmail ? "" : " Add a contact email if you want those buttons."}
+        These details are shown only once. Gmail and Outlook open a new message with the passcode and link already written.
+        {!hasEmail ? " Add an email to use those buttons." : ""}
+        {!hasPhone ? " Add a mobile number to open WhatsApp with their number filled in." : ""}
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button variant="secondary" onClick={() => copyText(details, "message")}>
@@ -426,8 +444,8 @@ export function StaffManager() {
 
   async function submitCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!displayName.trim()) {
-      setError("Write the agent's full name.");
+    if (!email.trim() && !phone.trim()) {
+      setError("Add an email address or a mobile number.");
       return;
     }
     const problem = validateEmail(email.trim());
@@ -441,15 +459,22 @@ export function StaffManager() {
       return;
     }
     const data = await run(() =>
-      sendJson("/api/staff", "POST", { displayName, email, permissions, superAdmin: isAdmin, roleTitle: role.title })
+      sendJson("/api/staff/invites", "POST", {
+        kind: "create",
+        email,
+        phone,
+        permissions,
+        superAdmin: isAdmin,
+        roleTitle: role.title,
+      })
     );
     if (data) {
       setPanel(null);
       setIssued({
-        username: data.username,
-        password: data.oneTimePassword,
-        email: email.trim(),
-        phone: phone.trim(),
+        passcode: data.passcode,
+        signupUrl: data.signupUrl,
+        email: data.email || email.trim(),
+        phone: data.phone || phone.trim(),
         isNew: true,
         expiresAt: data.expiresAt,
       });
@@ -495,12 +520,13 @@ export function StaffManager() {
     const data = await run(() => sendJson("/api/staff/requests", "POST", { id: request.id, action: "approve-password" }));
     if (!data) return;
     setIssued({
-      username: data.username,
-      password: data.oneTimePassword,
-      email: data.email ?? "",
-      phone: "",
+      passcode: data.passcode,
+      signupUrl: data.signupUrl,
+      email: data.email ?? request.email ?? "",
+      phone: data.phone ?? "",
       isNew: false,
       expiresAt: data.expiresAt,
+      username: data.username,
     });
     load();
   }
@@ -519,22 +545,33 @@ export function StaffManager() {
   }
 
   async function resetPassword(row: StaffRow) {
+    let phoneForInvite = "";
+    if (!row.contact_email) {
+      phoneForInvite = window.prompt("No email on file. Enter a mobile number for the sign-up link:")?.trim() ?? "";
+      if (!phoneForInvite) {
+        setError("Add a contact email on their profile, or enter a mobile number to send a passcode.");
+        return;
+      }
+    }
     const ok = await confirm({
-      title: `Give ${row.display_name || row.username} a new one-time passcode?`,
-      message: "Their current password will stop working. The new passcode lasts 10 minutes, then they must be given another.",
-      confirmLabel: "Create new passcode",
+      title: `Send ${row.display_name || row.username} a password reset invite?`,
+      message: "They get a 6-digit passcode and a sign-up link. Their current password keeps working until they finish that link. The invite lasts 10 minutes.",
+      confirmLabel: "Create invite",
     });
     if (!ok) return;
-    const data = await run(() => sendJson("/api/staff", "PATCH", { id: row.id, action: "reset_password" }));
+    const data = await run(() =>
+      sendJson("/api/staff", "PATCH", { id: row.id, action: "reset_password", phone: phoneForInvite || undefined })
+    );
     if (data) {
       setPanel(null);
       setIssued({
-        username: row.username,
-        password: data.oneTimePassword,
-        email: row.contact_email ?? "",
-        phone: "",
+        passcode: data.passcode,
+        signupUrl: data.signupUrl,
+        email: data.email || row.contact_email || "",
+        phone: data.phone || phoneForInvite,
         isNew: false,
         expiresAt: data.expiresAt,
+        username: row.username,
       });
       load();
     }
@@ -584,7 +621,18 @@ export function StaffManager() {
     );
   }
 
-  const nameAndEmail = (
+  const inviteContact = (
+    <>
+      <Field label="Contact email" optional hint="Needed for Gmail/Outlook. Provide email or mobile (or both).">
+        <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
+      </Field>
+      <Field label="Mobile number" optional hint="Used for WhatsApp. Provide email or mobile (or both).">
+        <Input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="e.g. 0712 345 678" />
+      </Field>
+    </>
+  );
+
+  const editNameAndEmail = (
     <>
       <Field label="Full name">
         <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="e.g. Jane Kamau" required />
@@ -601,7 +649,7 @@ export function StaffManager() {
         <section className="ksl-card p-5">
           <h2 className="text-[15px] font-bold text-[#0b1f3a]">Requests</h2>
           <p className="mt-1 text-[13.5px] text-[#5b6775]">
-            Username changes are approved only when the name is free. A password request is answered by sending a new one-time passcode.
+            Username changes are approved only when the name is free. A password request is answered with a sign-up link and a 6-digit passcode.
           </p>
           <ul className="mt-4 divide-y divide-[#eef1f4]">
             {requests.map((request) => (
@@ -614,7 +662,7 @@ export function StaffManager() {
                   <p className="text-[13.5px] text-[#3d4c5f]">
                     {request.kind === "username"
                       ? `Wants to sign in as @${request.requestedUsername}.`
-                      : "Asked for a password change. Rejecting leaves their password as it is. Sending a new one-time passcode is what changes it."}
+                      : "Asked for a password change. Rejecting leaves their password as it is. Sending an invite lets them set a new password on the sign-up page."}
                   </p>
                 </div>
                 <Input
@@ -629,7 +677,7 @@ export function StaffManager() {
                     </Button>
                   ) : (
                     <Button onClick={() => sendRequestedPassword(request)} disabled={saving}>
-                      Send a new passcode
+                      Send reset invite
                     </Button>
                   )}
                   <Button variant="secondary" onClick={() => rejectRequest(request)} disabled={saving}>
@@ -645,7 +693,7 @@ export function StaffManager() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Button onClick={openCreate}>
             <UserPlus className="h-4 w-4" />
-            Add staff
+            Invite staff
           </Button>
           <SearchBox value={query} onChange={setQuery} placeholder="Search by name, username or email" className="sm:w-[300px]" />
         </div>
@@ -657,12 +705,9 @@ export function StaffManager() {
 
       {panel?.kind === "create" && (
         <form onSubmit={submitCreate}>
-          <FormSection title="New staff account" description="A username and one-time passcode are created when you save. Type their role, then set each section.">
-            <FieldGrid className="lg:grid-cols-3">
-              {nameAndEmail}
-              <Field label="Mobile number" optional hint="Used if you send the sign-in details on WhatsApp. You can still pick a contact if this is blank.">
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="e.g. 0712 345 678" />
-              </Field>
+          <FormSection title="Invite staff" description="Add email and/or mobile, then set their role. A 6-digit passcode and sign-up link are created when you save. They choose their own username and password on that link.">
+            <FieldGrid className="lg:grid-cols-2">
+              {inviteContact}
             </FieldGrid>
             <RoleFields isAdmin={isAdmin} jobTitle={jobTitle} onAdmin={setIsAdmin} onTitle={setJobTitle} />
             {isAdmin ? (
@@ -676,7 +721,7 @@ export function StaffManager() {
             )}
             <div className="flex gap-2">
               <Button type="submit" disabled={saving}>
-                {saving ? "Creating…" : "Create account"}
+                {saving ? "Creating invite…" : "Create invite"}
               </Button>
               <Button variant="secondary" onClick={() => setPanel(null)}>
                 Cancel
@@ -699,7 +744,7 @@ export function StaffManager() {
                   required
                 />
               </Field>
-              {nameAndEmail}
+              {editNameAndEmail}
             </FieldGrid>
             <RoleFields isAdmin={isAdmin} jobTitle={jobTitle} onAdmin={setIsAdmin} onTitle={setJobTitle} />
             {isAdmin ? (
@@ -791,7 +836,7 @@ export function StaffManager() {
                         <Pencil className="h-3.5 w-3.5" /> Edit
                       </Button>
                       <Button variant="secondary" size="sm" onClick={() => resetPassword(row)} disabled={saving}>
-                        <KeyRound className="h-3.5 w-3.5" /> New passcode
+                        <KeyRound className="h-3.5 w-3.5" /> Reset invite
                       </Button>
                       {!row.is_super_admin && (
                         <>

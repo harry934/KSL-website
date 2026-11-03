@@ -46,11 +46,11 @@ export default async function PortalLayout({ children }: { children: React.React
     const firstSignIn = session.mustChangeUsername;
     return (
       <Gate
-        title={firstSignIn ? "Choose your sign-in" : "Choose your own password"}
+        title={firstSignIn ? "Finish setting up your sign-in" : "Choose a new password"}
         intro={
           firstSignIn
-            ? "This is your first sign-in. Choose your own username and password to continue."
-            : "You signed in with a one-time passcode. Choose a password only you know to continue."
+            ? "Choose your own username and password to continue. New staff should use the sign-up link from their administrator instead."
+            : "Choose a password only you know to continue. Password resets can also be finished with the sign-up link from an administrator."
         }
       >
         <SessionWatch />

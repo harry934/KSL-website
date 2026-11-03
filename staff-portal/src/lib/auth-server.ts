@@ -103,6 +103,11 @@ export function generateOneTimePassword() {
   }
 }
 
+/** Six-digit numeric invite passcode for /signup. */
+export function generateNumericPasscode() {
+  return String(randomInt(0, 1_000_000)).padStart(6, "0");
+}
+
 export async function recordAttempt(identifier: string, ip: string, succeeded: boolean) {
   const admin = createAdminClient();
   await admin.from("login_attempts").insert({ identifier, ip, succeeded });
