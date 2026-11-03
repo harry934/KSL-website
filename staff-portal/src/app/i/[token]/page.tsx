@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import { SignupForm } from "@/components/auth/signup-form";
 import { loadOpenInvite } from "@/lib/staff-invites";
 import kslLogo from "../../../../public/ksl-logo.png";
@@ -17,6 +16,19 @@ export default async function InvitePage({
   const { token: raw } = await params;
   const token = String(raw ?? "").trim();
   const invite = token ? await loadOpenInvite(token) : null;
+
+  if (!invite) {
+    return (
+      <div className="relative flex min-h-screen items-center justify-center bg-[#0b1f3a] px-4 pt-[6px]">
+        <div className="kenya-stripe" aria-hidden>
+          <span />
+          <span />
+          <span />
+        </div>
+        <p className="text-[18px] font-semibold text-white">Link expired</p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen bg-[#0b1f3a] pt-[6px]">
@@ -41,22 +53,9 @@ export default async function InvitePage({
           <p className="mb-4 mt-2 text-center text-[14px] text-[#5b6775]">Staff sign-up</p>
 
           <div className="rounded-[8px] border border-[#e3e8ee] bg-white p-4 text-left sm:p-5">
-            {invite ? (
-              <>
-                <strong className="mb-1 block text-[15px] text-[#0b1f3a]">Enter your one-time passcode</strong>
-                <p className="mb-4 text-[13.5px] text-[#5b6775]">Enter the 6-digit passcode from your administrator.</p>
-                <SignupForm token={token} />
-              </>
-            ) : (
-              <>
-                <strong className="block text-center text-[15px] text-[#0b1f3a]">Link expired</strong>
-                <p className="mt-4 text-center text-[13.5px] text-[#5b6775]">
-                  <Link href="/login" className="font-semibold text-[#0b1f3a] underline">
-                    Sign in
-                  </Link>
-                </p>
-              </>
-            )}
+            <strong className="mb-1 block text-[15px] text-[#0b1f3a]">Enter your one-time passcode</strong>
+            <p className="mb-4 text-[13.5px] text-[#5b6775]">Enter the 6-digit passcode from your administrator.</p>
+            <SignupForm token={token} />
           </div>
         </section>
       </div>
