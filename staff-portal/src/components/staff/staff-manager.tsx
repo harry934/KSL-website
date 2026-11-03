@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, KeyRound, Loader2, Mail, MessageCircle, Pencil, Trash2, UserPlus } from "lucide-react";
+import { Check, Copy, KeyRound, Loader2, Pencil, Trash2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldGrid, FormSection, Notice } from "@/components/ui/form-bits";
@@ -260,8 +260,8 @@ function expiryLabel(iso: string) {
 
 function inviteSubject(issued: Issued) {
   return issued.isNew
-    ? "Kenya Shipyards Limited | Staff portal invite"
-    : "Kenya Shipyards Limited | Password reset";
+    ? "Kenya Shipyards Limited staff portal invite"
+    : "Kenya Shipyards Limited password reset";
 }
 
 let logoDataUrlPromise: Promise<string> | null = null;
@@ -294,34 +294,14 @@ async function logoDataUrl() {
 
 function invitePlainText(issued: Issued) {
   const until = expiryLabel(issued.expiresAt);
-  const greeting = issued.isNew
-    ? "You have been invited to the Kenya Shipyards Limited staff portal."
-    : "A password reset was requested for your Kenya Shipyards Limited staff portal account.";
-  const action = issued.isNew
-    ? "Open the link, enter the passcode, then choose your username and password."
-    : "Open the link, enter the passcode, then choose a new password. Your username stays the same.";
-
   return [
-    "KENYA SHIPYARDS LIMITED",
-    "Ministry of Defence · Staff portal",
-    "",
-    "────────────────────────────────",
-    greeting,
-    "",
-    "ONE-TIME PASSCODE",
-    issued.passcode,
-    "",
-    "SIGN-UP LINK (click or copy)",
-    issued.signupUrl,
-    "",
-    action,
-    until
-      ? `Expires ${until} East Africa Time (10 minutes).`
-      : "Expires in 10 minutes.",
-    "────────────────────────────────",
-    "",
-    "If you did not expect this message, ignore it.",
     "Kenya Shipyards Limited",
+    "",
+    issued.isNew ? "Staff portal invite" : "Password reset",
+    "",
+    `Passcode: ${issued.passcode}`,
+    `Link: ${issued.signupUrl}`,
+    until ? `Expires ${until} EAT` : "Expires in 10 minutes",
   ].join("\n");
 }
 
@@ -330,32 +310,27 @@ async function inviteHtmlEmail(issued: Issued) {
   const logo = await logoDataUrl();
   const headline = issued.isNew ? "Staff portal invitation" : "Password reset";
   const intro = issued.isNew
-    ? "Kenya Shipyards Limited has invited you to the staff portal. Use the passcode and secure link below to finish set-up."
-    : "Use the passcode and secure link below to choose a new password. Your username stays the same.";
+    ? "You have been invited to the Kenya Shipyards Limited staff portal."
+    : "Use this passcode and link to choose a new password.";
   const cta = issued.isNew ? "Complete sign-up" : "Reset password";
-  const steps = issued.isNew
-    ? "<li style='margin:0 0 6px;'>Open the sign-up link</li><li style='margin:0 0 6px;'>Enter your one-time passcode</li><li style='margin:0;'>Choose a unique username and password</li>"
-    : "<li style='margin:0 0 6px;'>Open the reset link</li><li style='margin:0 0 6px;'>Enter your one-time passcode</li><li style='margin:0;'>Choose a new password</li>";
   const expiry = until
-    ? `This passcode and link expire at <strong style="color:#0b1f3a;">${until} East Africa Time</strong> (valid for 10 minutes).`
-    : "This passcode and link expire after <strong style=\"color:#0b1f3a;\">10 minutes</strong>.";
+    ? `Expires <strong style="color:#0b1f3a;">${until} East Africa Time</strong>`
+    : "Expires in <strong style=\"color:#0b1f3a;\">10 minutes</strong>";
 
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><title>${inviteSubject(issued)}</title></head>
+<head><meta charset="utf-8" /><title>${inviteSubject(issued)}</title></head>
 <body style="margin:0;padding:0;background:#eef2f6;font-family:'Segoe UI',Helvetica,Arial,sans-serif;color:#0b1f3a;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef2f6;padding:32px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="580" cellspacing="0" cellpadding="0" style="max-width:580px;width:100%;background:#ffffff;border:1px solid #d7dee7;border-collapse:collapse;">
+        <table role="presentation" width="580" cellspacing="0" cellpadding="0" style="max-width:580px;width:100%;background:#ffffff;border:1px solid #d7dee7;">
+          <tr><td style="height:4px;background:#0b1f3a;font-size:0;line-height:0;">&nbsp;</td></tr>
           <tr>
-            <td style="height:4px;background:#0b1f3a;font-size:0;line-height:0;">&nbsp;</td>
-          </tr>
-          <tr>
-            <td style="padding:28px 36px 18px;text-align:center;background:linear-gradient(180deg,#ffffff 0%,#f7f9fb 100%);">
+            <td style="padding:28px 36px 18px;text-align:center;">
               <img src="${logo}" alt="Kenya Shipyards Limited" width="88" height="88" style="display:block;margin:0 auto 14px;border:0;width:88px;height:88px;" />
               <p style="margin:0;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#c5a028;font-weight:700;">Ministry of Defence</p>
-              <p style="margin:8px 0 0;font-size:22px;line-height:1.25;font-weight:700;color:#0b1f3a;">Kenya Shipyards Limited</p>
+              <p style="margin:8px 0 0;font-size:22px;font-weight:700;color:#0b1f3a;">Kenya Shipyards Limited</p>
               <p style="margin:8px 0 0;font-size:15px;color:#5b6775;">${headline}</p>
             </td>
           </tr>
@@ -371,19 +346,15 @@ async function inviteHtmlEmail(issued: Issued) {
                 </tr>
               </table>
               <p style="margin:22px 0 14px;text-align:center;">
-                <a href="${issued.signupUrl}" style="display:inline-block;background:#0b1f3a;color:#ffffff !important;text-decoration:none;font-size:14px;font-weight:700;padding:13px 26px;border-radius:2px;">${cta}</a>
+                <a href="${issued.signupUrl}" style="display:inline-block;background:#0b1f3a;color:#ffffff !important;text-decoration:none;font-size:14px;font-weight:700;padding:13px 26px;">${cta}</a>
               </p>
-              <p style="margin:0 0 6px;font-size:12px;color:#6b7785;text-align:center;">Or copy this link</p>
               <p style="margin:0 0 22px;font-size:12.5px;line-height:1.5;word-break:break-all;text-align:center;"><a href="${issued.signupUrl}" style="color:#0b4f8a;">${issued.signupUrl}</a></p>
-              <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6b7785;font-weight:700;">Next steps</p>
-              <ol style="margin:0 0 18px;padding-left:20px;font-size:14px;line-height:1.55;color:#3d4c5f;">${steps}</ol>
-              <p style="margin:0;font-size:13px;line-height:1.55;color:#5b6775;">${expiry}</p>
+              <p style="margin:0;font-size:13px;color:#5b6775;">${expiry}</p>
             </td>
           </tr>
           <tr>
-            <td style="padding:16px 36px 24px;border-top:1px solid #eef1f4;background:#fbfcfd;">
-              <p style="margin:0;font-size:12px;line-height:1.5;color:#8a96a3;">If you did not expect this message, you can ignore it.</p>
-              <p style="margin:8px 0 0;font-size:12px;color:#6b7785;">© Kenya Shipyards Limited · Staff portal</p>
+            <td style="padding:16px 36px 24px;border-top:1px solid #eef1f4;">
+              <p style="margin:0;font-size:12px;color:#6b7785;">© Kenya Shipyards Limited</p>
             </td>
           </tr>
         </table>
@@ -401,33 +372,60 @@ function whatsAppNumber(phone: string) {
   return digits;
 }
 
-function mailComposeUrl(kind: "gmail" | "outlook", email: string, subject: string, body: string) {
+function mailComposeUrl(kind: "gmail" | "outlook", email: string, subject: string) {
   if (kind === "gmail") {
-    return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}`;
   }
-  return `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(email)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  return `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(email)}&subject=${encodeURIComponent(subject)}`;
+}
+
+function GmailIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden>
+      <path fill="#EA4335" d="M3 5.5v13A1.5 1.5 0 0 0 4.5 20H7V11.2l5 3.75 5-3.75V20h2.5A1.5 1.5 0 0 0 21 18.5v-13L12 12 3 5.5Z" />
+      <path fill="#C5221F" d="M3 5.5 12 12l9-6.5V5a1.5 1.5 0 0 0-1.5-1.5H4.5A1.5 1.5 0 0 0 3 5v.5Z" />
+      <path fill="#4285F4" d="M7 11.2V20H4.5A1.5 1.5 0 0 1 3 18.5v-13L7 11.2Z" />
+      <path fill="#34A853" d="M21 5.5v13a1.5 1.5 0 0 1-1.5 1.5H17V11.2l4-5.7Z" />
+    </svg>
+  );
+}
+
+function OutlookIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden>
+      <path fill="#0078D4" d="M12.8 5h7.7A1.5 1.5 0 0 1 22 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-7.7V5Z" />
+      <path fill="#28A8EA" d="M12.8 5H14v14h-1.2V5Z" />
+      <path fill="#0A66C2" d="M2.5 7.2h11.3v9.6H2.5A1.7 1.7 0 0 1 .8 15.1V8.9A1.7 1.7 0 0 1 2.5 7.2Z" />
+      <circle cx="8.1" cy="12" r="3.1" fill="#fff" />
+      <circle cx="8.1" cy="12" r="1.85" fill="#0A66C2" />
+    </svg>
+  );
+}
+
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden>
+      <path
+        fill="#25D366"
+        d="M12.04 2C6.58 2 2.15 6.37 2.15 11.75c0 1.92.52 3.72 1.44 5.27L2 22l5.16-1.54a10.1 10.1 0 0 0 4.88 1.25h.01c5.46 0 9.89-4.37 9.89-9.75S17.5 2 12.04 2Z"
+      />
+      <path
+        fill="#fff"
+        d="M17.2 14.55c-.24-.12-1.42-.7-1.64-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.02-.37-1.94-1.2-.72-.63-1.2-1.4-1.34-1.64-.14-.24-.02-.37.1-.49.11-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.48-.4-.4-.54-.4h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.6 4.12 3.64.58.24 1.02.38 1.38.5.58.18 1.1.16 1.52.1.46-.06 1.42-.58 1.62-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"
+      />
+    </svg>
+  );
 }
 
 function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () => void }) {
-  const [copied, setCopied] = useState<"passcode" | "link" | "message" | "email" | null>(null);
-  const [logoSrc, setLogoSrc] = useState("/ksl-logo.png");
+  const [copied, setCopied] = useState<"passcode" | "link" | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
 
   const plain = invitePlainText(issued);
   const subject = inviteSubject(issued);
   const hasEmail = issued.email.includes("@");
-  const hasPhone = !!issued.phone.replace(/\D/g, "");
 
-  useEffect(() => {
-    let alive = true;
-    logoDataUrl().then((src) => {
-      if (alive) setLogoSrc(src);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  async function copyText(value: string, which: "passcode" | "link" | "message" | "email") {
+  async function copyText(value: string, which: "passcode" | "link") {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(which);
@@ -437,40 +435,30 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
     }
   }
 
-  async function copyRichEmail() {
+  async function copyBrandedEmail() {
     const html = await inviteHtmlEmail(issued);
-    try {
-      if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/html": new Blob([html], { type: "text/html" }),
-            "text/plain": new Blob([plain], { type: "text/plain" }),
-          }),
-        ]);
-      } else {
-        await navigator.clipboard.writeText(plain);
-      }
-      setCopied("email");
-      window.setTimeout(() => setCopied(null), 2500);
-      return true;
-    } catch {
-      try {
-        await navigator.clipboard.writeText(plain);
-        setCopied("email");
-        window.setTimeout(() => setCopied(null), 2500);
-        return true;
-      } catch {
-        setCopied(null);
-        return false;
-      }
+    if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([plain], { type: "text/plain" }),
+        }),
+      ]);
+      return;
     }
+    await navigator.clipboard.writeText(plain);
   }
 
   async function sendMail(kind: "gmail" | "outlook") {
     if (!hasEmail) return;
-    await copyRichEmail();
-    // Compose URLs only support plain text; branded HTML is already on the clipboard to paste.
-    window.open(mailComposeUrl(kind, issued.email, subject, plain), "_blank", "noopener");
+    try {
+      await copyBrandedEmail();
+      setHint("Press Ctrl+V in the message");
+      window.setTimeout(() => setHint(null), 5000);
+    } catch {
+      setHint(null);
+    }
+    window.open(mailComposeUrl(kind, issued.email, subject), "_blank", "noopener");
   }
 
   function sendWhatsApp() {
@@ -482,72 +470,49 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
   return (
     <section className="ksl-card p-5">
       <h2 className="text-[15px] font-bold text-[#0b1f3a]">
-        {issued.isNew ? "Invite ready: send it now" : "Password reset ready: send it now"}
+        {issued.isNew ? "Invite ready" : "Password reset ready"}
       </h2>
-      <p className="mt-1 text-[13.5px] text-[#5b6775]">
-        Open Gmail or Outlook to send. The branded message (with logo) is copied first — paste it into the draft with Ctrl+V / Cmd+V for the full email. WhatsApp uses the text version.
-        {expiryLabel(issued.expiresAt)
-          ? ` Passcode expires at ${expiryLabel(issued.expiresAt)} East Africa Time.`
-          : " Passcode expires in 10 minutes."}
-      </p>
 
-      <div className="mt-4 overflow-hidden rounded-[8px] border border-[#d7dee7] bg-white">
-        <div className="border-b border-[#eef1f4] bg-[#f7f9fb] px-5 py-5 text-center">
-          <img src={logoSrc} alt="Kenya Shipyards Limited" className="mx-auto h-16 w-16 object-contain" />
-          <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#c5a028]">Ministry of Defence</p>
-          <p className="mt-1 text-[16px] font-bold text-[#0b1f3a]">Kenya Shipyards Limited</p>
-          <p className="mt-1 text-[13px] text-[#5b6775]">
-            {issued.isNew ? "Staff portal invitation" : "Password reset"}
-          </p>
+      <div className="mt-4 rounded-[8px] bg-[#f6f8fa] px-4 py-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <p className="text-[12.5px] text-[#6b7785]">One-time passcode</p>
+          <Button variant="secondary" size="sm" onClick={() => copyText(issued.passcode, "passcode")}>
+            {copied === "passcode" ? <Check className="h-4 w-4 text-[#12b76a]" /> : <Copy className="h-4 w-4" />}
+            {copied === "passcode" ? "Copied" : "Copy"}
+          </Button>
         </div>
-        <div className="space-y-3 px-5 py-4">
-          <p className="text-[13.5px] leading-relaxed text-[#3d4c5f]">
-            {issued.isNew
-              ? "You have been invited to the Kenya Shipyards Limited staff portal. Use the passcode and link below to finish set-up."
-              : "Use the passcode and link below to choose a new password. Your username stays the same."}
-          </p>
-          <div className="rounded-[6px] bg-[#f6f8fa] px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7785]">One-time passcode</p>
-            <div className="mt-2 flex justify-center">
-              <PasscodeDisplay value={issued.passcode} accepted={copied === "passcode"} />
-            </div>
-          </div>
-          <p className="break-all text-[12.5px]">
-            <a href={issued.signupUrl} className="font-semibold text-[#0b4f8a] underline" target="_blank" rel="noreferrer">
-              {issued.signupUrl}
-            </a>
-          </p>
+        <div className="mt-4 flex justify-center">
+          <PasscodeDisplay value={issued.passcode} accepted={copied === "passcode"} />
         </div>
+      </div>
+
+      <div className="mt-3 rounded-[8px] bg-[#f6f8fa] px-4 py-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <p className="text-[12.5px] text-[#6b7785]">Sign-up link</p>
+          <Button variant="secondary" size="sm" onClick={() => copyText(issued.signupUrl, "link")}>
+            {copied === "link" ? <Check className="h-4 w-4 text-[#12b76a]" /> : <Copy className="h-4 w-4" />}
+            {copied === "link" ? "Copied" : "Copy"}
+          </Button>
+        </div>
+        <p className="mt-2 break-all font-mono text-[13px] text-[#0b1f3a]">{issued.signupUrl}</p>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button variant="secondary" size="sm" onClick={() => copyText(issued.passcode, "passcode")}>
-          {copied === "passcode" ? <Check className="h-4 w-4 text-[#12b76a]" /> : <Copy className="h-4 w-4" />}
-          {copied === "passcode" ? "Copied" : "Copy passcode"}
+        <Button variant="secondary" onClick={() => sendMail("gmail")} disabled={!hasEmail} aria-label="Gmail">
+          <GmailIcon className="h-5 w-5" />
+          Gmail
         </Button>
-        <Button variant="secondary" size="sm" onClick={() => copyText(issued.signupUrl, "link")}>
-          {copied === "link" ? <Check className="h-4 w-4 text-[#12b76a]" /> : <Copy className="h-4 w-4" />}
-          {copied === "link" ? "Copied" : "Copy link"}
+        <Button variant="secondary" onClick={() => sendMail("outlook")} disabled={!hasEmail} aria-label="Outlook">
+          <OutlookIcon className="h-5 w-5" />
+          Outlook
         </Button>
-        <Button variant="secondary" size="sm" onClick={copyRichEmail}>
-          <Copy className="h-4 w-4" /> {copied === "email" ? "Branded email copied" : "Copy branded email"}
-        </Button>
-        <Button variant="secondary" size="sm" onClick={() => copyText(plain, "message")}>
-          <Copy className="h-4 w-4" /> {copied === "message" ? "Text copied" : "Copy text"}
-        </Button>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button variant="secondary" onClick={() => sendMail("gmail")} disabled={!hasEmail}>
-          <Mail className="h-4 w-4" /> Open in Gmail
-        </Button>
-        <Button variant="secondary" onClick={() => sendMail("outlook")} disabled={!hasEmail}>
-          <Mail className="h-4 w-4" /> Open in Outlook
-        </Button>
-        <Button variant="secondary" onClick={sendWhatsApp}>
-          <MessageCircle className="h-4 w-4" /> Open in WhatsApp
+        <Button variant="secondary" onClick={sendWhatsApp} aria-label="WhatsApp">
+          <WhatsAppIcon className="h-5 w-5" />
+          WhatsApp
         </Button>
         <Button onClick={onClose}>Done</Button>
       </div>
+      {hint ? <p className="mt-2 text-[12.5px] text-[#5b6775]">{hint}</p> : null}
     </section>
   );
 }

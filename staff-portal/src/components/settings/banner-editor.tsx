@@ -230,9 +230,6 @@ export function BannerEditor({ canEdit }: { canEdit: boolean }) {
 
   if (loadError) return <Notice kind="error">{loadError}</Notice>;
 
-  const set = <K extends SiteSettingKey>(key: K, patch: Partial<SiteSettings[K]>) =>
-    setSettings((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
-
   const saveButton = (key: SiteSettingKey) =>
     canEdit && (
       <div className="flex justify-end border-t border-[#eef1f4] pt-4">

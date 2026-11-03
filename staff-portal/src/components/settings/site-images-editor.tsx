@@ -95,11 +95,21 @@ function heroFrameUrl(url: string, kind: HeroItem["kind"]) {
 
 function heroFromOverride(override: Override | undefined) {
   const parsed = parseHeroMedia(override?.media);
-  const source = parsed.length
-    ? parsed
-    : override?.public_url && isImagePath(override.public_url)
-      ? [{ kind: "image" as const, public_url: override.public_url, storage_path: override.storage_path, crop: null, trim: null }]
-      : [];
+  const source =
+    parsed.length > 0
+      ? parsed
+      : override?.public_url && isImagePath(override.public_url)
+        ? parseHeroMedia([
+            {
+              kind: "image",
+              public_url: override.public_url,
+              storage_path: override.storage_path,
+              crop: null,
+              trim: null,
+              ...DEFAULT_HERO_COPY,
+            },
+          ])
+        : [];
   return {
     live: parsed.length > 0,
     items: source.map((item) => ({

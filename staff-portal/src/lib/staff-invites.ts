@@ -158,7 +158,13 @@ export async function createStaffInvite(input: {
     roleTitle = role.title;
     permissions = isSuperAdmin
       ? []
-      : permissionRows("pending", input.permissions).map(({ profile_id: _p, ...row }) => row);
+      : permissionRows("pending", input.permissions).map(({ module_key, can_view, can_edit, can_publish, can_delete }) => ({
+          module_key,
+          can_view,
+          can_edit,
+          can_publish,
+          can_delete,
+        }));
     if (contactEmail) {
       const { data: taken } = await admin
         .from("admin_profiles")
