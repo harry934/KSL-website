@@ -390,6 +390,33 @@
             }
         }
 
+        function escapeHeroText(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        function titleWithAccent(title) {
+            var safe = escapeHeroText(title || "Catalyzing Shipbuilding Industry");
+            return safe.replace(/Shipbuilding/i, '<span class="ksl-hero-accent">$&</span>');
+        }
+
+        function applyHeroCopy(item) {
+            var intro = hero.querySelector(".ksl-hero-intro");
+            if (!intro || !item) return;
+            var heading = intro.querySelector("h1");
+            var copy = intro.querySelector("p");
+            var button = intro.querySelector("a.btn");
+            if (heading && item.title) heading.innerHTML = titleWithAccent(item.title);
+            if (copy && item.subtitle) copy.textContent = item.subtitle;
+            if (button) {
+                if (item.buttonLabel) button.textContent = item.buttonLabel;
+                if (item.buttonUrl) button.setAttribute("href", item.buttonUrl);
+            }
+        }
+
         function showCustom(index) {
             if (!customHost || !customMedia || !customMedia.length) return;
             clearCustomTimer();
@@ -414,6 +441,7 @@
                 }
             });
             var item = customMedia[customIndex];
+            applyHeroCopy(item);
             var slide = customHost.children[customIndex];
             if (!item || !slide || item.kind !== "video") {
                 if (item && item.kind !== "video" && count > 1 && !reduceMotion.matches && heroVideoEnabled) {

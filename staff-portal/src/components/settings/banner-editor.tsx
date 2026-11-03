@@ -297,16 +297,26 @@ export function BannerEditor({ canEdit }: { canEdit: boolean }) {
   async function removeBanner(row: BannerItem) {
     const ok = await confirm({
       title: "Remove this banner from the queue?",
-      message: "Save afterwards. The website keeps the banners you last saved until then.",
+      message: "It is removed from the queue and saved right away.",
       confirmLabel: "Remove",
       danger: true,
     });
     if (!ok) return;
-    setSettings((prev) => ({
-      ...prev,
-      announcement: { ...prev.announcement, queue: prev.announcement.queue.filter((entry) => entry.id !== row.id) },
-    }));
-    if (selectedId === row.id) setSelectedId(null);
+    const nextQueue = queue.filter((entry) => entry.id !== row.id);
+    const nextIndex = Math.max(0, queue.findIndex((entry) => entry.id === row.id));
+    const nextSelected = nextQueue[Math.min(nextIndex, Math.max(0, nextQueue.length - 1))]?.id ?? null;
+    const nextAnnouncement = normalizeAnnouncement({ ...settings.announcement, queue: nextQueue }, true);
+    setSettings((prev) => ({ ...prev, announcement: nextAnnouncement }));
+    setSelectedId(nextSelected);
+    setSaving("announcement");
+    try {
+      await sendJson("/api/site-settings", "POST", { key: "announcement", value: nextAnnouncement });
+      toast(nextQueue.length ? "Banner removed." : "Banner removed. The queue is empty.");
+    } catch (err) {
+      toast((err as Error).message, "error");
+      await load();
+    }
+    setSaving(null);
   }
 
   function queueStatus(row: BannerItem) {
@@ -430,7 +440,16 @@ export function BannerEditor({ canEdit }: { canEdit: boolean }) {
                     <button type="button" className="rounded p-1 text-[#5b6775] hover:bg-[#eef2f6] disabled:opacity-40" aria-label="Move down" disabled={index === queue.length - 1} onClick={() => moveBanner(row.id, 1)}>
                       <ChevronDown className="h-4 w-4" />
                     </button>
-                    <button type="button" className="rounded p-1 text-[#b42318] hover:bg-[#fdecec]" aria-label="Remove from queue" onClick={() => removeBanner(row)}>
+                    <button
+                      type="button"
+                      className="rounded p-1 text-[#b42318] hover:bg-[#fdecec] disabled:opacity-40"
+                      aria-label="Remove from queue"
+                      disabled={saving !== null}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        removeBanner(row);
+                      }}
+                    >
                       <X className="h-4 w-4" />
                     </button>
                   </li>

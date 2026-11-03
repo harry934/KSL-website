@@ -57,44 +57,60 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const action = body.action === "purge" ? "purge" : body.action === "restore" ? "restore" : "";
-  const id = String(body.id ?? "");
-  const source = RECYCLE_SOURCES.find((entry) => entry.table === body.table);
-  if (!action || !source || !ID.test(id)) {
-    return NextResponse.json({ error: "That item was not found." }, { status: 400 });
+  if (!action) return NextResponse.json({ error: "That item was not found." }, { status: 400 });
+
+  const rawItems = Array.isArray(body.items)
+    ? body.items
+    : body.id && body.table
+      ? [{ id: body.id, table: body.table }]
+      : [];
+
+  const targets: { id: string; table: string; source: (typeof RECYCLE_SOURCES)[number] }[] = [];
+  for (const entry of rawItems) {
+    const id = String(entry?.id ?? "");
+    const source = RECYCLE_SOURCES.find((row) => row.table === entry?.table);
+    if (!source || !ID.test(id)) {
+      return NextResponse.json({ error: "That item was not found." }, { status: 400 });
+    }
+    const allowed = canAccess(
+      session.permissions,
+      source.module,
+      action === "purge" ? "delete" : source.restore,
+      session.isSuperAdmin
+    );
+    if (!allowed) {
+      return NextResponse.json({ error: "You are not allowed to do this. Ask an administrator if you need access." }, { status: 403 });
+    }
+    targets.push({ id, table: source.table, source });
   }
 
-  const allowed = canAccess(
-    session.permissions,
-    source.module,
-    action === "purge" ? "delete" : source.restore,
-    session.isSuperAdmin
-  );
-  if (!allowed) {
-    return NextResponse.json({ error: "You are not allowed to do this. Ask an administrator if you need access." }, { status: 403 });
-  }
+  if (!targets.length) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
   const admin = createAdminClient();
-  if (action === "restore") {
-    const { error: restoreErr } =
-      source.table === "admin_profiles"
-        ? await restoreStaffAccount(admin, id)
-        : await restoreRow(admin, source.table as RecycleTable, id);
-    if (restoreErr?.code === "bin" || restoreErr?.code === "restore") {
-      return NextResponse.json({ error: restoreErr.message }, { status: restoreErr.code === "bin" ? 400 : 500 });
+  for (const target of targets) {
+    if (action === "restore") {
+      const { error: restoreErr } =
+        target.table === "admin_profiles"
+          ? await restoreStaffAccount(admin, target.id)
+          : await restoreRow(admin, target.table as RecycleTable, target.id);
+      if (restoreErr?.code === "bin" || restoreErr?.code === "restore") {
+        return NextResponse.json({ error: restoreErr.message }, { status: restoreErr.code === "bin" ? 400 : 500 });
+      }
+      if (restoreErr) return NextResponse.json({ error: dbError(restoreErr) }, { status: 500 });
+      await logActivity(session.userId, target.source.module, "restore", target.source.entityType, target.id);
+      continue;
     }
-    if (restoreErr) return NextResponse.json({ error: dbError(restoreErr) }, { status: 500 });
-    await logActivity(session.userId, source.module, "restore", source.entityType, id);
-    return NextResponse.json({ ok: true });
+
+    const { error: deleteErr } =
+      target.table === "admin_profiles"
+        ? await purgeStaffAccount(admin, target.id)
+        : await applyBinDelete(admin, target.table as RecycleTable, target.id, true);
+    if (deleteErr?.code === "bin" || deleteErr?.code === "delete") {
+      return NextResponse.json({ error: deleteErr.message }, { status: deleteErr.code === "bin" ? 400 : 500 });
+    }
+    if (deleteErr) return NextResponse.json({ error: dbError(deleteErr) }, { status: 500 });
+    await logActivity(session.userId, target.source.module, "purge", target.source.entityType, target.id);
   }
 
-  const { error: deleteErr } =
-    source.table === "admin_profiles"
-      ? await purgeStaffAccount(admin, id)
-      : await applyBinDelete(admin, source.table as RecycleTable, id, true);
-  if (deleteErr?.code === "bin" || deleteErr?.code === "delete") {
-    return NextResponse.json({ error: deleteErr.message }, { status: deleteErr.code === "bin" ? 400 : 500 });
-  }
-  if (deleteErr) return NextResponse.json({ error: dbError(deleteErr) }, { status: 500 });
-  await logActivity(session.userId, source.module, "purge", source.entityType, id);
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, count: targets.length });
 }

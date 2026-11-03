@@ -41,7 +41,27 @@ export type HeroMediaItem = {
   storage_path: string | null;
   crop: HeroCrop | null;
   trim: HeroTrim | null;
+  title: string;
+  subtitle: string;
+  buttonLabel: string;
+  buttonUrl: string;
 };
+
+const DEFAULT_HERO_TITLE = "Catalyzing Shipbuilding Industry";
+const DEFAULT_HERO_SUBTITLE = "From Mombasa and Kisumu, we build and refit the vessels that keep Eastern Africa moving.";
+const DEFAULT_HERO_BUTTON_LABEL = "Read our story";
+const DEFAULT_HERO_BUTTON_URL = "about.html";
+
+function cleanHeroText(value: unknown, max: number) {
+  return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+function cleanHeroLink(value: unknown) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  if (/^(https?:\/\/|\/|#|[a-z0-9.-]+\.html)/i.test(raw)) return raw.slice(0, 240);
+  return "";
+}
 
 export function isImagePath(value: string) {
   return /\.(jpe?g|png|webp)(\?|#|$)/i.test(value);
@@ -61,7 +81,21 @@ export function parseHeroMedia(value: unknown): HeroMediaItem[] {
   const items: HeroMediaItem[] = [];
   for (const row of value) {
     if (!row || typeof row !== "object") continue;
-    const record = row as { kind?: unknown; public_url?: unknown; publicUrl?: unknown; storage_path?: unknown; storagePath?: unknown; crop?: unknown; trim?: unknown };
+    const record = row as {
+      kind?: unknown;
+      public_url?: unknown;
+      publicUrl?: unknown;
+      storage_path?: unknown;
+      storagePath?: unknown;
+      crop?: unknown;
+      trim?: unknown;
+      title?: unknown;
+      subtitle?: unknown;
+      buttonLabel?: unknown;
+      button_label?: unknown;
+      buttonUrl?: unknown;
+      button_url?: unknown;
+    };
     const url = safeImageUrl(record.public_url ?? record.publicUrl);
     if (!url) continue;
     const kind = isVideoPath(url) ? "video" : isImagePath(url) ? "image" : null;
@@ -72,6 +106,10 @@ export function parseHeroMedia(value: unknown): HeroMediaItem[] {
       storage_path: storagePathOf(record.storage_path ?? record.storagePath),
       crop: kind === "video" ? parseHeroCrop(record.crop) : null,
       trim: kind === "video" ? parseHeroTrim(record.trim) : null,
+      title: cleanHeroText(record.title, 90) || DEFAULT_HERO_TITLE,
+      subtitle: cleanHeroText(record.subtitle, 220) || DEFAULT_HERO_SUBTITLE,
+      buttonLabel: cleanHeroText(record.buttonLabel ?? record.button_label, 40) || DEFAULT_HERO_BUTTON_LABEL,
+      buttonUrl: cleanHeroLink(record.buttonUrl ?? record.button_url) || DEFAULT_HERO_BUTTON_URL,
     });
     if (items.length >= HERO_MEDIA_LIMIT) break;
   }

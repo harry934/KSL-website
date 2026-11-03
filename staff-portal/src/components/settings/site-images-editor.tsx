@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Crop, GripVertical, Loader2, Scissors, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Notice } from "@/components/ui/form-bits";
+import { Input } from "@/components/ui/input";
+import { Field, Notice } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { sendJson, uploadFile } from "@/lib/upload-client";
 import { PhotoCropDialog } from "@/components/ui/photo-crop";
@@ -15,7 +16,25 @@ import { HERO_MEDIA_LIMIT, HOME_HERO_SLOT, isImagePath, parseHeroMedia, type Sit
 
 type Override = { slot_id: string; source: string; public_url: string | null; storage_path: string | null; media?: unknown };
 type LibraryImage = { url: string; storagePath: string | null; label: string };
-type HeroItem = { kind: "image" | "video"; url: string; storagePath: string | null; label: string; crop: HeroCrop | null; trim: HeroTrim | null };
+type HeroItem = {
+  kind: "image" | "video";
+  url: string;
+  storagePath: string | null;
+  label: string;
+  crop: HeroCrop | null;
+  trim: HeroTrim | null;
+  title: string;
+  subtitle: string;
+  buttonLabel: string;
+  buttonUrl: string;
+};
+
+const DEFAULT_HERO_COPY = {
+  title: "Catalyzing Shipbuilding Industry",
+  subtitle: "From Mombasa and Kisumu, we build and refit the vessels that keep Eastern Africa moving.",
+  buttonLabel: "Read our story",
+  buttonUrl: "about.html",
+};
 
 function clock(seconds: number) {
   const whole = Math.max(0, Math.round(seconds));
@@ -90,6 +109,10 @@ function heroFromOverride(override: Override | undefined) {
       label: item.kind === "video" ? "Video" : "Photo",
       crop: item.crop,
       trim: item.trim,
+      title: item.title || DEFAULT_HERO_COPY.title,
+      subtitle: item.subtitle || DEFAULT_HERO_COPY.subtitle,
+      buttonLabel: item.buttonLabel || DEFAULT_HERO_COPY.buttonLabel,
+      buttonUrl: item.buttonUrl || DEFAULT_HERO_COPY.buttonUrl,
     })),
   };
 }
@@ -194,6 +217,10 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
             storagePath: item.storagePath,
             crop: item.kind === "video" ? item.crop : null,
             trim: item.kind === "video" ? item.trim : null,
+            title: item.title,
+            subtitle: item.subtitle,
+            buttonLabel: item.buttonLabel,
+            buttonUrl: item.buttonUrl,
           })),
           addToGallery: Boolean(gallery && gallery.kind === "image"),
           publicUrl: gallery?.url,
@@ -202,12 +229,32 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
         });
         toast("Home hero updated. The website shows one at a time.");
       }
+      setHeroItems(next);
+      setHeroListLive(next.length > 0);
       setPicking(null);
       await load();
     } catch (err) {
       toast((err as Error).message, "error");
+      await load();
     }
     setBusy(null);
+  }
+
+  function patchHero(index: number, patch: Partial<HeroItem>) {
+    setHeroItems((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)));
+  }
+
+  async function saveHeroCopy(index: number) {
+    const next = heroItems.slice();
+    if (!next[index]) return;
+    await persistHero(next);
+  }
+
+  async function removeHero(index: number) {
+    const next = heroItems.filter((_, itemIndex) => itemIndex !== index);
+    setHeroItems(next);
+    setHeroListLive(next.length > 0);
+    await persistHero(next);
   }
 
   function heroRoom() {
@@ -228,6 +275,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
         label: file.name.replace(/\.[a-z0-9]+$/i, "") || "Photo",
         crop: null,
         trim: null,
+        ...DEFAULT_HERO_COPY,
       };
       await persistHero([...heroItems, item], item);
     } catch (err) {
@@ -260,6 +308,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
           label: file.name.replace(/\.[a-z0-9]+$/i, "") || "Video",
           crop: null,
           trim: null,
+          ...DEFAULT_HERO_COPY,
         },
       ]);
     } catch (err) {
@@ -327,7 +376,10 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       return;
     }
     if (!heroRoom()) return;
-    persistHero([...heroItems, { kind: "image", url: image.url, storagePath: image.storagePath, label: image.label, crop: null, trim: null }]);
+    persistHero([
+      ...heroItems,
+      { kind: "image", url: image.url, storagePath: image.storagePath, label: image.label, crop: null, trim: null, ...DEFAULT_HERO_COPY },
+    ]);
   }
 
   async function upload(slotId: string, file: File) {
@@ -382,74 +434,128 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                 <p className="m-0 text-[14px] font-semibold text-[#0b1f3a]">{slot.label}</p>
                 <p className="mb-3 mt-1 text-[13px] text-[#5b6775]">
                   {heroListLive
-                    ? "Hold a row and drag it. The others slide into place. Crop frames the picture, and trim chooses where a video starts and ends."
+                    ? "Drag to reorder. For each photo or video, set the title, subtitle, button text, and link. Crop frames the picture; trim chooses where a video starts and ends."
                     : heroItems.length
                       ? "This photo is already on the hero, under the original film. Add a video or another photo and the homepage will show your list one at a time instead."
-                      : "The homepage is using its original film. Add photos, videos, or both, and it will show them one at a time."}
+                      : "The homepage is using its original film. Add photos, videos, or both, and set the title, subtitle, and button for each slide."}
                 </p>
                 <p className="m-0 mb-2 text-[12px] font-semibold uppercase tracking-wide text-[#6b7785]">Playback order</p>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
                   {heroItems.map((item, index) => {
                     const nudge = rowNudge(index);
                     const lifted = lift?.from === index;
                     return (
                       <div
-                        key={`${item.kind}-${item.url}`}
-                        className={`flex items-center gap-3 border border-[#eef1f4] bg-white p-2 ${canEdit ? "cursor-grab touch-none" : ""} ${lifted ? "relative cursor-grabbing" : ""}`}
+                        key={`${item.kind}-${item.url}-${index}`}
+                        className={`border border-[#eef1f4] bg-white p-3 ${lifted ? "relative" : ""}`}
                         style={lifted ? undefined : { transform: nudge ? `translateY(${nudge}px)` : undefined, transition: "transform 160ms ease" }}
-                        onPointerDown={(event) => startLift(event, index)}
-                        onPointerMove={moveLift}
-                        onPointerUp={endLift}
-                        onPointerCancel={endLift}
                       >
-                        {canEdit && (
-                          <button
-                            type="button"
-                            aria-label={`Move ${item.kind === "video" ? "video" : "photo"} ${index + 1}. ${slidePlace(index)}.`}
-                            className="px-1 text-[#6b7785]"
-                            onKeyDown={(event) => {
-                              if (event.key === "ArrowUp") {
-                                event.preventDefault();
-                                moveHero(index, index - 1);
-                              } else if (event.key === "ArrowDown") {
-                                event.preventDefault();
-                                moveHero(index, index + 1);
-                              }
-                            }}
-                          >
-                            <GripVertical className="h-5 w-5" />
-                          </button>
-                        )}
-                        <HeroPreview item={item} />
-                        <div className="min-w-0 flex-1">
-                          <p className="m-0 text-[13px] font-semibold text-[#0b1f3a]">
-                            {index + 1}. {item.kind === "video" ? "Video" : "Photo"}
-                          </p>
-                          <p className="m-0 text-[12px] text-[#5b6775]">
-                            {slidePlace(index)}
-                            {item.crop ? " · Cropped" : ""}
-                            {item.trim ? ` · ${clock(item.trim.start)}–${clock(item.trim.end)}` : ""}
-                          </p>
-                        </div>
-                        {canEdit && (
-                          <div className="flex gap-1">
-                            {item.kind === "video" && (
-                              <>
-                                <Button type="button" variant="secondary" size="sm" disabled={busy !== null} onClick={() => setVideoCrop(index)}>
-                                  <Crop className="h-4 w-4" />
-                                  {item.crop ? "Edit crop" : "Crop"}
-                                </Button>
-                                <Button type="button" variant="secondary" size="sm" disabled={busy !== null} onClick={() => setVideoTrim(index)}>
-                                  <Scissors className="h-4 w-4" />
-                                  {item.trim ? "Edit trim" : "Trim"}
-                                </Button>
-                              </>
-                            )}
-                            <Button type="button" variant="danger" size="sm" aria-label="Remove" disabled={busy !== null} onClick={() => persistHero(heroItems.filter((_, itemIndex) => itemIndex !== index))}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                        <div
+                          className={`flex items-center gap-3 ${canEdit ? "cursor-grab touch-none" : ""} ${lifted ? "cursor-grabbing" : ""}`}
+                          onPointerDown={(event) => startLift(event, index)}
+                          onPointerMove={moveLift}
+                          onPointerUp={endLift}
+                          onPointerCancel={endLift}
+                        >
+                          {canEdit && (
+                            <button
+                              type="button"
+                              aria-label={`Move ${item.kind === "video" ? "video" : "photo"} ${index + 1}. ${slidePlace(index)}.`}
+                              className="px-1 text-[#6b7785]"
+                              onKeyDown={(event) => {
+                                if (event.key === "ArrowUp") {
+                                  event.preventDefault();
+                                  moveHero(index, index - 1);
+                                } else if (event.key === "ArrowDown") {
+                                  event.preventDefault();
+                                  moveHero(index, index + 1);
+                                }
+                              }}
+                            >
+                              <GripVertical className="h-5 w-5" />
+                            </button>
+                          )}
+                          <HeroPreview item={item} />
+                          <div className="min-w-0 flex-1">
+                            <p className="m-0 text-[13px] font-semibold text-[#0b1f3a]">
+                              {index + 1}. {item.kind === "video" ? "Video" : "Photo"}
+                            </p>
+                            <p className="m-0 text-[12px] text-[#5b6775]">
+                              {slidePlace(index)}
+                              {item.crop ? " · Cropped" : ""}
+                              {item.trim ? ` · ${clock(item.trim.start)}–${clock(item.trim.end)}` : ""}
+                            </p>
                           </div>
-                        )}
+                          {canEdit && (
+                            <div className="flex gap-1">
+                              {item.kind === "video" && (
+                                <>
+                                  <Button type="button" variant="secondary" size="sm" disabled={busy !== null} onClick={() => setVideoCrop(index)}>
+                                    <Crop className="h-4 w-4" />
+                                    {item.crop ? "Edit crop" : "Crop"}
+                                  </Button>
+                                  <Button type="button" variant="secondary" size="sm" disabled={busy !== null} onClick={() => setVideoTrim(index)}>
+                                    <Scissors className="h-4 w-4" />
+                                    {item.trim ? "Edit trim" : "Trim"}
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                type="button"
+                                variant="danger"
+                                size="sm"
+                                aria-label="Remove"
+                                disabled={busy !== null}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  removeHero(index);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Remove
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          <Field label="Title">
+                            <Input
+                              value={item.title}
+                              disabled={!canEdit || busy !== null}
+                              maxLength={90}
+                              onChange={(event) => patchHero(index, { title: event.target.value })}
+                              onBlur={() => canEdit && saveHeroCopy(index)}
+                            />
+                          </Field>
+                          <Field label="Button text">
+                            <Input
+                              value={item.buttonLabel}
+                              disabled={!canEdit || busy !== null}
+                              maxLength={40}
+                              onChange={(event) => patchHero(index, { buttonLabel: event.target.value })}
+                              onBlur={() => canEdit && saveHeroCopy(index)}
+                            />
+                          </Field>
+                          <Field label="Subtitle" className="sm:col-span-2">
+                            <Input
+                              value={item.subtitle}
+                              disabled={!canEdit || busy !== null}
+                              maxLength={220}
+                              onChange={(event) => patchHero(index, { subtitle: event.target.value })}
+                              onBlur={() => canEdit && saveHeroCopy(index)}
+                            />
+                          </Field>
+                          <Field label="Button link" hint="Page on this site (about.html) or a full https:// address" className="sm:col-span-2">
+                            <Input
+                              value={item.buttonUrl}
+                              disabled={!canEdit || busy !== null}
+                              maxLength={240}
+                              placeholder="about.html"
+                              onChange={(event) => patchHero(index, { buttonUrl: event.target.value })}
+                              onBlur={() => canEdit && saveHeroCopy(index)}
+                            />
+                          </Field>
+                        </div>
                       </div>
                     );
                   })}

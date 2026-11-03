@@ -104,7 +104,11 @@
                 kind: kind,
                 url: url,
                 crop: kind === "video" ? heroCrop(item && item.crop) : null,
-                trim: kind === "video" ? heroTrim(item && item.trim) : null
+                trim: kind === "video" ? heroTrim(item && item.trim) : null,
+                title: item && typeof item.title === "string" ? item.title : "",
+                subtitle: item && typeof item.subtitle === "string" ? item.subtitle : "",
+                buttonLabel: item && typeof item.buttonLabel === "string" ? item.buttonLabel : "",
+                buttonUrl: item && typeof item.buttonUrl === "string" ? item.buttonUrl : ""
             });
         });
         if (!clean.length) return;
