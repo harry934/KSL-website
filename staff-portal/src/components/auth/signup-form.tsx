@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordHints, PasswordInput, PasscodeInput } from "@/components/ui/password-input";
 import { Field, Notice, fieldLabel } from "@/components/ui/form-bits";
 import { normalizeUsername, validatePassword, validateUsername } from "@/lib/accounts";
+import { cn } from "@/lib/cn";
 
 export function SignupForm({ token }: { token: string }) {
   const [passcode, setPasscode] = useState("");
@@ -16,6 +17,49 @@ export function SignupForm({ token }: { token: string }) {
   const [error, setError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [usernameHint, setUsernameHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (kind !== "create") return;
+    const next = normalizeUsername(username);
+    if (!next) {
+      setUsernameStatus("idle");
+      setUsernameHint(null);
+      return;
+    }
+    const formatError = validateUsername(next);
+    if (formatError) {
+      setUsernameStatus("invalid");
+      setUsernameHint(formatError);
+      return;
+    }
+
+    setUsernameStatus("checking");
+    setUsernameHint("Checking…");
+    const timer = window.setTimeout(async () => {
+      const res = await fetch("/api/auth/invite/username-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, username: next }),
+      }).catch(() => null);
+      const json = res ? await res.json().catch(() => ({})) : {};
+      if (!res || !res.ok) {
+        setUsernameStatus("invalid");
+        setUsernameHint(json.error ?? "Could not check that username.");
+        return;
+      }
+      if (json.available) {
+        setUsernameStatus("available");
+        setUsernameHint("This username is available.");
+      } else {
+        setUsernameStatus("taken");
+        setUsernameHint(json.reason ?? "This username isn't available. Please try another.");
+      }
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [username, kind, token]);
 
   async function verifyPasscode(e: React.FormEvent) {
     e.preventDefault();
@@ -56,6 +100,10 @@ export function SignupForm({ token }: { token: string }) {
       const usernameError = validateUsername(nextUsername);
       if (usernameError) {
         setError(usernameError);
+        return;
+      }
+      if (usernameStatus === "taken" || usernameStatus === "invalid") {
+        setError(usernameHint ?? "This username isn't available. Please try another.");
         return;
       }
     }
@@ -112,7 +160,23 @@ export function SignupForm({ token }: { token: string }) {
             autoComplete="username"
             spellCheck={false}
             required
+            aria-describedby="username-availability"
           />
+          {usernameHint ? (
+            <p
+              id="username-availability"
+              className={cn(
+                "mt-1.5 text-[12.5px]",
+                usernameStatus === "available"
+                  ? "text-[#1b7a3d]"
+                  : usernameStatus === "checking"
+                    ? "text-[#6b7785]"
+                    : "text-[#b42318]"
+              )}
+            >
+              {usernameHint}
+            </p>
+          ) : null}
         </Field>
       ) : null}
       <Field label="New password">
@@ -137,7 +201,11 @@ export function SignupForm({ token }: { token: string }) {
         />
       </Field>
       {error && <Notice kind="error">{error}</Notice>}
-      <Button type="submit" className="w-full" disabled={saving}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={saving || (kind === "create" && usernameStatus !== "available")}
+      >
         {saving ? "Saving…" : kind === "create" ? "Create account" : "Save password"}
       </Button>
     </form>

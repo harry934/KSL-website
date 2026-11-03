@@ -44,19 +44,13 @@ export default async function InvitePage({
             {invite ? (
               <>
                 <strong className="mb-1 block text-[15px] text-[#0b1f3a]">Enter your one-time passcode</strong>
-                <p className="mb-4 text-[13.5px] text-[#5b6775]">
-                  Use the 6-digit passcode from your administrator. This link stops working 10 minutes after it was created.
-                </p>
+                <p className="mb-4 text-[13.5px] text-[#5b6775]">Enter the 6-digit passcode from your administrator.</p>
                 <SignupForm token={token} />
               </>
             ) : (
               <>
-                <strong className="mb-1 block text-[15px] text-[#0b1f3a]">This invite link has expired</strong>
-                <p className="mb-4 text-[13.5px] text-[#5b6775]">
-                  Invite links only work for 10 minutes. Ask an administrator to send a new invite.
-                </p>
-                <p className="text-[13.5px] text-[#5b6775]">
-                  Already have an account?{" "}
+                <strong className="block text-center text-[15px] text-[#0b1f3a]">Link expired</strong>
+                <p className="mt-4 text-center text-[13.5px] text-[#5b6775]">
                   <Link href="/login" className="font-semibold text-[#0b1f3a] underline">
                     Sign in
                   </Link>

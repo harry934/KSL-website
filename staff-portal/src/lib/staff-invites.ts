@@ -233,30 +233,40 @@ export async function listOpenInvites() {
   const rows = data ?? [];
   const targetIds = [...new Set(rows.map((row) => row.target_profile_id).filter(Boolean))] as string[];
   const emails = [...new Set(rows.map((row) => row.contact_email).filter(Boolean))] as string[];
-  const [{ data: profiles }, { data: byEmail }] = await Promise.all([
+  const [{ data: profiles }, { data: emailProfiles }] = await Promise.all([
     targetIds.length
       ? admin.from("admin_profiles").select("id, username, display_name").in("id", targetIds)
       : Promise.resolve({ data: [] as { id: string; username: string; display_name: string }[] }),
     emails.length
-      ? admin.from("admin_profiles").select("id, contact_email").in("contact_email", emails).is("deleted_at", null)
-      : Promise.resolve({ data: [] as { id: string; contact_email: string | null }[] }),
+      ? admin
+          .from("admin_profiles")
+          .select("id, username, display_name, contact_email")
+          .in("contact_email", emails)
+          .is("deleted_at", null)
+      : Promise.resolve({
+          data: [] as { id: string; username: string; display_name: string; contact_email: string | null }[],
+        }),
   ]);
   const byId = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
-  const emailTaken = new Set((byEmail ?? []).map((row) => (row.contact_email ?? "").toLowerCase()).filter(Boolean));
+  const byEmail = new Map(
+    (emailProfiles ?? [])
+      .filter((row) => row.contact_email)
+      .map((row) => [String(row.contact_email).toLowerCase(), row] as const)
+  );
   const now = Date.now();
 
   return {
     error: null,
     status: 200 as const,
     invites: rows.map((row) => {
+      const emailKey = row.contact_email ? String(row.contact_email).toLowerCase() : "";
+      const fromEmail = emailKey ? byEmail.get(emailKey) : undefined;
       const target = row.target_profile_id ? byId.get(row.target_profile_id) : null;
+      const profile = target ?? fromEmail ?? null;
       const expired = new Date(row.expires_at).getTime() <= now;
       let status: InviteListStatus = "waiting";
       if (row.used_at) {
-        const completed =
-          row.kind === "create"
-            ? !!(row.contact_email && emailTaken.has(String(row.contact_email).toLowerCase()))
-            : true;
+        const completed = row.kind === "create" ? !!fromEmail : true;
         status = completed ? "completed" : "cancelled";
       } else if (expired) {
         status = "expired";
@@ -272,9 +282,9 @@ export async function listOpenInvites() {
         expiresAt: row.expires_at as string,
         createdAt: row.created_at as string,
         signupUrl: signupUrlFor(row.token as string),
-        targetProfileId: (row.target_profile_id as string | null) ?? null,
-        targetUsername: (target?.username as string | undefined) ?? "",
-        targetDisplayName: (target?.display_name as string | undefined) ?? "",
+        targetProfileId: (row.target_profile_id as string | null) ?? (profile?.id as string | undefined) ?? null,
+        targetUsername: (profile?.username as string | undefined) ?? "",
+        targetDisplayName: (profile?.display_name as string | undefined) ?? "",
         status,
       };
     }),
@@ -421,8 +431,11 @@ export async function verifyInvitePasscode(token: string, passcode: string) {
   const digits = String(passcode ?? "").replace(/\D/g, "");
   if (!/^\d{6}$/.test(digits)) return { error: "Enter the 6-digit passcode.", status: 400 as const, invite: null };
   const invite = await loadOpenInvite(token);
-  if (!invite || !passcodesMatch(digits, invite.passcode_hash)) {
-    return { error: "That passcode is not correct, or the invite has expired.", status: 401 as const, invite: null };
+  if (!invite) {
+    return { error: "Link expired", status: 410 as const, invite: null };
+  }
+  if (!passcodesMatch(digits, invite.passcode_hash)) {
+    return { error: "That passcode is not correct.", status: 401 as const, invite: null };
   }
   return { error: null, status: 200 as const, invite };
 }
@@ -478,7 +491,7 @@ export async function completeInvite(input: {
   if (usernameProblem) return { error: usernameProblem, status: 400 as const };
 
   const { data: taken } = await admin.from("admin_profiles").select("id").eq("username", username).maybeSingle();
-  if (taken) return { error: "That username is already taken.", status: 409 as const };
+  if (taken) return { error: "This username isn't available. Please try another.", status: 409 as const };
 
   if (invite.contact_email) {
     const { data: emailTaken } = await admin

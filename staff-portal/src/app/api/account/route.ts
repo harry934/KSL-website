@@ -27,7 +27,7 @@ export async function PATCH(req: NextRequest) {
       .eq("username", username)
       .neq("id", session.userId)
       .maybeSingle();
-    if (taken) return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
+    if (taken) return NextResponse.json({ error: "This username isn't available. Please try another." }, { status: 409 });
   }
 
   const { error: authError } = await admin.auth.admin.updateUserById(session.userId, {

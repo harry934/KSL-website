@@ -134,7 +134,7 @@ export async function PATCH(req: NextRequest) {
     if (role.error) return NextResponse.json({ error: role.error }, { status: 400 });
     if (username !== target.username) {
       const { data: taken } = await admin.from("admin_profiles").select("id").eq("username", username).neq("id", id).maybeSingle();
-      if (taken) return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
+      if (taken) return NextResponse.json({ error: "This username isn't available. Please try another." }, { status: 409 });
     }
     const { error: authErr } = await admin.auth.admin.updateUserById(id, {
       email: authEmailFor(username, contactEmail),

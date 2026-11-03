@@ -260,102 +260,130 @@ function expiryLabel(iso: string) {
 
 function inviteSubject(issued: Issued) {
   return issued.isNew
-    ? "Kenya Shipyards staff portal invite"
-    : "Kenya Shipyards staff portal password reset";
+    ? "Kenya Shipyards Limited | Staff portal invite"
+    : "Kenya Shipyards Limited | Password reset";
 }
 
-function logoUrl() {
+let logoDataUrlPromise: Promise<string> | null = null;
+
+function logoPublicUrl() {
   if (typeof window === "undefined") return "/ksl-logo.png";
   return `${window.location.origin}/ksl-logo.png`;
 }
 
+async function logoDataUrl() {
+  if (typeof window === "undefined") return logoPublicUrl();
+  if (!logoDataUrlPromise) {
+    logoDataUrlPromise = (async () => {
+      try {
+        const res = await fetch(logoPublicUrl());
+        const blob = await res.blob();
+        return await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || logoPublicUrl()));
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(blob);
+        });
+      } catch {
+        return logoPublicUrl();
+      }
+    })();
+  }
+  return logoDataUrlPromise;
+}
+
 function invitePlainText(issued: Issued) {
   const until = expiryLabel(issued.expiresAt);
-  const steps = issued.isNew
-    ? [
-        "1. Open the sign-up link below.",
-        "2. Enter the one-time passcode.",
-        "3. Choose your username and password.",
-      ]
-    : [
-        "1. Open the sign-up link below.",
-        "2. Enter the one-time passcode.",
-        "3. Choose a new password (your username stays the same).",
-      ];
+  const greeting = issued.isNew
+    ? "You have been invited to the Kenya Shipyards Limited staff portal."
+    : "A password reset was requested for your Kenya Shipyards Limited staff portal account.";
+  const action = issued.isNew
+    ? "Open the link, enter the passcode, then choose your username and password."
+    : "Open the link, enter the passcode, then choose a new password. Your username stays the same.";
 
   return [
-    "Kenya Shipyards Limited",
-    "Staff portal",
+    "KENYA SHIPYARDS LIMITED",
+    "Ministry of Defence · Staff portal",
     "",
-    issued.isNew
-      ? "You have been invited to join the Kenya Shipyards staff portal."
-      : "Use this invite to set a new password for the Kenya Shipyards staff portal.",
+    "────────────────────────────────",
+    greeting,
     "",
-    "One-time passcode",
+    "ONE-TIME PASSCODE",
     issued.passcode,
     "",
-    "Sign-up link",
+    "SIGN-UP LINK (click or copy)",
     issued.signupUrl,
     "",
-    ...steps,
-    "",
+    action,
     until
-      ? `This passcode and link expire at ${until} East Africa Time (valid for 10 minutes).`
-      : "This passcode and link expire after 10 minutes.",
+      ? `Expires ${until} East Africa Time (10 minutes).`
+      : "Expires in 10 minutes.",
+    "────────────────────────────────",
     "",
-    "If you did not expect this message, you can ignore it.",
-    "",
+    "If you did not expect this message, ignore it.",
     "Kenya Shipyards Limited",
   ].join("\n");
 }
 
-function inviteHtmlEmail(issued: Issued) {
+async function inviteHtmlEmail(issued: Issued) {
   const until = expiryLabel(issued.expiresAt);
-  const logo = logoUrl();
-  const headline = issued.isNew ? "You are invited to the staff portal" : "Reset your staff portal password";
+  const logo = await logoDataUrl();
+  const headline = issued.isNew ? "Staff portal invitation" : "Password reset";
   const intro = issued.isNew
-    ? "Kenya Shipyards Limited has invited you to join the staff portal. Use the passcode and link below to finish set-up."
-    : "Use the passcode and link below to choose a new password. Your username stays the same.";
+    ? "Kenya Shipyards Limited has invited you to the staff portal. Use the passcode and secure link below to finish set-up."
+    : "Use the passcode and secure link below to choose a new password. Your username stays the same.";
+  const cta = issued.isNew ? "Complete sign-up" : "Reset password";
   const steps = issued.isNew
-    ? "<li>Open the sign-up link</li><li>Enter the one-time passcode</li><li>Choose your username and password</li>"
-    : "<li>Open the sign-up link</li><li>Enter the one-time passcode</li><li>Choose a new password</li>";
+    ? "<li style='margin:0 0 6px;'>Open the sign-up link</li><li style='margin:0 0 6px;'>Enter your one-time passcode</li><li style='margin:0;'>Choose a unique username and password</li>"
+    : "<li style='margin:0 0 6px;'>Open the reset link</li><li style='margin:0 0 6px;'>Enter your one-time passcode</li><li style='margin:0;'>Choose a new password</li>";
   const expiry = until
-    ? `This passcode and link expire at <strong>${until} East Africa Time</strong> (valid for 10 minutes).`
-    : "This passcode and link expire after <strong>10 minutes</strong>.";
+    ? `This passcode and link expire at <strong style="color:#0b1f3a;">${until} East Africa Time</strong> (valid for 10 minutes).`
+    : "This passcode and link expire after <strong style=\"color:#0b1f3a;\">10 minutes</strong>.";
 
   return `<!DOCTYPE html>
-<html>
-<body style="margin:0;padding:0;background:#f4f6f8;font-family:Segoe UI,Helvetica,Arial,sans-serif;color:#0b1f3a;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f6f8;padding:28px 12px;">
+<html lang="en">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><title>${inviteSubject(issued)}</title></head>
+<body style="margin:0;padding:0;background:#eef2f6;font-family:'Segoe UI',Helvetica,Arial,sans-serif;color:#0b1f3a;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef2f6;padding:32px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;width:100%;background:#ffffff;border:1px solid #e5e9ef;">
+        <table role="presentation" width="580" cellspacing="0" cellpadding="0" style="max-width:580px;width:100%;background:#ffffff;border:1px solid #d7dee7;border-collapse:collapse;">
           <tr>
-            <td style="padding:28px 32px 12px;text-align:center;border-bottom:3px solid #0b1f3a;">
-              <img src="${logo}" alt="Kenya Shipyards Limited" width="72" height="72" style="display:block;margin:0 auto 14px;border:0;" />
-              <p style="margin:0;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#5b6775;font-weight:600;">Kenya Shipyards Limited</p>
-              <p style="margin:6px 0 0;font-size:20px;font-weight:700;color:#0b1f3a;">${headline}</p>
+            <td style="height:4px;background:#0b1f3a;font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+          <tr>
+            <td style="padding:28px 36px 18px;text-align:center;background:linear-gradient(180deg,#ffffff 0%,#f7f9fb 100%);">
+              <img src="${logo}" alt="Kenya Shipyards Limited" width="88" height="88" style="display:block;margin:0 auto 14px;border:0;width:88px;height:88px;" />
+              <p style="margin:0;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#c5a028;font-weight:700;">Ministry of Defence</p>
+              <p style="margin:8px 0 0;font-size:22px;line-height:1.25;font-weight:700;color:#0b1f3a;">Kenya Shipyards Limited</p>
+              <p style="margin:8px 0 0;font-size:15px;color:#5b6775;">${headline}</p>
             </td>
           </tr>
           <tr>
-            <td style="padding:24px 32px;">
-              <p style="margin:0 0 18px;font-size:15px;line-height:1.55;color:#3d4c5f;">${intro}</p>
-              <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6b7785;font-weight:600;">One-time passcode</p>
-              <p style="margin:0 0 20px;font-size:28px;letter-spacing:0.28em;font-weight:700;color:#0b1f3a;font-family:ui-monospace,Consolas,monospace;">${issued.passcode}</p>
-              <p style="margin:0 0 10px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6b7785;font-weight:600;">Sign-up link</p>
-              <p style="margin:0 0 22px;">
-                <a href="${issued.signupUrl}" style="display:inline-block;background:#0b1f3a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 20px;">Open sign-up page</a>
+            <td style="padding:8px 36px 28px;">
+              <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3d4c5f;">${intro}</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f6f8fa;border:1px solid #e5e9ef;">
+                <tr>
+                  <td style="padding:18px 20px;">
+                    <p style="margin:0 0 6px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#6b7785;font-weight:700;">One-time passcode</p>
+                    <p style="margin:0;font-size:30px;letter-spacing:0.32em;font-weight:700;color:#0b1f3a;font-family:Consolas,'Courier New',monospace;">${issued.passcode}</p>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:22px 0 14px;text-align:center;">
+                <a href="${issued.signupUrl}" style="display:inline-block;background:#0b1f3a;color:#ffffff !important;text-decoration:none;font-size:14px;font-weight:700;padding:13px 26px;border-radius:2px;">${cta}</a>
               </p>
-              <p style="margin:0 0 8px;font-size:13px;color:#6b7785;">Or copy this link:</p>
-              <p style="margin:0 0 22px;font-size:13px;line-height:1.5;word-break:break-all;"><a href="${issued.signupUrl}" style="color:#0b4f8a;">${issued.signupUrl}</a></p>
-              <ol style="margin:0 0 18px;padding-left:18px;font-size:14px;line-height:1.6;color:#3d4c5f;">${steps}</ol>
+              <p style="margin:0 0 6px;font-size:12px;color:#6b7785;text-align:center;">Or copy this link</p>
+              <p style="margin:0 0 22px;font-size:12.5px;line-height:1.5;word-break:break-all;text-align:center;"><a href="${issued.signupUrl}" style="color:#0b4f8a;">${issued.signupUrl}</a></p>
+              <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6b7785;font-weight:700;">Next steps</p>
+              <ol style="margin:0 0 18px;padding-left:20px;font-size:14px;line-height:1.55;color:#3d4c5f;">${steps}</ol>
               <p style="margin:0;font-size:13px;line-height:1.55;color:#5b6775;">${expiry}</p>
             </td>
           </tr>
           <tr>
-            <td style="padding:16px 32px 24px;border-top:1px solid #eef1f4;">
+            <td style="padding:16px 36px 24px;border-top:1px solid #eef1f4;background:#fbfcfd;">
               <p style="margin:0;font-size:12px;line-height:1.5;color:#8a96a3;">If you did not expect this message, you can ignore it.</p>
-              <p style="margin:10px 0 0;font-size:12px;color:#6b7785;">© Kenya Shipyards Limited · Staff portal</p>
+              <p style="margin:8px 0 0;font-size:12px;color:#6b7785;">© Kenya Shipyards Limited · Staff portal</p>
             </td>
           </tr>
         </table>
@@ -382,11 +410,22 @@ function mailComposeUrl(kind: "gmail" | "outlook", email: string, subject: strin
 
 function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () => void }) {
   const [copied, setCopied] = useState<"passcode" | "link" | "message" | "email" | null>(null);
+  const [logoSrc, setLogoSrc] = useState("/ksl-logo.png");
 
   const plain = invitePlainText(issued);
   const subject = inviteSubject(issued);
   const hasEmail = issued.email.includes("@");
   const hasPhone = !!issued.phone.replace(/\D/g, "");
+
+  useEffect(() => {
+    let alive = true;
+    logoDataUrl().then((src) => {
+      if (alive) setLogoSrc(src);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   async function copyText(value: string, which: "passcode" | "link" | "message" | "email") {
     try {
@@ -399,7 +438,7 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
   }
 
   async function copyRichEmail() {
-    const html = inviteHtmlEmail(issued);
+    const html = await inviteHtmlEmail(issued);
     try {
       if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
         await navigator.clipboard.write([
@@ -413,19 +452,24 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
       }
       setCopied("email");
       window.setTimeout(() => setCopied(null), 2500);
+      return true;
     } catch {
       try {
         await navigator.clipboard.writeText(plain);
         setCopied("email");
         window.setTimeout(() => setCopied(null), 2500);
+        return true;
       } catch {
         setCopied(null);
+        return false;
       }
     }
   }
 
-  function sendMail(kind: "gmail" | "outlook") {
+  async function sendMail(kind: "gmail" | "outlook") {
     if (!hasEmail) return;
+    await copyRichEmail();
+    // Compose URLs only support plain text; branded HTML is already on the clipboard to paste.
     window.open(mailComposeUrl(kind, issued.email, subject, plain), "_blank", "noopener");
   }
 
@@ -441,48 +485,58 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
         {issued.isNew ? "Invite ready: send it now" : "Password reset ready: send it now"}
       </h2>
       <p className="mt-1 text-[13.5px] text-[#5b6775]">
-        Nothing is emailed automatically. Use Gmail, Outlook, or WhatsApp below. Each opens a draft with the message filled in. Press Send in that app.
+        Open Gmail or Outlook to send. The branded message (with logo) is copied first — paste it into the draft with Ctrl+V / Cmd+V for the full email. WhatsApp uses the text version.
         {expiryLabel(issued.expiresAt)
           ? ` Passcode expires at ${expiryLabel(issued.expiresAt)} East Africa Time.`
           : " Passcode expires in 10 minutes."}
       </p>
-      <div className="mt-4 grid gap-3">
-        <div className="rounded-[8px] bg-[#f6f8fa] px-4 py-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <p className="text-[12.5px] text-[#6b7785]">One-time passcode</p>
-            <Button variant="secondary" size="sm" onClick={() => copyText(issued.passcode, "passcode")}>
-              {copied === "passcode" ? <Check className="h-4 w-4 text-[#12b76a]" /> : <Copy className="h-4 w-4" />}
-              {copied === "passcode" ? "Copied" : "Copy passcode"}
-            </Button>
-          </div>
-          <div className="mt-4 flex justify-center">
-            <PasscodeDisplay value={issued.passcode} accepted={copied === "passcode"} />
-          </div>
+
+      <div className="mt-4 overflow-hidden rounded-[8px] border border-[#d7dee7] bg-white">
+        <div className="border-b border-[#eef1f4] bg-[#f7f9fb] px-5 py-5 text-center">
+          <img src={logoSrc} alt="Kenya Shipyards Limited" className="mx-auto h-16 w-16 object-contain" />
+          <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#c5a028]">Ministry of Defence</p>
+          <p className="mt-1 text-[16px] font-bold text-[#0b1f3a]">Kenya Shipyards Limited</p>
+          <p className="mt-1 text-[13px] text-[#5b6775]">
+            {issued.isNew ? "Staff portal invitation" : "Password reset"}
+          </p>
         </div>
-        <div className="rounded-[8px] bg-[#f6f8fa] px-4 py-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <p className="text-[12.5px] text-[#6b7785]">Sign-up link</p>
-            <Button variant="secondary" size="sm" onClick={() => copyText(issued.signupUrl, "link")}>
-              {copied === "link" ? <Check className="h-4 w-4 text-[#12b76a]" /> : <Copy className="h-4 w-4" />}
-              {copied === "link" ? "Copied" : "Copy link"}
-            </Button>
+        <div className="space-y-3 px-5 py-4">
+          <p className="text-[13.5px] leading-relaxed text-[#3d4c5f]">
+            {issued.isNew
+              ? "You have been invited to the Kenya Shipyards Limited staff portal. Use the passcode and link below to finish set-up."
+              : "Use the passcode and link below to choose a new password. Your username stays the same."}
+          </p>
+          <div className="rounded-[6px] bg-[#f6f8fa] px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7785]">One-time passcode</p>
+            <div className="mt-2 flex justify-center">
+              <PasscodeDisplay value={issued.passcode} accepted={copied === "passcode"} />
+            </div>
           </div>
-          <p className="mt-2 break-all font-mono text-[13px] text-[#0b1f3a]">{issued.signupUrl}</p>
+          <p className="break-all text-[12.5px]">
+            <a href={issued.signupUrl} className="font-semibold text-[#0b4f8a] underline" target="_blank" rel="noreferrer">
+              {issued.signupUrl}
+            </a>
+          </p>
         </div>
       </div>
-      <p className="mt-3 text-[12.5px] text-[#6b7785]">
-        Prefer a branded email with the KSL logo? Use{" "}
-        <span className="font-semibold text-[#3d4c5f]">Copy email (with logo)</span>, then paste into a new Gmail or Outlook message.
-        {!hasEmail ? " Add an email on the invite to use Gmail/Outlook." : ""}
-        {!hasPhone ? " Add a mobile number to pre-fill WhatsApp." : ""}
-      </p>
+
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button variant="secondary" onClick={copyRichEmail}>
-          <Copy className="h-4 w-4" /> {copied === "email" ? "Email copied" : "Copy email (with logo)"}
+        <Button variant="secondary" size="sm" onClick={() => copyText(issued.passcode, "passcode")}>
+          {copied === "passcode" ? <Check className="h-4 w-4 text-[#12b76a]" /> : <Copy className="h-4 w-4" />}
+          {copied === "passcode" ? "Copied" : "Copy passcode"}
         </Button>
-        <Button variant="secondary" onClick={() => copyText(plain, "message")}>
-          <Copy className="h-4 w-4" /> {copied === "message" ? "Text copied" : "Copy plain text"}
+        <Button variant="secondary" size="sm" onClick={() => copyText(issued.signupUrl, "link")}>
+          {copied === "link" ? <Check className="h-4 w-4 text-[#12b76a]" /> : <Copy className="h-4 w-4" />}
+          {copied === "link" ? "Copied" : "Copy link"}
         </Button>
+        <Button variant="secondary" size="sm" onClick={copyRichEmail}>
+          <Copy className="h-4 w-4" /> {copied === "email" ? "Branded email copied" : "Copy branded email"}
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => copyText(plain, "message")}>
+          <Copy className="h-4 w-4" /> {copied === "message" ? "Text copied" : "Copy text"}
+        </Button>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
         <Button variant="secondary" onClick={() => sendMail("gmail")} disabled={!hasEmail}>
           <Mail className="h-4 w-4" /> Open in Gmail
         </Button>
@@ -695,9 +749,9 @@ export function StaffManager() {
       }
     }
     const ok = await confirm({
-      title: `Send ${row.display_name || row.username} a password reset invite?`,
-      message: "They get a 6-digit passcode and a sign-up link. Their current password keeps working until they finish that link. The invite lasts 10 minutes.",
-      confirmLabel: "Create invite",
+      title: `Send ${row.display_name || row.username} a password reset?`,
+      message: "They get a 6-digit passcode and a sign-up link. Their current password keeps working until they finish that link. The link lasts 10 minutes.",
+      confirmLabel: "Create reset",
     });
     if (!ok) return;
     const data = await run(() =>
@@ -791,6 +845,41 @@ export function StaffManager() {
     load();
   }
 
+  async function resetPasswordFromInvite(invite: PendingInvite) {
+    const profileId = invite.targetProfileId;
+    if (!profileId) {
+      setError("That account could not be found for a password reset.");
+      return;
+    }
+    const label = invite.targetDisplayName || invite.targetUsername || invite.email || "this staff member";
+    const ok = await confirm({
+      title: `Send ${label} a password reset?`,
+      message: "They already have an account. This sends a new passcode and link so they can set a new password.",
+      confirmLabel: "Create reset",
+    });
+    if (!ok) return;
+    const data = await run(() =>
+      sendJson("/api/staff", "PATCH", {
+        id: profileId,
+        action: "reset_password",
+        phone: invite.phone || undefined,
+      })
+    );
+    if (!data) return;
+    setPanel(null);
+    setIssued({
+      passcode: data.passcode,
+      signupUrl: data.signupUrl,
+      email: data.email || invite.email,
+      phone: data.phone || invite.phone,
+      isNew: false,
+      expiresAt: data.expiresAt,
+      username: invite.targetUsername || undefined,
+    });
+    toast("Password reset ready. Open Gmail, Outlook, or WhatsApp below to send it.");
+    load();
+  }
+
   function canDeleteRow(row: StaffRow) {
     if (row.id === session?.userId) return false;
     if (row.is_super_admin && !row.must_change_password) return false;
@@ -848,7 +937,7 @@ export function StaffManager() {
         <section className="ksl-card p-5">
           <h2 className="text-[15px] font-bold text-[#0b1f3a]">Sent invites</h2>
           <p className="mt-1 text-[13.5px] text-[#5b6775]">
-            Resend refreshes the same invite with a new passcode and opens the send panel again (Gmail, Outlook, WhatsApp, or copy). You can delete any invite on this list at any time.
+            Waiting invites can be resent. After someone finishes sign-up, use Reset password instead. Delete removes an item from this list anytime.
           </p>
           <ul className="mt-4 divide-y divide-[#eef1f4]">
             {invites.map((invite) => (
@@ -907,11 +996,20 @@ export function StaffManager() {
                       <Copy className="h-3.5 w-3.5" /> Copy link
                     </Button>
                   ) : null}
-                  {invite.status !== "completed" ? (
+                  {invite.status === "completed" ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => resetPasswordFromInvite(invite)}
+                      disabled={saving || !invite.targetProfileId}
+                    >
+                      <KeyRound className="h-3.5 w-3.5" /> Reset password
+                    </Button>
+                  ) : (
                     <Button variant="secondary" size="sm" onClick={() => resendInvite(invite)} disabled={saving}>
                       <KeyRound className="h-3.5 w-3.5" /> Resend
                     </Button>
-                  ) : null}
+                  )}
                   <Button variant="danger" size="sm" onClick={() => deletePendingInvite(invite)} disabled={saving} aria-label="Delete invite">
                     <Trash2 className="h-3.5 w-3.5" /> Delete
                   </Button>
@@ -1109,7 +1207,7 @@ export function StaffManager() {
                         <Pencil className="h-3.5 w-3.5" /> Edit
                       </Button>
                       <Button variant="secondary" size="sm" onClick={() => resetPassword(row)} disabled={saving}>
-                        <KeyRound className="h-3.5 w-3.5" /> Reset invite
+                        <KeyRound className="h-3.5 w-3.5" /> Reset password
                       </Button>
                       {!row.is_super_admin && (
                         <Button variant="secondary" size="sm" onClick={() => setActive(row, !row.is_active)} disabled={saving}>

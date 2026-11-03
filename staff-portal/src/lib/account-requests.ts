@@ -4,7 +4,7 @@ import { authEmailFor } from "@/lib/auth-server";
 import { logActivity } from "@/lib/api-auth";
 import { createStaffInvite } from "@/lib/staff-invites";
 
-export const USERNAME_TAKEN = "That username is already taken.";
+export const USERNAME_TAKEN = "This username isn't available. Please try another.";
 
 export type AccountRequestKind = "username" | "password";
 

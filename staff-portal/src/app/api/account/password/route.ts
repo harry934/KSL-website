@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
   if (session.mustChangeUsername) {
     const { data: taken } = await admin.from("admin_profiles").select("id").eq("username", newUsername).neq("id", session.userId).maybeSingle();
-    if (taken) return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
+    if (taken) return NextResponse.json({ error: "This username isn't available. Please try another." }, { status: 409 });
   }
 
   const { data: authUser } = await admin.auth.admin.getUserById(session.userId);
