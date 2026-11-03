@@ -59,9 +59,16 @@ function clock(seconds: number) {
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
 }
 
-function HeroPreview({ item }: { item: HeroItem }) {
+function heroFrameUrl(url: string, kind: HeroItem["kind"]) {
+  const full = siteAssetUrl(url);
+  if (kind !== "video" || full.includes("#")) return full;
+  return `${full}#t=0.1`;
+}
+
+function HeroPreview({ item, large }: { item: HeroItem; large?: boolean }) {
   const frame = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
+  const size = large ? "h-[100px] w-[160px]" : "h-24 w-40";
   const place = useCallback(() => {
     const box = frame.current;
     const clip = video.current;
@@ -75,10 +82,10 @@ function HeroPreview({ item }: { item: HeroItem }) {
   }, [item.crop]);
 
   if (item.kind !== "video") {
-    return <img src={heroFrameUrl(item.url, item.kind)} alt="" className="block h-24 w-40 bg-[#f4f6f8] object-cover" />;
+    return <img src={heroFrameUrl(item.url, item.kind)} alt="" className={`block ${size} bg-[#f4f6f8] object-cover`} />;
   }
   return (
-    <div ref={frame} className="relative h-24 w-40 overflow-hidden bg-[#0b1f3a]">
+    <div ref={frame} className={`relative ${size} overflow-hidden bg-[#0b1f3a]`}>
       <video
         ref={video}
         src={heroFrameUrl(item.url, item.kind)}
@@ -95,20 +102,6 @@ function HeroPreview({ item }: { item: HeroItem }) {
       />
     </div>
   );
-}
-
-function slidePlace(index: number) {
-  const place = index + 1;
-  if (place === 1) return "Plays first";
-  if (place === 2) return "Plays second";
-  if (place === 3) return "Plays third";
-  return `Plays ${place}th`;
-}
-
-function heroFrameUrl(url: string, kind: HeroItem["kind"]) {
-  const full = siteAssetUrl(url);
-  if (kind !== "video" || full.includes("#")) return full;
-  return `${full}#t=0.1`;
 }
 
 function heroFromOverride(override: Override | undefined) {
@@ -162,7 +155,9 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   const [videoTrim, setVideoTrim] = useState<number | null>(null);
   const [lift, setLift] = useState<{ from: number; over: number; stride: number } | null>(null);
   const [customLinkFor, setCustomLinkFor] = useState<number | null>(null);
-  const liftRef = useRef<{ from: number; over: number; startY: number; stride: number; node: HTMLDivElement } | null>(null);
+  const [selectedHeroIndex, setSelectedHeroIndex] = useState(0);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const liftRef = useRef<{ from: number; over: number; startX: number; stride: number; node: HTMLElement; moved: boolean } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -174,6 +169,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       const hero = heroFromOverride(rows.find((row) => row.slot_id === HOME_HERO_SLOT));
       setHeroItems(hero.items);
       setHeroListLive(hero.live);
+      setSelectedHeroIndex((current) => (hero.items.length ? Math.min(current, hero.items.length - 1) : 0));
       setLibrary(data.library ?? []);
       setPage((current) => (nextSlots.some((slot) => slot.page === current) ? current : nextSlots[0]?.page || ""));
     } catch (err) {
@@ -196,6 +192,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     url.searchParams.delete("slot");
     window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
     setPage(match.page);
+    setSelectedSlotId(slotId);
     window.setTimeout(() => document.getElementById(`slot-${slotId}`)?.scrollIntoView({ block: "center" }), 50);
   }, [loading, slots]);
 
@@ -207,8 +204,25 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     return names;
   }, [slots]);
 
-  const visible = slots.filter((slot) => slot.page === page);
+  const visible = useMemo(() => slots.filter((slot) => slot.page === page), [slots, page]);
+  const pageSlots = useMemo(() => visible.filter((slot) => slot.id !== HOME_HERO_SLOT), [visible]);
+  const heroSlot = visible.find((slot) => slot.id === HOME_HERO_SLOT);
+
+  useEffect(() => {
+    const ids = slots.filter((slot) => slot.page === page && slot.id !== HOME_HERO_SLOT).map((slot) => slot.id);
+    if (!ids.length) {
+      setSelectedSlotId(null);
+      return;
+    }
+    setSelectedSlotId((current) => (current && ids.includes(current) ? current : ids[0]));
+  }, [page, slots]);
+
   const overrideFor = (id: string) => overrides.find((row) => row.slot_id === id && row.source === "storage" && row.public_url);
+  const selectedHero = heroItems[selectedHeroIndex] ?? null;
+  const customLink =
+    selectedHero != null &&
+    (customLinkFor === selectedHeroIndex ||
+      Boolean(selectedHero.buttonUrl && !HERO_PAGES.some((entry) => entry.value === selectedHero.buttonUrl)));
 
   async function save(slotId: string, image: LibraryImage, addToGallery = false) {
     setBusy(slotId);
@@ -260,6 +274,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       }
       setHeroItems(next);
       setHeroListLive(next.length > 0);
+      setSelectedHeroIndex((current) => (next.length ? Math.min(current, next.length - 1) : 0));
       setPicking(null);
       await load();
     } catch (err) {
@@ -284,6 +299,12 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     const next = heroItems.filter((_, itemIndex) => itemIndex !== index);
     setHeroItems(next);
     setHeroListLive(next.length > 0);
+    setSelectedHeroIndex((current) => {
+      if (!next.length) return 0;
+      if (current > index) return current - 1;
+      if (current === index) return Math.min(index, next.length - 1);
+      return current;
+    });
     await persistHero(next);
   }
 
@@ -307,7 +328,9 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
         trim: null,
         ...DEFAULT_HERO_COPY,
       };
-      await persistHero([...heroItems, item], item);
+      const next = [...heroItems, item];
+      setSelectedHeroIndex(next.length - 1);
+      await persistHero(next, item);
     } catch (err) {
       toast((err as Error).message, "error");
       setBusy(null);
@@ -316,7 +339,12 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
 
   async function addHeroVideo(file: File) {
     const named = /\.(mp4|webm|mov|m4v)$/i.test(file.name);
-    const typed = file.type === "video/mp4" || file.type === "video/webm" || file.type === "video/quicktime" || file.type === "video/x-quicktime" || ((file.type === "" || file.type === "application/octet-stream") && named);
+    const typed =
+      file.type === "video/mp4" ||
+      file.type === "video/webm" ||
+      file.type === "video/quicktime" ||
+      file.type === "video/x-quicktime" ||
+      ((file.type === "" || file.type === "application/octet-stream") && named);
     if (!typed) {
       toast("Use an MP4, WebM, or MOV video.", "error");
       return;
@@ -329,10 +357,10 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     setBusy(HOME_HERO_SLOT);
     try {
       const uploaded = await uploadFile("site_settings", file, { "x-ksl-hero": "1" });
-      await persistHero([
+      const next = [
         ...heroItems,
         {
-          kind: "video",
+          kind: "video" as const,
           url: uploaded.public_url,
           storagePath: uploaded.storage_path,
           label: file.name.replace(/\.[a-z0-9]+$/i, "") || "Video",
@@ -340,7 +368,9 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
           trim: null,
           ...DEFAULT_HERO_COPY,
         },
-      ]);
+      ];
+      setSelectedHeroIndex(next.length - 1);
+      await persistHero(next);
     } catch (err) {
       toast((err as Error).message, "error");
       setBusy(null);
@@ -352,35 +382,36 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     const next = heroItems.slice();
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
+    setSelectedHeroIndex(to);
     persistHero(next);
   }
 
-  function rowNudge(index: number) {
+  function stripNudge(index: number) {
     if (!lift || index === lift.from) return 0;
     if (lift.from < lift.over && index > lift.from && index <= lift.over) return -lift.stride;
     if (lift.from > lift.over && index < lift.from && index >= lift.over) return lift.stride;
     return 0;
   }
 
-  function startLift(event: React.PointerEvent<HTMLDivElement>, index: number) {
+  function startLift(event: React.PointerEvent<HTMLElement>, index: number) {
     if (!canEdit || busy !== null || event.button !== 0) return;
-    const target = event.target as HTMLElement;
-    if (target.closest("button, a, input, label")) return;
     const node = event.currentTarget;
-    const stride = node.getBoundingClientRect().height + 8;
+    const stride = node.getBoundingClientRect().width + 12;
     node.setPointerCapture(event.pointerId);
-    liftRef.current = { from: index, over: index, startY: event.clientY, stride, node };
+    liftRef.current = { from: index, over: index, startX: event.clientX, stride, node, moved: false };
     setLift({ from: index, over: index, stride });
+    setSelectedHeroIndex(index);
   }
 
-  function moveLift(event: React.PointerEvent<HTMLDivElement>) {
+  function moveLift(event: React.PointerEvent<HTMLElement>) {
     const drag = liftRef.current;
     if (!drag || event.currentTarget !== drag.node) return;
-    const dy = event.clientY - drag.startY;
-    drag.node.style.transform = `translateY(${dy}px)`;
+    const dx = event.clientX - drag.startX;
+    if (Math.abs(dx) > 4) drag.moved = true;
+    drag.node.style.transform = `translateX(${dx}px)`;
     drag.node.style.zIndex = "4";
     drag.node.style.boxShadow = "0 12px 28px rgba(11,31,58,.18)";
-    const next = Math.max(0, Math.min(heroItems.length - 1, drag.from + Math.round(dy / drag.stride)));
+    const next = Math.max(0, Math.min(heroItems.length - 1, drag.from + Math.round(dx / drag.stride)));
     if (next !== drag.over) {
       drag.over = next;
       setLift({ from: drag.from, over: next, stride: drag.stride });
@@ -392,12 +423,13 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     if (!drag) return;
     const target = drag.over;
     const from = drag.from;
+    const moved = drag.moved;
     drag.node.style.transform = "";
     drag.node.style.zIndex = "";
     drag.node.style.boxShadow = "";
     liftRef.current = null;
     setLift(null);
-    if (target !== from) moveHero(from, target);
+    if (moved && target !== from) moveHero(from, target);
   }
 
   function appendHeroPhoto(image: LibraryImage) {
@@ -406,10 +438,12 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       return;
     }
     if (!heroRoom()) return;
-    persistHero([
+    const next = [
       ...heroItems,
-      { kind: "image", url: image.url, storagePath: image.storagePath, label: image.label, crop: null, trim: null, ...DEFAULT_HERO_COPY },
-    ]);
+      { kind: "image" as const, url: image.url, storagePath: image.storagePath, label: image.label, crop: null, trim: null, ...DEFAULT_HERO_COPY },
+    ];
+    setSelectedHeroIndex(next.length - 1);
+    persistHero(next);
   }
 
   async function upload(slotId: string, file: File) {
@@ -432,260 +466,112 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   }
   if (loadError) return <Notice kind="error">{loadError}</Notice>;
 
+  const focusedSlot = pageSlots.find((slot) => slot.id === selectedSlotId) ?? null;
+  const focusedUrl = focusedSlot ? overrideFor(focusedSlot.id)?.public_url || focusedSlot.src : null;
+
   return (
     <div className="space-y-4">
       {!canEdit && <Notice kind="info">You can look at these photos. Only an administrator can change them.</Notice>}
-      <div className="grid items-start gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-      <nav className="border border-[#e3e8ee] bg-white" aria-label="Pages">
-        {pages.map((name) => {
-          const count = slots.filter((slot) => slot.page === name).length;
-          return (
-            <button
-              key={name}
-              type="button"
-              onClick={() => setPage(name)}
-              className={
-                name === page
-                  ? "flex w-full items-center justify-between bg-[#0b1f3a] px-3 py-2.5 text-left text-[13.5px] font-semibold text-white"
-                  : "flex w-full items-center justify-between border-b border-[#eef1f4] bg-white px-3 py-2.5 text-left text-[13.5px] font-semibold text-[#0b1f3a] last:border-b-0"
-              }
-            >
-              <span>{name}</span>
-              <span className={name === page ? "text-[12px] text-white/70" : "text-[12px] text-[#6b7785]"}>{count}</span>
-            </button>
-          );
-        })}
-      </nav>
-      <div className="space-y-3">
-        {visible.map((slot) => {
-          if (slot.id === HOME_HERO_SLOT) {
+      <div className="grid items-start gap-4 lg:grid-cols-[200px_minmax(0,1fr)]">
+        <nav className="sticky top-3 border border-[#e3e8ee] bg-white" aria-label="Pages">
+          {pages.map((name) => {
+            const count = slots.filter((slot) => slot.page === name).length;
             return (
-              <article id={`slot-${slot.id}`} key={slot.id} className="border border-[#e3e8ee] bg-white p-3">
-                <p className="m-0 text-[14px] font-semibold text-[#0b1f3a]">{slot.label}</p>
-                <p className="mb-3 mt-1 text-[13px] text-[#5b6775]">
-                  {heroListLive
-                    ? "Drag to reorder. For each photo or video, set the title, subtitle, button text, and link. Crop frames the picture; trim chooses where a video starts and ends."
-                    : heroItems.length
-                      ? "This photo is already on the hero, under the original film. Add a video or another photo and the homepage will show your list one at a time instead."
-                      : "The homepage is using its original film. Add photos, videos, or both, and set the title, subtitle, and button for each slide."}
-                </p>
-                <p className="m-0 mb-2 text-[12px] font-semibold uppercase tracking-wide text-[#6b7785]">Playback order</p>
-                <div className="flex flex-col gap-3">
+              <button
+                key={name}
+                type="button"
+                onClick={() => setPage(name)}
+                className={
+                  name === page
+                    ? "flex w-full items-center justify-between bg-[#0b1f3a] px-3 py-2.5 text-left text-[13.5px] font-semibold text-white"
+                    : "flex w-full items-center justify-between border-b border-[#eef1f4] bg-white px-3 py-2.5 text-left text-[13.5px] font-semibold text-[#0b1f3a] last:border-b-0"
+                }
+              >
+                <span>{name}</span>
+                <span className={name === page ? "text-[12px] text-white/70" : "text-[12px] text-[#6b7785]"}>{count}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="space-y-4">
+          {heroSlot && (
+            <section id={`slot-${heroSlot.id}`} className="border border-[#e3e8ee] bg-white p-4">
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                  <h2 className="m-0 text-[15px] font-bold text-[#0b1f3a]">{heroSlot.label}</h2>
+                  <p className="mb-0 mt-1 text-[13px] text-[#5b6775]">
+                    {heroListLive
+                      ? "Drag slides to reorder. Select one to edit its text."
+                      : heroItems.length
+                        ? "Add another slide to replace the original film on the homepage."
+                        : "Using the original film. Add a photo or video to take over."}
+                  </p>
+                </div>
+                {heroItems.length > 0 && (
+                  <p className="m-0 text-[12.5px] text-[#6b7785]">
+                    Slide {selectedHeroIndex + 1} of {heroItems.length}
+                  </p>
+                )}
+              </div>
+
+              {heroItems.length > 0 ? (
+                <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
                   {heroItems.map((item, index) => {
-                    const nudge = rowNudge(index);
+                    const nudge = stripNudge(index);
                     const lifted = lift?.from === index;
-                    const customLink =
-                      customLinkFor === index ||
-                      Boolean(item.buttonUrl && !HERO_PAGES.some((page) => page.value === item.buttonUrl));
+                    const selected = selectedHeroIndex === index;
                     return (
                       <div
                         key={`${item.kind}-${item.url}-${index}`}
-                        className={`border border-[#eef1f4] bg-white p-3 ${lifted ? "relative" : ""}`}
-                        style={lifted ? undefined : { transform: nudge ? `translateY(${nudge}px)` : undefined, transition: "transform 160ms ease" }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Slide ${index + 1}, ${item.kind === "video" ? "video" : "photo"}`}
+                        aria-pressed={selected}
+                        onClick={() => setSelectedHeroIndex(index)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setSelectedHeroIndex(index);
+                          } else if (canEdit && event.key === "ArrowLeft") {
+                            event.preventDefault();
+                            moveHero(index, index - 1);
+                          } else if (canEdit && event.key === "ArrowRight") {
+                            event.preventDefault();
+                            moveHero(index, index + 1);
+                          }
+                        }}
+                        onPointerDown={(event) => startLift(event, index)}
+                        onPointerMove={moveLift}
+                        onPointerUp={endLift}
+                        onPointerCancel={endLift}
+                        className={`relative shrink-0 overflow-hidden border-2 text-left transition ${
+                          selected ? "border-[#0b1f3a]" : "border-transparent hover:border-[#c5ced9]"
+                        } ${canEdit ? "cursor-grab touch-none" : "cursor-pointer"} ${lifted ? "z-[4] cursor-grabbing" : ""}`}
+                        style={lifted ? undefined : { transform: nudge ? `translateX(${nudge}px)` : undefined, transition: "transform 160ms ease" }}
                       >
-                        <div
-                          className={`flex items-center gap-3 ${canEdit ? "cursor-grab touch-none" : ""} ${lifted ? "cursor-grabbing" : ""}`}
-                          onPointerDown={(event) => startLift(event, index)}
-                          onPointerMove={moveLift}
-                          onPointerUp={endLift}
-                          onPointerCancel={endLift}
-                        >
-                          {canEdit && (
-                            <button
-                              type="button"
-                              aria-label={`Move ${item.kind === "video" ? "video" : "photo"} ${index + 1}. ${slidePlace(index)}.`}
-                              className="px-1 text-[#6b7785]"
-                              onKeyDown={(event) => {
-                                if (event.key === "ArrowUp") {
-                                  event.preventDefault();
-                                  moveHero(index, index - 1);
-                                } else if (event.key === "ArrowDown") {
-                                  event.preventDefault();
-                                  moveHero(index, index + 1);
-                                }
-                              }}
-                            >
-                              <GripVertical className="h-5 w-5" />
-                            </button>
-                          )}
-                          <HeroPreview item={item} />
-                          <div className="min-w-0 flex-1">
-                            <p className="m-0 text-[13px] font-semibold text-[#0b1f3a]">
-                              {index + 1}. {item.kind === "video" ? "Video" : "Photo"}
-                            </p>
-                            <p className="m-0 text-[12px] text-[#5b6775]">
-                              {slidePlace(index)}
-                              {item.crop ? " · Cropped" : ""}
-                              {item.trim ? ` · ${clock(item.trim.start)}–${clock(item.trim.end)}` : ""}
-                            </p>
-                          </div>
-                          {canEdit && (
-                            <div className="flex gap-1">
-                              {item.kind === "video" && (
-                                <>
-                                  <Button type="button" variant="secondary" size="sm" disabled={busy !== null} onClick={() => setVideoCrop(index)}>
-                                    <Crop className="h-4 w-4" />
-                                    {item.crop ? "Edit crop" : "Crop"}
-                                  </Button>
-                                  <Button type="button" variant="secondary" size="sm" disabled={busy !== null} onClick={() => setVideoTrim(index)}>
-                                    <Scissors className="h-4 w-4" />
-                                    {item.trim ? "Edit trim" : "Trim"}
-                                  </Button>
-                                </>
-                              )}
-                              <Button
-                                type="button"
-                                variant="danger"
-                                size="sm"
-                                aria-label="Remove"
-                                disabled={busy !== null}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  removeHero(index);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Remove
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                          <Field label="Title">
-                            <Input
-                              value={item.title}
-                              disabled={!canEdit || busy !== null}
-                              maxLength={90}
-                              onChange={(event) => patchHero(index, { title: event.target.value })}
-                              onBlur={() => canEdit && saveHeroCopy(index)}
-                            />
-                          </Field>
-                          <Field label="Button text">
-                            <Input
-                              value={item.buttonLabel}
-                              disabled={!canEdit || busy !== null}
-                              maxLength={40}
-                              onChange={(event) => patchHero(index, { buttonLabel: event.target.value })}
-                              onBlur={() => canEdit && saveHeroCopy(index)}
-                            />
-                          </Field>
-                          <Field label="Subtitle" className="sm:col-span-2">
-                            <Input
-                              value={item.subtitle}
-                              disabled={!canEdit || busy !== null}
-                              maxLength={220}
-                              onChange={(event) => patchHero(index, { subtitle: event.target.value })}
-                              onBlur={() => canEdit && saveHeroCopy(index)}
-                            />
-                          </Field>
-                          <Field label="Button link" hint="Pick a page on this site, or a web address of your own." className="sm:col-span-2">
-                            <Select
-                              value={customLink ? "custom" : item.buttonUrl}
-                              disabled={!canEdit || busy !== null}
-                              onChange={(event) => {
-                                const value = event.target.value;
-                                if (value === "custom") {
-                                  setCustomLinkFor(index);
-                                  if (HERO_PAGES.some((page) => page.value === item.buttonUrl)) {
-                                    patchHero(index, { buttonUrl: "" });
-                                  }
-                                  return;
-                                }
-                                setCustomLinkFor(null);
-                                if (canEdit) void saveHeroCopy(index, { buttonUrl: value });
-                                else patchHero(index, { buttonUrl: value });
-                              }}
-                            >
-                              <option value="">Choose a page</option>
-                              {HERO_PAGES.map((page) => (
-                                <option key={page.value} value={page.value}>
-                                  {page.label}
-                                </option>
-                              ))}
-                              <option value="custom">Custom web address</option>
-                            </Select>
-                            {customLink ? (
-                              <Input
-                                className="mt-2"
-                                value={item.buttonUrl}
-                                disabled={!canEdit || busy !== null}
-                                maxLength={240}
-                                autoCapitalize="none"
-                                spellCheck={false}
-                                placeholder="https://"
-                                onChange={(event) => patchHero(index, { buttonUrl: event.target.value.trim() })}
-                                onBlur={() => canEdit && saveHeroCopy(index)}
-                              />
-                            ) : null}
-                          </Field>
-                        </div>
+                        <HeroPreview item={item} large />
+                        <span className="flex items-center gap-1 bg-[#f6f8fa] px-2 py-1.5">
+                          {canEdit && <GripVertical className="h-3.5 w-3.5 shrink-0 text-[#6b7785]" />}
+                          <span className="truncate text-[12px] font-semibold text-[#0b1f3a]">
+                            {index + 1}. {item.kind === "video" ? "Video" : "Photo"}
+                          </span>
+                        </span>
                       </div>
                     );
                   })}
                 </div>
-                {canEdit && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <label className="inline-flex h-10 cursor-pointer items-center gap-2 border border-[#d5dce4] bg-white px-4 text-[14px] font-semibold text-[#0b1f3a]">
-                      <Upload className="h-4 w-4" />
-                      Upload photo
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        className="sr-only"
-                        disabled={busy !== null}
-                        onChange={(event) => {
-                          const file = event.target.files?.[0];
-                          event.target.value = "";
-                          if (file) setCrop({ slotId: slot.id, file });
-                        }}
-                      />
-                    </label>
-                    <label className="inline-flex h-10 cursor-pointer items-center gap-2 border border-[#d5dce4] bg-white px-4 text-[14px] font-semibold text-[#0b1f3a]">
-                      <Upload className="h-4 w-4" />
-                      Upload video
-                      <input
-                        type="file"
-                        accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"
-                        className="sr-only"
-                        disabled={busy !== null}
-                        onChange={(event) => {
-                          const file = event.target.files?.[0];
-                          event.target.value = "";
-                          if (file) addHeroVideo(file);
-                        }}
-                      />
-                    </label>
-                    <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => setPicking(slot.id)}>
-                      {busy === slot.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                      Choose from gallery
-                    </Button>
-                    {heroItems.length > 0 && (
-                      <Button type="button" variant="ghost" disabled={busy !== null} onClick={() => persistHero([])}>
-                        Use the original film
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </article>
-            );
-          }
-          const stored = overrideFor(slot.id);
-          const current = stored?.public_url || slot.src;
-          return (
-            <article id={`slot-${slot.id}`} key={slot.id} className="flex flex-wrap items-center gap-4 border border-[#e3e8ee] bg-white p-3">
-              <img src={siteAssetUrl(current)} alt="" className="h-16 w-28 bg-[#f4f6f8] object-cover" />
-              <div className="min-w-0 flex-1">
-                <p className="m-0 text-[14px] font-semibold text-[#0b1f3a]">{slot.label}</p>
-              </div>
+              ) : (
+                <div className="mt-4 flex h-[100px] items-center justify-center border border-dashed border-[#d5dce4] bg-[#f6f8fa] text-[13px] text-[#6b7785]">
+                  No custom slides yet
+                </div>
+              )}
+
               {canEdit && (
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => setPicking(slot.id)}>
-                    {busy === slot.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                    Choose from gallery
-                  </Button>
+                <div className="mt-3 flex flex-wrap gap-2">
                   <label className="inline-flex h-10 cursor-pointer items-center gap-2 border border-[#d5dce4] bg-white px-4 text-[14px] font-semibold text-[#0b1f3a]">
                     <Upload className="h-4 w-4" />
-                    Upload new
+                    Upload photo
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
@@ -694,17 +580,207 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                       onChange={(event) => {
                         const file = event.target.files?.[0];
                         event.target.value = "";
-                        if (file) setCrop({ slotId: slot.id, file });
+                        if (file) setCrop({ slotId: heroSlot.id, file });
                       }}
                     />
                   </label>
+                  <label className="inline-flex h-10 cursor-pointer items-center gap-2 border border-[#d5dce4] bg-white px-4 text-[14px] font-semibold text-[#0b1f3a]">
+                    <Upload className="h-4 w-4" />
+                    Upload video
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"
+                      className="sr-only"
+                      disabled={busy !== null}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        event.target.value = "";
+                        if (file) addHeroVideo(file);
+                      }}
+                    />
+                  </label>
+                  <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => setPicking(heroSlot.id)}>
+                    {busy === heroSlot.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Choose from gallery
+                  </Button>
+                  {heroItems.length > 0 && (
+                    <Button type="button" variant="ghost" disabled={busy !== null} onClick={() => persistHero([])}>
+                      Use the original film
+                    </Button>
+                  )}
                 </div>
               )}
-            </article>
-          );
-        })}
+
+              {selectedHero && (
+                <div className="mt-4 border-t border-[#eef1f4] pt-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <p className="m-0 text-[13.5px] font-semibold text-[#0b1f3a]">
+                      Editing slide {selectedHeroIndex + 1}
+                      {selectedHero.crop ? " · Cropped" : ""}
+                      {selectedHero.trim ? ` · ${clock(selectedHero.trim.start)}–${clock(selectedHero.trim.end)}` : ""}
+                    </p>
+                    {canEdit && (
+                      <div className="flex flex-wrap gap-1">
+                        {selectedHero.kind === "video" && (
+                          <>
+                            <Button type="button" variant="secondary" size="sm" disabled={busy !== null} onClick={() => setVideoCrop(selectedHeroIndex)} aria-label="Crop">
+                              <Crop className="h-4 w-4" />
+                              Crop
+                            </Button>
+                            <Button type="button" variant="secondary" size="sm" disabled={busy !== null} onClick={() => setVideoTrim(selectedHeroIndex)} aria-label="Trim">
+                              <Scissors className="h-4 w-4" />
+                              Trim
+                            </Button>
+                          </>
+                        )}
+                        <Button type="button" variant="danger" size="sm" disabled={busy !== null} onClick={() => removeHero(selectedHeroIndex)} aria-label="Remove">
+                          <Trash2 className="h-4 w-4" />
+                          Remove
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Field label="Title">
+                      <Input
+                        value={selectedHero.title}
+                        disabled={!canEdit || busy !== null}
+                        maxLength={90}
+                        onChange={(event) => patchHero(selectedHeroIndex, { title: event.target.value })}
+                        onBlur={() => canEdit && saveHeroCopy(selectedHeroIndex)}
+                      />
+                    </Field>
+                    <Field label="Button text">
+                      <Input
+                        value={selectedHero.buttonLabel}
+                        disabled={!canEdit || busy !== null}
+                        maxLength={40}
+                        onChange={(event) => patchHero(selectedHeroIndex, { buttonLabel: event.target.value })}
+                        onBlur={() => canEdit && saveHeroCopy(selectedHeroIndex)}
+                      />
+                    </Field>
+                    <Field label="Subtitle" className="sm:col-span-2">
+                      <Input
+                        value={selectedHero.subtitle}
+                        disabled={!canEdit || busy !== null}
+                        maxLength={220}
+                        onChange={(event) => patchHero(selectedHeroIndex, { subtitle: event.target.value })}
+                        onBlur={() => canEdit && saveHeroCopy(selectedHeroIndex)}
+                      />
+                    </Field>
+                    <Field label="Button link" hint="Pick a page on this site, or a web address of your own." className="sm:col-span-2">
+                      <Select
+                        value={customLink ? "custom" : selectedHero.buttonUrl}
+                        disabled={!canEdit || busy !== null}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          if (value === "custom") {
+                            setCustomLinkFor(selectedHeroIndex);
+                            if (HERO_PAGES.some((entry) => entry.value === selectedHero.buttonUrl)) {
+                              patchHero(selectedHeroIndex, { buttonUrl: "" });
+                            }
+                            return;
+                          }
+                          setCustomLinkFor(null);
+                          if (canEdit) void saveHeroCopy(selectedHeroIndex, { buttonUrl: value });
+                          else patchHero(selectedHeroIndex, { buttonUrl: value });
+                        }}
+                      >
+                        <option value="">Choose a page</option>
+                        {HERO_PAGES.map((entry) => (
+                          <option key={entry.value} value={entry.value}>
+                            {entry.label}
+                          </option>
+                        ))}
+                        <option value="custom">Custom web address</option>
+                      </Select>
+                      {customLink ? (
+                        <Input
+                          className="mt-2"
+                          value={selectedHero.buttonUrl}
+                          disabled={!canEdit || busy !== null}
+                          maxLength={240}
+                          autoCapitalize="none"
+                          spellCheck={false}
+                          placeholder="https://"
+                          onChange={(event) => patchHero(selectedHeroIndex, { buttonUrl: event.target.value.trim() })}
+                          onBlur={() => canEdit && saveHeroCopy(selectedHeroIndex)}
+                        />
+                      ) : null}
+                    </Field>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {pageSlots.length > 0 && (
+            <section className="border border-[#e3e8ee] bg-white p-4">
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                  <h2 className="m-0 text-[15px] font-bold text-[#0b1f3a]">{page} images</h2>
+                  <p className="mb-0 mt-1 text-[13px] text-[#5b6775]">Select a photo, then replace it.</p>
+                </div>
+                {focusedSlot && canEdit && (
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => setPicking(focusedSlot.id)}>
+                      {busy === focusedSlot.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                      Choose from gallery
+                    </Button>
+                    <label className="inline-flex h-10 cursor-pointer items-center gap-2 border border-[#d5dce4] bg-white px-4 text-[14px] font-semibold text-[#0b1f3a]">
+                      <Upload className="h-4 w-4" />
+                      Upload new
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="sr-only"
+                        disabled={busy !== null}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = "";
+                          if (file) setCrop({ slotId: focusedSlot.id, file });
+                        }}
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              {focusedSlot && focusedUrl && (
+                <p className="mt-3 mb-0 text-[12.5px] text-[#5b6775]">
+                  Selected: <span className="font-semibold text-[#0b1f3a]">{focusedSlot.label}</span>
+                </p>
+              )}
+
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+                {pageSlots.map((slot) => {
+                  const current = overrideFor(slot.id)?.public_url || slot.src;
+                  const selected = selectedSlotId === slot.id;
+                  return (
+                    <button
+                      key={slot.id}
+                      id={`slot-${slot.id}`}
+                      type="button"
+                      onClick={() => setSelectedSlotId(slot.id)}
+                      className={`overflow-hidden border-2 bg-[#f6f8fa] text-left transition ${
+                        selected ? "border-[#0b1f3a]" : "border-transparent hover:border-[#c5ced9]"
+                      }`}
+                    >
+                      <img src={siteAssetUrl(current)} alt="" className="aspect-[16/10] w-full bg-[#eef1f4] object-cover" />
+                      <span className="block truncate px-2.5 py-2 text-[12.5px] font-semibold text-[#0b1f3a]">{slot.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {!heroSlot && pageSlots.length === 0 && (
+            <p className="border border-[#e3e8ee] bg-white px-4 py-8 text-center text-[14px] text-[#6b7785]">No images on this page.</p>
+          )}
+        </div>
       </div>
-      </div>
+
       {videoTrim !== null && heroItems[videoTrim]?.kind === "video" && (
         <VideoTrimDialog
           url={siteAssetUrl(heroItems[videoTrim].url)}
@@ -725,8 +801,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
           onDone={(nextCrop) => {
             const index = videoCrop;
             setVideoCrop(null);
-            const next = heroItems.map((item, itemIndex) => (itemIndex === index ? { ...item, crop: nextCrop } : item));
-            persistHero(next);
+            persistHero(heroItems.map((item, itemIndex) => (itemIndex === index ? { ...item, crop: nextCrop } : item)));
           }}
         />
       )}
