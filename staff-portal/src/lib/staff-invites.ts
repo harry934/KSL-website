@@ -131,6 +131,7 @@ export async function createStaffInvite(input: {
   const contactProblem = inviteContactError(contactEmail, phone);
   if (contactProblem) return { error: contactProblem, status: 400 as const };
 
+  await purgeExpiredInvites();
   const admin = createAdminClient();
   let targetProfileId: string | null = null;
   let isSuperAdmin = input.superAdmin === true;
@@ -223,8 +224,20 @@ export async function createStaffInvite(input: {
 
 export type InviteListStatus = "waiting" | "expired" | "completed" | "cancelled";
 
+/** Removes unused invites whose passcode window has ended. */
+export async function purgeExpiredInvites() {
+  const admin = createAdminClient();
+  await admin
+    .from("staff_invites")
+    .delete()
+    .is("used_at", null)
+    .lte("expires_at", new Date().toISOString());
+}
+
 export async function listOpenInvites() {
   const admin = createAdminClient();
+  await purgeExpiredInvites();
+
   const since = new Date(Date.now() - 60 * 24 * 60 * 60_000).toISOString();
   const { data, error } = await admin
     .from("staff_invites")
@@ -264,36 +277,37 @@ export async function listOpenInvites() {
   return {
     error: null,
     status: 200 as const,
-    invites: rows.map((row) => {
-      const emailKey = row.contact_email ? String(row.contact_email).toLowerCase() : "";
-      const fromEmail = emailKey ? byEmail.get(emailKey) : undefined;
-      const target = row.target_profile_id ? byId.get(row.target_profile_id) : null;
-      const profile = target ?? fromEmail ?? null;
-      const expired = new Date(row.expires_at).getTime() <= now;
-      let status: InviteListStatus = "waiting";
-      if (row.used_at) {
-        const completed = row.kind === "create" ? !!fromEmail : true;
-        status = completed ? "completed" : "cancelled";
-      } else if (expired) {
-        status = "expired";
-      }
-      return {
-        id: row.id as string,
-        kind: row.kind as InviteKind,
-        email: (row.contact_email as string | null) ?? "",
-        phone: (row.phone as string | null) ?? "",
-        isSuperAdmin: !!row.is_super_admin,
-        roleTitle: (row.role_title as string | null) ?? null,
-        permissions: Array.isArray(row.permissions) ? (row.permissions as InvitePermInput[]) : [],
-        expiresAt: row.expires_at as string,
-        createdAt: row.created_at as string,
-        signupUrl: signupUrlFor(row.token as string),
-        targetProfileId: (row.target_profile_id as string | null) ?? (profile?.id as string | undefined) ?? null,
-        targetUsername: (profile?.username as string | undefined) ?? "",
-        targetDisplayName: (profile?.display_name as string | undefined) ?? "",
-        status,
-      };
-    }),
+    invites: rows
+      .map((row) => {
+        const emailKey = row.contact_email ? String(row.contact_email).toLowerCase() : "";
+        const fromEmail = emailKey ? byEmail.get(emailKey) : undefined;
+        const target = row.target_profile_id ? byId.get(row.target_profile_id) : null;
+        const profile = target ?? fromEmail ?? null;
+        const expired = new Date(row.expires_at).getTime() <= now;
+        if (!row.used_at && expired) return null;
+        let status: InviteListStatus = "waiting";
+        if (row.used_at) {
+          const completed = row.kind === "create" ? !!fromEmail : true;
+          status = completed ? "completed" : "cancelled";
+        }
+        return {
+          id: row.id as string,
+          kind: row.kind as InviteKind,
+          email: (row.contact_email as string | null) ?? "",
+          phone: (row.phone as string | null) ?? "",
+          isSuperAdmin: !!row.is_super_admin,
+          roleTitle: (row.role_title as string | null) ?? null,
+          permissions: Array.isArray(row.permissions) ? (row.permissions as InvitePermInput[]) : [],
+          expiresAt: row.expires_at as string,
+          createdAt: row.created_at as string,
+          signupUrl: signupUrlFor(row.token as string),
+          targetProfileId: (row.target_profile_id as string | null) ?? (profile?.id as string | undefined) ?? null,
+          targetUsername: (profile?.username as string | undefined) ?? "",
+          targetDisplayName: (profile?.display_name as string | undefined) ?? "",
+          status,
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null),
   };
 }
 
@@ -337,6 +351,7 @@ export async function deleteInvite(actorId: string, id: string) {
 
 /** Fresh passcode + link on the same invite row (no duplicate list entry). */
 export async function resendStaffInvite(actorId: string, id: string) {
+  await purgeExpiredInvites();
   const admin = createAdminClient();
   const { data: existing, error: loadError } = await admin
     .from("staff_invites")

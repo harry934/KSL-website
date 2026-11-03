@@ -840,7 +840,7 @@ export function StaffManager() {
     const label = invite.email || invite.phone || invite.targetUsername || "this invite";
     const ok = await confirm({
       title: `Delete invite for ${label}?`,
-      message: "Removes it from this list. Any open passcode and sign-up link for it stop working immediately. You can delete waiting, expired, cancelled, or completed invites anytime.",
+      message: "Removes it from this list. Any open passcode and sign-up link stop working immediately. Expired invites are removed automatically.",
       confirmLabel: "Delete invite",
       danger: true,
     });
