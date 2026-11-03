@@ -2,7 +2,7 @@
 
 Public site: https://ksl-website.vercel.app/
 
-Staff admin portal: https://ksl-websitemink.vercel.app/login
+Staff admin portal: https://ksl-websitekiza.vercel.app/login
 
 One Git repository. Two Vercel projects. Setup and status notes are in `guides/`.
 

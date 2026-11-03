@@ -54,11 +54,11 @@ Optional: `npx skills add supabase/agent-skills` for Supabase-focused agent skil
 |--------|--------|
 | Live | Dashboard, Staff, News, Events, Gallery, Press kit, Services, Products, Organisation, Careers, Community (CSR), Questions (FAQ), Downloads, Messages, Site settings, Activity log, My account |
 
-Production: https://ksl-websitemink.vercel.app/login — sign in with **username and password**.
+Production: https://ksl-websitekiza.vercel.app/login — sign in with **username and password**.
 
 New agents: Staff → Invite staff. Add email and/or mobile plus their role. The portal shows a 6-digit passcode and `/signup` link once; send both. They enter the passcode, choose username and password, then use normal `/login`. "Reset invite" on a staff row (or approving a password request) sends the same style of link for a new password only.
 
-Apply `supabase/migrations/029_staff_invites.sql` in Supabase before using invites. Optional env: `NEXT_PUBLIC_PORTAL_URL` (defaults to the Vercel URL / `https://ksl-websitemink.vercel.app`).
+Apply `supabase/migrations/029_staff_invites.sql` in Supabase before using invites. Optional env: `NEXT_PUBLIC_PORTAL_URL` (defaults to the Vercel URL / `https://ksl-websitekiza.vercel.app`).
 
 Shared form pieces live in `src/components/ui/` (`form-bits`, `image-field`, `file-field`, `row-list`, `item-list`, `list-tools`, `search-select`, `password-input`, `rich-text`, `feedback`). Use them for new editors so wording and styling stay consistent.
 
@@ -69,7 +69,7 @@ The look follows the KSL Task Management System: top progress bar and "Please wa
 Every public page already sets the portal URL on the root element (no trailing slash):
 
 ```html
-<html lang="en" data-ksl-content-api="https://ksl-websitemink.vercel.app">
+<html lang="en" data-ksl-content-api="https://ksl-websitekiza.vercel.app">
 ```
 
 The site loads `js/ksl-content.js` and reads FAQ, news, events, services, products, CSR, gallery, careers, downloads, organization, press and site settings from `/api/public/*` with fallback to local `data/*.json`.

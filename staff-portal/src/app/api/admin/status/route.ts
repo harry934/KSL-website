@@ -3,7 +3,7 @@ import { getStaffSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const WEBSITE = "https://ksl-website.vercel.app";
-const PORTAL = "https://ksl-websitemink.vercel.app/robots.txt";
+const PORTAL = "https://ksl-websitekiza.vercel.app/robots.txt";
 const SLOW_MS = 1800;
 
 export type ServiceState = "up" | "slow" | "down";

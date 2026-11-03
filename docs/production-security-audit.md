@@ -24,7 +24,7 @@ Two production steps stay in the dashboards, because they are not code:
 Keep the shape you already have.
 
 - Public site on the `ksl-website` Vercel project, served as the static pages.
-- Staff portal on the `ksl-website_mink` Vercel project.
+- Staff portal on the `ksl-website_kiza` Vercel project.
 - Supabase for accounts, content, and files.
 - Point `kenyashipyards.co.ke` and `www` at the public project. Put the staff portal on its own hostname, such as `admin.kenyashipyards.co.ke`, and do not link that hostname from the public site.
 - Set production environment variables only in Vercel and Supabase. The service-role key stays on the server. It must not be prefixed with `NEXT_PUBLIC_`.

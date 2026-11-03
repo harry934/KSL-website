@@ -85,7 +85,7 @@ export function ServiceStatus() {
     <>
       <Card name="Supabase" detail="Database for this portal" probe={report?.database ?? null} history={report?.history?.database} />
       <Card name="Website" detail="ksl-website.vercel.app" probe={report?.website ?? null} history={report?.history?.website} />
-      <Card name="Staff portal" detail="ksl-websitemink.vercel.app" probe={report?.portal ?? null} history={report?.history?.portal} />
+      <Card name="Staff portal" detail="ksl-websitekiza.vercel.app" probe={report?.portal ?? null} history={report?.history?.portal} />
     </>
   );
 }

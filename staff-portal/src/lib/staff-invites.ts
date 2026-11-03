@@ -82,17 +82,23 @@ export function permissionRows(profileId: string, input: unknown) {
 export function portalBaseUrl() {
   const fromEnv = (process.env.NEXT_PUBLIC_PORTAL_URL || "").replace(/\/$/, "");
   if (fromEnv) return fromEnv;
+  if (process.env.VERCEL_ENV === "production" || process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    const prod = (process.env.VERCEL_PROJECT_PRODUCTION_URL || "").replace(/\/$/, "");
+    if (prod) return `https://${prod.replace(/^https?:\/\//, "")}`;
+  }
   const vercel = (process.env.VERCEL_URL || "").replace(/\/$/, "");
   if (vercel) return `https://${vercel.replace(/^https?:\/\//, "")}`;
-  return "https://ksl-websitemink.vercel.app";
+  return "https://ksl-websitekiza.vercel.app";
 }
 
+/** Short invite link, e.g. https://host/i/aB3xY9k2 */
 export function signupUrlFor(token: string) {
-  return `${portalBaseUrl()}/signup?t=${encodeURIComponent(token)}`;
+  return `${portalBaseUrl()}/i/${encodeURIComponent(token)}`;
 }
 
 function newToken() {
-  return randomBytes(24).toString("base64url");
+  // ~8 URL-safe characters; enough with rate limits and 10-minute expiry.
+  return randomBytes(6).toString("base64url");
 }
 
 async function cancelOpenInvites(filter: { kind: InviteKind; targetProfileId?: string; email?: string | null; phone?: string | null }) {
@@ -295,7 +301,7 @@ export async function cancelInvite(actorId: string, id: string) {
 
 export async function loadOpenInvite(token: string) {
   const value = String(token ?? "").trim();
-  if (!value || value.length > 80) return null;
+  if (!value || value.length < 6 || value.length > 32) return null;
   const { data } = await createAdminClient()
     .from("staff_invites")
     .select(

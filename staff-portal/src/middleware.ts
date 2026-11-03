@@ -97,7 +97,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isLogin = pathname === "/login";
-  const isSignup = pathname === "/signup";
+  const isSignup = pathname === "/signup" || pathname.startsWith("/i/");
   const publicPage = isLogin || isSignup;
   const quietPath = pathname === "/api/auth/session" || pathname === "/api/auth/sign-out";
 

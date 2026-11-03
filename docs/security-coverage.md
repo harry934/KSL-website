@@ -28,7 +28,7 @@ Leaked-password protection and scheduled database backups need a Pro plan. Both 
 
 ## Still free, and still worth confirming
 
-- Authentication → URL Configuration: Site URL `https://ksl-websitemink.vercel.app`. Extra redirect URLs limited to that origin and local development. No wildcard.
+- Authentication → URL Configuration: Site URL `https://ksl-websitekiza.vercel.app`. Extra redirect URLs limited to that origin and local development. No wildcard.
 
 ## Done in the staff portal
 
@@ -41,7 +41,7 @@ Leaked-password protection and scheduled database backups need a Pro plan. Both 
 - New profile photos go to a private `avatars` bucket after the migration exists. Until then they stay on the public media bucket.
 - HTML from the CMS is passed through an allow-list sanitizer.
 - Public content routes filter `status = published` in SQL, including news go-live dates.
-- Existing staff can add a passkey from My account and sign in with it. The sign-in still requires an active staff profile. The OAuth server stays off. Turn passkeys on under Authentication → Passkeys before they can be used. The relying party is `ksl-websitemink.vercel.app` until the portal moves to the company domain.
+- Existing staff can add a passkey from My account and sign in with it. The sign-in still requires an active staff profile. The OAuth server stays off. Turn passkeys on under Authentication → Passkeys before they can be used. The relying party is `ksl-websitekiza.vercel.app` until the portal moves to the company domain.
 
 ## Done on the public site
 

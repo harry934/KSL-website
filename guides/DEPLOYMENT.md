@@ -8,7 +8,7 @@
 | Live URL | Vercel project |
 |----------|----------------|
 | https://ksl-website.vercel.app | `ksl-website` (root `.`) |
-| https://ksl-websitemink.vercel.app/login | `ksl-website_mink` (root `staff-portal`) |
+| https://ksl-websitekiza.vercel.app/login | `ksl-website_kiza` (root `staff-portal`) |
 
 This repo has **two separate apps** that share one **Supabase** project. They deploy to **two different Vercel projects** (or two hosts). They do **not** share a folder on the server.
 
@@ -17,7 +17,7 @@ This repo has **two separate apps** that share one **Supabase** project. They de
 ```
 ┌─────────────────────────────┐     HTTPS GET only      ┌──────────────────────────────┐
 │  Public website (static)    │ ──────────────────────► │  Staff portal (Next.js)      │
-│  ksl-website.vercel.app     │   /api/public/news      │  ksl-websitemink.vercel.app  │
+│  ksl-website.vercel.app     │   /api/public/news      │  ksl-websitekiza.vercel.app  │
 │  Repo root: index.html,     │   /api/public/faq, …    │  Repo folder: staff-portal/  │
 │  css/, js/, data/, img/     │                         │  /login, /news, /api/*       │
 └──────────────┬──────────────┘                         └──────────────┬───────────────┘
@@ -36,7 +36,7 @@ This repo has **two separate apps** that share one **Supabase** project. They de
 | Piece | Where to host | URL example | Purpose |
 |--------|----------------|-------------|---------|
 | **Main website** | Vercel `ksl-website` — **root directory** = repo root (not `staff-portal`) | `https://ksl-website.vercel.app` (later `kenyashipyards.co.ke`) | Public HTML/CSS/JS |
-| **Staff portal (admin)** | Vercel `ksl-website_mink` — **root directory** = `staff-portal` | `https://ksl-websitemink.vercel.app` | Login + CMS only |
+| **Staff portal (admin)** | Vercel `ksl-website_kiza` — **root directory** = `staff-portal` | `https://ksl-websitekiza.vercel.app` | Login + CMS only |
 | **Database & auth** | [Supabase](https://supabase.com/dashboard) (already created) | `https://envqgczfhxywkxcnsxrt.supabase.co` | Content + staff users |
 
 **Do not** put the portal on `admin.kenyashipyards.co.ke` or link it from the public site menu. Staff bookmark `/login` on the obscure URL.
@@ -86,7 +86,7 @@ This repo has **two separate apps** that share one **Supabase** project. They de
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | from Supabase API settings |
    | `SUPABASE_SERVICE_ROLE_KEY` | from Supabase API settings (secret) |
 
-5. Deploy. Production URL: `https://ksl-websitemink.vercel.app`.
+5. Deploy. Production URL: `https://ksl-websitekiza.vercel.app`.
 
 6. Optional: Settings → Domains → add a **custom** obscure subdomain you do not advertise.
 
@@ -110,7 +110,7 @@ This repo has **two separate apps** that share one **Supabase** project. They de
 4. **Connect site to portal** — on **every** public HTML page (or once in a shared template), set on `<html>`:
 
    ```html
-   <html lang="en" data-ksl-content-api="https://ksl-websitemink.vercel.app">
+   <html lang="en" data-ksl-content-api="https://ksl-websitekiza.vercel.app">
    ```
 
    (Already set on every public page.)

@@ -7,7 +7,7 @@ Last updated: October 2026
 | Piece | Where | Notes |
 |-------|-------|-------|
 | Public website (static HTML/CSS/JS) | Vercel project `ksl-website` → https://ksl-website.vercel.app | Repo root. Root Directory = `.` |
-| Staff admin portal (Next.js 15) | Vercel project `ksl-website_mink` → https://ksl-websitemink.vercel.app/login | Folder `staff-portal/`. Root Directory = `staff-portal` |
+| Staff admin portal (Next.js 15) | Vercel project `ksl-website_kiza` → https://ksl-websitekiza.vercel.app/login | Folder `staff-portal/`. Root Directory = `staff-portal` |
 | Database, auth, file storage | Supabase project `envqgczfhxywkxcnsxrt` | Migrations in `supabase/migrations/` |
 | Source code | https://github.com/harry934/KSL-website (`main`) | One repo, two Vercel projects |
 
@@ -28,7 +28,7 @@ Last updated: October 2026
 
 ## How the public site gets content
 
-- Every public page has `data-ksl-content-api="https://ksl-websitemink.vercel.app"` on `<html>`.
+- Every public page has `data-ksl-content-api="https://ksl-websitekiza.vercel.app"` on `<html>`.
 - `js/ksl-content.js` reads `/api/public/*` from the portal and falls back to `data/*.json` if the portal is unreachable.
 - Public APIs are read-only GET endpoints, cached ~60 seconds at the edge.
 
@@ -60,7 +60,7 @@ Last updated: October 2026
 
 - [ ] Supabase → Authentication → Providers → Email: **disable sign-ups**, enable **leaked-password protection**.
 - [ ] Enable MFA for the super admin when convenient.
-- [ ] Vercel `ksl-website_mink` → Settings → Deployment Protection: turn **off** for Production so staff only see the portal sign-in.
+- [ ] Vercel `ksl-website_kiza` → Settings → Deployment Protection: turn **off** for Production so staff only see the portal sign-in.
 - [ ] Rotate the Supabase service role key if it was ever shared outside Vercel.
 - [ ] If the public site moves to a domain other than `kenyashipyards.co.ke`, add it to `ALLOWED_ORIGINS` in `staff-portal/src/middleware.ts`.
 

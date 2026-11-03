@@ -47,13 +47,13 @@ The portal can register a passkey only after a staff member has signed in. It do
 4. Relying party ID, with nothing after the last letter:
 
 ```
-ksl-websitemink.vercel.app
+ksl-websitekiza.vercel.app
 ```
 
 5. Relying party origins:
 
 ```
-https://ksl-websitemink.vercel.app
+https://ksl-websitekiza.vercel.app
 ```
 6. Save. Leave public sign-up off.
 
@@ -62,7 +62,7 @@ A passkey is tied to that address. When the portal moves to `kenyashipyards.co.k
 ## 4. Redirect allow-list and backups
 
 1. Open [URL configuration](https://supabase.com/dashboard/project/envqgczfhxywkxcnsxrt/auth/url-configuration).
-2. Set Site URL to the staff portal origin, `https://ksl-websitemink.vercel.app`.
+2. Set Site URL to the staff portal origin, `https://ksl-websitekiza.vercel.app`.
 3. Keep additional redirect URLs limited to that origin and local development. Remove any wildcard or unused site.
 4. Scheduled backups and point-in-time recovery are skipped. That page asks for a Pro upgrade. On the free plan, take an occasional database dump from Project Settings → Database and store it outside Supabase.
 
