@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Source_Sans_3 } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const sourceSans = Source_Sans_3({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
+const sourceSans = localFont({
+  src: "../fonts/source-sans-3-latin-wght-normal.woff2",
   variable: "--font-source-sans",
   display: "swap",
+  weight: "200 900",
 });
 
 export const metadata: Metadata = {
