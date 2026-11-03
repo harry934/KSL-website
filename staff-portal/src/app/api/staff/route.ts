@@ -194,13 +194,17 @@ export async function DELETE(req: NextRequest) {
   const admin = createAdminClient();
   const { data: target } = await admin
     .from("admin_profiles")
-    .select("id, username, is_super_admin, deleted_at")
+    .select("id, username, is_super_admin, deleted_at, must_change_password")
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle();
   if (!target) return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
-  if (target.is_super_admin || target.id === session.userId) {
-    return NextResponse.json({ error: "Super admin accounts cannot be deleted." }, { status: 403 });
+  if (target.id === session.userId) {
+    return NextResponse.json({ error: "You cannot delete your own account." }, { status: 403 });
+  }
+  // Incomplete setup accounts can be removed even if marked administrator.
+  if (target.is_super_admin && !target.must_change_password) {
+    return NextResponse.json({ error: "Active administrator accounts cannot be deleted." }, { status: 403 });
   }
 
   const { error: binErr } = await admin

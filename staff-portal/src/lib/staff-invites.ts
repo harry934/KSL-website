@@ -208,6 +208,65 @@ export async function createStaffInvite(input: {
   };
 }
 
+export async function listOpenInvites() {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+  const { data, error } = await admin
+    .from("staff_invites")
+    .select("id, kind, contact_email, phone, is_super_admin, role_title, target_profile_id, expires_at, created_at, token")
+    .is("used_at", null)
+    .gt("expires_at", now)
+    .order("created_at", { ascending: false });
+  if (error) return { error: "Could not load invites.", status: 500 as const, invites: [] as const };
+
+  const rows = data ?? [];
+  const targetIds = [...new Set(rows.map((row) => row.target_profile_id).filter(Boolean))] as string[];
+  const { data: profiles } = targetIds.length
+    ? await admin.from("admin_profiles").select("id, username, display_name").in("id", targetIds)
+    : { data: [] };
+  const byId = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+
+  return {
+    error: null,
+    status: 200 as const,
+    invites: rows.map((row) => {
+      const target = row.target_profile_id ? byId.get(row.target_profile_id) : null;
+      return {
+        id: row.id as string,
+        kind: row.kind as InviteKind,
+        email: (row.contact_email as string | null) ?? "",
+        phone: (row.phone as string | null) ?? "",
+        isSuperAdmin: !!row.is_super_admin,
+        roleTitle: (row.role_title as string | null) ?? null,
+        expiresAt: row.expires_at as string,
+        createdAt: row.created_at as string,
+        signupUrl: signupUrlFor(row.token as string),
+        targetUsername: (target?.username as string | undefined) ?? "",
+        targetDisplayName: (target?.display_name as string | undefined) ?? "",
+      };
+    }),
+  };
+}
+
+export async function cancelInvite(actorId: string, id: string) {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("staff_invites")
+    .update({ used_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("used_at", null)
+    .select("id, kind, contact_email, phone")
+    .maybeSingle();
+  if (error) return { error: "Could not cancel the invite. Please try again.", status: 500 as const };
+  if (!data) return { error: "That invite is no longer open.", status: 404 as const };
+  await logActivity(actorId, "staff", "cancel invite", "staff_invite", id, {
+    kind: data.kind,
+    email: data.contact_email,
+    phone: data.phone,
+  });
+  return { error: null, status: 200 as const };
+}
+
 export async function loadOpenInvite(token: string) {
   const value = String(token ?? "").trim();
   if (!value || value.length > 80) return null;

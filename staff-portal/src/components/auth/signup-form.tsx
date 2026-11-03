@@ -82,10 +82,10 @@ export function SignupForm({ token }: { token: string }) {
 
   if (!kind) {
     return (
-      <form onSubmit={verifyPasscode} className="space-y-4">
-        <div>
+      <form onSubmit={verifyPasscode} className="space-y-5">
+        <div className="text-center">
           <p className={fieldLabel}>One-time passcode</p>
-          <div className="mt-2">
+          <div className="mt-3">
             <PasscodeInput value={passcode} onChange={setPasscode} disabled={verifying} />
           </div>
         </div>
@@ -99,7 +99,9 @@ export function SignupForm({ token }: { token: string }) {
 
   return (
     <form onSubmit={complete} className="space-y-4">
-      <PasscodeInput value={passcode} onChange={() => undefined} disabled accepted />
+      <div className="mb-1">
+        <PasscodeInput value={passcode} onChange={() => undefined} disabled accepted />
+      </div>
       {kind === "create" ? (
         <Field label="Username" hint="Lowercase letters and numbers. This is what you use to sign in.">
           <Input

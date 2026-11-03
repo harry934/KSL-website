@@ -66,6 +66,7 @@ export function describeActivity(row: {
   if (row.action === "approve username") return username ? `approved the username @${username}` : "approved a username change";
   if (row.action === "reject request") return "rejected an account request";
   if (row.action === "invite") return "sent a staff invite";
+  if (row.action === "cancel invite") return "cancelled a staff invite";
 
   const verb = ACTION_WORDS[row.action] ?? row.action.replace(/_/g, " ");
   if (row.entity_type === "admin_profile") {

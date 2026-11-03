@@ -97,7 +97,7 @@ export function PasswordHints({ password, confirm }: { password: string; confirm
   );
 }
 
-/** Read-only passcode boxes. Groups on "-" when present; 6-digit codes show as 3 + 3. */
+/** Read-only passcode boxes. Groups on "-" when present; 6-digit codes show as 3 − 3. */
 export function PasscodeDisplay({ value, accepted = false }: { value: string; accepted?: boolean }) {
   const groups = useMemo(() => {
     const raw = value.trim();
@@ -111,12 +111,15 @@ export function PasscodeDisplay({ value, accepted = false }: { value: string; ac
     <div className="passcode-display">
       <div className="passcode-groups" aria-label="One-time passcode">
         {groups.map((group, groupIndex) => (
-          <div key={`${groupIndex}-${group}`} className="passcode-group">
-            {group.split("").map((char, charIndex) => (
-              <span key={`${groupIndex}-${charIndex}`} className={cn("passcode-cell", accepted && "is-accepted")}>
-                {char}
-              </span>
-            ))}
+          <div key={`${groupIndex}-${group}`} className="passcode-cluster">
+            {groupIndex > 0 ? <span className="passcode-dash" aria-hidden>-</span> : null}
+            <div className="passcode-group">
+              {group.split("").map((char, charIndex) => (
+                <span key={`${groupIndex}-${charIndex}`} className={cn("passcode-cell", accepted && "is-accepted")}>
+                  {char}
+                </span>
+              ))}
+            </div>
           </div>
         ))}
       </div>
@@ -151,81 +154,53 @@ export function PasscodeInput({
     el?.select();
   }
 
+  function digitField(i: number) {
+    return (
+      <input
+        key={i}
+        id={`passcode-digit-${i}`}
+        className={cn("passcode-cell passcode-input-cell", accepted && "is-accepted")}
+        inputMode="numeric"
+        autoComplete={i === 0 ? "one-time-code" : "off"}
+        maxLength={1}
+        disabled={disabled}
+        value={digits[i]}
+        onChange={(e) => {
+          const char = e.target.value.replace(/\D/g, "").slice(-1);
+          setAt(i, char);
+          if (char && i < 5) focusIndex(i + 1);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Backspace" && !digits[i] && i > 0) {
+            e.preventDefault();
+            setAt(i - 1, "");
+            focusIndex(i - 1);
+          }
+          if (e.key === "ArrowLeft" && i > 0) focusIndex(i - 1);
+          if (e.key === "ArrowRight" && i < 5) focusIndex(i + 1);
+        }}
+        onPaste={(e) => {
+          e.preventDefault();
+          const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+          if (!pasted) return;
+          onChange(pasted);
+          focusIndex(Math.min(pasted.length, 5));
+        }}
+      />
+    );
+  }
+
   return (
     <div className="passcode-display">
       <div className="passcode-groups" role="group" aria-label="One-time passcode">
-        <div className="passcode-group">
-          {digits.slice(0, 3).map((digit, i) => (
-            <input
-              key={i}
-              id={`passcode-digit-${i}`}
-              className={cn("passcode-cell passcode-input-cell", accepted && "is-accepted")}
-              inputMode="numeric"
-              autoComplete={i === 0 ? "one-time-code" : "off"}
-              maxLength={1}
-              disabled={disabled}
-              value={digit}
-              onChange={(e) => {
-                const char = e.target.value.replace(/\D/g, "").slice(-1);
-                setAt(i, char);
-                if (char && i < 5) focusIndex(i + 1);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Backspace" && !digits[i] && i > 0) {
-                  e.preventDefault();
-                  setAt(i - 1, "");
-                  focusIndex(i - 1);
-                }
-                if (e.key === "ArrowLeft" && i > 0) focusIndex(i - 1);
-                if (e.key === "ArrowRight" && i < 5) focusIndex(i + 1);
-              }}
-              onPaste={(e) => {
-                e.preventDefault();
-                const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-                if (!pasted) return;
-                onChange(pasted);
-                focusIndex(Math.min(pasted.length, 5));
-              }}
-            />
-          ))}
+        <div className="passcode-cluster">
+          <div className="passcode-group">{[0, 1, 2].map(digitField)}</div>
         </div>
-        <div className="passcode-group">
-          {digits.slice(3).map((digit, offset) => {
-            const i = offset + 3;
-            return (
-              <input
-                key={i}
-                id={`passcode-digit-${i}`}
-                className={cn("passcode-cell passcode-input-cell", accepted && "is-accepted")}
-                inputMode="numeric"
-                autoComplete="off"
-                maxLength={1}
-                disabled={disabled}
-                value={digit}
-                onChange={(e) => {
-                  const char = e.target.value.replace(/\D/g, "").slice(-1);
-                  setAt(i, char);
-                  if (char && i < 5) focusIndex(i + 1);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Backspace" && !digits[i] && i > 0) {
-                    e.preventDefault();
-                    setAt(i - 1, "");
-                    focusIndex(i - 1);
-                  }
-                  if (e.key === "ArrowLeft" && i > 0) focusIndex(i - 1);
-                  if (e.key === "ArrowRight" && i < 5) focusIndex(i + 1);
-                }}
-                onPaste={(e) => {
-                  e.preventDefault();
-                  const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-                  if (!pasted) return;
-                  onChange(pasted);
-                  focusIndex(Math.min(pasted.length, 5));
-                }}
-              />
-            );
-          })}
+        <span className="passcode-dash" aria-hidden>
+          -
+        </span>
+        <div className="passcode-cluster">
+          <div className="passcode-group">{[3, 4, 5].map(digitField)}</div>
         </div>
       </div>
       {accepted ? <p className="passcode-accepted">Code accepted.</p> : null}

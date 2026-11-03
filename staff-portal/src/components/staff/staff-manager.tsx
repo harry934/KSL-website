@@ -55,6 +55,19 @@ type Issued = {
   expiresAt: string;
   username?: string;
 };
+type PendingInvite = {
+  id: string;
+  kind: "create" | "password_reset";
+  email: string;
+  phone: string;
+  isSuperAdmin: boolean;
+  roleTitle: string | null;
+  expiresAt: string;
+  createdAt: string;
+  signupUrl: string;
+  targetUsername: string;
+  targetDisplayName: string;
+};
 
 function layoutHint(permissions: PermRow[]) {
   const count = permissionNavLinks({ isSuperAdmin: false, permissions }).length;
@@ -325,7 +338,7 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
               {copied === "passcode" ? "Copied" : "Copy passcode"}
             </Button>
           </div>
-          <div className="mt-3">
+          <div className="mt-4 flex justify-center">
             <PasscodeDisplay value={issued.passcode} accepted={copied === "passcode"} />
           </div>
         </div>
@@ -383,15 +396,22 @@ export function StaffManager() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [jobTitle, setJobTitle] = useState("");
   const [requests, setRequests] = useState<AccountRequest[]>([]);
+  const [invites, setInvites] = useState<PendingInvite[]>([]);
   const [reasons, setReasons] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
-    const [res, requestRes] = await Promise.all([fetch("/api/staff"), fetch("/api/staff/requests")]);
+    const [res, requestRes, inviteRes] = await Promise.all([
+      fetch("/api/staff"),
+      fetch("/api/staff/requests"),
+      fetch("/api/staff/invites"),
+    ]);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) setError(data.error ?? "Could not load the staff list.");
     else setStaff(data.staff);
     const requestData = await requestRes.json().catch(() => ({}));
     if (requestRes.ok) setRequests(requestData.requests ?? []);
+    const inviteData = await inviteRes.json().catch(() => ({}));
+    if (inviteRes.ok) setInvites(inviteData.invites ?? []);
     setLoading(false);
   }, []);
 
@@ -597,7 +617,9 @@ export function StaffManager() {
   async function remove(row: StaffRow) {
     const ok = await confirm({
       title: `Delete ${row.display_name || row.username}?`,
-      message: "The account goes to the recycle bin. They cannot sign in until you restore it.",
+      message: row.must_change_password
+        ? "This account never finished sign-up. It will be removed and they will not be able to sign in."
+        : "The account goes to the recycle bin. They cannot sign in until you restore it.",
       confirmLabel: "Delete account",
       danger: true,
     });
@@ -607,6 +629,28 @@ export function StaffManager() {
       toast(`${row.username} was moved to the recycle bin.`);
       load();
     }
+  }
+
+  async function cancelPendingInvite(invite: PendingInvite) {
+    const label = invite.email || invite.phone || invite.targetUsername || "this invite";
+    const ok = await confirm({
+      title: `Cancel invite for ${label}?`,
+      message: "The passcode and sign-up link will stop working immediately.",
+      confirmLabel: "Cancel invite",
+      danger: true,
+    });
+    if (!ok) return;
+    const done = await run(() => sendJson(`/api/staff/invites?id=${encodeURIComponent(invite.id)}`, "DELETE"));
+    if (done) {
+      toast("Invite cancelled.");
+      load();
+    }
+  }
+
+  function canDeleteRow(row: StaffRow) {
+    if (row.id === session?.userId) return false;
+    if (row.is_super_admin && !row.must_change_password) return false;
+    return true;
   }
 
   const shownStaff = staff.filter((row) =>
@@ -645,6 +689,53 @@ export function StaffManager() {
 
   return (
     <div className="flex flex-col gap-4">
+      {invites.length > 0 && !issued && !panel && (
+        <section className="ksl-card p-5">
+          <h2 className="text-[15px] font-bold text-[#0b1f3a]">Pending invites</h2>
+          <p className="mt-1 text-[13.5px] text-[#5b6775]">
+            These people have a passcode and sign-up link waiting. Cancel an invite if you sent it by mistake or it should no longer be used.
+          </p>
+          <ul className="mt-4 divide-y divide-[#eef1f4]">
+            {invites.map((invite) => (
+              <li key={invite.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[14px] font-semibold text-[#0b1f3a]">
+                    {invite.kind === "create"
+                      ? invite.email || invite.phone || "New staff invite"
+                      : `Password reset · ${invite.targetDisplayName || invite.targetUsername || "staff account"}`}
+                  </p>
+                  <p className="text-[13.5px] text-[#3d4c5f]">
+                    {invite.kind === "create"
+                      ? `${invite.isSuperAdmin ? "Administrator" : roleLabel(false, invite.roleTitle)} · expires ${expiryLabel(invite.expiresAt) || "soon"} East Africa Time`
+                      : `Expires ${expiryLabel(invite.expiresAt) || "soon"} East Africa Time`}
+                  </p>
+                  <p className="mt-1 break-all font-mono text-[12px] text-[#6b7785]">{invite.signupUrl}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(invite.signupUrl);
+                        toast("Sign-up link copied.");
+                      } catch {
+                        setError("Could not copy the link.");
+                      }
+                    }}
+                  >
+                    <Copy className="h-3.5 w-3.5" /> Copy link
+                  </Button>
+                  <Button variant="danger" size="sm" onClick={() => cancelPendingInvite(invite)} disabled={saving} aria-label="Cancel invite">
+                    <Trash2 className="h-3.5 w-3.5" /> Cancel
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {requests.length > 0 && !issued && (
         <section className="ksl-card p-5">
           <h2 className="text-[15px] font-bold text-[#0b1f3a]">Requests</h2>
@@ -839,14 +930,14 @@ export function StaffManager() {
                         <KeyRound className="h-3.5 w-3.5" /> Reset invite
                       </Button>
                       {!row.is_super_admin && (
-                        <>
-                          <Button variant="secondary" size="sm" onClick={() => setActive(row, !row.is_active)} disabled={saving}>
-                            {row.is_active ? "Suspend" : "Activate"}
-                          </Button>
-                          <Button variant="danger" size="sm" onClick={() => remove(row)} disabled={saving} aria-label="Delete">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </>
+                        <Button variant="secondary" size="sm" onClick={() => setActive(row, !row.is_active)} disabled={saving}>
+                          {row.is_active ? "Suspend" : "Activate"}
+                        </Button>
+                      )}
+                      {canDeleteRow(row) && (
+                        <Button variant="danger" size="sm" onClick={() => remove(row)} disabled={saving} aria-label="Delete">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       )}
                     </div>
                   )}
