@@ -15,6 +15,7 @@ import { SIDEBAR_ITEM_LIMIT, permissionNavLinks } from "@/lib/portal-nav";
 import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
 import { sendJson } from "@/lib/upload-client";
 import { cn } from "@/lib/cn";
+import { PasscodeDisplay } from "@/components/ui/password-input";
 
 const EDITABLE_MODULES = (Object.keys(MODULE_LABELS) as ModuleKey[]).filter((k) => k !== "staff") as ModuleKey[];
 type PermField = "can_view" | "can_edit" | "can_publish" | "can_delete";
@@ -239,14 +240,14 @@ function signInText(issued: Issued) {
     "Kenya Shipyards staff portal",
     "",
     `Username: ${issued.username}`,
-    `One-time password: ${issued.password}`,
+    `One-time passcode: ${issued.password}`,
     "",
     until
-      ? `This password stops working at ${until} East Africa Time (10 minutes after it was created).`
-      : "This password stops working after 10 minutes.",
+      ? `This passcode stops working at ${until} East Africa Time (10 minutes after it was created).`
+      : "This passcode stops working after 10 minutes.",
     issued.isNew
       ? "Sign in and choose your own username and password."
-      : "Sign in with this one-time password and choose a new password.",
+      : "Sign in with this one-time passcode and choose a new password.",
   ].join("\n");
 }
 
@@ -265,13 +266,13 @@ function mailComposeUrl(kind: "gmail" | "outlook", email: string, body: string) 
   return `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(email)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
-function OneTimePasswordBox({ issued, onClose }: { issued: Issued; onClose: () => void }) {
-  const [copied, setCopied] = useState<"password" | "message" | null>(null);
+function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () => void }) {
+  const [copied, setCopied] = useState<"passcode" | "message" | null>(null);
 
   const details = signInText(issued);
   const hasEmail = issued.email.includes("@");
 
-  async function copyText(value: string, which: "password" | "message") {
+  async function copyText(value: string, which: "passcode" | "message") {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(which);
@@ -295,7 +296,7 @@ function OneTimePasswordBox({ issued, onClose }: { issued: Issued; onClose: () =
   return (
     <section className="ksl-card p-5">
       <h2 className="text-[15px] font-bold text-[#0b1f3a]">
-        {issued.isNew ? "Agent created" : "New one-time password"}
+        {issued.isNew ? "Agent created" : "New one-time passcode"}
       </h2>
       <p className="mt-1 text-[13.5px] text-[#5b6775]">
         Give this to the agent.{" "}
@@ -304,24 +305,26 @@ function OneTimePasswordBox({ issued, onClose }: { issued: Issued; onClose: () =
           : "It stops working after 10 minutes."}{" "}
         {issued.isNew ? "They will choose their own username and password the first time they sign in." : "They will choose a new password the next time they sign in."}
       </p>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-[8px] bg-[#f6f8fa] px-4 py-3">
+      <div className="mt-4 grid gap-3">
+        <div className="rounded-[8px] bg-[#f6f8fa] px-4 py-3 sm:max-w-sm">
           <p className="text-[12.5px] text-[#6b7785]">Username</p>
           <p className="mt-0.5 font-mono text-[16px] font-semibold text-[#0b1f3a]">{issued.username}</p>
         </div>
-        <div className="flex items-center justify-between gap-3 rounded-[8px] bg-[#f6f8fa] px-4 py-3">
-          <div className="min-w-0">
-            <p className="text-[12.5px] text-[#6b7785]">One-time password</p>
-            <p className="mt-0.5 select-all font-mono text-[16px] font-semibold tracking-wide text-[#0b1f3a]">{issued.password}</p>
+        <div className="rounded-[8px] bg-[#f6f8fa] px-4 py-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <p className="text-[12.5px] text-[#6b7785]">One-time passcode</p>
+            <Button variant="secondary" size="sm" onClick={() => copyText(issued.password, "passcode")}>
+              {copied === "passcode" ? <Check className="h-4 w-4 text-[#12b76a]" /> : <Copy className="h-4 w-4" />}
+              {copied === "passcode" ? "Copied" : "Copy passcode"}
+            </Button>
           </div>
-          <Button variant="secondary" size="sm" onClick={() => copyText(issued.password, "password")}>
-            {copied === "password" ? <Check className="h-4 w-4 text-[#1b7a3d]" /> : <Copy className="h-4 w-4" />}
-            {copied === "password" ? "Copied" : "Copy password"}
-          </Button>
+          <div className="mt-3">
+            <PasscodeDisplay value={issued.password} accepted={copied === "passcode"} />
+          </div>
         </div>
       </div>
       <p className="mt-3 text-[12.5px] text-[#6b7785]">
-        These details are shown only once. Gmail and Outlook open a new message with the username and password already written. Press Send there.
+        These details are shown only once. Gmail and Outlook open a new message with the username and passcode already written. Press Send there.
         {hasEmail ? "" : " Add a contact email if you want those buttons."}
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
@@ -517,9 +520,9 @@ export function StaffManager() {
 
   async function resetPassword(row: StaffRow) {
     const ok = await confirm({
-      title: `Give ${row.display_name || row.username} a new one-time password?`,
-      message: "Their current password will stop working. The new one lasts 10 minutes, then they must be given another.",
-      confirmLabel: "Create new password",
+      title: `Give ${row.display_name || row.username} a new one-time passcode?`,
+      message: "Their current password will stop working. The new passcode lasts 10 minutes, then they must be given another.",
+      confirmLabel: "Create new passcode",
     });
     if (!ok) return;
     const data = await run(() => sendJson("/api/staff", "PATCH", { id: row.id, action: "reset_password" }));
@@ -598,7 +601,7 @@ export function StaffManager() {
         <section className="ksl-card p-5">
           <h2 className="text-[15px] font-bold text-[#0b1f3a]">Requests</h2>
           <p className="mt-1 text-[13.5px] text-[#5b6775]">
-            Username changes are approved only when the name is free. A password request is answered by sending a new one-time password.
+            Username changes are approved only when the name is free. A password request is answered by sending a new one-time passcode.
           </p>
           <ul className="mt-4 divide-y divide-[#eef1f4]">
             {requests.map((request) => (
@@ -611,7 +614,7 @@ export function StaffManager() {
                   <p className="text-[13.5px] text-[#3d4c5f]">
                     {request.kind === "username"
                       ? `Wants to sign in as @${request.requestedUsername}.`
-                      : "Asked for a password change. Rejecting leaves their password as it is. Sending a new password is what changes it."}
+                      : "Asked for a password change. Rejecting leaves their password as it is. Sending a new one-time passcode is what changes it."}
                   </p>
                 </div>
                 <Input
@@ -626,7 +629,7 @@ export function StaffManager() {
                     </Button>
                   ) : (
                     <Button onClick={() => sendRequestedPassword(request)} disabled={saving}>
-                      Send a new password
+                      Send a new passcode
                     </Button>
                   )}
                   <Button variant="secondary" onClick={() => rejectRequest(request)} disabled={saving}>
@@ -650,11 +653,11 @@ export function StaffManager() {
 
       {error && <Notice kind="error">{error}</Notice>}
 
-      {issued && <OneTimePasswordBox issued={issued} onClose={() => setIssued(null)} />}
+      {issued && <OneTimePasscodeBox issued={issued} onClose={() => setIssued(null)} />}
 
       {panel?.kind === "create" && (
         <form onSubmit={submitCreate}>
-          <FormSection title="New staff account" description="A username and one-time password are created when you save. Type their role, then set each section.">
+          <FormSection title="New staff account" description="A username and one-time passcode are created when you save. Type their role, then set each section.">
             <FieldGrid className="lg:grid-cols-3">
               {nameAndEmail}
               <Field label="Mobile number" optional hint="Used if you send the sign-in details on WhatsApp. You can still pick a contact if this is blank.">
@@ -788,7 +791,7 @@ export function StaffManager() {
                         <Pencil className="h-3.5 w-3.5" /> Edit
                       </Button>
                       <Button variant="secondary" size="sm" onClick={() => resetPassword(row)} disabled={saving}>
-                        <KeyRound className="h-3.5 w-3.5" /> New password
+                        <KeyRound className="h-3.5 w-3.5" /> New passcode
                       </Button>
                       {!row.is_super_admin && (
                         <>

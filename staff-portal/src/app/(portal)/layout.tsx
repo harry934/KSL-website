@@ -50,7 +50,7 @@ export default async function PortalLayout({ children }: { children: React.React
         intro={
           firstSignIn
             ? "This is your first sign-in. Choose your own username and password to continue."
-            : "You signed in with a one-time password. Choose a password only you know to continue."
+            : "You signed in with a one-time passcode. Choose a password only you know to continue."
         }
       >
         <SessionWatch />

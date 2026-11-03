@@ -1,6 +1,6 @@
 "use client";
 
-import { InputHTMLAttributes, forwardRef, useState } from "react";
+import { InputHTMLAttributes, forwardRef, useMemo, useState } from "react";
 import { Check, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { controlClass } from "@/components/ui/input";
@@ -33,22 +33,88 @@ export const PasswordInput = forwardRef<HTMLInputElement, Omit<InputHTMLAttribut
   }
 );
 
-/** Live checklist under a new password: turns green as each rule is met. */
-export function PasswordHints({ password, confirm }: { password: string; confirm?: string }) {
-  const rules = [
-    { ok: password.length >= 10, label: "At least 10 characters" },
-    { ok: /[a-zA-Z]/.test(password), label: "A letter" },
-    { ok: /[0-9]/.test(password), label: "A number" },
+export type PasswordRule = { id: string; ok: boolean; label: string };
+
+export function passwordRules(password: string): PasswordRule[] {
+  return [
+    { id: "length", ok: password.length >= 12, label: "12 characters or more" },
+    { id: "case", ok: /[a-z]/.test(password) && /[A-Z]/.test(password), label: "Upper and lower case" },
+    { id: "number", ok: /[0-9]/.test(password), label: "A number" },
+    { id: "symbol", ok: /[^A-Za-z0-9]/.test(password), label: "A symbol" },
   ];
-  if (confirm !== undefined) rules.push({ ok: password.length > 0 && password === confirm, label: "Both boxes match" });
+}
+
+function strengthMeta(score: number) {
+  if (score <= 0) return { label: "", color: "#e4e7ec" };
+  if (score === 1) return { label: "Weak", color: "#f04438" };
+  if (score === 2) return { label: "Fair", color: "#f79009" };
+  if (score === 3) return { label: "Good", color: "#12b76a" };
+  return { label: "Strong", color: "#12b76a" };
+}
+
+/** Strength bar and checklist under a new password. */
+export function PasswordHints({ password, confirm }: { password: string; confirm?: string }) {
+  const rules = passwordRules(password);
+  const score = rules.filter((rule) => rule.ok).length;
+  const strength = strengthMeta(password.length === 0 ? 0 : score);
+  const matchOk = confirm !== undefined && password.length > 0 && password === confirm;
+
   return (
-    <div className="password-hints" aria-live="polite">
-      {rules.map((rule) => (
-        <span key={rule.label} className={rule.ok ? "is-ok" : undefined}>
-          {rule.ok ? <Check className="h-3.5 w-3.5" /> : <span aria-hidden>•</span>}
-          {rule.label}
-        </span>
-      ))}
+    <div className="password-strength" aria-live="polite">
+      <div className="password-strength-meter" role="meter" aria-valuemin={0} aria-valuemax={4} aria-valuenow={score} aria-label="Password strength">
+        {Array.from({ length: 4 }, (_, i) => (
+          <span
+            key={i}
+            className="password-strength-segment"
+            style={{ background: i < score && password.length > 0 ? strength.color : "#e4e7ec" }}
+          />
+        ))}
+      </div>
+      {strength.label ? (
+        <p className="password-strength-label" style={{ color: strength.color }}>
+          {strength.label}
+        </p>
+      ) : null}
+      <ul className="password-strength-list">
+        {rules.map((rule) => (
+          <li key={rule.id} className={cn("password-strength-item", rule.ok && "is-ok")}>
+            <span className="password-strength-check" aria-hidden>
+              {rule.ok ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
+            </span>
+            {rule.label}
+          </li>
+        ))}
+        {confirm !== undefined ? (
+          <li className={cn("password-strength-item", matchOk && "is-ok")}>
+            <span className="password-strength-check" aria-hidden>
+              {matchOk ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
+            </span>
+            Both passwords match
+          </li>
+        ) : null}
+      </ul>
+    </div>
+  );
+}
+
+/** Read-only one-time passcode shown as character boxes, grouped like XXXX-XXXX-XXXX. */
+export function PasscodeDisplay({ value, accepted = false }: { value: string; accepted?: boolean }) {
+  const groups = useMemo(() => value.split("-").filter(Boolean), [value]);
+
+  return (
+    <div className="passcode-display">
+      <div className="passcode-groups" aria-label="One-time passcode">
+        {groups.map((group, groupIndex) => (
+          <div key={`${groupIndex}-${group}`} className="passcode-group">
+            {group.split("").map((char, charIndex) => (
+              <span key={`${groupIndex}-${charIndex}`} className={cn("passcode-cell", accepted && "is-accepted")}>
+                {char}
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+      {accepted ? <p className="passcode-accepted">Code accepted.</p> : null}
     </div>
   );
 }

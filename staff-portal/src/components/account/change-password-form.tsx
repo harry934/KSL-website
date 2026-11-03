@@ -38,7 +38,7 @@ export function ChangePasswordForm({
       return;
     }
     if (password === current) {
-      setError(forced ? "Choose a password different from the one-time password." : "Choose a password different from the current one.");
+      setError(forced ? "Choose a password different from the one-time passcode." : "Choose a password different from the current one.");
       return;
     }
     const nextUsername = normalizeUsername(username);
@@ -93,7 +93,7 @@ export function ChangePasswordForm({
       {!changeUsername && accountUsername ? (
         <input className="sr-only" type="text" name="username" autoComplete="username" defaultValue={accountUsername} tabIndex={-1} aria-hidden />
       ) : null}
-      <Field label={forced ? "One-time password" : "Current password"} hint={forced ? "The password the administrator gave you." : undefined}>
+      <Field label={forced ? "One-time passcode" : "Current password"} hint={forced ? "The passcode the administrator gave you." : undefined}>
         <PasswordInput name="current-password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
       </Field>
       <Field label="New password">
@@ -102,9 +102,10 @@ export function ChangePasswordForm({
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          minLength={10}
+          minLength={12}
           required
         />
+        <PasswordHints password={password} confirm={confirm} />
       </Field>
       <Field label="Confirm new password">
         <PasswordInput
@@ -112,10 +113,9 @@ export function ChangePasswordForm({
           autoComplete="new-password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
-          minLength={10}
+          minLength={12}
           required
         />
-        <PasswordHints password={password} confirm={confirm} />
       </Field>
       {error && <Notice kind="error">{error}</Notice>}
       {message && <Notice kind="success">{message}</Notice>}

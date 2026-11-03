@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   const { data: authUser } = await admin.auth.admin.getUserById(session.userId);
   const authEmail = authUser.user?.email;
   if (!authEmail || !(await verifyPassword(authEmail, currentPassword))) {
-    const message = session.mustChangePassword ? "The one-time password is not correct." : "Your current password is not correct.";
+    const message = session.mustChangePassword ? "The one-time passcode is not correct." : "Your current password is not correct.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 

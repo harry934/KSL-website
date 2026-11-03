@@ -91,7 +91,7 @@ export function oneTimePasswordExpiry(from = Date.now()) {
   return new Date(from + ONE_TIME_PASSWORD_MS).toISOString();
 }
 
-/** Readable one-time password such as "hT7k-Q4mz-9Rp2": no look-alike characters, always letters and numbers. */
+/** Readable one-time passcode such as "hT7k-Q4mz-9Rp2": no look-alike characters, always letters and numbers. */
 export function generateOneTimePassword() {
   const all = OTP_LETTERS + OTP_DIGITS;
   for (;;) {

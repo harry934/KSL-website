@@ -9,7 +9,7 @@ const ACTION_WORDS: Record<string, string> = {
   create: "added",
   permissions: "changed what can be done by",
   profile: "updated the details of",
-  "reset password": "gave a new one-time password to",
+  "reset password": "gave a new one-time passcode to",
   "set active": "changed the access of",
 };
 

@@ -23,10 +23,12 @@ export function validateUsername(username: string): string | null {
 }
 
 export function validatePassword(password: string): string | null {
-  if (password.length < 10) return "Password must be at least 10 characters.";
-  if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
-    return "Password must include both letters and numbers.";
+  if (password.length < 12) return "Password must be at least 12 characters.";
+  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password)) {
+    return "Password must include upper and lower case letters.";
   }
+  if (!/[0-9]/.test(password)) return "Password must include a number.";
+  if (!/[^A-Za-z0-9]/.test(password)) return "Password must include a symbol.";
   return null;
 }
 

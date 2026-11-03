@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     await admin.auth.admin.updateUserById(gate.id, { password: discarded });
     await recordAttempt(username, ip, false);
     return NextResponse.json(
-      { error: "This one-time password has expired. Ask an administrator for a new one." },
+      { error: "This one-time passcode has expired. Ask an administrator for a new one." },
       { status: 401 }
     );
   }
