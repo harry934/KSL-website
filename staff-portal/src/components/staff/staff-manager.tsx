@@ -399,7 +399,7 @@ function ShareIconButton({
       onClick={onClick}
       className="inline-flex h-[72px] w-[72px] items-center justify-center rounded-[16px] border border-[#e8ecf1] bg-white p-0 shadow-[0_6px_16px_rgba(15,23,42,0.10)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_22px_rgba(15,23,42,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b1f3a]/25 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0 disabled:hover:shadow-[0_6px_16px_rgba(15,23,42,0.10)]"
     >
-      <img src={src} alt="" className="h-9 w-9 object-contain" draggable={false} />
+      <img src={src} alt="" className="h-10 w-10 object-contain" draggable={false} />
     </button>
   );
 }
