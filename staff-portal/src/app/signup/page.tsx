@@ -4,7 +4,7 @@ import { SignupForm } from "@/components/auth/signup-form";
 import kslLogo from "../../../public/ksl-logo.png";
 
 export const metadata = {
-  title: "Sign up — Kenya Shipyards Limited",
+  title: "Sign up Kenya Shipyards Limited",
   robots: { index: false, follow: false },
 };
 

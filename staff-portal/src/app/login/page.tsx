@@ -3,7 +3,7 @@ import Image from "next/image";
 import kslLogo from "../../../public/ksl-logo.png";
 
 export const metadata = {
-  title: "Sign in — Kenya Shipyards Limited",
+  title: "Sign in Kenya Shipyards Limited",
   robots: { index: false, follow: false },
 };
 

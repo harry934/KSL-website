@@ -62,11 +62,14 @@ type PendingInvite = {
   phone: string;
   isSuperAdmin: boolean;
   roleTitle: string | null;
+  permissions?: PermRow[];
   expiresAt: string;
   createdAt: string;
   signupUrl: string;
+  targetProfileId?: string | null;
   targetUsername: string;
   targetDisplayName: string;
+  status: "waiting" | "expired" | "completed" | "cancelled";
 };
 
 function layoutHint(permissions: PermRow[]) {
@@ -635,22 +638,55 @@ export function StaffManager() {
     const label = invite.email || invite.phone || invite.targetUsername || "this invite";
     const ok = await confirm({
       title: `Cancel invite for ${label}?`,
-      message: "The passcode and sign-up link will stop working immediately.",
+      message: "The passcode and sign-up link will stop working. The invite stays on this list so you can send another one later.",
       confirmLabel: "Cancel invite",
       danger: true,
     });
     if (!ok) return;
     const done = await run(() => sendJson(`/api/staff/invites?id=${encodeURIComponent(invite.id)}`, "DELETE"));
     if (done) {
-      toast("Invite cancelled.");
+      toast("Invite cancelled. You can resend anytime.");
       load();
     }
+  }
+
+  async function resendInvite(invite: PendingInvite) {
+    const data = await run(() =>
+      sendJson("/api/staff/invites", "POST", {
+        kind: invite.kind,
+        email: invite.email || undefined,
+        phone: invite.phone || undefined,
+        superAdmin: invite.isSuperAdmin,
+        roleTitle: invite.roleTitle,
+        permissions: invite.permissions ?? [],
+        targetProfileId: invite.targetProfileId || undefined,
+      })
+    );
+    if (!data) return;
+    setPanel(null);
+    setIssued({
+      passcode: data.passcode,
+      signupUrl: data.signupUrl,
+      email: data.email || invite.email,
+      phone: data.phone || invite.phone,
+      isNew: invite.kind === "create",
+      expiresAt: data.expiresAt,
+      username: invite.targetUsername || undefined,
+    });
+    load();
   }
 
   function canDeleteRow(row: StaffRow) {
     if (row.id === session?.userId) return false;
     if (row.is_super_admin && !row.must_change_password) return false;
     return true;
+  }
+
+  function inviteStatusLabel(status: PendingInvite["status"]) {
+    if (status === "waiting") return "Waiting";
+    if (status === "expired") return "Expired";
+    if (status === "completed") return "Completed";
+    return "Cancelled";
   }
 
   const shownStaff = staff.filter((row) =>
@@ -689,46 +725,79 @@ export function StaffManager() {
 
   return (
     <div className="flex flex-col gap-4">
-      {invites.length > 0 && !issued && !panel && (
+      {invites.length > 0 && !panel && (
         <section className="ksl-card p-5">
-          <h2 className="text-[15px] font-bold text-[#0b1f3a]">Pending invites</h2>
+          <h2 className="text-[15px] font-bold text-[#0b1f3a]">Sent invites</h2>
           <p className="mt-1 text-[13.5px] text-[#5b6775]">
-            These people have a passcode and sign-up link waiting. Cancel an invite if you sent it by mistake or it should no longer be used.
+            Invites stay here after you send them. Resend anytime for a fresh passcode and link. Cancel only stops the current passcode.
           </p>
           <ul className="mt-4 divide-y divide-[#eef1f4]">
             {invites.map((invite) => (
               <li key={invite.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-[14px] font-semibold text-[#0b1f3a]">
-                    {invite.kind === "create"
-                      ? invite.email || invite.phone || "New staff invite"
-                      : `Password reset · ${invite.targetDisplayName || invite.targetUsername || "staff account"}`}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-[14px] font-semibold text-[#0b1f3a]">
+                      {invite.kind === "create"
+                        ? invite.email || invite.phone || "New staff invite"
+                        : `Password reset · ${invite.targetDisplayName || invite.targetUsername || "staff account"}`}
+                    </p>
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full px-2 py-0.5 text-[11.5px] font-semibold",
+                        invite.status === "waiting"
+                          ? "bg-[#fff4e5] text-[#b45309]"
+                          : invite.status === "completed"
+                            ? "bg-[#1b7a3d]/10 text-[#1b7a3d]"
+                            : "bg-[#eef1f4] text-[#5b6775]"
+                      )}
+                    >
+                      {inviteStatusLabel(invite.status)}
+                    </span>
+                  </div>
                   <p className="text-[13.5px] text-[#3d4c5f]">
                     {invite.kind === "create"
-                      ? `${invite.isSuperAdmin ? "Administrator" : roleLabel(false, invite.roleTitle)} · expires ${expiryLabel(invite.expiresAt) || "soon"} East Africa Time`
-                      : `Expires ${expiryLabel(invite.expiresAt) || "soon"} East Africa Time`}
+                      ? `${invite.isSuperAdmin ? "Administrator" : roleLabel(false, invite.roleTitle)} · ${
+                          invite.status === "waiting"
+                            ? `expires ${expiryLabel(invite.expiresAt) || "soon"} East Africa Time`
+                            : invite.status === "expired"
+                              ? `expired ${expiryLabel(invite.expiresAt) || ""}`
+                              : "kept for your records"
+                        }`
+                      : invite.status === "waiting"
+                        ? `Expires ${expiryLabel(invite.expiresAt) || "soon"} East Africa Time`
+                        : "Kept for your records"}
                   </p>
-                  <p className="mt-1 break-all font-mono text-[12px] text-[#6b7785]">{invite.signupUrl}</p>
+                  {invite.status === "waiting" ? (
+                    <p className="mt-1 break-all font-mono text-[12px] text-[#6b7785]">{invite.signupUrl}</p>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(invite.signupUrl);
-                        toast("Sign-up link copied.");
-                      } catch {
-                        setError("Could not copy the link.");
-                      }
-                    }}
-                  >
-                    <Copy className="h-3.5 w-3.5" /> Copy link
-                  </Button>
-                  <Button variant="danger" size="sm" onClick={() => cancelPendingInvite(invite)} disabled={saving} aria-label="Cancel invite">
-                    <Trash2 className="h-3.5 w-3.5" /> Cancel
-                  </Button>
+                  {invite.status === "waiting" ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(invite.signupUrl);
+                          toast("Sign-up link copied.");
+                        } catch {
+                          setError("Could not copy the link.");
+                        }
+                      }}
+                    >
+                      <Copy className="h-3.5 w-3.5" /> Copy link
+                    </Button>
+                  ) : null}
+                  {invite.status !== "completed" ? (
+                    <Button variant="secondary" size="sm" onClick={() => resendInvite(invite)} disabled={saving}>
+                      <KeyRound className="h-3.5 w-3.5" /> Resend
+                    </Button>
+                  ) : null}
+                  {invite.status === "waiting" ? (
+                    <Button variant="danger" size="sm" onClick={() => cancelPendingInvite(invite)} disabled={saving} aria-label="Cancel invite">
+                      <Trash2 className="h-3.5 w-3.5" /> Cancel
+                    </Button>
+                  ) : null}
                 </div>
               </li>
             ))}

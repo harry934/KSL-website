@@ -208,29 +208,52 @@ export async function createStaffInvite(input: {
   };
 }
 
+export type InviteListStatus = "waiting" | "expired" | "completed" | "cancelled";
+
 export async function listOpenInvites() {
   const admin = createAdminClient();
-  const now = new Date().toISOString();
+  const since = new Date(Date.now() - 60 * 24 * 60 * 60_000).toISOString();
   const { data, error } = await admin
     .from("staff_invites")
-    .select("id, kind, contact_email, phone, is_super_admin, role_title, target_profile_id, expires_at, created_at, token")
-    .is("used_at", null)
-    .gt("expires_at", now)
-    .order("created_at", { ascending: false });
+    .select(
+      "id, kind, contact_email, phone, is_super_admin, role_title, permissions, target_profile_id, expires_at, created_at, used_at, token"
+    )
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(100);
   if (error) return { error: "Could not load invites.", status: 500 as const, invites: [] as const };
 
   const rows = data ?? [];
   const targetIds = [...new Set(rows.map((row) => row.target_profile_id).filter(Boolean))] as string[];
-  const { data: profiles } = targetIds.length
-    ? await admin.from("admin_profiles").select("id, username, display_name").in("id", targetIds)
-    : { data: [] };
+  const emails = [...new Set(rows.map((row) => row.contact_email).filter(Boolean))] as string[];
+  const [{ data: profiles }, { data: byEmail }] = await Promise.all([
+    targetIds.length
+      ? admin.from("admin_profiles").select("id, username, display_name").in("id", targetIds)
+      : Promise.resolve({ data: [] as { id: string; username: string; display_name: string }[] }),
+    emails.length
+      ? admin.from("admin_profiles").select("id, contact_email").in("contact_email", emails).is("deleted_at", null)
+      : Promise.resolve({ data: [] as { id: string; contact_email: string | null }[] }),
+  ]);
   const byId = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+  const emailTaken = new Set((byEmail ?? []).map((row) => (row.contact_email ?? "").toLowerCase()).filter(Boolean));
+  const now = Date.now();
 
   return {
     error: null,
     status: 200 as const,
     invites: rows.map((row) => {
       const target = row.target_profile_id ? byId.get(row.target_profile_id) : null;
+      const expired = new Date(row.expires_at).getTime() <= now;
+      let status: InviteListStatus = "waiting";
+      if (row.used_at) {
+        const completed =
+          row.kind === "create"
+            ? !!(row.contact_email && emailTaken.has(String(row.contact_email).toLowerCase()))
+            : true;
+        status = completed ? "completed" : "cancelled";
+      } else if (expired) {
+        status = "expired";
+      }
       return {
         id: row.id as string,
         kind: row.kind as InviteKind,
@@ -238,11 +261,14 @@ export async function listOpenInvites() {
         phone: (row.phone as string | null) ?? "",
         isSuperAdmin: !!row.is_super_admin,
         roleTitle: (row.role_title as string | null) ?? null,
+        permissions: Array.isArray(row.permissions) ? (row.permissions as InvitePermInput[]) : [],
         expiresAt: row.expires_at as string,
         createdAt: row.created_at as string,
         signupUrl: signupUrlFor(row.token as string),
+        targetProfileId: (row.target_profile_id as string | null) ?? null,
         targetUsername: (target?.username as string | undefined) ?? "",
         targetDisplayName: (target?.display_name as string | undefined) ?? "",
+        status,
       };
     }),
   };
