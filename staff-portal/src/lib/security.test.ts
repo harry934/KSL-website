@@ -8,6 +8,10 @@ import { issueContactToken, verifyContactToken } from "./contact-token.ts";
 import { looksLikeCode } from "./input-guard.ts";
 import { IDLE_MS, judgeSession } from "./staff-session.ts";
 import { sanitizeRichHtml } from "./sanitize-html.ts";
+import { safeLink } from "./safe-link.ts";
+import { verifyTurnstile } from "./contact-token.ts";
+import { clientIp } from "./auth-server.ts";
+import type { NextRequest } from "next/server";
 
 test("published careers stay public and drafts stay out", () => {
   const payload = toPublicCareersPayload(
@@ -148,4 +152,60 @@ test("contact tokens expire into use and reject tampering", () => {
   assert.equal(verifyContactToken(token), "too_fast");
   assert.equal(verifyContactToken(token + "x"), "invalid");
   assert.equal(verifyContactToken("not-a-token"), "invalid");
+});
+
+test("safe links keep http(s)/mailto/tel and relative paths only", () => {
+  assert.equal(safeLink("https://example.com/apply"), "https://example.com/apply");
+  assert.equal(safeLink("mailto:careers@kenyashipyards.co.ke"), "mailto:careers@kenyashipyards.co.ke");
+  assert.equal(safeLink("tel:+254700000000"), "tel:+254700000000");
+  assert.equal(safeLink("about.html"), "about.html");
+  assert.equal(safeLink("/careers.html"), "/careers.html");
+  assert.equal(safeLink("#section"), "#section");
+  assert.equal(safeLink("javascript:alert(1)"), null);
+  assert.equal(safeLink("data:text/html,hi"), null);
+  assert.equal(safeLink("//evil.example/path"), null);
+  assert.equal(safeLink("about.html onclick=x"), null);
+});
+
+test("published careers drop unsafe apply links", () => {
+  const payload = toPublicCareersPayload(null, [
+    {
+      id: "1",
+      kind: "vacancy",
+      title: "Bad link role",
+      location: "Mombasa",
+      summary: "Published",
+      closing_date: null,
+      apply_url: "javascript:alert(1)",
+      sort_order: 1,
+      status: "published",
+    },
+  ]);
+  assert.equal(payload.vacancies[0].applyUrl, undefined);
+});
+
+test("Turnstile fails closed in production without a secret", async () => {
+  const prevSecret = process.env.TURNSTILE_SECRET_KEY;
+  const prevNode = process.env.NODE_ENV;
+  const prevVercel = process.env.VERCEL_ENV;
+  delete process.env.TURNSTILE_SECRET_KEY;
+  process.env.NODE_ENV = "production";
+  delete process.env.VERCEL_ENV;
+  assert.equal(await verifyTurnstile("token", "1.2.3.4"), false);
+  process.env.NODE_ENV = "development";
+  assert.equal(await verifyTurnstile("token", "1.2.3.4"), true);
+  if (prevSecret === undefined) delete process.env.TURNSTILE_SECRET_KEY;
+  else process.env.TURNSTILE_SECRET_KEY = prevSecret;
+  if (prevNode === undefined) delete process.env.NODE_ENV;
+  else process.env.NODE_ENV = prevNode;
+  if (prevVercel === undefined) delete process.env.VERCEL_ENV;
+  else process.env.VERCEL_ENV = prevVercel;
+});
+
+test("client IP prefers x-real-ip then the first forwarded hop", () => {
+  const asReq = (headers: Record<string, string>) =>
+    ({ headers: { get: (name: string) => headers[name.toLowerCase()] ?? null } }) as NextRequest;
+  assert.equal(clientIp(asReq({ "x-real-ip": "10.0.0.1", "x-forwarded-for": "1.1.1.1, 2.2.2.2" })), "10.0.0.1");
+  assert.equal(clientIp(asReq({ "x-forwarded-for": "1.1.1.1, 2.2.2.2" })), "1.1.1.1");
+  assert.equal(clientIp(asReq({})), "unknown");
 });

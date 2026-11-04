@@ -1,5 +1,6 @@
 import manifest from "@/lib/site-image-manifest.json";
 import { parseHeroCrop, parseHeroTrim, type HeroCrop, type HeroTrim } from "@/lib/hero-frame";
+import { safeLink } from "@/lib/safe-link";
 
 export type { HeroCrop, HeroTrim };
 
@@ -57,10 +58,7 @@ function cleanHeroText(value: unknown, max: number) {
 }
 
 function cleanHeroLink(value: unknown) {
-  const raw = String(value ?? "").trim();
-  if (!raw) return "";
-  if (/^(https?:\/\/|\/|#|[a-z0-9.-]+\.html)/i.test(raw)) return raw.slice(0, 240);
-  return "";
+  return safeLink(value, 240) ?? "";
 }
 
 export function isImagePath(value: string) {

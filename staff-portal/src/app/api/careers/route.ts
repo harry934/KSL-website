@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
+import { safeLink } from "@/lib/safe-link";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -50,6 +51,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  const applyRaw = body.apply_url == null || body.apply_url === "" ? null : String(body.apply_url);
+  const applyUrl = applyRaw == null ? null : safeLink(applyRaw);
+  if (applyRaw != null && applyUrl == null) {
+    return NextResponse.json({ error: "Use a normal web, email, or phone link." }, { status: 400 });
+  }
+
   const row = {
     id: body.id || crypto.randomUUID(),
     kind: body.kind === "internship" ? "internship" : "vacancy",
@@ -57,7 +64,7 @@ export async function POST(req: NextRequest) {
     location: body.location ?? null,
     summary: body.summary ?? null,
     closing_date: body.closing_date ?? null,
-    apply_url: body.apply_url ?? null,
+    apply_url: applyUrl,
     sort_order: body.sort_order ?? 0,
     status: body.status ?? "draft",
     updated_by: session.userId,

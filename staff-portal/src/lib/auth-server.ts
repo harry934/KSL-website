@@ -13,8 +13,9 @@ export function clientIp(req: NextRequest) {
   if (real) return real;
   const forwarded = req.headers.get("x-forwarded-for");
   if (!forwarded) return "unknown";
+  // On Vercel / trusted proxies the client is the first hop.
   const hops = forwarded.split(",").map((hop) => hop.trim()).filter(Boolean);
-  return hops[hops.length - 1] ?? "unknown";
+  return hops[0] ?? "unknown";
 }
 
 /** When sign-in is blocked, the time it opens again; null when not blocked. */

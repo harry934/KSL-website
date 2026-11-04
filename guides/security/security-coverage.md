@@ -32,8 +32,8 @@ Leaked-password protection and scheduled database backups need a Pro plan. Both 
 
 ## Done in the staff portal
 
-- Rate limits use `x-real-ip`, then the last `X-Forwarded-For` hop.
-- Contact form requires a short-lived challenge. Optional Cloudflare Turnstile runs only after its keys are set.
+- Rate limits use `x-real-ip`, then the first `X-Forwarded-For` hop.
+- Contact form requires a short-lived challenge. In production, Cloudflare Turnstile is required (fails closed if the secret is missing).
 - `kenyashipyards.co.ke` removed from the portal CORS allow-list. The allowed browser origin is `https://ksl-website.vercel.app`.
 - Staff APIs refuse a session until the one-time password and username are changed.
 - Signed download URLs are limited to modules that profile may view.

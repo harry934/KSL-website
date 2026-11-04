@@ -1,6 +1,6 @@
 # Dashboard steps still required
 
-These settings live in the Supabase Dashboard. They are not in the repository, and they were not changed during the code remediation. The project stays on the free plan. The full list of what was covered is in [security-coverage.md](security-coverage.md).
+These settings live in the Supabase Dashboard. They are not in the repository, and they were not changed during the code remediation. The project stays on the free plan. The full list of what was covered is in [security-coverage.md](security-coverage.md). For what the latest code pass closed, see [CURRENT-POSTURE.md](CURRENT-POSTURE.md).
 
 Do not run the `GRANT SELECT` statement suggested by a Data API error. Anonymous clients are supposed to be denied.
 

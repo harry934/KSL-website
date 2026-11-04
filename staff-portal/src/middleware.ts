@@ -7,6 +7,16 @@ const ALLOWED_ORIGINS = new Set([
   "https://ksl-website.vercel.app",
 ]);
 
+/** Unauthenticated API routes that skip the staff session gate. `/api/public/*` is handled separately. */
+const PUBLIC_API_PATHS = new Set([
+  "/api/auth/sign-in",
+  "/api/auth/passkey",
+  "/api/auth/forgot-password",
+  "/api/auth/invite/verify",
+  "/api/auth/invite/complete",
+  "/api/auth/invite/username-check",
+]);
+
 function isAllowedOrigin(origin: string) {
   return (
     ALLOWED_ORIGINS.has(origin) ||
@@ -51,13 +61,7 @@ export async function middleware(request: NextRequest) {
     url.search = "";
     return NextResponse.redirect(url);
   }
-  if (
-    pathname === "/api/auth/sign-in" ||
-    pathname === "/api/auth/passkey" ||
-    pathname === "/api/auth/forgot-password" ||
-    pathname === "/api/auth/invite/verify" ||
-    pathname === "/api/auth/invite/complete"
-  ) {
+  if (PUBLIC_API_PATHS.has(pathname)) {
     return NextResponse.next();
   }
 

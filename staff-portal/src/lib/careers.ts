@@ -1,3 +1,5 @@
+import { safeLink } from "@/lib/safe-link";
+
 export type CareerListingRow = {
   id: string;
   kind: "vacancy" | "internship";
@@ -27,7 +29,7 @@ export function toPublicCareersPayload(settings: CareersSettings | null, listing
       location: r.location ?? "",
       summary: r.summary ?? "",
       closingDate: r.closing_date ?? "",
-      applyUrl: r.apply_url ?? undefined,
+      applyUrl: safeLink(r.apply_url) ?? undefined,
     }));
 
   const internships = published

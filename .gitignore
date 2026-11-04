@@ -8,4 +8,4 @@ node_modules/
 staff-portal/.next/
 staff-portal/node_modules/
 .vercel
-.env*
+.cursor/

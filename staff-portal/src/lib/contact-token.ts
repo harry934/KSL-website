@@ -48,9 +48,13 @@ export function verifyContactToken(token: unknown): "ok" | "invalid" | "too_fast
   }
 }
 
+function turnstileRequired() {
+  return process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production";
+}
+
 export async function verifyTurnstile(token: unknown, ip: string) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true;
+  if (!secret) return !turnstileRequired();
   if (typeof token !== "string" || !token || token.length > 2048) return false;
   const body = new URLSearchParams({ secret, response: token });
   if (ip && ip !== "unknown") body.set("remoteip", ip);
