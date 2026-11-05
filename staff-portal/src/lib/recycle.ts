@@ -20,6 +20,7 @@ export const RECYCLE_TABLES = [
   "faq_items",
   "organization_leadership",
   "organization_board_members",
+  "organization_milestones",
   "website_messages",
   "admin_profiles",
 ] as const;

@@ -28,6 +28,7 @@ export function ItemList({
   onReorder,
   showImages,
   emptyText,
+  dragFrom = DRAG_FROM,
 }: {
   items: ListItem[];
   onEdit: (id: string) => void;
@@ -35,6 +36,7 @@ export function ItemList({
   onReorder?: (from: number, to: number) => void;
   showImages?: boolean;
   emptyText: string;
+  dragFrom?: number;
 }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -44,7 +46,7 @@ export function ItemList({
   });
 
   const searching = query.trim().length > 0;
-  const canDrag = !!onReorder && !searching && items.length >= DRAG_FROM;
+  const canDrag = !!onReorder && !searching && items.length >= dragFrom;
   const matches = useMemo(
     () =>
       items

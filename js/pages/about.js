@@ -226,6 +226,100 @@
         select(0);
     }
 
-    initPath();
     initValues();
+    loadMilestones(initPath);
+
+    function loadMilestones(done) {
+        var section = document.querySelector(".ksl-path");
+        if (!section) {
+            done();
+            return;
+        }
+        var request = window.KSL_CONTENT
+            ? window.KSL_CONTENT.fetchJson("/api/public/organization", "data/organization.json")
+            : fetch("data/organization.json").then(function (res) { return res.ok ? res.json() : null; }).catch(function () { return null; });
+        Promise.resolve(request).then(function (data) {
+            paintMilestones(section, data);
+            if (!section.hidden) done();
+        }).catch(function () {
+            done();
+        });
+    }
+
+    function paintMilestones(section, data) {
+        if (!data || !Array.isArray(data.milestones)) return;
+        var list = section.querySelector("[data-ksl-path]");
+        if (!list) return;
+        if (!data.milestones.length) {
+            section.hidden = true;
+            return;
+        }
+        section.hidden = false;
+        var esc = window.KSL_ESCAPE || function (value) { return String(value == null ? "" : value); };
+        var heading = section.querySelector("h2");
+        var lead = section.querySelector(".ksl-learn-lead");
+        if (heading && data.milestonesTitle) heading.textContent = data.milestonesTitle;
+        if (lead && data.milestonesLead) lead.textContent = data.milestonesLead;
+        var html = data.milestones.map(milestoneHtml).filter(Boolean);
+        if (!html.length) {
+            section.hidden = true;
+            return;
+        }
+        list.innerHTML = html.join("");
+
+        function milestoneHtml(item) {
+            var when = dateParts(item && item.date);
+            var title = item && item.title ? String(item.title) : "";
+            var image = safeImage(item && item.image);
+            if (!when || !title || !image) return "";
+            var story = safeKey(item.story);
+            var slot = image.indexOf("img/") === 0 ? safeSlot(item.imageSlot) : "";
+            var alt = item.alt ? String(item.alt) : title;
+            var tag = item.tag ? String(item.tag).trim() : "";
+            var note = item.note ? String(item.note).trim() : "";
+            var html = "<li" + (story ? ' data-ksl-story="' + story + '"' : "") + ">";
+            html += '<img' + (slot ? ' data-ksl-image="' + slot + '"' : "") + ' src="' + esc(image) + '" alt="' + esc(alt) + '">';
+            html += "<div><time datetime=\"" + when.iso + "\"><b>" + esc(when.year) + "</b>" + esc(when.rest) + "</time>";
+            html += "<h3>" + esc(title) + "</h3><p>" + esc(item.summary || "") + "</p>";
+            if (tag) {
+                html += '<span class="ksl-path-tag"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76"/><path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6"/><path d="M12 10v4"/><path d="M12 2v3"/></svg>' + esc(tag);
+                if (note) html += "<em>" + esc(note) + "</em>";
+                html += "</span>";
+            }
+            html += "</div></li>";
+            return html;
+        }
+    }
+
+    function dateParts(value) {
+        var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
+        if (!match) return null;
+        var year = Number(match[1]);
+        var month = Number(match[2]);
+        var day = Number(match[3]);
+        var date = new Date(Date.UTC(year, month - 1, day));
+        if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+        return {
+            iso: match[0],
+            year: match[1],
+            rest: date.toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "UTC" })
+        };
+    }
+
+    function safeImage(value) {
+        var text = String(value || "").trim();
+        if (/^img\/[A-Za-z0-9_./-]+\.(jpe?g|png|webp)$/.test(text)) return text;
+        if (/^https:\/\/[^\s"'<>]+$/.test(text) && /\.(jpe?g|png|webp)(\?|#|$)/i.test(text)) return text;
+        return "";
+    }
+
+    function safeSlot(value) {
+        var text = String(value || "");
+        return /^about\.\d{1,3}-[a-z0-9-]{1,80}$/.test(text) ? text : "";
+    }
+
+    function safeKey(value) {
+        var text = String(value || "");
+        return /^[a-z0-9-]{1,40}$/.test(text) ? text : "";
+    }
 })();

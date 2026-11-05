@@ -13,8 +13,9 @@ import { useCan } from "@/components/portal/session-context";
 import { reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import { documentOptions, useDocuments } from "@/lib/use-documents";
-import { cleanBoardSections, cleanIntro, cleanOrgChart, SHIPPED_BOARD_SECTIONS, SHIPPED_CHART, SHIPPED_INTRO, type BoardMemberRow, type BoardSection, type LeadershipRow, type OrgChart, type OrgDepartment, type OrgIntro } from "@/lib/organization";
-type Scope = "leadership" | "board";
+import { formatDay } from "@/lib/dates";
+import { cleanBoardSections, cleanIntro, cleanOrgChart, SHIPPED_BOARD_SECTIONS, SHIPPED_CHART, SHIPPED_INTRO, SHIPPED_MILESTONES_HEADING, type BoardMemberRow, type BoardSection, type LeadershipRow, type MilestoneRow, type MilestonesHeading, type OrgChart, type OrgDepartment, type OrgIntro } from "@/lib/organization";
+type Scope = "leadership" | "board" | "milestone";
 type Draft = {
   scope: Scope;
   id?: string;
@@ -23,6 +24,14 @@ type Draft = {
   board_group?: string;
   section?: string;
   photo_url?: string | null;
+  happened_on?: string;
+  title?: string;
+  image_url?: string | null;
+  image_alt?: string | null;
+  image_slot?: string | null;
+  story_key?: string | null;
+  tag_label?: string | null;
+  tag_note?: string | null;
   summary: string | null;
   bio?: string | null;
   sort_order: number;
@@ -46,6 +55,8 @@ export function OrganizationEditor() {
   const [openDept, setOpenDept] = useState<string | null>(null);
   const [leadership, setLeadership] = useState<LeadershipRow[]>([]);
   const [board, setBoard] = useState<BoardMemberRow[]>([]);
+  const [milestones, setMilestones] = useState<MilestoneRow[]>([]);
+  const [milestonesHeading, setMilestonesHeading] = useState<MilestonesHeading>(SHIPPED_MILESTONES_HEADING);
   const [boardSections, setBoardSections] = useState<BoardSection[]>(SHIPPED_BOARD_SECTIONS);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Draft | null>(null);
@@ -61,6 +72,8 @@ export function OrganizationEditor() {
       setBoardSections(Array.isArray(data.settings?.board_sections) ? cleanBoardSections(data.settings.board_sections) : SHIPPED_BOARD_SECTIONS);
       setLeadership(data.leadership ?? []);
       setBoard(data.board ?? []);
+      setMilestones(data.milestones ?? []);
+      setMilestonesHeading(data.settings?.milestones_title ? { title: data.settings.milestones_title, lead: data.settings.milestones_lead ?? "" } : SHIPPED_MILESTONES_HEADING);
     } else {
       toast(data.error ?? "Could not load the organisation page.", "error");
     }
@@ -80,6 +93,8 @@ export function OrganizationEditor() {
       intro_body: intro.body,
       chart,
       board_sections: boardSections,
+      milestones_title: milestonesHeading.title,
+      milestones_lead: milestonesHeading.lead,
     };
   }
 
@@ -123,7 +138,7 @@ export function OrganizationEditor() {
     patchDept(deptId, { units });
   }
 
-  function start(scope: Scope) {
+  function start(scope: "leadership" | "board") {
     const list = scope === "board" ? board : leadership;
     setEditing({
       scope,
@@ -140,10 +155,33 @@ export function OrganizationEditor() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function startMilestone() {
+    setEditing({
+      scope: "milestone",
+      happened_on: "",
+      title: "",
+      summary: "",
+      image_url: "",
+      image_alt: "",
+      image_slot: "",
+      story_key: "",
+      tag_label: "",
+      tag_note: "",
+      sort_order: milestones.length ? Math.max(...milestones.map((row) => row.sort_order)) + 1 : 0,
+      status: canPublish ? "published" : "draft",
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function saveRow(e: React.FormEvent) {
     e.preventDefault();
     if (!editing) return;
-    if (editing.scope === "board") {
+    if (editing.scope === "milestone") {
+      if (!editing.happened_on || !editing.title?.trim() || !editing.summary?.trim() || !editing.image_url) {
+        toast("Add the date, title, description, and photo.", "error");
+        return;
+      }
+    } else if (editing.scope === "board") {
       if (!editing.full_name?.trim() || !editing.role?.trim()) {
         toast("Write the member's name and role.", "error");
         return;
@@ -166,10 +204,11 @@ export function OrganizationEditor() {
   }
 
   async function move(scope: Scope, from: number, to: number) {
-    const list: (LeadershipRow | BoardMemberRow)[] = scope === "board" ? board : leadership;
+    const list: (LeadershipRow | BoardMemberRow | MilestoneRow)[] = scope === "board" ? board : scope === "milestone" ? milestones : leadership;
     const next = reorderItem(list, from, to).map((row, i) => ({ ...row, sort_order: i }));
     const before = new Map(list.map((r) => [r.id, r.sort_order]));
     if (scope === "board") setBoard(next as BoardMemberRow[]);
+    else if (scope === "milestone") setMilestones(next as MilestoneRow[]);
     else setLeadership(next as LeadershipRow[]);
     try {
       await Promise.all(
@@ -258,11 +297,36 @@ export function OrganizationEditor() {
   if (editing) {
     const set = (patch: Partial<Draft>) => setEditing({ ...editing, ...patch });
     const isBoard = editing.scope === "board";
+    const isMilestone = editing.scope === "milestone";
     return (
       <form onSubmit={saveRow} className="space-y-4">
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <FormSection title={isBoard ? (editing.id ? "Edit board member" : "New board member") : editing.id ? "Edit leadership role" : "New leadership role"}>
-            {isBoard ? (
+          <FormSection title={isMilestone ? (editing.id ? "Edit milestone" : "New milestone") : isBoard ? (editing.id ? "Edit board member" : "New board member") : editing.id ? "Edit leadership role" : "New leadership role"}>
+            {isMilestone ? (
+              <>
+                <Field label="Date" hint="The year is shown large. The day and month sit beside it.">
+                  <Input type="date" value={editing.happened_on ?? ""} onChange={(e) => set({ happened_on: e.target.value })} autoFocus={!editing.id} />
+                </Field>
+                <Field label="Title">
+                  <Input value={editing.title ?? ""} onChange={(e) => set({ title: e.target.value })} placeholder="e.g. Mombasa yard begins" />
+                </Field>
+                <Field label="Description">
+                  <Textarea className="min-h-[90px]" value={editing.summary ?? ""} onChange={(e) => set({ summary: e.target.value })} />
+                </Field>
+                <Field label="Photo description" hint="Read aloud for people who cannot see the photo.">
+                  <Input value={editing.image_alt ?? ""} onChange={(e) => set({ image_alt: e.target.value })} placeholder="e.g. Mombasa Shipyard aerial view" />
+                </Field>
+                <Field label="Link group" optional hint="Milestones that share this name highlight together. The two MV Uhuru II entries use uhuru.">
+                  <Input value={editing.story_key ?? ""} onChange={(e) => set({ story_key: e.target.value })} placeholder="uhuru" />
+                </Field>
+                <Field label="Gold label" optional hint="A short line under the description, with a ship mark. Leave this blank to hide the label.">
+                  <Input value={editing.tag_label ?? ""} onChange={(e) => set({ tag_label: e.target.value })} placeholder="MV Uhuru II, part 1 of 2" />
+                </Field>
+                <Field label="Label note" optional hint="A second line on that label, such as how long the work took.">
+                  <Input value={editing.tag_note ?? ""} onChange={(e) => set({ tag_note: e.target.value })} placeholder="14 months from keel to water" />
+                </Field>
+              </>
+            ) : isBoard ? (
               <>
                 <Field label="Full name">
                   <Input value={editing.full_name ?? ""} onChange={(e) => set({ full_name: e.target.value })} autoFocus={!editing.id} />
@@ -294,9 +358,11 @@ export function OrganizationEditor() {
                 <Input value={editing.role ?? ""} onChange={(e) => set({ role: e.target.value })} autoFocus={!editing.id} placeholder="e.g. Managing Director" />
               </Field>
             )}
-            <Field label="Short line" hint="The sentence on the card.">
-              <Textarea className="min-h-[90px]" value={editing.summary ?? ""} onChange={(e) => set({ summary: e.target.value })} />
-            </Field>
+            {!isMilestone && (
+              <Field label="Short line" hint="The sentence on the card.">
+                <Textarea className="min-h-[90px]" value={editing.summary ?? ""} onChange={(e) => set({ summary: e.target.value })} />
+              </Field>
+            )}
             {isBoard && (
               <Field label="Full biography" hint="Leave a blank line between paragraphs. Start a line with - for a list.">
                 <Textarea className="min-h-[180px]" value={editing.bio ?? ""} onChange={(e) => set({ bio: e.target.value })} />
@@ -307,6 +373,15 @@ export function OrganizationEditor() {
             {isBoard && (
               <FormSection title="Photo" description="Optional. A portrait shown on the KSL Board page.">
                 <ImageField module="organization" value={editing.photo_url ?? ""} onChange={(photo_url) => set({ photo_url })} />
+              </FormSection>
+            )}
+            {isMilestone && (
+              <FormSection title="Photo" description="The round photo on the milestone path.">
+                <ImageField
+                  module="organization"
+                  value={editing.image_url ?? ""}
+                  onChange={(image_url) => set({ image_url, image_slot: image_url.startsWith("img/") ? editing.image_slot : "" })}
+                />
               </FormSection>
             )}
             <FormSection title="Visibility">
@@ -610,6 +685,48 @@ export function OrganizationEditor() {
           {saving === "settings" ? "Saving…" : "Save download"}
         </Button>
       </FormSection>
+
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className={step}>Step 7</p>
+            <h2 className="text-[15px] font-bold text-[#0b1f3a]">Major milestones</h2>
+            <p className="text-[13px] text-[#6b7785]">The path on Who We Are. The top milestone is shown first. Drag a row to change the order. Set Visibility to Published or it stays off the website.</p>
+          </div>
+          <Button onClick={startMilestone}>
+            <Plus className="h-4 w-4" /> New milestone
+          </Button>
+        </div>
+        <FormSection title="Heading" description="The title and the line under it.">
+          <Field label="Title">
+            <Input value={milestonesHeading.title} onChange={(e) => setMilestonesHeading({ ...milestonesHeading, title: e.target.value })} />
+          </Field>
+          <Field label="Introduction">
+            <Textarea value={milestonesHeading.lead} onChange={(e) => setMilestonesHeading({ ...milestonesHeading, lead: e.target.value })} />
+          </Field>
+          <Button onClick={saveSettings} disabled={saving === "settings"}>
+            {saving === "settings" ? "Saving…" : "Save heading"}
+          </Button>
+        </FormSection>
+        <ItemList
+          showImages
+          dragFrom={2}
+          items={milestones.map((row) => ({
+            id: row.id,
+            title: row.title,
+            subtitle: [formatDay(String(row.happened_on).slice(0, 10)), row.tag_label].filter(Boolean).join(" · "),
+            image: row.image_url,
+            status: row.status,
+          }))}
+          onEdit={(id) => {
+            const row = milestones.find((item) => item.id === id);
+            if (row) setEditing({ ...row, scope: "milestone", happened_on: String(row.happened_on).slice(0, 10) });
+          }}
+          onDelete={canDelete ? (id) => remove(id, "milestone") : undefined}
+          onReorder={(from, to) => move("milestone", from, to)}
+          emptyText="No milestones yet."
+        />
+      </div>
     </div>
   );
 }

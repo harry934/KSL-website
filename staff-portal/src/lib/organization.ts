@@ -55,6 +55,31 @@ export const SHIPPED_BOARD_SECTIONS: BoardSection[] = [
   { id: "strategy", name: "Strategy", title: "Strategy", blurb: "Industrial growth and long term direction.", showTitle: true, showBlurb: true },
 ];
 
+export type MilestoneRow = {
+  id: string;
+  happened_on: string;
+  title: string;
+  summary: string | null;
+  image_url: string | null;
+  image_alt: string | null;
+  image_slot: string | null;
+  story_key: string | null;
+  tag_label: string | null;
+  tag_note: string | null;
+  sort_order: number;
+  status: string;
+};
+
+export type MilestonesHeading = {
+  title: string;
+  lead: string;
+};
+
+export const SHIPPED_MILESTONES_HEADING: MilestonesHeading = {
+  title: "Major Milestones",
+  lead: "From the first yard works to MV Uhuru II entering the water.",
+};
+
 export const SHIPPED_INTRO: OrgIntro = {
   kicker: "Governance and operations",
   title: "How Kenya Shipyards Limited is structured",
@@ -145,10 +170,87 @@ export function cleanBoardSections(value: unknown): BoardSection[] {
   return sections.length ? sections : SHIPPED_BOARD_SECTIONS.map((section) => ({ ...section }));
 }
 
+export function cleanMilestonesHeading(value: unknown): MilestonesHeading {
+  const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  return {
+    title: clip(record.milestones_title ?? record.title, 80) || SHIPPED_MILESTONES_HEADING.title,
+    lead: clip(record.milestones_lead ?? record.lead, 240) || SHIPPED_MILESTONES_HEADING.lead,
+  };
+}
+
+export function cleanMilestoneDate(value: unknown) {
+  const text = String(value ?? "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+  const [year, month, day] = text.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  if (year < 1900 || year > 2100) return null;
+  return text;
+}
+
+export function cleanStoryKey(value: unknown) {
+  const text = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  return text || null;
+}
+
+function httpsImage(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:") return null;
+    if (!/\.(jpe?g|png|webp)$/i.test(url.pathname)) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+export function cleanMilestoneImage(value: unknown) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  if (/^img\/[a-z0-9_./-]+\.(jpe?g|png|webp)$/i.test(text)) return text;
+  return httpsImage(text);
+}
+
+export function cleanImageSlot(value: unknown) {
+  const text = String(value ?? "").trim();
+  return /^about\.\d{1,3}-[a-z0-9-]{1,80}$/.test(text) ? text : null;
+}
+
+export function cleanMilestoneInput(value: unknown) {
+  const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const image = cleanMilestoneImage(record.image_url);
+  return {
+    happened_on: cleanMilestoneDate(record.happened_on),
+    title: clip(record.title, 120),
+    summary: clip(record.summary, 400) || null,
+    image_url: image,
+    image_alt: clip(record.image_alt, 160) || null,
+    image_slot: image?.startsWith("img/") ? cleanImageSlot(record.image_slot) : null,
+    story_key: cleanStoryKey(record.story_key),
+    tag_label: clip(record.tag_label, 80) || null,
+    tag_note: clip(record.tag_note, 80) || null,
+  };
+}
+
 export function toPublicOrganization(
-  settings: { chart_download_id?: string | null; intro_kicker?: string | null; intro_title?: string | null; intro_body?: string | null; chart?: unknown; board_sections?: unknown } | null,
+  settings: {
+    chart_download_id?: string | null;
+    intro_kicker?: string | null;
+    intro_title?: string | null;
+    intro_body?: string | null;
+    chart?: unknown;
+    board_sections?: unknown;
+    milestones_title?: string | null;
+    milestones_lead?: string | null;
+  } | null,
   leadership: LeadershipRow[],
-  board: BoardMemberRow[]
+  board: BoardMemberRow[],
+  milestones: MilestoneRow[] = []
 ) {
   const pubLead = leadership
     .filter((r) => r.status === "published")
@@ -169,8 +271,29 @@ export function toPublicOrganization(
     }));
 
   const intro = cleanIntro(settings ?? {});
+  const heading = cleanMilestonesHeading(settings ?? {});
   const chart = settings?.chart ? cleanOrgChart(settings.chart) : null;
   const boardSections = cleanBoardSections(settings?.board_sections);
+  const pubMilestones = milestones
+    .filter((row) => row.status === "published")
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .flatMap((row) => {
+      const date = cleanMilestoneDate(row.happened_on);
+      const title = clip(row.title, 120);
+      const image = cleanMilestoneImage(row.image_url);
+      if (!date || !title || !image) return [];
+      return [{
+        date,
+        title,
+        summary: clip(row.summary, 400),
+        image,
+        alt: clip(row.image_alt, 160) || title,
+        imageSlot: image.startsWith("img/") ? cleanImageSlot(row.image_slot) ?? "" : "",
+        story: cleanStoryKey(row.story_key) ?? "",
+        tag: clip(row.tag_label, 80),
+        note: clip(row.tag_note, 80),
+      }];
+    });
   const allowed = new Set(boardSections.map((section) => section.id));
   const fallbackSection = boardSections[0]?.id ?? "featured";
   return {
@@ -183,5 +306,8 @@ export function toPublicOrganization(
       section: allowed.has(member.section) ? member.section : fallbackSection,
     })),
     boardSections: boardSections.map(({ id, title, blurb, showTitle, showBlurb }) => ({ id, title, blurb, showTitle, showBlurb })),
+    milestonesTitle: heading.title,
+    milestonesLead: heading.lead,
+    milestones: pubMilestones,
   };
 }

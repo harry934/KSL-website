@@ -30,6 +30,7 @@ const THING_WORDS: Record<string, string> = {
   organization_settings: "the Organisation page",
   organization_yards: "a shipyard",
   organization_leadership: "a leader",
+  organization_milestones: "a milestone",
   news_item: "a news story",
   event_item: "an event",
   downloads_settings: "the Downloads page",

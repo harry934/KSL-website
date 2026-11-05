@@ -21,5 +21,86 @@
       "lead": "Yard Management Division",
       "summary": "Lake Victoria ferries, GRP craft, and inland fleet maintenance along Marine Drive."
     }
+  ],
+  "milestonesTitle": "Major Milestones",
+  "milestonesLead": "From the first yard works to MV Uhuru II entering the water.",
+  "milestones": [
+    {
+      "date": "2018-07-12",
+      "title": "Mombasa yard begins",
+      "summary": "The slipway site beside the port, later able to take a 4,000 tonne vessel.",
+      "image": "img/ksl/mombasa.webp",
+      "alt": "Mombasa Shipyard aerial view",
+      "imageSlot": "about.7-mombasa-shipyard-aerial-view",
+      "story": "",
+      "tag": "",
+      "note": ""
+    },
+    {
+      "date": "2020-09-29",
+      "title": "KSL is incorporated",
+      "summary": "A state corporation under the Ministry of Defence, approved by the National Security Council.",
+      "image": "img/ksl/yard.jpg",
+      "alt": "Shipyard work",
+      "imageSlot": "about.8-shipyard-work",
+      "story": "",
+      "tag": "",
+      "note": ""
+    },
+    {
+      "date": "2020-12-08",
+      "title": "Kisumu is upgraded",
+      "summary": "Dry dock, slipways, and quay prepared for larger vessels on Lake Victoria.",
+      "image": "img/ksl/kisumu.webp",
+      "alt": "Kisumu Shipyard",
+      "imageSlot": "about.9-kisumu-shipyard",
+      "story": "",
+      "tag": "",
+      "note": ""
+    },
+    {
+      "date": "2021-05-31",
+      "title": "Keel of MV Uhuru II",
+      "summary": "The Kisumu yard is launched and the hull of MV Uhuru II is formally started.",
+      "image": "img/ksl/ferry.jpg",
+      "alt": "Passenger vessel",
+      "imageSlot": "about.10-passenger-vessel",
+      "story": "uhuru",
+      "tag": "MV Uhuru II, part 1 of 2",
+      "note": ""
+    },
+    {
+      "date": "2021-12-17",
+      "title": "Mombasa opens",
+      "summary": "Slipway, buildings, workshops, and cranes are handed over for use.",
+      "image": "img/ksl/mombasa.webp",
+      "alt": "Mombasa Shipyard",
+      "imageSlot": "about.11-mombasa-shipyard",
+      "story": "",
+      "tag": "",
+      "note": ""
+    },
+    {
+      "date": "2022-07-06",
+      "title": "Locomotives return",
+      "summary": "The same workshops that serve hulls rehabilitate rail equipment.",
+      "image": "img/ksl/linkspan.webp",
+      "alt": "Heavy engineering works",
+      "imageSlot": "about.12-heavy-engineering-works",
+      "story": "",
+      "tag": "",
+      "note": ""
+    },
+    {
+      "date": "2022-08-02",
+      "title": "Uhuru II floats",
+      "summary": "The hull meets the water, about fourteen months after the keel was laid.",
+      "image": "img/ksl/ferry.jpg",
+      "alt": "MV Uhuru II programme",
+      "imageSlot": "about.13-mv-uhuru-ii-programme",
+      "story": "uhuru",
+      "tag": "MV Uhuru II, part 2 of 2",
+      "note": "14 months from keel to water"
+    }
   ]
 }

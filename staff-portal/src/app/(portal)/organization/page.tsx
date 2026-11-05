@@ -12,7 +12,7 @@ export default async function OrganizationPage() {
 
   return (
     <>
-      <PageHeader title="Organisation" description="Work from the top of the page downward. The chart is saved as one piece, then the cards under it, then the KSL Board page." />
+      <PageHeader title="Organisation" description="Work from the top of the page downward. The chart is saved as one piece, then the cards under it, then the KSL Board page. Major milestones are the path on Who We Are." />
       <OrganizationEditor />
     </>
   );

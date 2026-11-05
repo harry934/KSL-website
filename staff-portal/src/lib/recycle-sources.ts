@@ -27,6 +27,7 @@ export const RECYCLE_SOURCES: RecycleSource[] = [
   { table: "faq_items", module: "faq", section: "Questions (FAQ)", entityType: "faq_item", restore: "edit", select: "id, question, deleted_at", title: (row) => text(row.question, "Untitled question") },
   { table: "organization_leadership", module: "organization", section: "Organisation", entityType: "organization_leadership", restore: "edit", select: "id, role, deleted_at", title: (row) => text(row.role, "Leadership role") },
   { table: "organization_board_members", module: "organization", section: "Organisation", entityType: "organization_board_members", restore: "edit", select: "id, full_name, deleted_at", title: (row) => text(row.full_name, "Board member") },
+  { table: "organization_milestones", module: "organization", section: "Organisation", entityType: "organization_milestones", restore: "edit", select: "id, title, deleted_at", title: (row) => text(row.title, "Milestone") },
   {
     table: "admin_profiles",
     module: "staff",
