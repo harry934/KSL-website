@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, FormSection, SaveBar, Select, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
+import { Field, FormSection, SaveBar, Select, Switch, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
 import { ImageField } from "@/components/ui/image-field";
 import { SearchSelect } from "@/components/ui/search-select";
 import { ItemList } from "@/components/ui/item-list";
@@ -13,7 +13,7 @@ import { useCan } from "@/components/portal/session-context";
 import { reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import { documentOptions, useDocuments } from "@/lib/use-documents";
-import { cleanIntro, cleanOrgChart, SHIPPED_CHART, SHIPPED_INTRO, type BoardMemberRow, type LeadershipRow, type OrgChart, type OrgDepartment, type OrgIntro } from "@/lib/organization";
+import { cleanBoardSections, cleanIntro, cleanOrgChart, SHIPPED_BOARD_SECTIONS, SHIPPED_CHART, SHIPPED_INTRO, type BoardMemberRow, type BoardSection, type LeadershipRow, type OrgChart, type OrgDepartment, type OrgIntro } from "@/lib/organization";
 type Scope = "leadership" | "board";
 type Draft = {
   scope: Scope;
@@ -35,13 +35,6 @@ const BOARD_GROUPS = [
   { value: "independent", label: "Independent members" },
 ];
 
-const BOARD_SECTIONS = [
-  { value: "featured", label: "Leadership" },
-  { value: "audit", label: "Audit" },
-  { value: "risk", label: "Risk" },
-  { value: "strategy", label: "Strategy" },
-];
-
 export function OrganizationEditor() {
   const { toast, confirm } = useFeedback();
   const canPublish = useCan("organization", "publish");
@@ -53,6 +46,7 @@ export function OrganizationEditor() {
   const [openDept, setOpenDept] = useState<string | null>(null);
   const [leadership, setLeadership] = useState<LeadershipRow[]>([]);
   const [board, setBoard] = useState<BoardMemberRow[]>([]);
+  const [boardSections, setBoardSections] = useState<BoardSection[]>(SHIPPED_BOARD_SECTIONS);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Draft | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -64,6 +58,7 @@ export function OrganizationEditor() {
       setChartDownloadId(data.settings?.chart_download_id ?? "");
       setIntro(data.settings?.intro_title ? cleanIntro(data.settings) : SHIPPED_INTRO);
       setChart(data.settings?.chart ? cleanOrgChart(data.settings.chart) : SHIPPED_CHART);
+      setBoardSections(Array.isArray(data.settings?.board_sections) ? cleanBoardSections(data.settings.board_sections) : SHIPPED_BOARD_SECTIONS);
       setLeadership(data.leadership ?? []);
       setBoard(data.board ?? []);
     } else {
@@ -84,6 +79,7 @@ export function OrganizationEditor() {
       intro_title: intro.title,
       intro_body: intro.body,
       chart,
+      board_sections: boardSections,
     };
   }
 
@@ -91,7 +87,8 @@ export function OrganizationEditor() {
     setSaving("settings");
     try {
       await sendJson("/api/organization", "POST", settingsBody());
-      toast("Saved. The organisation page updates within a few seconds.");
+      toast("Saved. The website updates within a few seconds.");
+      await load();
     } catch (err) {
       toast((err as Error).message, "error");
     } finally {
@@ -133,7 +130,7 @@ export function OrganizationEditor() {
       role: "",
       full_name: "",
       board_group: "independent",
-      section: "featured",
+      section: boardSections[0]?.id ?? "featured",
       photo_url: "",
       summary: "",
       bio: "",
@@ -185,7 +182,7 @@ export function OrganizationEditor() {
   }
 
   async function moveBoard(section: string, from: number, to: number) {
-    const order = BOARD_SECTIONS.map((item) => item.value);
+    const order = boardSections.map((item) => item.id);
     const inSection = board.filter((row) => (row.section || "audit") === section);
     const reordered = reorderItem(inSection, from, to);
     const next = order
@@ -201,6 +198,36 @@ export function OrganizationEditor() {
       toast((err as Error).message, "error");
       load();
     }
+  }
+
+  function moveSection(index: number, direction: -1 | 1) {
+    const next = index + direction;
+    if (next < 0 || next >= boardSections.length) return;
+    const sections = boardSections.slice();
+    const [row] = sections.splice(index, 1);
+    sections.splice(next, 0, row);
+    setBoardSections(sections);
+  }
+
+  async function removeSection(id: string) {
+    if (boardSections.length < 2) {
+      toast("Keep at least one section.", "error");
+      return;
+    }
+    const people = board.filter((row) => row.section === id);
+    if (people.length) {
+      const ok = await confirm({
+        title: "Remove this section?",
+        message: `${people.length} ${people.length === 1 ? "person moves" : "people move"} into the first section that remains.`,
+        confirmLabel: "Remove",
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    const sections = boardSections.filter((section) => section.id !== id);
+    const fallback = sections[0].id;
+    setBoardSections(sections);
+    setBoard(board.map((row) => (row.section === id ? { ...row, section: fallback } : row)));
   }
 
   async function remove(id: string, scope: Scope) {
@@ -252,11 +279,11 @@ export function OrganizationEditor() {
                     ))}
                   </Select>
                 </Field>
-                <Field label="Where they appear" hint="Leadership is first on the KSL Board page, then Audit, Risk, and Strategy.">
-                  <Select value={editing.section ?? "audit"} onChange={(e) => set({ section: e.target.value })}>
-                    {BOARD_SECTIONS.map((section) => (
-                      <option key={section.value} value={section.value}>
-                        {section.label}
+                <Field label="Section" hint="The first section is shown as the large cards. The rest follow in this order.">
+                  <Select value={editing.section ?? boardSections[0]?.id ?? "featured"} onChange={(e) => set({ section: e.target.value })}>
+                    {boardSections.map((section) => (
+                      <option key={section.id} value={section.id}>
+                        {section.title.trim() || `Section ${index + 1}`}
                       </option>
                     ))}
                   </Select>
@@ -460,19 +487,63 @@ export function OrganizationEditor() {
           <div>
             <p className={step}>Step 5</p>
             <h2 className="text-[15px] font-bold text-[#0b1f3a]">KSL Board page</h2>
-            <p className="text-[13px] text-[#6b7785]">This is a different page from the chart. Edit the sections in the order they appear: Leadership, then Audit, Risk, and Strategy.</p>
+            <p className="text-[13px] text-[#6b7785]">The first section is the large cards at the top. Clear a heading or turn it off to show only the people. The explanation is optional too.</p>
           </div>
-          <Button variant="secondary" onClick={() => start("board")}>
-            <Plus className="h-4 w-4" /> New board member
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setBoardSections([...boardSections, { id: `section-${Date.now().toString(36)}`, title: "New section", blurb: "", showTitle: true, showBlurb: false }])}
+            >
+              <Plus className="h-4 w-4" /> Add section
+            </Button>
+            <Button variant="secondary" onClick={() => start("board")}>
+              <Plus className="h-4 w-4" /> New board member
+            </Button>
+          </div>
         </div>
-        {BOARD_SECTIONS.map((section, index) => {
-          const people = board.filter((row) => (row.section || "audit") === section.value);
+        {boardSections.map((section, index) => {
+          const people = board.filter((row) => (row.section || boardSections[0]?.id) === section.id);
           return (
-            <div key={section.value}>
-              <h3 className="mb-2 text-[14px] font-bold text-[#0b1f3a]">
-                {index + 1}. {section.label}
-              </h3>
+            <div key={section.id} className="space-y-3 rounded-md border border-[#e4eaf2] p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="w-6 text-[12px] font-bold text-[#99792c]">{index + 1}</span>
+                <Input
+                  className="min-w-[180px] flex-1"
+                  value={section.title}
+                  onChange={(e) => setBoardSections(boardSections.map((row) => (row.id === section.id ? { ...row, title: e.target.value } : row)))}
+                  placeholder="No heading"
+                  aria-label={`Section ${index + 1} heading`}
+                />
+                <Button variant="secondary" onClick={() => moveSection(index, -1)} disabled={index === 0} aria-label="Move section up">
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <Button variant="secondary" onClick={() => moveSection(index, 1)} disabled={index === boardSections.length - 1} aria-label="Move section down">
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+                <Button variant="secondary" onClick={() => removeSection(section.id)} aria-label="Remove section">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+              <Input
+                value={section.blurb}
+                onChange={(e) => setBoardSections(boardSections.map((row) => (row.id === section.id ? { ...row, blurb: e.target.value } : row)))}
+                placeholder="No explanation"
+                aria-label={`Section ${index + 1} explanation`}
+              />
+              <div className="flex flex-wrap gap-6">
+                <Switch
+                  checked={section.showTitle !== false && Boolean(section.title.trim())}
+                  onChange={(showTitle) => setBoardSections(boardSections.map((row) => (row.id === section.id ? { ...row, showTitle } : row)))}
+                  label="Show heading"
+                  disabled={!section.title.trim()}
+                />
+                <Switch
+                  checked={section.showBlurb !== false && Boolean(section.blurb.trim())}
+                  onChange={(showBlurb) => setBoardSections(boardSections.map((row) => (row.id === section.id ? { ...row, showBlurb } : row)))}
+                  label="Show explanation"
+                  disabled={!section.blurb.trim()}
+                />
+              </div>
               <ItemList
                 showImages
                 items={people.map((r) => ({
@@ -487,12 +558,15 @@ export function OrganizationEditor() {
                   if (row) setEditing({ ...row, scope: "board" });
                 }}
                 onDelete={canDelete ? (id) => remove(id, "board") : undefined}
-                onReorder={(from, to) => moveBoard(section.value, from, to)}
-                emptyText={`No one in ${section.label} yet.`}
+                onReorder={(from, to) => moveBoard(section.id, from, to)}
+                emptyText={`No one in ${section.title || "this section"} yet.`}
               />
             </div>
           );
         })}
+        <Button onClick={saveSettings} disabled={saving === "settings"}>
+          {saving === "settings" ? "Saving…" : "Save board sections"}
+        </Button>
       </div>
 
       <FormSection title="6. Chart download" description="The document button under the leadership cards.">

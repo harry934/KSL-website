@@ -39,6 +39,21 @@ export type OrgChart = {
   departments: OrgDepartment[];
 };
 
+export type BoardSection = {
+  id: string;
+  title: string;
+  blurb: string;
+  showTitle: boolean;
+  showBlurb: boolean;
+};
+
+export const SHIPPED_BOARD_SECTIONS: BoardSection[] = [
+  { id: "featured", title: "Leadership", blurb: "", showTitle: true, showBlurb: false },
+  { id: "audit", title: "Audit", blurb: "Finance, controls, and public accountability.", showTitle: true, showBlurb: true },
+  { id: "risk", title: "Risk", blurb: "Operational readiness and security.", showTitle: true, showBlurb: true },
+  { id: "strategy", title: "Strategy", blurb: "Industrial growth and long term direction.", showTitle: true, showBlurb: true },
+];
+
 export const SHIPPED_INTRO: OrgIntro = {
   kicker: "Governance and operations",
   title: "How Kenya Shipyards Limited is structured",
@@ -103,8 +118,31 @@ export function cleanOrgChart(value: unknown): OrgChart {
   };
 }
 
+export function cleanBoardSections(value: unknown): BoardSection[] {
+  if (!Array.isArray(value) || value.length === 0) return SHIPPED_BOARD_SECTIONS.map((section) => ({ ...section }));
+  const seen = new Set<string>();
+  const sections = value
+    .slice(0, 12)
+    .map((item, index) => {
+      const row = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+      let id = /^[a-zA-Z0-9_-]{1,40}$/.test(String(row.id ?? "")) ? String(row.id) : `section-${index + 1}`;
+      if (seen.has(id)) id = `section-${index + 1}`;
+      seen.add(id);
+      const showTitle = row.showTitle !== false && row.show_title !== false;
+      const showBlurb = row.showBlurb !== false && row.show_blurb !== false;
+      return {
+        id,
+        title: clip(row.title, 80),
+        blurb: clip(row.blurb, 240),
+        showTitle,
+        showBlurb,
+      };
+    });
+  return sections.length ? sections : SHIPPED_BOARD_SECTIONS.map((section) => ({ ...section }));
+}
+
 export function toPublicOrganization(
-  settings: { chart_download_id?: string | null; intro_kicker?: string | null; intro_title?: string | null; intro_body?: string | null; chart?: unknown } | null,
+  settings: { chart_download_id?: string | null; intro_kicker?: string | null; intro_title?: string | null; intro_body?: string | null; chart?: unknown; board_sections?: unknown } | null,
   leadership: LeadershipRow[],
   board: BoardMemberRow[]
 ) {
@@ -128,11 +166,18 @@ export function toPublicOrganization(
 
   const intro = cleanIntro(settings ?? {});
   const chart = settings?.chart ? cleanOrgChart(settings.chart) : null;
+  const boardSections = cleanBoardSections(settings?.board_sections);
+  const allowed = new Set(boardSections.map((section) => section.id));
+  const fallbackSection = boardSections[0]?.id ?? "featured";
   return {
     chartDownloadId: settings?.chart_download_id ?? undefined,
     intro,
     chart: chart ?? undefined,
     leadership: pubLead,
-    board: pubBoard,
+    board: pubBoard.map((member) => ({
+      ...member,
+      section: allowed.has(member.section) ? member.section : fallbackSection,
+    })),
+    boardSections,
   };
 }

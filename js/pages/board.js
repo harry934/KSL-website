@@ -28,10 +28,10 @@
     (document.getElementById("ksl-page") || document.body).appendChild(modal);
 
     function areaLabel(card) {
-        var section = card.closest(".board-committee");
+        var section = card.closest(".board-committee, .board-lead");
         if (section) {
             var heading = section.querySelector("h2");
-            return heading ? heading.textContent : "";
+            if (heading) return heading.textContent;
         }
         if (card.classList.contains("board-card-featured")) return "Leadership";
         return "";
@@ -77,12 +77,10 @@
             var show = name === "all" || card.getAttribute("data-board-group") === name;
             if (slot) slot.hidden = !show;
         });
-        committees.forEach(function (section) {
-            section.hidden = !section.querySelector(".board-slot:not([hidden])");
+        document.querySelectorAll(".board-committee, .board-lead").forEach(function (section) {
+            var slots = section.querySelector(".board-slot");
+            section.hidden = slots ? !section.querySelector(".board-slot:not([hidden])") : name !== "all";
         });
-        if (featured) {
-            featured.hidden = !featured.querySelector(".board-slot:not([hidden])");
-        }
         if (empty) {
             var any = document.querySelector(".board-slot:not([hidden])");
             empty.hidden = !!any;
@@ -268,30 +266,34 @@
             "</div></article>";
     }
 
-    function paintBoard(members) {
+    function paintBoard(members, sections) {
         var root = document.getElementById("ksl-board-root");
-        if (!root || !members.length || !members.some(function (member) { return member.section; })) return false;
-        var sections = [
-            { key: "featured", featured: true },
-            { key: "audit", title: "Audit", blurb: "Finance, controls, and public accountability." },
-            { key: "risk", title: "Risk", blurb: "Operational readiness and security." },
-            { key: "strategy", title: "Strategy", blurb: "Industrial growth and long term direction." }
+        if (!root) return false;
+        var list = sections && sections.length ? sections : [
+            { id: "featured", title: "Leadership", blurb: "" },
+            { id: "audit", title: "Audit", blurb: "Finance, controls, and public accountability." },
+            { id: "risk", title: "Risk", blurb: "Operational readiness and security." },
+            { id: "strategy", title: "Strategy", blurb: "Industrial growth and long term direction." }
         ];
-        root.innerHTML = sections.map(function (section) {
-            var people = members.filter(function (member) { return (member.section || "audit") === section.key; });
-            if (!people.length) return "";
-            if (section.featured) {
-                return '<section class="board-featured" aria-label="Board leadership">' +
-                    people.map(function (member) { return '<div class="board-slot">' + memberCard(member, true) + "</div>"; }).join("") +
-                    "</section>";
+        if (!members.length && !(sections && sections.length)) return false;
+        root.innerHTML = list.map(function (section, index) {
+            var key = section.id || section.key;
+            var people = members.filter(function (member) { return (member.section || list[0].id || "audit") === key; });
+            var showTitle = section.showTitle !== false && section.title;
+            var showBlurb = section.showBlurb !== false && section.blurb;
+            var headingId = "board-" + String(key).replace(/[^a-zA-Z0-9_-]/g, "");
+            var heading = (showTitle ? '<h2 id="' + headingId + '" class="board-section-title">' + escapeHtml(section.title) + "</h2>" : "") +
+                (showBlurb ? '<p class="board-section-blurb">' + escapeHtml(section.blurb) + "</p>" : "");
+            var cardsHtml = people.map(function (member) {
+                return '<div class="board-slot">' + memberCard(member, index === 0) + "</div>";
+            }).join("");
+            var label = showTitle ? ' aria-labelledby="' + headingId + '"' : ' aria-label="Board members"';
+            if (index === 0) {
+                return '<section class="board-lead"' + label + ">" + heading +
+                    '<div class="board-featured">' + cardsHtml + "</div></section>";
             }
-            return '<section class="board-committee" aria-labelledby="board-' + section.key + '">' +
-                '<h2 id="board-' + section.key + '">' + escapeHtml(section.title) + "</h2><p>" + escapeHtml(section.blurb) + "</p>" +
-                '<div class="row g-4 board-grid justify-content-center">' +
-                people.map(function (member) {
-                    return '<div class="col-xl-3 col-md-4 col-6 board-slot">' + memberCard(member, false) + "</div>";
-                }).join("") +
-                "</div></section>";
+            return '<section class="board-committee"' + label + ">" + heading +
+                '<div class="row g-4 board-grid justify-content-center">' + cardsHtml + "</div></section>";
         }).join("");
         root.querySelectorAll(".board-card").forEach(function (card) {
             wireCard(card);
@@ -330,7 +332,7 @@
 
     if (window.KSL_CONTENT) {
         window.KSL_CONTENT.fetchJson("/api/public/organization", "data/organization.json").then(function (data) {
-            paintBoard((data && data.board) || []);
+            paintBoard((data && data.board) || [], (data && data.boardSections) || null);
         }).catch(function () {});
     }
 })();

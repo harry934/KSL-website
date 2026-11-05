@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
-import { cleanIntro, cleanOrgChart } from "@/lib/organization";
+import { cleanBoardSections, cleanIntro, cleanOrgChart } from "@/lib/organization";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { NextRequest, NextResponse } from "next/server";
@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
   if (body.scope === "settings") {
     const intro = cleanIntro(body);
     const chart = cleanOrgChart(body.chart);
+    const sections = Array.isArray(body.board_sections) ? cleanBoardSections(body.board_sections) : null;
     const { error: upErr } = await admin.from("organization_settings").upsert({
       id: "default",
       chart_download_id: body.chart_download_id ?? null,
@@ -59,7 +60,17 @@ export async function POST(req: NextRequest) {
       intro_title: intro.title,
       intro_body: intro.body,
       chart,
+      ...(sections ? { board_sections: sections } : {}),
     });
+    if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    if (sections) {
+      const allowed = sections.map((section) => section.id);
+      const { data: members } = await admin.from("organization_board_members").select("id, section");
+      const orphans = (members ?? []).filter((row) => !allowed.includes(String(row.section ?? "")));
+      if (orphans.length) {
+        await admin.from("organization_board_members").update({ section: allowed[0] }).in("id", orphans.map((row) => row.id));
+      }
+    }
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     await logActivity(session.userId, "organization", "upsert", "organization_settings", "default");
     return NextResponse.json({ ok: true });
@@ -72,7 +83,9 @@ export async function POST(req: NextRequest) {
     const role = String(body.role ?? "").trim();
     if (!name || !role) return NextResponse.json({ error: "A name and a role are required." }, { status: 400 });
     const group = ["defence", "ps", "independent"].includes(body.board_group) ? body.board_group : "independent";
-    const section = ["featured", "audit", "risk", "strategy"].includes(body.section) ? body.section : "audit";
+    const { data: settingsRow } = await admin.from("organization_settings").select("board_sections").eq("id", "default").maybeSingle();
+    const sections = cleanBoardSections(settingsRow?.board_sections);
+    const section = sections.some((item) => item.id === body.section) ? String(body.section) : sections[0].id;
     const previous = await rememberFiles(admin, "organization_board_members", body.id, ["photo_url"]);
     const { data, error: upErr } = await admin
       .from("organization_board_members")

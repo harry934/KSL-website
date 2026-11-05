@@ -3405,8 +3405,27 @@ html.board-motion .board-card.is-in .board-card-body {
 
 .board-slot[hidden],
 .board-committee[hidden],
-.board-featured[hidden] {
+.board-featured[hidden],
+.board-lead[hidden] {
     display: none !important;
+}
+
+.board-section-title {
+    margin: 0 0 0.35rem;
+    text-align: center;
+    color: #273272;
+    font-size: 1.7rem;
+}
+
+.board-section-blurb {
+    max-width: 640px;
+    margin: 0 auto 1.25rem;
+    text-align: center;
+    color: #4d5d78;
+}
+
+.board-lead {
+    margin-bottom: 0.5rem;
 }
 
 .board-featured {

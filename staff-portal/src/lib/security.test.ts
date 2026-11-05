@@ -8,7 +8,7 @@ import { issueContactToken, verifyContactToken } from "./contact-token.ts";
 import { looksLikeCode } from "./input-guard.ts";
 import { IDLE_MS, judgeSession } from "./staff-session.ts";
 import { sanitizeRichHtml } from "./sanitize-html.ts";
-import { cleanIntro, cleanOrgChart, toPublicOrganization } from "./organization.ts";
+import { cleanBoardSections, cleanIntro, cleanOrgChart, toPublicOrganization } from "./organization.ts";
 import { safeLink } from "./safe-link.ts";
 import { verifyTurnstile } from "./contact-token.ts";
 import { clientIp } from "./auth-server.ts";
@@ -112,6 +112,21 @@ test("organisation chart keeps page order and drops unsafe text", () => {
   );
   assert.equal(payload.intro.title, "How it is structured");
   assert.equal(payload.chart?.departments[0].title, "Production");
+  const sections = cleanBoardSections([
+    { id: "strategy", title: "Strategy", blurb: "Direction" },
+    { id: "bad id", title: "People", blurb: "" },
+    { id: "strategy", title: "Duplicate", blurb: "" },
+  ]);
+  assert.equal(sections[0].id, "strategy");
+  assert.equal(sections[1].id, "section-2");
+  assert.equal(sections[1].title, "People");
+  assert.equal(cleanBoardSections([])[0].title, "Leadership");
+  const hidden = cleanBoardSections([{ id: "audit", title: "Audit", blurb: "Finance", showTitle: false, showBlurb: false }]);
+  assert.equal(hidden[0].title, "Audit");
+  assert.equal(hidden[0].showTitle, false);
+  assert.equal(hidden[0].showBlurb, false);
+  const untitled = cleanBoardSections([{ id: "audit", title: "", blurb: "" }]);
+  assert.equal(untitled[0].title, "");
 });
 
 test("story HTML drops scripts and unsafe links", () => {
