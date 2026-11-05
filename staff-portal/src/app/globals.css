@@ -1702,6 +1702,7 @@ body {
 }
 
 .passcode-input-cell {
+  caret-color: transparent;
   text-align: center;
   padding: 0;
   outline: none;
@@ -1711,6 +1712,26 @@ body {
 .passcode-input-cell:focus {
   border-color: #0b1f3a;
   box-shadow: 0 0 0 3px rgba(11, 31, 58, 0.1);
+}
+
+.passcode-input-cell.is-waiting {
+  background-image: linear-gradient(#0b1f3a, #0b1f3a);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 1.5px 18px;
+  animation: passcode-caret 1.05s steps(1, end) infinite;
+}
+
+@keyframes passcode-caret {
+  0%, 50% { background-size: 1.5px 18px; }
+  51%, 100% { background-size: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .passcode-input-cell.is-waiting {
+    animation: none;
+    background-size: 1.5px 18px;
+  }
 }
 
 .passcode-cell.is-accepted {

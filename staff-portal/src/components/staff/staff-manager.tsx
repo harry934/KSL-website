@@ -264,32 +264,9 @@ function inviteSubject(issued: Issued) {
     : "Kenya Shipyards Limited password reset";
 }
 
-let logoDataUrlPromise: Promise<string> | null = null;
-
 function logoPublicUrl() {
   if (typeof window === "undefined") return "/ksl-logo.png";
   return `${window.location.origin}/ksl-logo.png`;
-}
-
-async function logoDataUrl() {
-  if (typeof window === "undefined") return logoPublicUrl();
-  if (!logoDataUrlPromise) {
-    logoDataUrlPromise = (async () => {
-      try {
-        const res = await fetch(logoPublicUrl());
-        const blob = await res.blob();
-        return await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result || logoPublicUrl()));
-          reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(blob);
-        });
-      } catch {
-        return logoPublicUrl();
-      }
-    })();
-  }
-  return logoDataUrlPromise;
 }
 
 function invitePlainText(issued: Issued) {
@@ -305,14 +282,28 @@ function invitePlainText(issued: Issued) {
   ].join("\n");
 }
 
-async function inviteHtmlEmail(issued: Issued) {
+function brandedPlainText(issued: Issued) {
   const until = expiryLabel(issued.expiresAt);
-  const logo = await logoDataUrl();
+  return [
+    "Kenya Shipyards Limited",
+    "",
+    issued.isNew ? "Staff portal invite" : "Password reset",
+    "",
+    `Passcode: ${issued.passcode}`,
+    "Copy the passcode first, then click the button to open the page.",
+    until ? `Expires ${until} EAT` : "Expires in 10 minutes",
+  ].join("\n");
+}
+
+function inviteHtmlEmail(issued: Issued) {
+  const until = expiryLabel(issued.expiresAt);
+  const logo = logoPublicUrl();
   const headline = issued.isNew ? "Staff portal invitation" : "Password reset";
   const intro = issued.isNew
     ? "You have been invited to the Kenya Shipyards Limited staff portal."
-    : "Use this passcode and link to choose a new password.";
-  const cta = issued.isNew ? "Complete sign-up" : "Reset password";
+    : "Use this passcode to choose a new password.";
+  const cta = issued.isNew ? "Click here to sign up" : "Click here to choose a new password";
+  const step = "Copy the one-time passcode first. Then click the button.";
   const expiry = until
     ? `Expires <strong style="color:#0b1f3a;">${until} East Africa Time</strong>`
     : "Expires in <strong style=\"color:#0b1f3a;\">10 minutes</strong>";
@@ -345,10 +336,10 @@ async function inviteHtmlEmail(issued: Issued) {
                   </td>
                 </tr>
               </table>
-              <p style="margin:22px 0 14px;text-align:center;">
+              <p style="margin:18px 0 14px;font-size:14px;line-height:1.55;color:#3d4c5f;">${step}</p>
+              <p style="margin:0 0 22px;text-align:center;">
                 <a href="${issued.signupUrl}" style="display:inline-block;background:#0b1f3a;color:#ffffff !important;text-decoration:none;font-size:14px;font-weight:700;padding:13px 26px;">${cta}</a>
               </p>
-              <p style="margin:0 0 22px;font-size:12.5px;line-height:1.5;word-break:break-all;text-align:center;"><a href="${issued.signupUrl}" style="color:#0b4f8a;">${issued.signupUrl}</a></p>
               <p style="margin:0;font-size:13px;color:#5b6775;">${expiry}</p>
             </td>
           </tr>
@@ -409,6 +400,7 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
   const [hint, setHint] = useState<string | null>(null);
 
   const plain = invitePlainText(issued);
+  const brandedPlain = brandedPlainText(issued);
   const subject = inviteSubject(issued);
   const hasEmail = issued.email.includes("@");
 
@@ -423,24 +415,24 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
   }
 
   async function copyBrandedEmail() {
-    const html = await inviteHtmlEmail(issued);
+    const html = inviteHtmlEmail(issued);
     try {
       if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
         await navigator.clipboard.write([
           new ClipboardItem({
             "text/html": new Blob([html], { type: "text/html" }),
-            "text/plain": new Blob([plain], { type: "text/plain" }),
+            "text/plain": new Blob([brandedPlain], { type: "text/plain" }),
           }),
         ]);
       } else {
-        await navigator.clipboard.writeText(plain);
+        await navigator.clipboard.writeText(brandedPlain);
       }
       setCopied("branded");
       window.setTimeout(() => setCopied(null), 2500);
       return true;
     } catch {
       try {
-        await navigator.clipboard.writeText(plain);
+        await navigator.clipboard.writeText(brandedPlain);
         setCopied("branded");
         window.setTimeout(() => setCopied(null), 2500);
         return true;

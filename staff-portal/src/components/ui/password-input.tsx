@@ -142,6 +142,7 @@ export function PasscodeInput({
 }) {
   const digits = value.replace(/\D/g, "").slice(0, 6).split("");
   while (digits.length < 6) digits.push("");
+  const [focused, setFocused] = useState<number | null>(null);
 
   function setAt(index: number, char: string) {
     const next = digits.map((d, i) => (i === index ? char : d));
@@ -151,20 +152,23 @@ export function PasscodeInput({
   function focusIndex(index: number) {
     const el = document.getElementById(`passcode-digit-${index}`) as HTMLInputElement | null;
     el?.focus();
-    el?.select();
   }
 
   function digitField(i: number) {
+    const waiting = focused === i && !digits[i];
     return (
       <input
         key={i}
         id={`passcode-digit-${i}`}
-        className={cn("passcode-cell passcode-input-cell", accepted && "is-accepted")}
+        className={cn("passcode-cell passcode-input-cell", accepted && "is-accepted", waiting && "is-waiting")}
         inputMode="numeric"
         autoComplete={i === 0 ? "one-time-code" : "off"}
+        aria-label={`Digit ${i + 1} of 6`}
         maxLength={1}
         disabled={disabled}
         value={digits[i]}
+        onFocus={() => setFocused(i)}
+        onBlur={() => setFocused((current) => (current === i ? null : current))}
         onChange={(e) => {
           const char = e.target.value.replace(/\D/g, "").slice(-1);
           setAt(i, char);
