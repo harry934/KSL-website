@@ -264,9 +264,34 @@ function inviteSubject(issued: Issued) {
     : "Kenya Shipyards Limited password reset";
 }
 
+let logoDataUrlPromise: Promise<string> | null = null;
+
 function logoPublicUrl() {
   if (typeof window === "undefined") return "/ksl-logo.png";
   return `${window.location.origin}/ksl-logo.png`;
+}
+
+async function logoDataUrl() {
+  if (typeof window === "undefined") return logoPublicUrl();
+  if (!logoDataUrlPromise) {
+    logoDataUrlPromise = (async () => {
+      try {
+        const res = await fetch(logoPublicUrl());
+        if (!res.ok) return logoPublicUrl();
+        const blob = await res.blob();
+        if (!blob.type.startsWith("image/")) return logoPublicUrl();
+        return await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || logoPublicUrl()));
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(blob);
+        });
+      } catch {
+        return logoPublicUrl();
+      }
+    })();
+  }
+  return logoDataUrlPromise;
 }
 
 function invitePlainText(issued: Issued) {
@@ -295,9 +320,9 @@ function brandedPlainText(issued: Issued) {
   ].join("\n");
 }
 
-function inviteHtmlEmail(issued: Issued) {
+async function inviteHtmlEmail(issued: Issued) {
   const until = expiryLabel(issued.expiresAt);
-  const logo = logoPublicUrl();
+  const logo = await logoDataUrl();
   const headline = issued.isNew ? "Staff portal invitation" : "Password reset";
   const intro = issued.isNew
     ? "You have been invited to the Kenya Shipyards Limited staff portal."
@@ -439,7 +464,7 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
   }
 
   async function copyBrandedEmail() {
-    const html = inviteHtmlEmail(issued);
+    const html = await inviteHtmlEmail(issued);
     try {
       if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
         await navigator.clipboard.write([
