@@ -6571,6 +6571,10 @@ html[lang="sw"] .download-button .download::after {
     margin: 56px 0;
 }
 
+.ksl-path.is-holding {
+    display: none;
+}
+
 .about-copy > h2,
 .ksl-path > h2,
 .ksl-values-block > h2,

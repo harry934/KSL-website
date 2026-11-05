@@ -15,8 +15,24 @@
     <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
-    <link href="css/ksl.css?v=20261023-16" rel="stylesheet">
+    <link href="css/ksl.css?v=20261105-7" rel="stylesheet">
+    <style>.ksl-path.is-holding{display:none}</style>
     <script src="js/intro.js?v=20261018-34"></script>
+    <script>
+        (function () {
+            var base = (document.documentElement.getAttribute("data-ksl-content-api") || "").trim().replace(/\/$/, "");
+            var url = base ? base + "/api/public/organization" : "data/organization.json";
+            window.KSL_ORG_PROMISE = fetch(url, { cache: "no-store" }).then(function (res) {
+                if (!res.ok) throw new Error("fetch failed");
+                return res.json();
+            }).catch(function () {
+                if (!base) return null;
+                return fetch("data/organization.json").then(function (res) {
+                    return res.ok ? res.json() : null;
+                }).catch(function () { return null; });
+            });
+        })();
+    </script>
 </head>
 <body data-ksl-scripts="core wow lightbox" data-ksl-page="about">
     <div id="spinner" class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
@@ -235,7 +251,7 @@
       </li>
     </ol>
     <div class="ksl-knot" aria-hidden="true"><svg viewBox="0 0 64 32"><use href="#kslKnot"/></svg></div>
-    <section class="ksl-path" aria-label="Major Milestones">
+    <section class="ksl-path is-holding" aria-label="Major Milestones">
       <h2>Major Milestones</h2>
       <p class="ksl-learn-lead">From the first yard works to MV Uhuru II entering the water.</p>
       <ol data-ksl-path>

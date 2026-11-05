@@ -235,15 +235,22 @@
             done();
             return;
         }
+        function finish(data) {
+            paintMilestones(section, data);
+            section.classList.remove("is-holding");
+            if (!section.hidden) {
+                window.requestAnimationFrame(function () { done(); });
+            }
+        }
+        var pending = window.KSL_ORG_PROMISE;
+        if (pending && typeof pending.then === "function") {
+            pending.then(finish, function () { finish(null); });
+            return;
+        }
         var request = window.KSL_CONTENT
             ? window.KSL_CONTENT.fetchJson("/api/public/organization", "data/organization.json")
             : fetch("data/organization.json").then(function (res) { return res.ok ? res.json() : null; }).catch(function () { return null; });
-        Promise.resolve(request).then(function (data) {
-            paintMilestones(section, data);
-            if (!section.hidden) done();
-        }).catch(function () {
-            done();
-        });
+        Promise.resolve(request).then(finish, function () { finish(null); });
     }
 
     function paintMilestones(section, data) {
