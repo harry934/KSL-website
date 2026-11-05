@@ -281,7 +281,7 @@ export function OrganizationEditor() {
                 </Field>
                 <Field label="Section" hint="The first section is shown as the large cards. The rest follow in this order.">
                   <Select value={editing.section ?? boardSections[0]?.id ?? "featured"} onChange={(e) => set({ section: e.target.value })}>
-                    {boardSections.map((section) => (
+                    {boardSections.map((section, index) => (
                       <option key={section.id} value={section.id}>
                         {section.title.trim() || `Section ${index + 1}`}
                       </option>
@@ -487,12 +487,17 @@ export function OrganizationEditor() {
           <div>
             <p className={step}>Step 5</p>
             <h2 className="text-[15px] font-bold text-[#0b1f3a]">KSL Board page</h2>
-            <p className="text-[13px] text-[#6b7785]">The first section is the large cards at the top. Clear a heading or turn it off to show only the people. The explanation is optional too.</p>
+            <p className="text-[13px] text-[#6b7785]">Add or remove sections in the order they appear. Leave the heading empty for no title, or type one and use Show heading. Press Save board sections, then refresh the KSL Board page.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
               variant="secondary"
-              onClick={() => setBoardSections([...boardSections, { id: `section-${Date.now().toString(36)}`, title: "New section", blurb: "", showTitle: true, showBlurb: false }])}
+              onClick={() =>
+                setBoardSections([
+                  ...boardSections,
+                  { id: `section-${Date.now().toString(36)}`, title: "", blurb: "", showTitle: false, showBlurb: false },
+                ])
+              }
             >
               <Plus className="h-4 w-4" /> Add section
             </Button>
@@ -510,7 +515,16 @@ export function OrganizationEditor() {
                 <Input
                   className="min-w-[180px] flex-1"
                   value={section.title}
-                  onChange={(e) => setBoardSections(boardSections.map((row) => (row.id === section.id ? { ...row, title: e.target.value } : row)))}
+                  onChange={(e) => {
+                    const title = e.target.value;
+                    setBoardSections(
+                      boardSections.map((row) =>
+                        row.id === section.id
+                          ? { ...row, title, showTitle: title.trim() ? (row.title.trim() ? row.showTitle : true) : false }
+                          : row
+                      )
+                    );
+                  }}
                   placeholder="No heading"
                   aria-label={`Section ${index + 1} heading`}
                 />

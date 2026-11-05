@@ -330,9 +330,19 @@
         return true;
     }
 
-    if (window.KSL_CONTENT) {
+    var publishTries = 0;
+    function publishFromApi() {
+        if (!window.KSL_CONTENT) {
+            if (publishTries < 50) {
+                publishTries += 1;
+                window.setTimeout(publishFromApi, 40);
+            }
+            return;
+        }
         window.KSL_CONTENT.fetchJson("/api/public/organization", "data/organization.json").then(function (data) {
             paintBoard((data && data.board) || [], (data && data.boardSections) || null);
         }).catch(function () {});
     }
+
+    publishFromApi();
 })();
