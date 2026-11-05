@@ -41,6 +41,7 @@ export type OrgChart = {
 
 export type BoardSection = {
   id: string;
+  name: string;
   title: string;
   blurb: string;
   showTitle: boolean;
@@ -48,10 +49,10 @@ export type BoardSection = {
 };
 
 export const SHIPPED_BOARD_SECTIONS: BoardSection[] = [
-  { id: "featured", title: "Leadership", blurb: "", showTitle: true, showBlurb: false },
-  { id: "audit", title: "Audit", blurb: "Finance, controls, and public accountability.", showTitle: true, showBlurb: true },
-  { id: "risk", title: "Risk", blurb: "Operational readiness and security.", showTitle: true, showBlurb: true },
-  { id: "strategy", title: "Strategy", blurb: "Industrial growth and long term direction.", showTitle: true, showBlurb: true },
+  { id: "featured", name: "Leadership", title: "Leadership", blurb: "", showTitle: true, showBlurb: false },
+  { id: "audit", name: "Audit", title: "Audit", blurb: "Finance, controls, and public accountability.", showTitle: true, showBlurb: true },
+  { id: "risk", name: "Risk", title: "Risk", blurb: "Operational readiness and security.", showTitle: true, showBlurb: true },
+  { id: "strategy", name: "Strategy", title: "Strategy", blurb: "Industrial growth and long term direction.", showTitle: true, showBlurb: true },
 ];
 
 export const SHIPPED_INTRO: OrgIntro = {
@@ -128,11 +129,14 @@ export function cleanBoardSections(value: unknown): BoardSection[] {
       let id = /^[a-zA-Z0-9_-]{1,40}$/.test(String(row.id ?? "")) ? String(row.id) : `section-${index + 1}`;
       if (seen.has(id)) id = `section-${index + 1}`;
       seen.add(id);
-      const showTitle = row.showTitle !== false && row.show_title !== false;
+      const title = clip(row.title, 80);
+      const name = clip(row.name, 80) || title || `Section ${index + 1}`;
+      const showTitle = Boolean(title) && row.showTitle !== false && row.show_title !== false;
       const showBlurb = row.showBlurb !== false && row.show_blurb !== false;
       return {
         id,
-        title: clip(row.title, 80),
+        name,
+        title,
         blurb: clip(row.blurb, 240),
         showTitle,
         showBlurb,
@@ -178,6 +182,6 @@ export function toPublicOrganization(
       ...member,
       section: allowed.has(member.section) ? member.section : fallbackSection,
     })),
-    boardSections,
+    boardSections: boardSections.map(({ id, title, blurb, showTitle, showBlurb }) => ({ id, title, blurb, showTitle, showBlurb })),
   };
 }

@@ -125,8 +125,13 @@ test("organisation chart keeps page order and drops unsafe text", () => {
   assert.equal(hidden[0].title, "Audit");
   assert.equal(hidden[0].showTitle, false);
   assert.equal(hidden[0].showBlurb, false);
-  const untitled = cleanBoardSections([{ id: "audit", title: "", blurb: "" }]);
+  const untitled = cleanBoardSections([{ id: "audit", name: "Audit", title: "", blurb: "" }]);
+  assert.equal(untitled[0].name, "Audit");
   assert.equal(untitled[0].title, "");
+  assert.equal(untitled[0].showTitle, false);
+  const created = cleanBoardSections([{ id: "section-new", title: "", blurb: "" }]);
+  assert.equal(created[0].name, "Section 1");
+  assert.equal(created[0].title, "");
 });
 
 test("story HTML drops scripts and unsafe links", () => {

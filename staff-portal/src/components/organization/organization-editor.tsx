@@ -281,9 +281,9 @@ export function OrganizationEditor() {
                 </Field>
                 <Field label="Section" hint="The first section is shown as the large cards. The rest follow in this order.">
                   <Select value={editing.section ?? boardSections[0]?.id ?? "featured"} onChange={(e) => set({ section: e.target.value })}>
-                    {boardSections.map((section, index) => (
+                    {boardSections.map((section) => (
                       <option key={section.id} value={section.id}>
-                        {section.title.trim() || `Section ${index + 1}`}
+                        {section.name.trim() || section.title.trim() || "Section"}
                       </option>
                     ))}
                   </Select>
@@ -487,7 +487,7 @@ export function OrganizationEditor() {
           <div>
             <p className={step}>Step 5</p>
             <h2 className="text-[15px] font-bold text-[#0b1f3a]">KSL Board page</h2>
-            <p className="text-[13px] text-[#6b7785]">Add or remove sections in the order they appear. Leave the heading empty for no title, or type one and use Show heading. Press Save board sections, then refresh the KSL Board page.</p>
+            <p className="text-[13px] text-[#6b7785]">Each section keeps its name here. The website title is optional, so you can create a section with no title or clear a title and the section still stays. Press Save board sections, then refresh the KSL Board page.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -495,7 +495,7 @@ export function OrganizationEditor() {
               onClick={() =>
                 setBoardSections([
                   ...boardSections,
-                  { id: `section-${Date.now().toString(36)}`, title: "", blurb: "", showTitle: false, showBlurb: false },
+                  { id: `section-${Date.now().toString(36)}`, name: `Section ${boardSections.length + 1}`, title: "", blurb: "", showTitle: false, showBlurb: false },
                 ])
               }
             >
@@ -512,8 +512,30 @@ export function OrganizationEditor() {
             <div key={section.id} className="space-y-3 rounded-md border border-[#e4eaf2] p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="w-6 text-[12px] font-bold text-[#99792c]">{index + 1}</span>
+                <label className="min-w-[180px] flex-1 text-[12px] font-semibold text-[#6b7785]">
+                  Section name
+                  <Input
+                    className="mt-1 font-normal"
+                    value={section.name}
+                    onChange={(e) => setBoardSections(boardSections.map((row) => (row.id === section.id ? { ...row, name: e.target.value } : row)))}
+                    placeholder="Section name"
+                    aria-label={`Section ${index + 1} name`}
+                  />
+                </label>
+                <Button variant="secondary" onClick={() => moveSection(index, -1)} disabled={index === 0} aria-label="Move section up">
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <Button variant="secondary" onClick={() => moveSection(index, 1)} disabled={index === boardSections.length - 1} aria-label="Move section down">
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+                <Button variant="secondary" onClick={() => removeSection(section.id)} aria-label="Remove section">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+              <label className="block text-[12px] font-semibold text-[#6b7785]">
+                Website title
                 <Input
-                  className="min-w-[180px] flex-1"
+                  className="mt-1 font-normal"
                   value={section.title}
                   onChange={(e) => {
                     const title = e.target.value;
@@ -525,19 +547,10 @@ export function OrganizationEditor() {
                       )
                     );
                   }}
-                  placeholder="No heading"
-                  aria-label={`Section ${index + 1} heading`}
+                  placeholder="No title on the website"
+                  aria-label={`Section ${index + 1} website title`}
                 />
-                <Button variant="secondary" onClick={() => moveSection(index, -1)} disabled={index === 0} aria-label="Move section up">
-                  <ChevronUp className="h-4 w-4" />
-                </Button>
-                <Button variant="secondary" onClick={() => moveSection(index, 1)} disabled={index === boardSections.length - 1} aria-label="Move section down">
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-                <Button variant="secondary" onClick={() => removeSection(section.id)} aria-label="Remove section">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              </label>
               <Input
                 value={section.blurb}
                 onChange={(e) => setBoardSections(boardSections.map((row) => (row.id === section.id ? { ...row, blurb: e.target.value } : row)))}
@@ -548,7 +561,7 @@ export function OrganizationEditor() {
                 <Switch
                   checked={section.showTitle !== false && Boolean(section.title.trim())}
                   onChange={(showTitle) => setBoardSections(boardSections.map((row) => (row.id === section.id ? { ...row, showTitle } : row)))}
-                  label="Show heading"
+                  label="Show title"
                   disabled={!section.title.trim()}
                 />
                 <Switch
@@ -573,7 +586,7 @@ export function OrganizationEditor() {
                 }}
                 onDelete={canDelete ? (id) => remove(id, "board") : undefined}
                 onReorder={(from, to) => moveBoard(section.id, from, to)}
-                emptyText={`No one in ${section.title || "this section"} yet.`}
+                emptyText={`No one in ${section.name.trim() || "this section"} yet.`}
               />
             </div>
           );
