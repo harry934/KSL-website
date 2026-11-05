@@ -363,11 +363,35 @@ function whatsAppNumber(phone: string) {
   return digits;
 }
 
-function mailComposeUrl(kind: "gmail" | "outlook", email: string, subject: string) {
-  if (kind === "gmail") {
-    return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}`;
-  }
-  return `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(email)}&subject=${encodeURIComponent(subject)}`;
+function mailComposeUrl(email: string, subject: string) {
+  return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}`;
+}
+
+function outlookDraft(issued: Issued) {
+  const until = expiryLabel(issued.expiresAt);
+  const intro = issued.isNew
+    ? "You have been invited to the Kenya Shipyards Limited staff portal."
+    : "Use this passcode to choose a new password.";
+  return [
+    "Kenya Shipyards Limited",
+    "",
+    intro,
+    "",
+    `One-time passcode: ${issued.passcode}`,
+    "",
+    "Copy the one-time passcode first. Then open the sign-up page:",
+    issued.signupUrl,
+    "",
+    until ? `Expires ${until} East Africa Time.` : "Expires in 10 minutes.",
+  ].join("\r\n");
+}
+
+function openMailto(email: string, subject: string, body: string) {
+  const link = document.createElement("a");
+  link.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 function ShareIconButton({
@@ -443,14 +467,21 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
     }
   }
 
-  async function openMail(kind: "gmail" | "outlook") {
+  async function openGmail() {
     if (!hasEmail) return;
     const ok = await copyBrandedEmail();
     if (ok) {
       setHint("Ctrl+V in the message");
       window.setTimeout(() => setHint(null), 6000);
     }
-    window.open(mailComposeUrl(kind, issued.email, subject), "_blank", "noopener");
+    window.open(mailComposeUrl(issued.email, subject), "_blank", "noopener");
+  }
+
+  function openOutlook() {
+    if (!hasEmail) return;
+    openMailto(issued.email, subject, outlookDraft(issued));
+    setHint("Outlook is opening a new message with their address and the passcode filled in.");
+    window.setTimeout(() => setHint(null), 6000);
   }
 
   function sendWhatsApp() {
@@ -500,8 +531,8 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <ShareIconButton label="Gmail" src="/brand/gmail.svg" disabled={!hasEmail} onClick={() => openMail("gmail")} />
-        <ShareIconButton label="Outlook" src="/brand/outlook.svg" disabled={!hasEmail} onClick={() => openMail("outlook")} />
+        <ShareIconButton label="Gmail" src="/brand/gmail.svg" disabled={!hasEmail} onClick={openGmail} />
+        <ShareIconButton label="Outlook" src="/brand/outlook.svg" disabled={!hasEmail} onClick={openOutlook} />
         <ShareIconButton label="WhatsApp" src="/brand/whatsapp.svg" onClick={sendWhatsApp} />
         <Button className="ml-auto" onClick={onClose}>
           Done
