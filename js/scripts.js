@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261105-7";
+    var ASSET_V = "20261105-9";
 
     var BUNDLES = {
         wow: [
@@ -90,8 +90,25 @@
         return raw.split(/\s+/).filter(Boolean);
     }
 
+    var EARLY = [
+        "js/sanitize.js",
+        "js/ksl-content.js",
+        "js/site-images.js",
+        "js/site-settings.js"
+    ];
+
     function buildQueue(names) {
-        var queue = [];
+        var queue = EARLY.slice();
+        var page = document.body.getAttribute("data-ksl-page");
+        if (page === "home" || page === "news" || page === "event") {
+            queue.push("js/event-countdown.js");
+        }
+        if (document.getElementById("ksl-gallery-grid")) {
+            queue.push("js/gallery-live.js");
+        }
+        if (page) {
+            queue.push("js/pages/" + page + ".js");
+        }
         names.forEach(function (name) {
             if (name === "core") {
                 CORE.forEach(function (src) { queue.push(src); });
@@ -102,14 +119,9 @@
                 pack.forEach(function (src) { queue.push(src); });
             }
         });
-        TAIL.forEach(function (src) { queue.push(src); });
-        var page = document.body.getAttribute("data-ksl-page");
-        if (page === "home" || page === "news" || page === "event") {
-            queue.push("js/event-countdown.js");
-        }
-        if (page) {
-            queue.push("js/pages/" + page + ".js");
-        }
+        TAIL.forEach(function (src) {
+            if (EARLY.indexOf(src) === -1) queue.push(src);
+        });
         return queue;
     }
 

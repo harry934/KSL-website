@@ -98,6 +98,7 @@
         byId("kslArticleKicker").textContent = "Newsroom";
         byId("kslArticleMeta").textContent = "";
         main.innerHTML = '<p><a class="btn btn-primary" href="news.html">Go to News and Events</a></p>';
+        if (window.KSL_LIVE) window.KSL_LIVE.show(page);
     }
 
     function render(item, all) {
@@ -176,6 +177,7 @@
 
         renderShare(item);
         page.classList.remove("is-loading");
+        if (window.KSL_LIVE) window.KSL_LIVE.show(page);
     }
 
     (window.KSL_CONTENT ? window.KSL_CONTENT.fetchJson("/api/public/news", "data/news.json") : fetch("data/news.json").then(function (res) { return res.json(); }))

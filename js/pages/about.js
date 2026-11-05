@@ -238,6 +238,7 @@
         function finish(data) {
             paintMilestones(section, data);
             section.classList.remove("is-holding");
+            if (window.KSL_LIVE) window.KSL_LIVE.show(section);
             if (!section.hidden) {
                 window.requestAnimationFrame(function () { done(); });
             }

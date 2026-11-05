@@ -74,6 +74,7 @@
         : fetch("data/faq.json").then(function (res) { return res.json(); }))
         .then(function (data) {
             if (!data) {
+                if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
                 return;
             }
             var groups = data.groups || [];
@@ -91,6 +92,7 @@
                 render(groups, "");
                 search.focus();
             });
+            if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
         })
         .catch(function () {
             root.innerHTML =
@@ -100,5 +102,6 @@
                 "<p>Check your connection, then try again.</p>" +
                 '<div class="ksl-empty-state-actions"><button class="btn btn-primary" type="button" onclick="window.location.reload()">Try again</button></div>' +
                 "</section>";
+            if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
         });
 })();

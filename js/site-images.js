@@ -36,6 +36,7 @@
         if (el.tagName !== "IMG" || el.getAttribute("src") === url) return;
         whenLoaded(url, function () {
             el.src = url;
+            el.classList.add("is-live");
             var parent = el.parentElement;
             var href = parent && parent.getAttribute && parent.getAttribute("href");
             if (parent && parent.tagName === "A" && href && /\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i.test(href)) {
@@ -113,9 +114,68 @@
         });
         if (!clean.length) return;
         window.KSL_HERO_MEDIA = clean;
+        primeHero();
         try {
             window.dispatchEvent(new CustomEvent("ksl-hero-media", { detail: clean }));
         } catch (err) {}
+    }
+
+    function escapeHeroText(value) {
+        return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    }
+
+    function primeHero() {
+        var hero = document.querySelector(".ksl-hero");
+        if (!hero) return;
+        var item = window.KSL_HERO_MEDIA && window.KSL_HERO_MEDIA[0];
+        var intro = hero.querySelector(".ksl-hero-intro");
+        if (intro && item) {
+            var heading = intro.querySelector("h1");
+            var copy = intro.querySelector("p");
+            var button = intro.querySelector("a.btn");
+            if (heading && item.title) {
+                heading.innerHTML = escapeHeroText(item.title).replace(/Shipbuilding/i, '<span class="ksl-hero-accent">$&</span>');
+            }
+            if (copy && item.subtitle) copy.textContent = item.subtitle;
+            if (button) {
+                if (item.buttonLabel) button.textContent = item.buttonLabel;
+                if (item.buttonUrl && /^(https?:\/\/|\/|[A-Za-z0-9].*\.html)/.test(item.buttonUrl)) {
+                    button.setAttribute("href", item.buttonUrl);
+                }
+            }
+        }
+        if (item && item.kind === "image") {
+            var video = hero.querySelector("video.ksl-hero-video");
+            if (video) {
+                video.setAttribute("poster", item.url);
+                video.removeAttribute("data-src");
+            }
+        }
+        if (item && item.kind === "video") {
+            var clip = hero.querySelector("video.ksl-hero-video");
+            if (clip) {
+                clip.setAttribute("poster", "");
+                clip.src = item.url;
+                clip.removeAttribute("data-src");
+            }
+        }
+        hero.classList.add("is-live");
+    }
+
+    function markImages(root) {
+        var nodes = [];
+        if (root && root.nodeType === 1 && root.hasAttribute && root.hasAttribute("data-ksl-image")) nodes.push(root);
+        var scope = root && root.querySelectorAll ? root : document;
+        scope.querySelectorAll("[data-ksl-image]").forEach(function (el) { nodes.push(el); });
+        nodes.forEach(function (el) {
+            var id = el.getAttribute("data-ksl-image");
+            if (!forceShow && id && overrides[id] && el.tagName === "IMG" && el.getAttribute("src") !== overrides[id]) return;
+            el.classList.add("is-live");
+        });
     }
 
     function take(data) {
@@ -128,22 +188,31 @@
             apply(document);
         }
         publishHero(data);
-        ready();
+        settle();
     }
 
-    setTimeout(ready, 4000);
+    var forceShow = false;
+
+    function settle(force) {
+        if (force) forceShow = true;
+        markImages(document);
+        primeHero();
+        ready();
+    }
 
     if (window.KSL_CONTENT) {
-        window.KSL_CONTENT.fetchJson("/api/public/site-images", "data/site-images.json").then(take).catch(ready);
+        window.KSL_CONTENT.fetchJson("/api/public/site-images", "data/site-images.json").then(take).catch(settle);
     } else {
-        ready();
+        settle();
     }
+    setTimeout(function () { settle(true); }, 8000);
 
     var observer = new MutationObserver(function (records) {
-        if (!Object.keys(overrides).length) return;
         records.forEach(function (record) {
             record.addedNodes.forEach(function (node) {
-                if (node.nodeType === 1) apply(node);
+                if (node.nodeType !== 1) return;
+                if (Object.keys(overrides).length) apply(node);
+                markImages(node);
             });
         });
     });

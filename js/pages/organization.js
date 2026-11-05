@@ -78,5 +78,9 @@
                 : '<a class="btn btn-outline-primary" href="' + chartHref + '" target="_blank" rel="noopener">Download organisation reference (Strategic Plan)</a>') + '</p>';
             html += "</section>";
             mount.innerHTML = html;
+        }).then(function () {
+            if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
+        }, function () {
+            if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
         });
 })();

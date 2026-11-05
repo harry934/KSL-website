@@ -3,7 +3,6 @@
     "use strict";
 
     var cards = document.querySelectorAll(".board-card");
-    if (!cards.length) return;
 
     var filters = document.querySelectorAll(".board-filter");
     var committees = document.querySelectorAll(".board-committee");
@@ -339,7 +338,10 @@
         }
         window.KSL_CONTENT.fetchJson("/api/public/organization", "data/organization.json").then(function (data) {
             paintBoard((data && data.board) || [], (data && data.boardSections) || null);
-        }).catch(function () {});
+            if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
+        }).catch(function () {
+            if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
+        });
     }
 
     publishFromApi();

@@ -4,7 +4,12 @@
     "use strict";
 
     // Static HTML already carries the default contact details; only the live portal can change them.
+    function revealSettings() {
+        if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='settings']");
+    }
+
     if (!window.KSL_CONTENT || !window.KSL_CONTENT.apiBase()) {
+        revealSettings();
         return;
     }
 
@@ -53,7 +58,7 @@
         if (wa && c.whatsapp) {
             wa.href = "https://wa.me/" + String(c.whatsapp).replace(/\D/g, "");
         }
-        var row = document.querySelector(".footer .row.g-4.mt-2");
+        var row = document.querySelector(".footer [data-ksl-contact]");
         if (row) {
             row.innerHTML =
                 '<div class="col-md-3"><h5 class="text-white">Inquiries / complaints</h5><p>' + escapeHtml(c.phone) +
@@ -262,10 +267,14 @@
     }
 
     window.KSL_CONTENT.fetchJson("/api/public/settings", "data/settings.json").then(function (data) {
-        if (!data) return;
+        if (!data) {
+            revealSettings();
+            return;
+        }
         applyContact(data.contact);
         applySocial(data.social);
         applyFooter(data.footer);
         applyAnnouncement(activeBanner(data.announcement));
-    }).catch(function () {});
+        revealSettings();
+    }).catch(revealSettings);
 })();

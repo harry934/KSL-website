@@ -129,6 +129,10 @@
     window.KSL_CONTENT.fetchJson("/api/public/products", "data/products.json").then(function (data) {
         if (data) render(data);
         showPhotos();
-    }).catch(showPhotos);
+        if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
+    }).catch(function () {
+        showPhotos();
+        if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
+    });
     setTimeout(showPhotos, 4000);
 })();

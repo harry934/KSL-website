@@ -124,7 +124,9 @@
                 var meta = [item.type, item.size, item.language, item.date].filter(Boolean).map(escapeHtml).join(" · ");
                 html += "<li><div><h3>" + escapeHtml(item.title) + "</h3>" + sub + "<p>" + escapeHtml(displayFilename(item.filename)) + "</p>";
                 html += '<p class="ksl-downloads-meta">' + meta + "</p></div>";
-                html += window.kslDocButton(url, "Download") + "</li>";
+                html += (window.kslDocButton
+                    ? window.kslDocButton(url, "Download")
+                    : '<a class="download-button" href="' + escapeHtml(url) + '" target="_blank" rel="noopener"><span class="download">Download</span></a>') + "</li>";
             });
             html += "</ul></section>";
         });
@@ -193,6 +195,7 @@
         });
         bindFilters(cats);
         render(window.__kslDownloadsData);
+        if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
     }
 
     function itemsFromJson(data) {
@@ -232,7 +235,9 @@
                 }
                 publish(itemsFromJson(data));
             })
-            .catch(fallback);
+            .catch(function () {
+                if (!items.length) fallback();
+            });
     }
 
     loadDocuments();

@@ -7,6 +7,10 @@
     }
 
     function fetchJson(apiPath, fallbackPath) {
+        var pending = window.KSL_PREFETCH && window.KSL_PREFETCH[apiPath];
+        if (pending && typeof pending.then === "function") {
+            return pending;
+        }
         var base = apiBase();
         var primary = base ? base + apiPath : fallbackPath;
         return fetch(primary).then(function (res) {

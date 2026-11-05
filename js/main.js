@@ -1720,7 +1720,7 @@
 
     // Gallery page: load photos + category filter
     var galleryRoot = document.getElementById("ksl-gallery-grid");
-    if (galleryRoot) {
+    if (galleryRoot && galleryRoot.getAttribute("data-ksl-live-gallery") !== "1") {
         var galleryFilter = "all";
         var galleryPhotos = [];
 

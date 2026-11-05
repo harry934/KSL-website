@@ -181,6 +181,7 @@
                     activeTab === "events" ? "There are no upcoming events to show." : "There are no published news articles yet.",
                     '<a class="btn btn-outline-primary" href="contact.html">Contact us</a>'
                 );
+                if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
                 return;
             }
 
@@ -193,6 +194,7 @@
                     '<a class="btn btn-outline-primary" href="news.html' + (activeTab === "events" ? "?tab=events" : "") + '">View all</a>',
                     query
                 );
+                if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
                 return;
             }
 
@@ -210,11 +212,12 @@
                 grid.innerHTML = slice.map(feedCard).join("");
             }
             renderPages(filtered.length);
+            if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
         }
 
         function loadNews() {
             grid.setAttribute("aria-busy", "true");
-            grid.innerHTML = '<p class="ksl-search-loading"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Loading news…</p>';
+            grid.innerHTML = "";
             Promise.all([
                 (window.KSL_CONTENT
                     ? window.KSL_CONTENT.fetchJson("/api/public/news", "data/news.json")
@@ -246,6 +249,7 @@
                     "Check your connection, then try again.",
                     '<button class="btn btn-primary" type="button" data-news-retry>Try again</button>'
                 );
+                if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
             }).finally(function () {
                 grid.removeAttribute("aria-busy");
             });
@@ -285,6 +289,7 @@
             var data = pair[0];
             var dl = pair[1];
             if (!data || !dl) {
+                if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
                 return;
             }
             var links = (data.assets || []).map(function (asset) {
@@ -304,6 +309,7 @@
                 "<p>" + data.boilerplate + "</p>" +
                 "<p><strong>Media contact:</strong> <a href=\"mailto:" + data.contactEmail + "\">" + data.contactEmail + "</a> · " + data.contactPhone + "</p>" +
                 "<h3 class=\"h5 mt-4\">Press assets</h3><ul class=\"ksl-press-list\">" + links + "</ul>";
+            if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
         });
     }
 })();

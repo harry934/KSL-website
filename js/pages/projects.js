@@ -32,6 +32,7 @@
     }
 
     function render(data) {
+        if (!data) return;
         var items = (data && data.items) || [];
         if (!items.length) return;
         var groups = {};
@@ -54,5 +55,10 @@
         });
     }
 
-    window.KSL_CONTENT.fetchJson("/api/public/projects", "data/projects.json").then(render).catch(function () {});
+    window.KSL_CONTENT.fetchJson("/api/public/projects", "data/projects.json").then(function (data) {
+        render(data);
+        if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
+    }).catch(function () {
+        if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
+    });
 })();

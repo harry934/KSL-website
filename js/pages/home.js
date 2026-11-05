@@ -11,17 +11,22 @@
             today = new Date().toISOString().slice(0, 10);
         }
         window.KSL_CONTENT.fetchJson("/api/public/events", "data/events.json").then(function (data) {
-            if (!data) return;
-            var upcoming = ((data.upcoming || []).concat(data.past || [])).filter(function (item) {
+            var upcoming = data ? ((data.upcoming || []).concat(data.past || [])).filter(function (item) {
                 return String(item.date || "") >= today;
             }).sort(function (a, b) {
                 return String(a.date || "").localeCompare(String(b.date || ""));
-            }).slice(0, 3);
-            if (!upcoming.length) return;
-            eventsMount.innerHTML = upcoming.map(function (item) {
-                return window.KSL_EVENTS ? window.KSL_EVENTS.card(item) : "";
-            }).join("");
-            if (window.KSL_EVENTS) window.KSL_EVENTS.watch(eventsMount);
+            }).slice(0, 3) : [];
+            if (upcoming.length) {
+                eventsMount.innerHTML = upcoming.map(function (item) {
+                    return window.KSL_EVENTS ? window.KSL_EVENTS.card(item) : "";
+                }).join("");
+                if (window.KSL_EVENTS) window.KSL_EVENTS.watch(eventsMount);
+            } else {
+                eventsMount.innerHTML = '<section class="ksl-empty-state" role="status"><h3>No events available</h3><p>There are no upcoming events to show.</p></section>';
+            }
+            if (window.KSL_LIVE) window.KSL_LIVE.show(eventsMount);
+        }).catch(function () {
+            if (window.KSL_LIVE) window.KSL_LIVE.show(eventsMount);
         });
     }
 
@@ -65,6 +70,7 @@
     (window.KSL_CONTENT ? window.KSL_CONTENT.fetchJson("/api/public/news", "data/news.json") : fetch("data/news.json").then(function (res) { return res.json(); }))
         .then(function (data) {
             if (!data) {
+                if (window.KSL_LIVE) window.KSL_LIVE.show(mount);
                 return;
             }
             items = (data.items || []).slice().sort(function (a, b) {
@@ -72,12 +78,15 @@
             }).slice(0, 3);
             if (!items.length) {
                 mount.innerHTML = '<section class="ksl-empty-state" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg><h3>News is coming soon</h3><p>There are no published news articles yet.</p><div class="ksl-empty-state-actions"><a class="btn btn-outline-primary" href="contact.html">Contact us</a></div></section>';
+                if (window.KSL_LIVE) window.KSL_LIVE.show(mount);
                 return;
             }
             mount.innerHTML = items.map(feedCard).join("");
+            if (window.KSL_LIVE) window.KSL_LIVE.show(mount);
         })
         .catch(function () {
             mount.innerHTML = '<section class="ksl-empty-state" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg><h3>News is unavailable</h3><p>Check your connection, then try again.</p><div class="ksl-empty-state-actions"><a class="btn btn-primary" href="news.html">Open newsroom</a></div></section>';
+            if (window.KSL_LIVE) window.KSL_LIVE.show(mount);
         });
 })();
 

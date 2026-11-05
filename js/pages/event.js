@@ -211,6 +211,7 @@
 
         renderShare(evt);
         page.classList.remove("is-loading");
+        if (window.KSL_LIVE) window.KSL_LIVE.show(page);
     }
 
     function renderNotFound() {
@@ -222,6 +223,7 @@
         byId("kslEventWhen").textContent = "";
         main.innerHTML = '<p><a class="btn btn-primary" href="news.html?tab=events">Go to Events</a></p>';
         document.querySelector(".ksl-article-aside").hidden = true;
+        if (window.KSL_LIVE) window.KSL_LIVE.show(page);
     }
 
     (window.KSL_CONTENT

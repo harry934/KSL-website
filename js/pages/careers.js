@@ -159,6 +159,7 @@
         .then(function (data) {
             if (!data) throw new Error("careers");
             renderCareers(data);
+            if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
         })
         .catch(function () {
             if (empty) {
@@ -171,5 +172,6 @@
                     "<p>Check your connection, then try again.</p>" +
                     '<div class="ksl-empty-state-actions"><button class="btn btn-primary" type="button" onclick="window.location.reload()">Try again</button></div>';
             }
+            if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
         });
 })();

@@ -89,5 +89,8 @@
 
     window.KSL_CONTENT.fetchJson("/api/public/csr", "data/csr.json").then(function (data) {
         if (data) render(data);
-    }).catch(function () {});
+        if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
+    }).catch(function () {
+        if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
+    });
 })();
