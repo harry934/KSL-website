@@ -288,12 +288,10 @@
                 return '<div class="board-slot">' + memberCard(member, index === 0) + "</div>";
             }).join("");
             var label = showTitle ? ' aria-labelledby="' + headingId + '"' : ' aria-label="Board members"';
-            if (index === 0) {
-                return '<section class="board-lead"' + label + ">" + heading +
-                    '<div class="board-featured">' + cardsHtml + "</div></section>";
-            }
-            return '<section class="board-committee"' + label + ">" + heading +
-                '<div class="row g-4 board-grid justify-content-center">' + cardsHtml + "</div></section>";
+            var rowClass = index === 0 ? "board-featured" : "board-grid";
+            var sectionClass = index === 0 ? "board-lead" : "board-committee";
+            return '<section class="' + sectionClass + '"' + label + ">" + heading +
+                '<div class="' + rowClass + '">' + cardsHtml + "</div></section>";
         }).join("");
         root.querySelectorAll(".board-card").forEach(function (card) {
             wireCard(card);

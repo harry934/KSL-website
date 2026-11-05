@@ -3446,6 +3446,19 @@ html.board-motion .board-card.is-in .board-card-body {
     height: 188px;
 }
 
+.board-grid {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: stretch;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.board-grid > .board-slot {
+    flex: 1 1 220px;
+    max-width: 280px;
+}
+
 .board-committee {
     margin-top: 2.5rem;
 }
