@@ -19,17 +19,55 @@
             : fetch("data/downloads.json").then(function (res) { return res.json(); });
     }
 
+    function paintStructure(data, esc) {
+        if (!data || !data.chart) return;
+        var intro = document.querySelector(".org-intro");
+        var chartEl = document.querySelector(".org-chart");
+        if (intro && data.intro) {
+            intro.innerHTML =
+                '<p class="org-kicker">' + esc(data.intro.kicker) + "</p>" +
+                '<h2 id="organization-title">' + esc(data.intro.title) + "</h2>" +
+                "<p>" + esc(data.intro.body) + "</p>";
+        }
+        if (!chartEl) return;
+        var chart = data.chart;
+        var departments = chart.departments || [];
+        var html = '<div class="org-leadership">' +
+            '<div class="org-node org-node-board"><span>' + esc(chart.boardCaption) + "</span><strong>" + esc(chart.boardTitle) + "</strong></div>" +
+            '<span class="org-connector" aria-hidden="true"></span>' +
+            '<div class="org-node org-node-md"><span>' + esc(chart.executiveCaption) + "</span><strong>" + esc(chart.executiveTitle) + "</strong></div>" +
+            "</div><div class=\"org-department-groups\">";
+        var rowStart = 0;
+        while (rowStart < departments.length) {
+            var row = departments.slice(rowStart, rowStart + 3);
+            html += '<div class="org-department-row">';
+            row.forEach(function (dept, offset) {
+                var number = String(rowStart + offset + 1).padStart(2, "0");
+                html += '<article class="org-department"><header><span>Department ' + number + "</span><h3>" + esc(dept.title) + "</h3></header>";
+                if (dept.units && dept.units.length) {
+                    html += "<ul>" + dept.units.map(function (unit) { return "<li>" + esc(unit) + "</li>"; }).join("") + "</ul>";
+                }
+                html += "</article>";
+            });
+            html += "</div>";
+            rowStart += 3;
+        }
+        html += "</div>";
+        chartEl.innerHTML = html;
+    }
+
     Promise.all([fetchOrg(), fetchDownloads()])
         .then(function (pair) {
             var data = pair[0];
             var dl = pair[1];
+            var esc = window.KSL_ESCAPE || function (value) { return String(value == null ? "" : value); };
+            if (data) paintStructure(data, esc);
             if (!data || !dl) {
                 return;
             }
             var chartId = data.chartDownloadId;
             var chart = (dl.items || []).find(function (i) { return i.id === chartId; });
             var chartHref = chart ? (chart.href || (dl.baseUrl + chart.file)) : "downloads.html";
-            var esc = window.KSL_ESCAPE || function (value) { return String(value == null ? "" : value); };
             var html = '<section class="ksl-org-extra mb-5" aria-label="Leadership">';
             html += '<h2 class="h4 mb-3">Executive leadership</h2><div class="row g-3">';
             (data.leadership || []).forEach(function (row) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormSection, SaveBar, Select, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
@@ -13,7 +13,7 @@ import { useCan } from "@/components/portal/session-context";
 import { reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import { documentOptions, useDocuments } from "@/lib/use-documents";
-import type { BoardMemberRow, LeadershipRow } from "@/lib/organization";
+import { cleanIntro, cleanOrgChart, SHIPPED_CHART, SHIPPED_INTRO, type BoardMemberRow, type LeadershipRow, type OrgChart, type OrgDepartment, type OrgIntro } from "@/lib/organization";
 type Scope = "leadership" | "board";
 type Draft = {
   scope: Scope;
@@ -48,6 +48,9 @@ export function OrganizationEditor() {
   const canDelete = useCan("organization", "delete");
   const documents = useDocuments();
   const [chartDownloadId, setChartDownloadId] = useState("");
+  const [intro, setIntro] = useState<OrgIntro>(SHIPPED_INTRO);
+  const [chart, setChart] = useState<OrgChart>(SHIPPED_CHART);
+  const [openDept, setOpenDept] = useState<string | null>(null);
   const [leadership, setLeadership] = useState<LeadershipRow[]>([]);
   const [board, setBoard] = useState<BoardMemberRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +62,8 @@ export function OrganizationEditor() {
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setChartDownloadId(data.settings?.chart_download_id ?? "");
+      setIntro(data.settings?.intro_title ? cleanIntro(data.settings) : SHIPPED_INTRO);
+      setChart(data.settings?.chart ? cleanOrgChart(data.settings.chart) : SHIPPED_CHART);
       setLeadership(data.leadership ?? []);
       setBoard(data.board ?? []);
     } else {
@@ -71,16 +76,54 @@ export function OrganizationEditor() {
     load();
   }, [load]);
 
+  function settingsBody() {
+    return {
+      scope: "settings",
+      chart_download_id: chartDownloadId || null,
+      intro_kicker: intro.kicker,
+      intro_title: intro.title,
+      intro_body: intro.body,
+      chart,
+    };
+  }
+
   async function saveSettings() {
     setSaving("settings");
     try {
-      await sendJson("/api/organization", "POST", { scope: "settings", chart_download_id: chartDownloadId || null });
-      toast("Saved.");
+      await sendJson("/api/organization", "POST", settingsBody());
+      toast("Saved. The organisation page updates within a few seconds.");
     } catch (err) {
       toast((err as Error).message, "error");
     } finally {
       setSaving(null);
     }
+  }
+
+  function patchDept(id: string, patch: Partial<OrgDepartment>) {
+    setChart({
+      ...chart,
+      departments: chart.departments.map((dept) => (dept.id === id ? { ...dept, ...patch } : dept)),
+    });
+  }
+
+  function moveDept(index: number, direction: -1 | 1) {
+    const next = index + direction;
+    if (next < 0 || next >= chart.departments.length) return;
+    const departments = chart.departments.slice();
+    const [row] = departments.splice(index, 1);
+    departments.splice(next, 0, row);
+    setChart({ ...chart, departments });
+  }
+
+  function moveUnit(deptId: string, index: number, direction: -1 | 1) {
+    const dept = chart.departments.find((row) => row.id === deptId);
+    if (!dept) return;
+    const next = index + direction;
+    if (next < 0 || next >= dept.units.length) return;
+    const units = dept.units.slice();
+    const [row] = units.splice(index, 1);
+    units.splice(next, 0, row);
+    patchDept(deptId, { units });
   }
 
   function start(scope: Scope) {
@@ -90,7 +133,7 @@ export function OrganizationEditor() {
       role: "",
       full_name: "",
       board_group: "independent",
-      section: "audit",
+      section: "featured",
       photo_url: "",
       summary: "",
       bio: "",
@@ -134,6 +177,25 @@ export function OrganizationEditor() {
     try {
       await Promise.all(
         next.filter((r) => before.get(r.id) !== r.sort_order).map((r) => sendJson("/api/organization", "POST", { ...r, scope }))
+      );
+    } catch (err) {
+      toast((err as Error).message, "error");
+      load();
+    }
+  }
+
+  async function moveBoard(section: string, from: number, to: number) {
+    const order = BOARD_SECTIONS.map((item) => item.value);
+    const inSection = board.filter((row) => (row.section || "audit") === section);
+    const reordered = reorderItem(inSection, from, to);
+    const next = order
+      .flatMap((key) => (key === section ? reordered : board.filter((row) => (row.section || "audit") === key)))
+      .map((row, index) => ({ ...row, sort_order: index }));
+    const before = new Map(board.map((row) => [row.id, row.sort_order]));
+    setBoard(next);
+    try {
+      await Promise.all(
+        next.filter((row) => before.get(row.id) !== row.sort_order).map((row) => sendJson("/api/organization", "POST", { ...row, scope: "board" }))
       );
     } catch (err) {
       toast((err as Error).message, "error");
@@ -190,7 +252,7 @@ export function OrganizationEditor() {
                     ))}
                   </Select>
                 </Field>
-                <Field label="Where they appear">
+                <Field label="Where they appear" hint="Leadership is first on the KSL Board page, then Audit, Risk, and Strategy.">
                   <Select value={editing.section ?? "audit"} onChange={(e) => set({ section: e.target.value })}>
                     {BOARD_SECTIONS.map((section) => (
                       <option key={section.value} value={section.value}>
@@ -238,12 +300,145 @@ export function OrganizationEditor() {
   }
 
   const groupLabel = (value: string) => BOARD_GROUPS.find((group) => group.value === value)?.label ?? value;
+  const step = "text-[12px] font-bold uppercase tracking-wide text-[#0165FC]";
 
   return (
     <div className="space-y-5">
+      <FormSection
+        title="1. Introduction"
+        description="The lines above the chart. Save this with the chart in step 3."
+      >
+        <Field label="Small heading">
+          <Input value={intro.kicker} onChange={(e) => setIntro({ ...intro, kicker: e.target.value })} />
+        </Field>
+        <Field label="Main heading">
+          <Input value={intro.title} onChange={(e) => setIntro({ ...intro, title: e.target.value })} />
+        </Field>
+        <Field label="Paragraph">
+          <Textarea value={intro.body} onChange={(e) => setIntro({ ...intro, body: e.target.value })} />
+        </Field>
+      </FormSection>
+
+      <FormSection
+        title="2. Top of the chart"
+        description="Visitors see the Board first, then the Managing Director."
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Board label" hint="The small line on the navy box.">
+            <Input value={chart.boardCaption} onChange={(e) => setChart({ ...chart, boardCaption: e.target.value })} />
+          </Field>
+          <Field label="Board name">
+            <Input value={chart.boardTitle} onChange={(e) => setChart({ ...chart, boardTitle: e.target.value })} />
+          </Field>
+          <Field label="Managing Director label" hint="The small line on the blue box.">
+            <Input value={chart.executiveCaption} onChange={(e) => setChart({ ...chart, executiveCaption: e.target.value })} />
+          </Field>
+          <Field label="Managing Director name">
+            <Input value={chart.executiveTitle} onChange={(e) => setChart({ ...chart, executiveTitle: e.target.value })} />
+          </Field>
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="3. Departments"
+        description="Change them in this order. Department 01 is first on the page, then 02, left to right. Open a department to edit the units under it, top to bottom."
+        actions={
+          <Button
+            variant="secondary"
+            onClick={() => {
+              const id = `dept-${Date.now().toString(36)}`;
+              setChart({ ...chart, departments: [...chart.departments, { id, title: "New department", units: [] }] });
+              setOpenDept(id);
+            }}
+          >
+            <Plus className="h-4 w-4" /> Add department
+          </Button>
+        }
+      >
+        <div className="space-y-3">
+          {chart.departments.map((dept, index) => {
+            const open = openDept === dept.id;
+            const number = String(index + 1).padStart(2, "0");
+            return (
+              <div key={dept.id} className="rounded-md border border-[#e4eaf2]">
+                <div className="flex flex-wrap items-center gap-2 px-3 py-2">
+                  <span className="w-8 text-[12px] font-bold text-[#99792c]">{number}</span>
+                  <Input
+                    className="min-w-[220px] flex-1"
+                    value={dept.title}
+                    onChange={(e) => patchDept(dept.id, { title: e.target.value })}
+                    aria-label={`Department ${number} name`}
+                  />
+                  <Button variant="secondary" onClick={() => moveDept(index, -1)} disabled={index === 0} aria-label="Move department up">
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                  <Button variant="secondary" onClick={() => moveDept(index, 1)} disabled={index === chart.departments.length - 1} aria-label="Move department down">
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                  <Button variant="secondary" onClick={() => setOpenDept(open ? null : dept.id)}>
+                    {open ? "Hide units" : `Units (${dept.units.length})`}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    aria-label="Remove department"
+                    onClick={() => {
+                      setChart({ ...chart, departments: chart.departments.filter((row) => row.id !== dept.id) });
+                      if (open) setOpenDept(null);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                {open && (
+                  <div className="space-y-2 border-t border-[#eef1f4] px-3 py-3">
+                    {dept.units.map((unit, unitIndex) => (
+                      <div key={`${dept.id}-${unitIndex}`} className="flex items-center gap-2">
+                        <span className="w-6 text-[12px] text-[#6b7785]">{unitIndex + 1}</span>
+                        <Input
+                          value={unit}
+                          onChange={(e) => {
+                            const units = dept.units.slice();
+                            units[unitIndex] = e.target.value;
+                            patchDept(dept.id, { units });
+                          }}
+                          aria-label={`Unit ${unitIndex + 1}`}
+                        />
+                        <Button variant="secondary" onClick={() => moveUnit(dept.id, unitIndex, -1)} disabled={unitIndex === 0} aria-label="Move unit up">
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+                        <Button variant="secondary" onClick={() => moveUnit(dept.id, unitIndex, 1)} disabled={unitIndex === dept.units.length - 1} aria-label="Move unit down">
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          aria-label="Remove unit"
+                          onClick={() => patchDept(dept.id, { units: dept.units.filter((_, i) => i !== unitIndex) })}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button variant="secondary" onClick={() => patchDept(dept.id, { units: [...dept.units, ""] })}>
+                      <Plus className="h-4 w-4" /> Add unit
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <Button onClick={saveSettings} disabled={saving === "settings"}>
+          {saving === "settings" ? "Saving…" : "Save introduction and chart"}
+        </Button>
+      </FormSection>
+
       <div>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-[15px] font-bold text-[#0b1f3a]">Leadership</h2>
+          <div>
+            <p className={step}>Step 4</p>
+            <h2 className="text-[15px] font-bold text-[#0b1f3a]">Cards under the chart</h2>
+            <p className="text-[13px] text-[#6b7785]">These sit below the departments. The top card is shown first. Set Visibility to Published or the card stays off the website.</p>
+          </div>
           <Button onClick={() => start("leadership")}>
             <Plus className="h-4 w-4" /> New role
           </Button>
@@ -256,38 +451,51 @@ export function OrganizationEditor() {
           }}
           onDelete={canDelete ? (id) => remove(id, "leadership") : undefined}
           onReorder={(from, to) => move("leadership", from, to)}
-          emptyText="No leadership roles yet."
+          emptyText="No leadership cards yet."
         />
       </div>
 
-      <div>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-[15px] font-bold text-[#0b1f3a]">Board members</h2>
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className={step}>Step 5</p>
+            <h2 className="text-[15px] font-bold text-[#0b1f3a]">KSL Board page</h2>
+            <p className="text-[13px] text-[#6b7785]">This is a different page from the chart. Edit the sections in the order they appear: Leadership, then Audit, Risk, and Strategy.</p>
+          </div>
           <Button variant="secondary" onClick={() => start("board")}>
             <Plus className="h-4 w-4" /> New board member
           </Button>
         </div>
-        <ItemList
-          showImages
-          items={board.map((r) => ({
-            id: r.id,
-            title: r.full_name,
-            subtitle: [r.role, groupLabel(r.board_group), BOARD_SECTIONS.find((section) => section.value === r.section)?.label].filter(Boolean).join(" · "),
-            image: r.photo_url,
-            status: r.status,
-          }))}
-          onEdit={(id) => {
-            const row = board.find((r) => r.id === id);
-            if (row) setEditing({ ...row, scope: "board" });
-          }}
-          onDelete={canDelete ? (id) => remove(id, "board") : undefined}
-          onReorder={(from, to) => move("board", from, to)}
-          emptyText="No board members yet."
-        />
+        {BOARD_SECTIONS.map((section, index) => {
+          const people = board.filter((row) => (row.section || "audit") === section.value);
+          return (
+            <div key={section.value}>
+              <h3 className="mb-2 text-[14px] font-bold text-[#0b1f3a]">
+                {index + 1}. {section.label}
+              </h3>
+              <ItemList
+                showImages
+                items={people.map((r) => ({
+                  id: r.id,
+                  title: r.full_name,
+                  subtitle: [r.role, groupLabel(r.board_group)].filter(Boolean).join(" · "),
+                  image: r.photo_url,
+                  status: r.status,
+                }))}
+                onEdit={(id) => {
+                  const row = board.find((r) => r.id === id);
+                  if (row) setEditing({ ...row, scope: "board" });
+                }}
+                onDelete={canDelete ? (id) => remove(id, "board") : undefined}
+                onReorder={(from, to) => moveBoard(section.value, from, to)}
+                emptyText={`No one in ${section.label} yet.`}
+              />
+            </div>
+          );
+        })}
       </div>
 
-
-      <FormSection title="Organisation chart document" description="The document visitors download from the Organisation page.">
+      <FormSection title="6. Chart download" description="The document button under the leadership cards.">
         <Field label="Document">
           <SearchSelect
             value={chartDownloadId}
@@ -298,7 +506,7 @@ export function OrganizationEditor() {
           />
         </Field>
         <Button onClick={saveSettings} disabled={saving === "settings"}>
-          {saving === "settings" ? "Saving…" : "Save"}
+          {saving === "settings" ? "Saving…" : "Save download"}
         </Button>
       </FormSection>
     </div>

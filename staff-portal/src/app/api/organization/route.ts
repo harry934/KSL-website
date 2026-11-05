@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { cleanIntro, cleanOrgChart } from "@/lib/organization";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { NextRequest, NextResponse } from "next/server";
@@ -49,9 +50,15 @@ export async function POST(req: NextRequest) {
   if (denied) return denied;
 
   if (body.scope === "settings") {
+    const intro = cleanIntro(body);
+    const chart = cleanOrgChart(body.chart);
     const { error: upErr } = await admin.from("organization_settings").upsert({
       id: "default",
       chart_download_id: body.chart_download_id ?? null,
+      intro_kicker: intro.kicker,
+      intro_title: intro.title,
+      intro_body: intro.body,
+      chart,
     });
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     await logActivity(session.userId, "organization", "upsert", "organization_settings", "default");

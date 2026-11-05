@@ -8,6 +8,7 @@ import { issueContactToken, verifyContactToken } from "./contact-token.ts";
 import { looksLikeCode } from "./input-guard.ts";
 import { IDLE_MS, judgeSession } from "./staff-session.ts";
 import { sanitizeRichHtml } from "./sanitize-html.ts";
+import { cleanIntro, cleanOrgChart, toPublicOrganization } from "./organization.ts";
 import { safeLink } from "./safe-link.ts";
 import { verifyTurnstile } from "./contact-token.ts";
 import { clientIp } from "./auth-server.ts";
@@ -86,6 +87,31 @@ test("unpublished downloads are not signed or returned", () => {
   assert.equal(payload.items.length, 1);
   assert.equal(payload.items[0].title, "Public file");
   assert.equal(JSON.stringify(payload).includes("secret.pdf"), false);
+});
+
+test("organisation chart keeps page order and drops unsafe text", () => {
+  const chart = cleanOrgChart({
+    boardCaption: "Governance",
+    boardTitle: "Board <script>",
+    executiveCaption: "Executive leadership",
+    executiveTitle: "Managing Director",
+    departments: [
+      { id: "dept-02", title: "Production", units: ["Yard Management Division", ""] },
+      { id: "bad id", title: "Legal", units: ["Compliance"] },
+    ],
+  });
+  assert.equal(chart.boardTitle, "Board <script>");
+  assert.equal(chart.departments[0].id, "dept-02");
+  assert.deepEqual(chart.departments[0].units, ["Yard Management Division"]);
+  assert.equal(chart.departments[1].id, "dept-2");
+  const intro = cleanIntro({ intro_kicker: "Governance and operations", intro_title: "How it is structured", intro_body: "The Board leads." });
+  const payload = toPublicOrganization(
+    { chart_download_id: "plan", ...intro, intro_kicker: intro.kicker, intro_title: intro.title, intro_body: intro.body, chart },
+    [],
+    []
+  );
+  assert.equal(payload.intro.title, "How it is structured");
+  assert.equal(payload.chart?.departments[0].title, "Production");
 });
 
 test("story HTML drops scripts and unsafe links", () => {

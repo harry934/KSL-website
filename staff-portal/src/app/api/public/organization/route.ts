@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   const admin = createAdminClient();
   const [settingsRes, leadershipRes, boardRes] = await Promise.all([
-    admin.from("organization_settings").select("chart_download_id").eq("id", "default").maybeSingle(),
+    admin.from("organization_settings").select("chart_download_id, intro_kicker, intro_title, intro_body, chart").eq("id", "default").maybeSingle(),
     admin.from("organization_leadership").select("*").eq("status", "published").order("sort_order", { ascending: true }),
     admin.from("organization_board_members").select("*").eq("status", "published").order("sort_order", { ascending: true }),
   ]);
@@ -16,12 +16,12 @@ export async function GET() {
   if (boardRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
   const payload = toPublicOrganization(
-    settingsRes.data?.chart_download_id ?? null,
+    settingsRes.data,
     kept((leadershipRes.data ?? []) as Array<LeadershipRow & { deleted_at?: string | null }>),
     kept((boardRes.data ?? []) as Array<BoardMemberRow & { deleted_at?: string | null }>)
   );
 
   return NextResponse.json(payload, {
-    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+    headers: { "Cache-Control": "public, s-maxage=15, stale-while-revalidate=30" },
   });
 }
