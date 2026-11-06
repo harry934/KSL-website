@@ -29,6 +29,7 @@ export function GalleryEditor() {
   const [videos, setVideos] = useState<GalleryVideoRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [place, setPlace] = useState("any");
+  const [openId, setOpenId] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [cropQueue, setCropQueue] = useState<File[]>([]);
   const [trimFile, setTrimFile] = useState<File | null>(null);
@@ -61,7 +62,10 @@ export function GalleryEditor() {
     url.searchParams.delete("edit");
     window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
     const photo = photos.find((row) => row.id === id);
-    if (photo) setPlace("any");
+    if (photo) {
+      setPlace("any");
+      setOpenId(photo.id);
+    }
     const clip = videos.find((row) => row.id === id);
     if (clip) {
       setVideo({
@@ -198,6 +202,7 @@ export function GalleryEditor() {
     try {
       await sendJson(`/api/gallery?id=${encodeURIComponent(row.id)}`, "DELETE");
       setPhotos((list) => list.filter((p) => p.id !== row.id));
+      setOpenId((current) => (current === row.id ? null : current));
       toast("Photo moved to the recycle bin.");
       load();
     } catch (e) {
@@ -310,24 +315,15 @@ export function GalleryEditor() {
   }
 
   const live = photos.filter((p) => p.status === "published").length;
+  const openPhoto = photos.find((p) => p.id === openId) ?? null;
 
   return (
     <div className="space-y-5">
       <FormSection
         title="Photos"
-        description={`${photos.length} photos, ${live} on the Gallery page. The name is the caption under the picture. The place is the button a visitor clicks to find it.`}
+        description={`${photos.length} photos, ${live} on the website. Tap a photo to change it.`}
         actions={
           <>
-            <div className="w-[190px]">
-              <Select value={place} onChange={(e) => setPlace(e.target.value)} aria-label="Show photos from">
-                <option value="any">All places</option>
-                {GALLERY_CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
             <label
               className={cn(
                 "inline-flex h-[40px] cursor-pointer items-center gap-2 rounded-[6px] bg-[#0b1f3a] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#123056]",
@@ -351,102 +347,115 @@ export function GalleryEditor() {
           </>
         }
       >
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Show photos from">
+          {[{ value: "any", label: "All" }, ...GALLERY_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))].map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setPlace(option.value)}
+              className={cn(
+                "h-8 rounded-full px-3 text-[13px] font-semibold",
+                place === option.value ? "bg-[#0b1f3a] text-white" : "bg-[#f1f4f7] text-[#3d4c5f] hover:bg-[#e7edf3]"
+              )}
+              aria-pressed={place === option.value}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        {openPhoto ? (
+          <div id={`gallery-${openPhoto.id}`} className="rounded-[8px] border border-[#e3e8ee] bg-[#fafbfc] p-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="min-w-[180px] flex-1">
+                <span className="mb-1 block text-[12px] font-semibold text-[#5b6775]">What the photo shows</span>
+                <Input
+                  value={openPhoto.alt_text || openPhoto.title || ""}
+                  placeholder="e.g. MV Uhuru at Kisumu"
+                  onChange={(e) => patchPhoto(openPhoto.id, { title: e.target.value, alt_text: e.target.value }, false)}
+                  onBlur={(e) => savePhoto({ ...openPhoto, title: e.target.value, alt_text: e.target.value }, "Description saved.")}
+                  aria-label="What the photo shows"
+                />
+              </label>
+              <label className="w-full sm:w-[180px]">
+                <span className="mb-1 block text-[12px] font-semibold text-[#5b6775]">Place</span>
+                <Select
+                  value={openPhoto.category || "all"}
+                  onChange={(e) => patchPhoto(openPhoto.id, { category: e.target.value }, true, "Place saved.")}
+                  aria-label="Where it appears"
+                >
+                  {GALLERY_CATEGORIES.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+              <div className="flex items-center gap-1 pb-0.5">
+                {canEdit && (
+                  <button
+                    type="button"
+                    className="h-8 px-2 text-[13px] font-semibold text-[#0b1f3a] hover:underline disabled:opacity-50"
+                    disabled={Boolean(progress) || cropQueue.length > 0}
+                    onClick={() => startTrim(openPhoto)}
+                  >
+                    Trim
+                  </button>
+                )}
+                <Switch
+                  checked={openPhoto.status === "published"}
+                  disabled={!canPublish}
+                  onChange={(on) => {
+                    if (on && !(openPhoto.alt_text || openPhoto.title || "").trim()) {
+                      toast("Write what the photo shows before it can go on the website.", "error");
+                      return;
+                    }
+                    patchPhoto(openPhoto.id, { status: on ? "published" : "draft", alt_text: openPhoto.alt_text || openPhoto.title || "" }, true, on ? "Photo is now on the website." : "Photo hidden.");
+                  }}
+                  label={<span className="text-[13px]">{openPhoto.status === "published" ? "On the page" : "Hidden"}</span>}
+                />
+                {canDelete && (
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(openPhoto)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-[6px] text-[#98a3b1] hover:bg-[#fdecea] hover:text-[#b42318]"
+                    aria-label="Remove photo"
+                    title="Remove photo"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
         {shown.length === 0 ? (
           <EmptyState>No photos here yet. Click Upload photos to add some.</EmptyState>
         ) : (
-          <div className="space-y-6">
-            {[
-              ...GALLERY_CATEGORIES.filter((placeOption) => shown.some((p) => (p.category || "all") === placeOption.value)),
-              ...[...new Set(shown.map((p) => p.category || "all"))]
-                .filter((value) => !GALLERY_CATEGORIES.some((c) => c.value === value))
-                .map((value) => ({ value, label: value, where: "This place is not one of the buttons on the Gallery page, so the photo only appears in All." })),
-            ].map((placeOption) => (
-              <section key={placeOption.value}>
-                <div className="mb-2">
-                  <h3 className="text-[14px] font-bold text-[#0b1f3a]">{placeOption.label}</h3>
-                  <p className="text-[12.5px] text-[#6b7785]">{placeOption.where}</p>
-                </div>
-                <ul className="divide-y divide-[#eef1f4] overflow-hidden rounded-[10px] border border-[#e3e8ee]">
-                  {shown
-                    .filter((p) => (p.category || "all") === placeOption.value)
-                    .map((p) => (
-                      <li id={`gallery-${p.id}`} key={p.id} className="flex flex-wrap items-center gap-3 bg-white px-3 py-2.5 sm:flex-nowrap">
-                        <span className="relative h-14 w-20 shrink-0 overflow-hidden rounded-[6px] bg-[#f1f4f7]">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={siteAssetUrl(photoSrc(p))}
-                            alt=""
-                            className={cn("h-full w-full object-cover", p.status !== "published" && "opacity-45")}
-                            loading="lazy"
-                            decoding="async"
-                          />
-                        </span>
-                        <label className="min-w-[180px] flex-1">
-                          <span className="mb-1 block text-[12px] font-semibold text-[#5b6775]">What the photo shows</span>
-                          <Input
-                            value={p.alt_text || p.title || ""}
-                            placeholder="e.g. MV Uhuru at Kisumu"
-                            onChange={(e) => patchPhoto(p.id, { title: e.target.value, alt_text: e.target.value }, false)}
-                            onBlur={(e) => savePhoto({ ...p, title: e.target.value, alt_text: e.target.value }, "Description saved.")}
-                            aria-label="What the photo shows"
-                          />
-                          <span className="mt-1 block text-[12px] text-[#6b7785]">Required before the photo can go on the website.</span>
-                        </label>
-                        <label className="w-full sm:w-[210px]">
-                          <span className="mb-1 block text-[12px] font-semibold text-[#5b6775]">Where it appears</span>
-                          <Select
-                            value={p.category || "all"}
-                            onChange={(e) => patchPhoto(p.id, { category: e.target.value }, true, "Place saved.")}
-                            aria-label="Where it appears"
-                          >
-                            {GALLERY_CATEGORIES.map((c) => (
-                              <option key={c.value} value={c.value}>
-                                {c.label}
-                              </option>
-                            ))}
-                          </Select>
-                        </label>
-                        <div className="flex items-center gap-1">
-                          {canEdit && (
-                            <button
-                              type="button"
-                              className="h-8 px-2 text-[13px] font-semibold text-[#0b1f3a] hover:underline disabled:opacity-50"
-                              disabled={Boolean(progress) || cropQueue.length > 0}
-                              onClick={() => startTrim(p)}
-                            >
-                              Trim
-                            </button>
-                          )}
-                          <Switch
-                            checked={p.status === "published"}
-                            disabled={!canPublish}
-                            onChange={(on) => {
-                              if (on && !(p.alt_text || p.title || "").trim()) {
-                                toast("Write what the photo shows before it can go on the website.", "error");
-                                return;
-                              }
-                              patchPhoto(p.id, { status: on ? "published" : "draft", alt_text: p.alt_text || p.title || "" }, true, on ? "Photo is now on the website." : "Photo hidden.")
-                            }}
-                            label={<span className="text-[13px]">{p.status === "published" ? "On the page" : "Hidden"}</span>}
-                          />
-                          {canDelete && (
-                            <button
-                              type="button"
-                              onClick={() => removePhoto(p)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-[6px] text-[#98a3b1] hover:bg-[#fdecea] hover:text-[#b42318]"
-                              aria-label="Remove photo"
-                              title="Remove photo"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                </ul>
-              </section>
+          <ul className="-mx-5 -mb-5 grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-[3px] bg-[#f6f8fa]">
+            {shown.map((p) => (
+              <li key={p.id} id={openPhoto?.id === p.id ? undefined : `gallery-${p.id}`}>
+                <button
+                  type="button"
+                  onClick={() => setOpenId(p.id)}
+                  className={cn(
+                    "relative block aspect-square w-full overflow-hidden bg-[#e7edf3]",
+                    openId === p.id && "outline outline-2 outline-[#0b1f3a] outline-offset-[-2px]"
+                  )}
+                  aria-label={p.alt_text || p.title || "Photo"}
+                  aria-pressed={openId === p.id}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={siteAssetUrl(photoSrc(p))}
+                    alt=""
+                    className={cn("h-full w-full object-cover", p.status !== "published" && "opacity-45")}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </button>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </FormSection>
 
