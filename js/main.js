@@ -1261,6 +1261,16 @@
     }
 
     var serviceModalEl = document.getElementById("kslServiceModal");
+    if (serviceModalEl) {
+        serviceModalEl.addEventListener("hidden.bs.modal", function () {
+            document.querySelectorAll(".modal-backdrop").forEach(function (node) {
+                node.remove();
+            });
+            document.body.classList.remove("modal-open");
+            document.body.style.overflow = "";
+            document.body.style.paddingRight = "";
+        });
+    }
     var showKslServiceModal = function (trigger, cardOverride) {
         if (!serviceModalEl || !trigger) {
             return;
@@ -1360,7 +1370,7 @@
         if (ModalApi) {
             var instance = typeof ModalApi.getOrCreateInstance === "function"
                 ? ModalApi.getOrCreateInstance(serviceModalEl)
-                : new ModalApi(serviceModalEl);
+                : (typeof ModalApi.getInstance === "function" && ModalApi.getInstance(serviceModalEl)) || new ModalApi(serviceModalEl);
             instance.show();
             return;
         }

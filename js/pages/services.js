@@ -196,6 +196,8 @@
             return;
         }
         if (link.classList.contains("ksl-service-more") && window.showKslServiceModal) {
+            event.preventDefault();
+            event.stopPropagation();
             window.showKslServiceModal(link, link.closest(".service-item"));
             return;
         }
