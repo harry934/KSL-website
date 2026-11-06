@@ -76,6 +76,13 @@ export async function uploadFile(
 
 const BUSY_WORDS: Record<string, string> = { DELETE: "Deleting…", GET: "" };
 
+export const DRAFT_SAVED =
+  "Saved as a draft. Someone who can publish will check it before it goes on the website.";
+
+export function awaitingReview(data: unknown) {
+  return Boolean(data && typeof data === "object" && ((data as { held?: boolean }).held || (data as { queued?: boolean }).queued));
+}
+
 /** POST/PATCH/DELETE JSON and turn any failure into a readable message. */
 export async function sendJson(url: string, method: string, body?: unknown) {
   const run = async () => {

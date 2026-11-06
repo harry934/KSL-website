@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
+import { clearReviewDraft, editorSavePlan, overlayDrafts, overlaySettings, saveBody } from "@/lib/draft-review";
 import { slugify } from "@/lib/services";
 import { cleanGroupOrder, rememberGroup } from "@/lib/group-order";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
@@ -20,11 +21,15 @@ export async function GET() {
   if (itemsRes.error) return NextResponse.json({ error: itemsRes.error.message }, { status: 500 });
 
   const split = splitRemoved(itemsRes.data ?? []);
-  return NextResponse.json({
-    intro: settingsRes.data?.intro ?? "",
-    download_catalog: settingsRes.data?.download_catalog ?? {},
+  const settings = await overlaySettings(admin, "services_settings", "default", settingsRes.data);
+  const groups = await overlaySettings(admin, "services_settings", "groups", {
     group_order: Array.isArray(settingsRes.data?.group_order) ? settingsRes.data.group_order : [],
-    items: split.items,
+  });
+  return NextResponse.json({
+    intro: settings?.intro ?? "",
+    download_catalog: settings?.download_catalog ?? {},
+    group_order: Array.isArray(groups?.group_order) ? groups.group_order : [],
+    items: await overlayDrafts(admin, "service_items", split.items),
     removed: split.removed,
   });
 }
@@ -41,30 +46,50 @@ export async function POST(req: NextRequest) {
     await logActivity(session.userId, "services", "restore", "service_item", String(body.id ?? ""));
     return NextResponse.json({ ok: true });
   }
-  const denied = publishGuard(session, "services", body.status ?? "draft");
-  if (denied) return denied;
-
   if (body.scope === "groups") {
+    const plan = await editorSavePlan(admin, session, "services", "services_settings", {
+      settings: true,
+      key: "groups",
+      title: "Service group order",
+      payload: body,
+    });
+    if (plan.held) return plan.held;
     const group_order = cleanGroupOrder(body.group_order);
     const { error: upErr } = await admin.from("services_settings").upsert({ id: "default", group_order });
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await clearReviewDraft(admin, "services_settings", null, "groups");
     await logActivity(session.userId, "services", "reorder", "services_settings", "groups");
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(saveBody(session, "services"));
   }
 
   if (body.scope === "settings") {
+    const plan = await editorSavePlan(admin, session, "services", "services_settings", {
+      settings: true,
+      key: "default",
+      title: "Services introduction",
+      payload: body,
+    });
+    if (plan.held) return plan.held;
     const { error: upErr } = await admin.from("services_settings").upsert({
       id: "default",
       intro: body.intro ?? "",
       download_catalog: body.download_catalog ?? {},
     });
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await clearReviewDraft(admin, "services_settings", null, "default");
     await logActivity(session.userId, "services", "upsert", "services_settings", "default");
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(saveBody(session, "services"));
   }
 
+  const plan = await editorSavePlan(admin, session, "services", "service_items", {
+    id: body.id,
+    requestedStatus: body.status ?? "draft",
+    title: String(body.title ?? "Untitled service"),
+    payload: body,
+  });
+  if (plan.held) return plan.held;
   const slug = (body.slug || slugify(body.title || "service")).trim();
-  const status = body.status ?? "draft";
+  const status = plan.status;
   const row = {
     id: body.id || crypto.randomUUID(),
     slug,
@@ -85,8 +110,9 @@ export async function POST(req: NextRequest) {
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   if (row.category) await rememberGroup(admin, "services_settings", row.category);
   await releaseUnusedValues(admin, previous);
+  await clearReviewDraft(admin, "service_items", data?.id);
   await logActivity(session.userId, "services", "upsert", "service_item", data?.id ?? slug);
-  return NextResponse.json({ ok: true, id: data?.id });
+  return NextResponse.json(saveBody(session, "services", { id: data?.id }));
 }
 
 export async function DELETE(req: NextRequest) {

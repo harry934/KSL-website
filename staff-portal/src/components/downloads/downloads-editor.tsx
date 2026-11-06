@@ -11,7 +11,7 @@ import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { slugify } from "@/lib/news";
 import { keyFrom, reorderItem } from "@/lib/list-utils";
-import { sendJson } from "@/lib/upload-client";
+import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { downloadSource, formatBytes, type DownloadItemRow } from "@/lib/downloads";
 import { useOpenEdit } from "@/lib/open-edit";
 
@@ -113,8 +113,8 @@ export function DownloadsEditor() {
     try {
       const { isNew, ...row } = editing;
       const id = isNew ? keyFrom(editing.title, items.map((i) => i.id)) : editing.id;
-      await sendJson("/api/downloads", "POST", { ...row, id });
-      toast(editing.status === "published" ? "Document saved and shown on the website." : "Document saved as hidden (draft).");
+      const saved = await sendJson("/api/downloads", "POST", { ...row, id });
+      toast(awaitingReview(saved) ? DRAFT_SAVED : editing.status === "published" ? "Document saved and shown on the website." : "Document saved as hidden (draft).");
       setEditing(null);
       load();
     } catch (err) {

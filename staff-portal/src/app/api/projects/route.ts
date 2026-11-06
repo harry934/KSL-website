@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
+import { clearReviewDraft, editorSavePlan, overlayDrafts, overlaySettings, saveBody } from "@/lib/draft-review";
 import { slugify } from "@/lib/news";
 import { projectGroup } from "@/lib/projects";
 import { cleanGroupOrder, rememberGroup } from "@/lib/group-order";
@@ -18,10 +19,13 @@ export async function GET() {
   ]);
   if (itemsRes.error) return NextResponse.json({ error: dbError(itemsRes.error) }, { status: 500 });
   const split = splitRemoved(itemsRes.data ?? []);
-  return NextResponse.json({
-    items: split.items,
-    removed: split.removed,
+  const groups = await overlaySettings(admin, "projects_settings", "default", {
     group_order: Array.isArray(settingsRes.data?.group_order) ? settingsRes.data.group_order : [],
+  });
+  return NextResponse.json({
+    items: await overlayDrafts(admin, "projects", split.items),
+    removed: split.removed,
+    group_order: Array.isArray(groups?.group_order) ? groups.group_order : [],
   });
 }
 
@@ -38,19 +42,32 @@ export async function POST(req: NextRequest) {
   }
   const admin = createAdminClient();
   if (body.scope === "groups") {
+    const plan = await editorSavePlan(admin, session, "projects", "projects_settings", {
+      settings: true,
+      key: "default",
+      title: "Project group order",
+      payload: body,
+    });
+    if (plan.held) return plan.held;
     const group_order = cleanGroupOrder(body.group_order);
     const { error: upErr } = await admin.from("projects_settings").upsert({ id: "default", group_order });
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await clearReviewDraft(admin, "projects_settings", null, "default");
     await logActivity(session.userId, "projects", "reorder", "projects_settings", "groups");
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(saveBody(session, "projects"));
   }
 
   const title = String(body.title ?? "").trim();
   if (!title) return NextResponse.json({ error: "Give the project a name." }, { status: 400 });
 
-  const status = body.status ?? "draft";
-  const denied = publishGuard(session, "projects", status);
-  if (denied) return denied;
+  const plan = await editorSavePlan(admin, session, "projects", "projects", {
+    id: body.id,
+    requestedStatus: body.status ?? "draft",
+    title,
+    payload: body,
+  });
+  if (plan.held) return plan.held;
+  const status = plan.status;
 
   const label = String(body.category_label ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
   const requested = String(body.category ?? "").trim() || slugify(label);
@@ -73,8 +90,9 @@ export async function POST(req: NextRequest) {
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   if (row.category) await rememberGroup(admin, "projects_settings", row.category);
   await releaseUnusedValues(admin, previous);
+  await clearReviewDraft(admin, "projects", data?.id);
   await logActivity(session.userId, "projects", status === "published" ? "publish" : "save", "project", data?.id);
-  return NextResponse.json({ ok: true, id: data?.id });
+  return NextResponse.json(saveBody(session, "projects", { id: data?.id }));
 }
 
 export async function DELETE(req: NextRequest) {

@@ -59,7 +59,7 @@ const OTP_LETTERS = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
 const OTP_DIGITS = "23456789";
 
 function usernameStem(value: string) {
-  const stem = value.replace(/[^a-z0-9.]/g, "").replace(/^\.+|\.+$/g, "").slice(0, 32);
+  const stem = value.replace(/[^a-z0-9.]/g, "").replace(/^\.+|\.+$/g, "").slice(0, 10);
   return USERNAME_PATTERN.test(stem) ? stem : "";
 }
 

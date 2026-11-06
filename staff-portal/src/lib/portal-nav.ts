@@ -9,7 +9,7 @@ export type PortalAccess = {
   permissions: ModulePermission[];
 };
 
-export type PortalNavKind = "dashboard" | "module" | "banner" | "images" | "board" | "recycle" | "audit";
+export type PortalNavKind = "dashboard" | "module" | "banner" | "images" | "board" | "drafts" | "recycle" | "audit";
 
 export type PortalNavLink = {
   href: string;
@@ -30,6 +30,12 @@ function canSee(access: PortalAccess, key: ModuleKey) {
   return access.permissions.some((permission) => permission.module_key === key && permission.can_view);
 }
 
+/** Someone who can put work on the website can review drafts from people who cannot. */
+export function canReviewDrafts(access: PortalAccess) {
+  if (access.isSuperAdmin) return true;
+  return access.permissions.some((permission) => permission.can_publish);
+}
+
 function canOpenBin(access: PortalAccess) {
   if (access.isSuperAdmin) return true;
   return access.permissions.some(
@@ -43,7 +49,12 @@ export function portalNavGroups(access: PortalAccess): PortalNavGroup[] {
   const groups: PortalNavGroup[] = [
     {
       label: "Overview",
-      links: [{ href: "/", label: "Dashboard", kind: "dashboard", group: "Overview" }],
+      links: [
+        { href: "/", label: "Dashboard", kind: "dashboard", group: "Overview" },
+        ...(canReviewDrafts(access)
+          ? [{ href: "/drafts", label: "Drafts", kind: "drafts" as const, group: "Overview" }]
+          : []),
+      ],
     },
   ];
 

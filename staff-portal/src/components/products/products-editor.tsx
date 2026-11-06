@@ -20,7 +20,7 @@ import {
 import { useFeedback } from "@/components/ui/feedback";
 import { slugify } from "@/lib/news";
 import { reorderItem, uniqueSlug } from "@/lib/list-utils";
-import { sendJson } from "@/lib/upload-client";
+import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import type { ProductRow, ProductsSettings, Spec } from "@/lib/products";
 import { productPublicUrl } from "@/lib/public-links";
 import { useOpenEdit } from "@/lib/open-edit";
@@ -164,13 +164,13 @@ export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean;
         editing.slug?.trim() ||
         uniqueSlug(editing.name, items.filter((i) => i.id !== editing.id).map((i) => i.slug), "product");
       const clean = (specs: Spec[] | undefined) => (specs ?? []).filter((s) => s.label.trim() || s.value.trim());
-      await sendJson("/api/products", "POST", {
+      const saved = await sendJson("/api/products", "POST", {
         ...editing,
         slug,
         key_specs: clean(editing.key_specs),
         extra_specs: clean(editing.extra_specs),
       });
-      toast(editing.status === "published" ? "Product saved and shown on the website." : "Product saved as hidden (draft).");
+      toast(awaitingReview(saved) ? DRAFT_SAVED : editing.status === "published" ? "Product saved and shown on the website." : "Product saved as hidden (draft).");
       setEditing(null);
       load();
     } catch (err) {

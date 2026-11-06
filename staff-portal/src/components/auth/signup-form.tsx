@@ -159,6 +159,7 @@ export function SignupForm({ token }: { token: string }) {
             autoCapitalize="none"
             autoComplete="username"
             spellCheck={false}
+            maxLength={10}
             required
             aria-describedby="username-availability"
           />

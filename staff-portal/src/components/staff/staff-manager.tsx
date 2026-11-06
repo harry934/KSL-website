@@ -1122,12 +1122,13 @@ export function StaffManager() {
         <form onSubmit={submitEdit}>
           <FormSection title={`Edit ${panel.row.display_name || panel.row.username}`}>
             <FieldGrid className="lg:grid-cols-3">
-              <Field label="Username" hint="Used to sign in. Lowercase letters and numbers, no spaces.">
+              <Field label="Username" hint="Up to 10 characters. It has to be a username nobody else is using.">
                 <Input
                   value={username}
                   onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
                   autoCapitalize="none"
                   spellCheck={false}
+                  maxLength={10}
                   required
                 />
               </Field>

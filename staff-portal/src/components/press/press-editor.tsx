@@ -10,7 +10,7 @@ import { ItemList } from "@/components/ui/item-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { reorderItem } from "@/lib/list-utils";
-import { sendJson } from "@/lib/upload-client";
+import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { useOpenEdit } from "@/lib/open-edit";
 import { documentOptions, useDocuments } from "@/lib/use-documents";
 import { SearchSelect } from "@/components/ui/search-select";
@@ -121,12 +121,12 @@ export function PressEditor() {
     }
     setSaving("asset");
     try {
-      await sendJson("/api/press", "POST", {
+      const saved = await sendJson("/api/press", "POST", {
         ...row,
         download_id: source === "document" ? row.download_id : null,
         href: source === "document" ? null : row.href?.trim(),
       });
-      toast(row.status === "published" ? "Saved and shown on the website." : "Saved as hidden (draft).");
+      toast(awaitingReview(saved) ? DRAFT_SAVED : row.status === "published" ? "Saved and shown on the website." : "Saved as hidden (draft).");
       setEditing(null);
       load();
     } catch (err) {

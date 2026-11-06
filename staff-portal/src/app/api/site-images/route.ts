@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
+import { clearReviewDraft, editorSavePlan, saveBody } from "@/lib/draft-review";
 import { HOME_HERO_SLOT, isImagePath, isSiteImageSlot, parseHeroMedia, safeImageUrl, SITE_IMAGE_SLOTS } from "@/lib/site-images";
 import { siteAssetUrl } from "@/lib/site-url";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
@@ -78,18 +79,38 @@ export async function GET() {
   if (loadErr) return NextResponse.json({ error: dbError(loadErr) }, { status: 500 });
 
   const library = await storedImages();
+  const { data: drafts } = await admin
+    .from("content_drafts")
+    .select("entity_key, payload")
+    .eq("entity_table", "site_image_overrides")
+    .is("entity_id", null);
+  let overrides = data ?? [];
+  for (const draft of drafts ?? []) {
+    const payload = (draft.payload ?? {}) as Record<string, unknown>;
+    const slotId = String(draft.entity_key || payload.slotId || "");
+    if (!slotId) continue;
+    overrides = overrides.filter((row) => row.slot_id !== slotId);
+    if (payload.source === "storage") {
+      overrides.push({
+        slot_id: slotId,
+        source: "storage",
+        public_url: typeof payload.publicUrl === "string" ? payload.publicUrl : typeof payload.public_url === "string" ? payload.public_url : null,
+        storage_path: typeof payload.storagePath === "string" ? payload.storagePath : typeof payload.storage_path === "string" ? payload.storage_path : null,
+        media: payload.items ?? payload.media ?? null,
+      });
+    }
+  }
   return NextResponse.json({
     slots: SITE_IMAGE_SLOTS,
-    overrides: data ?? [],
+    overrides,
     library,
+    pending: (drafts ?? []).length > 0,
   });
 }
 
 export async function POST(req: NextRequest) {
   const { error, session } = await requireStaff("site_settings", "edit");
   if (error || !session) return error;
-  const denied = publishGuard(session, "site_settings", "published");
-  if (denied) return denied;
 
   const body = await req.json();
   const slotId = String(body.slotId || "").trim();
@@ -98,13 +119,21 @@ export async function POST(req: NextRequest) {
   }
 
   const admin = createAdminClient();
+  const plan = await editorSavePlan(admin, session, "site_settings", "site_image_overrides", {
+    settings: true,
+    key: slotId,
+    title: "Website image",
+    payload: body,
+  });
+  if (plan.held) return plan.held;
   const previous = await rememberFiles(admin, "site_image_overrides", slotId, ["storage_path", "public_url", "media"], "slot_id");
   if (body.source !== "storage") {
     const { error: delErr } = await admin.from("site_image_overrides").delete().eq("slot_id", slotId);
     if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
     await releaseUnusedValues(admin, previous);
+    await clearReviewDraft(admin, "site_image_overrides", null, slotId);
     await logActivity(session.userId, "site_settings", "update", "site_image", slotId);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(saveBody(session, "site_settings"));
   }
 
   if (slotId === HOME_HERO_SLOT && Array.isArray(body.items)) {
@@ -116,8 +145,9 @@ export async function POST(req: NextRequest) {
       const { error: delErr } = await admin.from("site_image_overrides").delete().eq("slot_id", slotId);
       if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
       await releaseUnusedValues(admin, previous);
+      await clearReviewDraft(admin, "site_image_overrides", null, slotId);
       await logActivity(session.userId, "site_settings", "update", "site_image", slotId);
-      return NextResponse.json({ ok: true });
+      return NextResponse.json(saveBody(session, "site_settings"));
     }
 
     const poster = items.find((item) => item.kind === "image") ?? null;
@@ -141,8 +171,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    await clearReviewDraft(admin, "site_image_overrides", null, slotId);
     await logActivity(session.userId, "site_settings", "update", "site_image", slotId);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(saveBody(session, "site_settings"));
   }
 
   const publicUrl = safeImageUrl(body.publicUrl);
@@ -165,6 +196,7 @@ export async function POST(req: NextRequest) {
   });
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   await releaseUnusedValues(admin, previous);
+  await clearReviewDraft(admin, "site_image_overrides", null, slotId);
   await logActivity(session.userId, "site_settings", "update", "site_image", slotId);
-  return NextResponse.json({ ok: true });
+  return NextResponse.json(saveBody(session, "site_settings"));
 }

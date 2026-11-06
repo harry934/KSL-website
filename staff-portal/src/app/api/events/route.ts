@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
+import { clearReviewDraft, editorSavePlan, overlayDrafts, saveBody } from "@/lib/draft-review";
 import { slugify } from "@/lib/events";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
@@ -17,7 +18,8 @@ export async function GET() {
     .order("event_date", { ascending: false });
 
   if (dbErr) return NextResponse.json({ error: dbError(dbErr) }, { status: 500 });
-  return NextResponse.json(splitRemoved(data ?? []));
+  const split = splitRemoved(data ?? []);
+  return NextResponse.json({ ...split, items: await overlayDrafts(admin, "event_items", split.items) });
 }
 
 export async function POST(req: NextRequest) {
@@ -31,11 +33,16 @@ export async function POST(req: NextRequest) {
     await logActivity(session.userId, "events", "restore", "event_item", String(body.id ?? ""));
     return NextResponse.json({ ok: true });
   }
-  const denied = publishGuard(session, "events", body.status ?? "draft");
-  if (denied) return denied;
   const admin = createAdminClient();
+  const plan = await editorSavePlan(admin, session, "events", "event_items", {
+    id: body.id,
+    requestedStatus: body.status ?? "draft",
+    title: String(body.title ?? "Untitled event"),
+    payload: body,
+  });
+  if (plan.held) return plan.held;
   const slug = (body.slug || slugify(body.title || "event")).trim();
-  const status = body.status ?? "draft";
+  const status = plan.status;
   const imageAlt = String(body.image_alt ?? "").trim();
   if (status === "published" && String(body.image_path ?? "").trim() && !imageAlt) {
     return NextResponse.json(
@@ -68,8 +75,9 @@ export async function POST(req: NextRequest) {
   const { data, error: upErr } = await admin.from("event_items").upsert(row).select("id").single();
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   await releaseUnusedValues(admin, previous);
+  await clearReviewDraft(admin, "event_items", data?.id);
   await logActivity(session.userId, "events", "upsert", "event_item", data?.id ?? slug);
-  return NextResponse.json({ ok: true, id: data?.id });
+  return NextResponse.json(saveBody(session, "events", { id: data?.id }));
 }
 
 export async function DELETE(req: NextRequest) {
@@ -83,6 +91,7 @@ export async function DELETE(req: NextRequest) {
   const { error: delErr } = await applyBinDelete(createAdminClient(), "event_items", id, permanent);
   if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
+  await clearReviewDraft(createAdminClient(), "event_items", id);
   await logActivity(session.userId, "events", permanent ? "purge" : "delete", "event_item", id);
   return NextResponse.json({ ok: true });
 }

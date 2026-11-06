@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
+import { clearReviewDraft, editorSavePlan, overlayDrafts, overlaySettings, saveBody } from "@/lib/draft-review";
 import { slugify } from "@/lib/news";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
@@ -18,7 +19,8 @@ export async function GET() {
   if (itemsRes.error) return NextResponse.json({ error: itemsRes.error.message }, { status: 500 });
 
   const split = splitRemoved(itemsRes.data ?? []);
-  return NextResponse.json({ settings: settingsRes.data, items: split.items, removed: split.removed });
+  const settings = await overlaySettings(admin, "csr_settings", "default", settingsRes.data);
+  return NextResponse.json({ settings, items: await overlayDrafts(admin, "csr_projects", split.items), removed: split.removed });
 }
 
 export async function POST(req: NextRequest) {
@@ -35,6 +37,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.scope === "settings") {
+    const plan = await editorSavePlan(admin, session, "csr", "csr_settings", {
+      settings: true,
+      key: "default",
+      title: "Community introduction",
+      payload: body,
+    });
+    if (plan.held) return plan.held;
     const { error: upErr } = await admin.from("csr_settings").upsert({
       id: "default",
       kicker: body.kicker ?? null,
@@ -49,15 +58,21 @@ export async function POST(req: NextRequest) {
       programmes_intro: body.programmes_intro ?? null,
     });
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await clearReviewDraft(admin, "csr_settings", null, "default");
     await logActivity(session.userId, "csr", "update", "csr_settings", "default");
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(saveBody(session, "csr"));
   }
 
   const title = String(body.title ?? "").trim();
   if (!title) return NextResponse.json({ error: "Title is required" }, { status: 400 });
-  const status = body.status ?? "draft";
-  const denied = publishGuard(session, "csr", status);
-  if (denied) return denied;
+  const plan = await editorSavePlan(admin, session, "csr", "csr_projects", {
+    id: body.id,
+    requestedStatus: body.status ?? "draft",
+    title,
+    payload: body,
+  });
+  if (plan.held) return plan.held;
+  const status = plan.status;
 
   const row = {
     id: body.id || crypto.randomUUID(),
@@ -77,8 +92,9 @@ export async function POST(req: NextRequest) {
   const { data, error: upErr } = await admin.from("csr_projects").upsert(row).select("id").single();
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   await releaseUnusedValues(admin, previous);
+  await clearReviewDraft(admin, "csr_projects", data?.id);
   await logActivity(session.userId, "csr", status === "published" ? "publish" : "save", "csr_project", data?.id);
-  return NextResponse.json({ ok: true, id: data?.id });
+  return NextResponse.json(saveBody(session, "csr", { id: data?.id }));
 }
 
 export async function DELETE(req: NextRequest) {

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
+import { clearReviewDraft, editorSavePlan, overlayDrafts, overlaySettings, saveBody } from "@/lib/draft-review";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { NextRequest, NextResponse } from "next/server";
@@ -18,9 +19,10 @@ export async function GET() {
   if (itemsRes.error) return NextResponse.json({ error: itemsRes.error.message }, { status: 500 });
 
   const split = splitRemoved(itemsRes.data ?? []);
+  const settings = await overlaySettings(admin, "downloads_settings", "default", settingsRes.data);
   return NextResponse.json({
-    settings: settingsRes.data,
-    items: split.items,
+    settings,
+    items: await overlayDrafts(admin, "download_items", split.items),
     removed: split.removed,
   });
 }
@@ -36,19 +38,32 @@ export async function POST(req: NextRequest) {
     await logActivity(session.userId, "downloads", "restore", "download_item", String(body.id ?? ""));
     return NextResponse.json({ ok: true });
   }
-  const denied = publishGuard(session, "downloads", body.status ?? "draft");
-  if (denied) return denied;
   const admin = createAdminClient();
-
   if (body.scope === "settings") {
+    const plan = await editorSavePlan(admin, session, "downloads", "downloads_settings", {
+      settings: true,
+      key: "default",
+      title: "Downloads settings",
+      payload: body,
+    });
+    if (plan.held) return plan.held;
     const { error: upErr } = await admin.from("downloads_settings").upsert({
       id: "default",
       base_url: body.base_url ?? null,
     });
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await clearReviewDraft(admin, "downloads_settings", null, "default");
     await logActivity(session.userId, "downloads", "upsert", "downloads_settings", "default");
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(saveBody(session, "downloads"));
   }
+
+  const plan = await editorSavePlan(admin, session, "downloads", "download_items", {
+    id: body.id,
+    requestedStatus: body.status ?? "draft",
+    title: String(body.title ?? "Untitled document"),
+    payload: body,
+  });
+  if (plan.held) return plan.held;
 
   const id = (body.id || "").trim();
   if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
@@ -76,7 +91,7 @@ export async function POST(req: NextRequest) {
     external_href: source === "storage" ? String(body.external_href).trim() : null,
     source,
     sort_order: body.sort_order ?? 0,
-    status: body.status ?? "draft",
+    status: plan.status,
     expires_on: body.expires_on ? String(body.expires_on).slice(0, 10) : null,
     file_bytes: body.file_bytes ? Number(body.file_bytes) : null,
     updated_by: session.userId,
@@ -86,8 +101,9 @@ export async function POST(req: NextRequest) {
   const { error: upErr } = await admin.from("download_items").upsert(row);
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   await releaseUnusedValues(admin, previous);
+  await clearReviewDraft(admin, "download_items", id);
   await logActivity(session.userId, "downloads", "upsert", "download_item", id);
-  return NextResponse.json({ ok: true, id });
+  return NextResponse.json(saveBody(session, "downloads", { id }));
 }
 
 export async function DELETE(req: NextRequest) {

@@ -11,7 +11,7 @@ import { useFeedback } from "@/components/ui/feedback";
 import { slugify } from "@/lib/news";
 import { orderedGroups, reorderItem, uniqueSlug } from "@/lib/list-utils";
 import { useLiveDrag } from "@/components/ui/live-drag";
-import { sendJson } from "@/lib/upload-client";
+import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { PROJECT_GROUPS, type ProjectRow } from "@/lib/projects";
 import { projectPublicUrl } from "@/lib/public-links";
 import { useOpenEdit } from "@/lib/open-edit";
@@ -106,13 +106,13 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
       const slug =
         editing.slug?.trim() ||
         uniqueSlug(editing.title, items.filter((item) => item.id !== editing.id).map((item) => item.slug), "project");
-      await sendJson("/api/projects", "POST", {
+      const saved = await sendJson("/api/projects", "POST", {
         ...editing,
         slug: slug || slugify(editing.title),
         category,
         category_label: label,
       });
-      toast(editing.status === "published" ? "Project saved and shown on the website." : "Project saved as hidden (draft).");
+      toast(awaitingReview(saved) ? DRAFT_SAVED : editing.status === "published" ? "Project saved and shown on the website." : "Project saved as hidden (draft).");
       setEditing(null);
       load();
     } catch (err) {

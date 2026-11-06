@@ -21,7 +21,7 @@ import { useCan } from "@/components/portal/session-context";
 import { SERVICE_GROUPS, type ServiceRow } from "@/lib/services";
 import { keyFrom, orderedGroups, reorderItem, uniqueSlug } from "@/lib/list-utils";
 import { useLiveDrag } from "@/components/ui/live-drag";
-import { sendJson } from "@/lib/upload-client";
+import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { useOpenEdit } from "@/lib/open-edit";
 
 type DocRow = { key: string; title: string; href: string };
@@ -110,8 +110,8 @@ export function ServicesEditor() {
     }
     setSaving(what);
     try {
-      await sendJson("/api/services", "POST", { scope: "settings", intro, download_catalog });
-      toast(what === "intro" ? "Introduction saved." : "Documents saved.");
+      const saved = await sendJson("/api/services", "POST", { scope: "settings", intro, download_catalog });
+      toast(awaitingReview(saved) ? DRAFT_SAVED : what === "intro" ? "Introduction saved." : "Documents saved.");
       setSavedCatalog(download_catalog);
       if (what === "documents") setDocs(catalogToRows(download_catalog));
     } catch (err) {
@@ -148,8 +148,8 @@ export function ServicesEditor() {
       const slug =
         editing.slug?.trim() ||
         uniqueSlug(editing.title, items.filter((i) => i.id !== editing.id).map((i) => i.slug), "service");
-      await sendJson("/api/services", "POST", { ...editing, slug });
-      toast(editing.status === "published" ? "Service saved and shown on the website." : "Service saved as hidden (draft).");
+      const saved = await sendJson("/api/services", "POST", { ...editing, slug });
+      toast(awaitingReview(saved) ? DRAFT_SAVED : editing.status === "published" ? "Service saved and shown on the website." : "Service saved as hidden (draft).");
       setEditing(null);
       load();
     } catch (err) {

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Field, FieldGrid, FormSection, Notice } from "@/components/ui/form-bits";
 import { RowList } from "@/components/ui/row-list";
 import { useFeedback } from "@/components/ui/feedback";
-import { sendJson } from "@/lib/upload-client";
+import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { DEFAULT_SITE_SETTINGS, type SiteSettingKey, type SiteSettings } from "@/lib/site-settings";
 
 export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
@@ -43,8 +43,8 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
     }
     setSaving(key);
     try {
-      await sendJson("/api/site-settings", "POST", { key, value });
-      toast("Saved. The website updates within about a minute.");
+      const saved = await sendJson("/api/site-settings", "POST", { key, value });
+      toast(awaitingReview(saved) ? DRAFT_SAVED : "Saved. The website updates within about a minute.");
     } catch (err) {
       toast((err as Error).message, "error");
     }

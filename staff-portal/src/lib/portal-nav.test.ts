@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ModuleKey, ModulePermission } from "./modules.ts";
+import { validateUsername } from "./accounts.ts";
 import { permissionNavLinks, usesSidebar, type PortalAccess } from "./portal-nav.ts";
 
 function access(keys: ModuleKey[], flags: Partial<ModulePermission> = {}): PortalAccess {
@@ -54,4 +55,17 @@ test("staff is not a sidebar item for an agent", () => {
 
 test("an administrator always has a sidebar", () => {
   assert.equal(usesSidebar({ isSuperAdmin: true, permissions: [] }), true);
+});
+
+test("publish rights add a Drafts destination", () => {
+  const links = permissionNavLinks(access(["news"], { can_edit: true, can_publish: true }));
+  assert.equal(links.some((link) => link.href === "/drafts"), true);
+  assert.equal(permissionNavLinks(access(["news"])).some((link) => link.href === "/drafts"), false);
+});
+
+test("a username can be short and is refused after 10 characters", () => {
+  assert.equal(validateUsername("a"), null);
+  assert.equal(validateUsername("deniskyalo"), null);
+  assert.equal(validateUsername("deniskyalo1"), "Use up to 10 characters: lowercase letters, numbers, dot, dash or underscore.");
+  assert.equal(validateUsername(""), "Use up to 10 characters: lowercase letters, numbers, dot, dash or underscore.");
 });

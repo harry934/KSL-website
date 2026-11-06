@@ -23,7 +23,7 @@ import { nairobiToday } from "@/lib/dates";
 import { newsPublicUrl } from "@/lib/public-links";
 import { useOpenEdit } from "@/lib/open-edit";
 import { uniqueSlug } from "@/lib/list-utils";
-import { sendJson } from "@/lib/upload-client";
+import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 
 function formatDate(value: string | null) {
   if (!value) return "";
@@ -90,10 +90,12 @@ export function NewsEditor() {
       const slug =
         editing.slug?.trim() ||
         uniqueSlug(editing.title, items.filter((i) => i.id !== editing.id).map((i) => i.slug), "news");
-      await sendJson("/api/news", "POST", { ...editing, slug, go_live_on: editing.go_live_on || null });
-      const waiting = editing.status === "published" && editing.go_live_on && editing.go_live_on > nairobiToday();
+      const saved = await sendJson("/api/news", "POST", { ...editing, slug, go_live_on: editing.go_live_on || null });
+      const waiting = !awaitingReview(saved) && editing.status === "published" && editing.go_live_on && editing.go_live_on > nairobiToday();
       toast(
-        waiting
+        awaitingReview(saved)
+          ? DRAFT_SAVED
+          : waiting
           ? "Saved. Visitors will see it on the morning you chose."
           : editing.status === "published"
             ? "Article saved and shown on the website."

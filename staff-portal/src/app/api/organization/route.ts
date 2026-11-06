@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
+import { clearReviewDraft, editorSavePlan, overlayDrafts, overlaySettings, saveBody } from "@/lib/draft-review";
 import { cleanBoardSections, cleanIntro, cleanMilestoneInput, cleanMilestonesHeading, cleanOrgChart } from "@/lib/organization";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
@@ -25,11 +26,12 @@ export async function GET() {
   const leadership = splitRemoved(leadershipRes.data ?? []);
   const board = splitRemoved(boardRes.data ?? []);
   const milestones = splitRemoved(milestoneRes.data ?? []);
+  const settings = await overlaySettings(admin, "organization_settings", "default", settingsRes.data);
   return NextResponse.json({
-    settings: settingsRes.data,
-    leadership: leadership.items,
-    board: board.items,
-    milestones: milestones.items,
+    settings,
+    leadership: await overlayDrafts(admin, "organization_leadership", leadership.items),
+    board: await overlayDrafts(admin, "organization_board_members", board.items),
+    milestones: await overlayDrafts(admin, "organization_milestones", milestones.items),
     removed: [
       ...leadership.removed.map((row) => ({ id: row.id, title: row.role || "Leadership role", kind: "leadership" })),
       ...board.removed.map((row) => ({ id: row.id, title: row.full_name || "Board member", kind: "board" })),
@@ -51,10 +53,14 @@ export async function POST(req: NextRequest) {
     await logActivity(session.userId, "organization", "restore", table, String(body.id ?? ""));
     return NextResponse.json({ ok: true });
   }
-  const denied = publishGuard(session, "organization", body.status ?? "draft");
-  if (denied) return denied;
-
   if (body.scope === "settings") {
+    const plan = await editorSavePlan(admin, session, "organization", "organization_settings", {
+      settings: true,
+      key: "default",
+      title: "Organisation page",
+      payload: body,
+    });
+    if (plan.held) return plan.held;
     const intro = cleanIntro(body);
     const chart = cleanOrgChart(body.chart);
     const heading = cleanMilestonesHeading(body);
@@ -81,10 +87,20 @@ export async function POST(req: NextRequest) {
     }
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     await logActivity(session.userId, "organization", "upsert", "organization_settings", "default");
-    return NextResponse.json({ ok: true });
+    await clearReviewDraft(admin, "organization_settings", null, "default");
+    return NextResponse.json(saveBody(session, "organization"));
   }
 
   const id = body.id || crypto.randomUUID();
+  const table = body.scope === "milestone" ? "organization_milestones" : body.scope === "board" ? "organization_board_members" : "organization_leadership";
+  const plan = await editorSavePlan(admin, session, "organization", table, {
+    id: body.id,
+    requestedStatus: body.status ?? "draft",
+    title: String(body.title || body.full_name || body.role || "Organisation"),
+    payload: body,
+  });
+  if (plan.held) return plan.held;
+  const status = plan.status;
 
   if (body.scope === "milestone") {
     const row = cleanMilestoneInput(body);
@@ -95,15 +111,16 @@ export async function POST(req: NextRequest) {
         id,
         ...row,
         sort_order: body.sort_order ?? 0,
-        status: body.status ?? "draft",
+        status,
         updated_by: session.userId,
       })
       .select("id")
       .single();
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     await releaseUnusedValues(admin, previous);
+    await clearReviewDraft(admin, "organization_milestones", data?.id);
     await logActivity(session.userId, "organization", "upsert", "organization_milestones", data?.id ?? id);
-    return NextResponse.json({ ok: true, id: data?.id });
+    return NextResponse.json(saveBody(session, "organization", { id: data?.id }));
   }
 
   if (body.scope === "board") {
@@ -127,15 +144,16 @@ export async function POST(req: NextRequest) {
         bio: body.bio ?? null,
         photo_url: body.photo_url || null,
         sort_order: body.sort_order ?? 0,
-        status: body.status ?? "draft",
+        status,
         updated_by: session.userId,
       })
       .select("id")
       .single();
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     await releaseUnusedValues(admin, previous);
+    await clearReviewDraft(admin, "organization_board_members", data?.id);
     await logActivity(session.userId, "organization", "upsert", "organization_board_members", data?.id ?? id);
-    return NextResponse.json({ ok: true, id: data?.id });
+    return NextResponse.json(saveBody(session, "organization", { id: data?.id }));
   }
 
   const { data, error: upErr } = await admin
@@ -145,14 +163,15 @@ export async function POST(req: NextRequest) {
       role: body.role,
       summary: body.summary ?? null,
       sort_order: body.sort_order ?? 0,
-      status: body.status ?? "draft",
+      status,
       updated_by: session.userId,
     })
     .select("id")
     .single();
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+  await clearReviewDraft(admin, "organization_leadership", data?.id);
   await logActivity(session.userId, "organization", "upsert", "organization_leadership", data?.id ?? id);
-  return NextResponse.json({ ok: true, id: data?.id });
+  return NextResponse.json(saveBody(session, "organization", { id: data?.id }));
 }
 
 export async function DELETE(req: NextRequest) {
@@ -168,6 +187,7 @@ export async function DELETE(req: NextRequest) {
   const { error: delErr } = await applyBinDelete(createAdminClient(), table, id, permanent);
   if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
+  await clearReviewDraft(createAdminClient(), table, id);
   await logActivity(session.userId, "organization", permanent ? "purge" : "delete", table, id);
   return NextResponse.json({ ok: true });
 }

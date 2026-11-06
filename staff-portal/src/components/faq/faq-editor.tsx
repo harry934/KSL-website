@@ -19,7 +19,7 @@ import { SearchSelect } from "@/components/ui/search-select";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { keyFrom, reorderItem } from "@/lib/list-utils";
-import { sendJson } from "@/lib/upload-client";
+import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 
 type FaqGroup = { id: string; title: string; sort_order: number; status: string };
 type FaqItem = {
@@ -70,6 +70,22 @@ export function FaqEditor() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (loading) return;
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get("edit");
+    if (!id) return;
+    url.searchParams.delete("edit");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    const group = groups.find((row) => row.id === id);
+    if (group) {
+      setEditing({ kind: "group", isNew: false, group });
+      return;
+    }
+    const item = items.find((row) => row.id === id);
+    if (item) setEditing({ kind: "item", isNew: false, item });
+  }, [loading, groups, items]);
+
   const defaultStatus = canPublish ? "published" : "draft";
 
   function newGroup() {
@@ -109,8 +125,8 @@ export function FaqEditor() {
           return;
         }
         const id = editing.isNew ? keyFrom(title, groups.map((g) => g.id)) : editing.group.id;
-        await sendJson("/api/faq", "PUT", { type: "group", ...editing.group, id, title });
-        toast(editing.group.status === "published" ? "Group saved and shown on the website." : "Group saved as hidden (draft).");
+        const saved = await sendJson("/api/faq", "PUT", { type: "group", ...editing.group, id, title });
+        toast(awaitingReview(saved) ? DRAFT_SAVED : editing.group.status === "published" ? "Group saved and shown on the website." : "Group saved as hidden (draft).");
       } else {
         const { item } = editing;
         if (!item.question.trim() || !item.answer.trim()) {
@@ -120,14 +136,14 @@ export function FaqEditor() {
         const original = items.find((i) => i.id === item.id);
         const movedGroup = original && original.group_id !== item.group_id;
         const sort_order = movedGroup ? nextOrder(items.filter((i) => i.group_id === item.group_id)) : item.sort_order;
-        await sendJson("/api/faq", "PUT", {
+        const saved = await sendJson("/api/faq", "PUT", {
           type: "item",
           ...item,
           question: item.question.trim(),
           answer: item.answer.trim(),
           sort_order,
         });
-        toast(item.status === "published" ? "Question saved and shown on the website." : "Question saved as hidden (draft).");
+        toast(awaitingReview(saved) ? DRAFT_SAVED : item.status === "published" ? "Question saved and shown on the website." : "Question saved as hidden (draft).");
       }
       setEditing(null);
       load();

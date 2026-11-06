@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
+import { useDraftCount } from "@/components/portal/drafts-page";
 import { portalNavGroups } from "@/lib/portal-nav";
 import type { StaffSession } from "@/lib/session";
 import { iconForNav, type IconType } from "@/components/portal/module-icons";
@@ -70,6 +71,8 @@ function NavLink({
 export function Sidebar({ session }: { session: StaffSession }) {
   const pathname = usePathname();
   const badges = useNoticeBadges(session.userId);
+  const groups = portalNavGroups(session);
+  const draftCount = useDraftCount(groups.some((group) => group.links.some((link) => link.kind === "drafts")));
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/"));
 
   return (
@@ -83,7 +86,7 @@ export function Sidebar({ session }: { session: StaffSession }) {
       </div>
 
       <nav className="flex flex-1 flex-col pb-4">
-        {portalNavGroups(session).map((group) => (
+        {groups.map((group) => (
           <div key={group.label ?? group.links[0].href} className="nav-group">
             {group.label ? <p className="nav-group-label">{group.label}</p> : null}
             {group.links.map((link) => (
@@ -93,7 +96,7 @@ export function Sidebar({ session }: { session: StaffSession }) {
                 label={link.label}
                 icon={iconForNav(link)}
                 active={isActive(link.href)}
-                count={link.kind === "recycle" ? badges.recycle : 0}
+                count={link.kind === "recycle" ? badges.recycle : link.kind === "drafts" ? draftCount : 0}
               />
             ))}
           </div>

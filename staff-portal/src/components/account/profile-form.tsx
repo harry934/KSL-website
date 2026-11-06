@@ -80,13 +80,14 @@ export function ProfileForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Field label="Username" hint={canRename ? "You sign in with this." : "You sign in with this."}>
+      <Field label="Username" hint="Up to 10 characters. It has to be a username nobody else is using.">
         <Input
           value={username}
           onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
           readOnly={!canRename}
           autoCapitalize="none"
           spellCheck={false}
+          maxLength={10}
           required
         />
       </Field>
@@ -96,12 +97,13 @@ export function ProfileForm({
             <Notice kind="info">Waiting for an administrator to review @{request.requestedUsername}.</Notice>
           )}
           {request?.status === "rejected" && request.reason && <Notice kind="error">{request.reason}</Notice>}
-          <Field label="New username" hint="An administrator has to approve this. A name that is already in use is refused.">
+          <Field label="New username" hint="Up to 10 characters. An administrator has to approve it, and a name already in use is refused.">
             <Input
               value={requested}
               onChange={(e) => setRequested(e.target.value.toLowerCase().replace(/\s+/g, ""))}
               autoCapitalize="none"
               spellCheck={false}
+              maxLength={10}
               placeholder="The username you want"
             />
           </Field>

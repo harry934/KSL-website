@@ -11,7 +11,7 @@ import { GALLERY_CATEGORIES, photoSrc, youtubeIdFrom, type GalleryRow, type Gall
 import { DRAG_FROM, useLiveDrag } from "@/components/ui/live-drag";
 import { reorderItem } from "@/lib/list-utils";
 import { siteAssetUrl } from "@/lib/site-url";
-import { sendJson, uploadFile } from "@/lib/upload-client";
+import { sendJson, uploadFile, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { PhotoCropDialog } from "@/components/ui/photo-crop";
 import { cn } from "@/lib/cn";
 
@@ -81,8 +81,11 @@ export function GalleryEditor() {
 
   async function savePhoto(row: GalleryRow, message?: string) {
     try {
-      await sendJson("/api/gallery", "POST", row);
-      if (message) toast(message);
+      const saved = await sendJson("/api/gallery", "POST", row);
+      if (awaitingReview(saved)) {
+        toast(DRAFT_SAVED);
+        if (saved.held) load();
+      } else if (message) toast(message);
     } catch (e) {
       toast((e as Error).message, "error");
       load();
@@ -232,7 +235,7 @@ export function GalleryEditor() {
     }
     setSavingVideo(true);
     try {
-      await sendJson("/api/gallery", "POST", {
+      const saved = await sendJson("/api/gallery", "POST", {
         type: "video",
         id: video.id,
         youtube_id: youtubeId,
@@ -242,7 +245,7 @@ export function GalleryEditor() {
         status: video.status,
         sort_order: video.sort_order,
       });
-      toast(video.id ? "Video saved." : "Video added.");
+      toast(awaitingReview(saved) ? DRAFT_SAVED : video.id ? "Video saved." : "Video added.");
       setVideo(null);
       load();
     } catch (err) {

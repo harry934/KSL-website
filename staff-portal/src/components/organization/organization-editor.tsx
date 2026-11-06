@@ -11,7 +11,7 @@ import { ItemList } from "@/components/ui/item-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { reorderItem } from "@/lib/list-utils";
-import { sendJson } from "@/lib/upload-client";
+import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { documentOptions, useDocuments } from "@/lib/use-documents";
 import { cleanBoardSections, cleanIntro, cleanOrgChart, milestoneDateText, parseMilestoneWhen, SHIPPED_BOARD_SECTIONS, SHIPPED_CHART, SHIPPED_INTRO, SHIPPED_MILESTONES_HEADING, type BoardMemberRow, type BoardSection, type LeadershipRow, type MilestoneRow, type MilestonesHeading, type OrgChart, type OrgDepartment, type OrgIntro } from "@/lib/organization";
 type Scope = "leadership" | "board" | "milestone";
@@ -117,6 +117,42 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
     load();
   }, [load]);
 
+  const openedEdit = useRef(false);
+  useEffect(() => {
+    if (loading || openedEdit.current) return;
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get("edit");
+    if (!id) {
+      openedEdit.current = true;
+      return;
+    }
+    const leader = leadership.find((row) => row.id === id);
+    const member = board.find((row) => row.id === id);
+    const milestone = milestones.find((row) => row.id === id);
+    if (!leader && !member && !milestone) return;
+    openedEdit.current = true;
+    url.searchParams.delete("edit");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    if (leader) openDraft({ ...leader, scope: "leadership" }, "org-leadership");
+    else if (member) openDraft({ ...member, scope: "board" }, `board-section-${member.section || boardSections[0]?.id || "featured"}`);
+    else if (milestone) {
+      const shown = milestoneDateText(milestone.happened_on, milestone.date_precision || (milestone.happened_on ? "day" : null));
+      const [year, month, day] = shown.split("-");
+      openDraft(
+        {
+          ...milestone,
+          scope: "milestone",
+          happened_on: milestone.happened_on ?? "",
+          title: milestone.title ?? "",
+          year: year || "",
+          month: month || "",
+          day: day || "",
+        },
+        "org-milestones"
+      );
+    }
+  }, [loading, leadership, board, milestones, boardSections]);
+
   function settingsBody() {
     return {
       scope: "settings",
@@ -134,8 +170,8 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
   async function saveSettings(anchor: string) {
     setSaving("settings");
     try {
-      await sendJson("/api/organization", "POST", settingsBody());
-      toast("Saved. The website updates within a few seconds.");
+      const saved = await sendJson("/api/organization", "POST", settingsBody());
+      toast(awaitingReview(saved) ? DRAFT_SAVED : "Saved. The website updates within a few seconds.");
       await load();
       showSection(anchor);
     } catch (err) {
@@ -238,8 +274,8 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
     }
     setSaving("row");
     try {
-      await sendJson("/api/organization", "POST", payload);
-      toast("Saved.");
+      const saved = await sendJson("/api/organization", "POST", payload);
+      toast(awaitingReview(saved) ? DRAFT_SAVED : "Saved.");
       const anchor = anchorFor(payload);
       setEditing(null);
       await load();

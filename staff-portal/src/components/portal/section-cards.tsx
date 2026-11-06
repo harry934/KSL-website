@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { iconForNav } from "@/components/portal/module-icons";
+import { useDraftCount } from "@/components/portal/drafts-page";
 import { useNoticeBadges } from "@/components/portal/use-notice-badges";
 import type { PortalNavLink } from "@/lib/portal-nav";
 
@@ -9,6 +10,7 @@ function noteFor(link: PortalNavLink) {
   if (link.kind === "banner") return "Website announcement";
   if (link.kind === "board") return "Directors on the KSL Board page";
   if (link.kind === "images") return "Photos on the website";
+  if (link.kind === "drafts") return "Saved by staff who cannot publish";
   if (link.kind === "recycle") return "Removed items";
   if (link.kind === "audit") return "Who changed what";
   return link.group ?? "";
@@ -16,6 +18,7 @@ function noteFor(link: PortalNavLink) {
 
 export function SectionCards({ links, userId }: { links: PortalNavLink[]; userId: string }) {
   const badges = useNoticeBadges(userId);
+  const draftCount = useDraftCount(links.some((link) => link.kind === "drafts"));
 
   if (!links.length) {
     return (
@@ -31,7 +34,7 @@ export function SectionCards({ links, userId }: { links: PortalNavLink[]; userId
       <div className="dash-launch-grid">
         {links.map((link) => {
           const Icon = iconForNav(link);
-          const count = link.kind === "recycle" ? badges.recycle : 0;
+          const count = link.kind === "recycle" ? badges.recycle : link.kind === "drafts" ? draftCount : 0;
           const note = noteFor(link);
           return (
             <Link key={link.href} href={link.href} className="ksl-card dash-section">

@@ -8376,13 +8376,49 @@ html[lang="sw"] .download-button .download::after {
 }
 
 @media (max-width: 767.98px) {
+    .ksl-gallery-section .org-kicker,
+    .ksl-gallery-section .ksl-learn-lead {
+        display: none;
+    }
+
+    .ksl-gallery-filters {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 6px;
+        margin: 12px 0;
+        padding-bottom: 4px;
+    }
+
+    .ksl-gallery-filters button {
+        flex: 0 0 auto;
+        padding: 8px 12px;
+        border-radius: 999px;
+        letter-spacing: 0;
+        text-transform: none;
+        font-size: 13px;
+    }
+
     .ksl-gallery-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 3px;
+    }
+
+    .ksl-gallery-item {
+        border: 0;
+        background: transparent;
+    }
+
+    .ksl-gallery-item a {
+        aspect-ratio: 1 / 1;
     }
 
     .ksl-gallery-item figcaption {
-        font-size: 11px;
+        display: none;
+    }
+
+    .ksl-gallery-item:hover img,
+    .ksl-gallery-item img {
+        transform: none;
     }
 }
 

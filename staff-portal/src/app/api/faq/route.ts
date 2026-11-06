@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
+import { clearReviewDraft, editorSavePlan, overlayDrafts, saveBody } from "@/lib/draft-review";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -14,8 +15,8 @@ export async function GET() {
   const { data: itemRows, error: iErr } = await admin.from("faq_items").select("*").order("sort_order");
   if (iErr) return NextResponse.json({ error: dbError(iErr) }, { status: 500 });
 
-  const groups = splitRemoved(groupRows ?? []);
-  const questions = splitRemoved(itemRows ?? []);
+  const groups = splitRemoved(await overlayDrafts(admin, "faq_groups", groupRows ?? []));
+  const questions = splitRemoved(await overlayDrafts(admin, "faq_items", itemRows ?? []));
   const hiddenGroups = new Set(groups.removed.map((group) => group.id));
   return NextResponse.json({
     groups: groups.items,
@@ -40,20 +41,28 @@ export async function PUT(req: NextRequest) {
     await logActivity(session.userId, "faq", "restore", table === "faq_groups" ? "faq_group" : "faq_item", String(body.id ?? ""));
     return NextResponse.json({ ok: true });
   }
-  const denied = publishGuard(session, "faq", body.status ?? "published");
-  if (denied) return denied;
+  const table = body.type === "group" ? "faq_groups" : "faq_items";
+  const plan = await editorSavePlan(admin, session, "faq", table, {
+    id: body.id,
+    requestedStatus: body.status ?? "published",
+    title: String(body.title || body.question || "Question"),
+    payload: body,
+  });
+  if (plan.held) return plan.held;
+  const status = plan.status;
 
   if (body.type === "group") {
     const { error: upErr } = await admin.from("faq_groups").upsert({
       id: body.id,
       title: body.title,
       sort_order: body.sort_order ?? 0,
-      status: body.status ?? "published",
+      status: status,
       updated_by: session.userId,
     });
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await clearReviewDraft(admin, "faq_groups", body.id);
     await logActivity(session.userId, "faq", "upsert", "faq_group", body.id);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(saveBody(session, "faq"));
   }
 
   if (body.type === "item") {
@@ -63,13 +72,14 @@ export async function PUT(req: NextRequest) {
       question: body.question,
       answer: body.answer,
       sort_order: body.sort_order ?? 0,
-      status: body.status ?? "published",
+      status: status,
       updated_by: session.userId,
     };
     const { error: upErr } = await admin.from("faq_items").upsert(row);
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await clearReviewDraft(admin, "faq_items", body.id);
     await logActivity(session.userId, "faq", "upsert", "faq_item", body.id);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(saveBody(session, "faq"));
   }
 
   return NextResponse.json({ error: "Invalid type" }, { status: 400 });

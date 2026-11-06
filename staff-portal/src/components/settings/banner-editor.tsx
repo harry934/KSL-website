@@ -8,7 +8,7 @@ import { ImageField } from "@/components/ui/image-field";
 import { Field, FieldGrid, FormSection, Notice, Select, Switch } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { cn } from "@/lib/cn";
-import { sendJson } from "@/lib/upload-client";
+import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import {
   BANNER_QUEUE_LIMIT,
   DEFAULT_SITE_SETTINGS,
@@ -209,11 +209,11 @@ export function BannerEditor({ canEdit }: { canEdit: boolean }) {
     }
     setSaving(key);
     try {
-      await sendJson("/api/site-settings", "POST", { key, value });
+      const saved = await sendJson("/api/site-settings", "POST", { key, value });
       if (key === "announcement") {
         setSettings((prev) => ({ ...prev, announcement: value as AnnouncementSettings }));
       }
-      toast("Saved. The website updates within about a minute.");
+      toast(awaitingReview(saved) ? DRAFT_SAVED : "Saved. The website updates within about a minute.");
     } catch (err) {
       toast((err as Error).message, "error");
     }
@@ -307,8 +307,8 @@ export function BannerEditor({ canEdit }: { canEdit: boolean }) {
     setSelectedId(nextSelected);
     setSaving("announcement");
     try {
-      await sendJson("/api/site-settings", "POST", { key: "announcement", value: nextAnnouncement });
-      toast(nextQueue.length ? "Banner removed." : "Banner removed. The queue is empty.");
+      const saved = await sendJson("/api/site-settings", "POST", { key: "announcement", value: nextAnnouncement });
+      toast(awaitingReview(saved) ? DRAFT_SAVED : nextQueue.length ? "Banner removed." : "Banner removed. The queue is empty.");
     } catch (err) {
       toast((err as Error).message, "error");
       await load();

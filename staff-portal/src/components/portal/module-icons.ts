@@ -6,6 +6,7 @@ import {
   Download,
   HandHeart,
   HelpCircle,
+  FilePenLine,
   History,
   Image as ImageIcon,
   LayoutDashboard,
@@ -48,6 +49,7 @@ export function iconForNav(link: Pick<PortalNavLink, "kind" | "module">): IconTy
   if (link.kind === "banner") return Megaphone;
   if (link.kind === "board") return Users;
   if (link.kind === "images") return ImageIcon;
+  if (link.kind === "drafts") return FilePenLine;
   if (link.kind === "recycle") return Trash2;
   if (link.kind === "audit") return History;
   return LayoutDashboard;

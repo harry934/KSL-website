@@ -1,7 +1,7 @@
 /** Supabase Auth needs an email; accounts created without one get an address on this domain that is never shown. */
 export const INTERNAL_EMAIL_DOMAIN = "staff.ksl.internal";
 
-export const USERNAME_PATTERN = /^[a-z0-9][a-z0-9._-]{2,31}$/;
+export const USERNAME_PATTERN = /^[a-z0-9][a-z0-9._-]{0,9}$/;
 
 export function normalizeUsername(value: unknown) {
   return String(value ?? "").trim().toLowerCase();
@@ -17,7 +17,7 @@ export function isInternalEmail(email: string) {
 
 export function validateUsername(username: string): string | null {
   if (!USERNAME_PATTERN.test(username)) {
-    return "Username must be 3–32 characters: lowercase letters, numbers, dot, dash or underscore.";
+    return "Use up to 10 characters: lowercase letters, numbers, dot, dash or underscore.";
   }
   return null;
 }

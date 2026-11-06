@@ -13,7 +13,7 @@ import { useCan } from "@/components/portal/session-context";
 import type { EventRow } from "@/lib/events";
 import { useOpenEdit } from "@/lib/open-edit";
 import { uniqueSlug } from "@/lib/list-utils";
-import { sendJson } from "@/lib/upload-client";
+import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { EventsMonth } from "@/components/events/events-month";
 import { nairobiToday } from "@/lib/dates";
 
@@ -85,14 +85,16 @@ export function EventsEditor() {
       const slug =
         editing.slug?.trim() ||
         uniqueSlug(editing.title, items.filter((i) => i.id !== editing.id).map((i) => i.slug), "event");
-      await sendJson("/api/events", "POST", { ...editing, slug, go_live_on: editing.go_live_on || null });
-      const waiting = editing.status === "published" && editing.go_live_on && editing.go_live_on > nairobiToday();
+      const saved = await sendJson("/api/events", "POST", { ...editing, slug, go_live_on: editing.go_live_on || null });
+      const waiting = !awaitingReview(saved) && editing.status === "published" && editing.go_live_on && editing.go_live_on > nairobiToday();
       toast(
-        waiting
-          ? "Saved. Visitors will see it on the morning you chose."
-          : editing.status === "published"
-            ? "Event saved and shown on the website."
-            : "Event saved as hidden (draft)."
+        awaitingReview(saved)
+          ? DRAFT_SAVED
+          : waiting
+            ? "Saved. Visitors will see it on the morning you chose."
+            : editing.status === "published"
+              ? "Event saved and shown on the website."
+              : "Event saved as hidden (draft)."
       );
       setEditing(null);
       load();

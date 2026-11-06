@@ -10,7 +10,7 @@ import { RowList } from "@/components/ui/row-list";
 import { Field, FieldGrid, FormSection, SaveBar, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { reorderItem, uniqueSlug } from "@/lib/list-utils";
-import { sendJson } from "@/lib/upload-client";
+import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { useOpenEdit } from "@/lib/open-edit";
 import type { CsrImage, CsrProjectRow, CsrSettings, CsrStat } from "@/lib/csr";
 
@@ -105,8 +105,8 @@ export function CsrEditor({ canPublish, canDelete }: { canPublish: boolean; canD
       const slug =
         editing.slug?.trim() ||
         uniqueSlug(editing.title, items.filter((i) => i.id !== editing.id).map((i) => i.slug), "programme");
-      await sendJson("/api/csr", "POST", { ...editing, slug, event_date: editing.event_date || null });
-      toast(editing.status === "published" ? "Programme saved and shown on the website." : "Programme saved as hidden (draft).");
+      const saved = await sendJson("/api/csr", "POST", { ...editing, slug, event_date: editing.event_date || null });
+      toast(awaitingReview(saved) ? DRAFT_SAVED : editing.status === "published" ? "Programme saved and shown on the website." : "Programme saved as hidden (draft).");
       setEditing(null);
       load();
     } catch (err) {

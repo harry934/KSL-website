@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
+import { clearReviewDraft, editorSavePlan, overlayDrafts, overlaySettings, saveBody } from "@/lib/draft-review";
 import { slugify } from "@/lib/news";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
@@ -18,7 +19,8 @@ export async function GET() {
   if (itemsRes.error) return NextResponse.json({ error: itemsRes.error.message }, { status: 500 });
 
   const split = splitRemoved(itemsRes.data ?? []);
-  return NextResponse.json({ settings: settingsRes.data, items: split.items, removed: split.removed });
+  const settings = await overlaySettings(admin, "products_settings", "default", settingsRes.data);
+  return NextResponse.json({ settings, items: await overlayDrafts(admin, "products", split.items), removed: split.removed });
 }
 
 export async function POST(req: NextRequest) {
@@ -35,6 +37,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.scope === "settings") {
+    const plan = await editorSavePlan(admin, session, "products", "products_settings", {
+      settings: true,
+      key: "default",
+      title: "Products introduction",
+      payload: body,
+    });
+    if (plan.held) return plan.held;
     const { error: upErr } = await admin.from("products_settings").upsert({
       id: "default",
       kicker: body.kicker ?? null,
@@ -46,15 +55,21 @@ export async function POST(req: NextRequest) {
       range_groups: Array.isArray(body.range_groups) ? body.range_groups : [],
     });
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await clearReviewDraft(admin, "products_settings", null, "default");
     await logActivity(session.userId, "products", "update", "products_settings", "default");
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(saveBody(session, "products"));
   }
 
   const name = String(body.name ?? "").trim();
   if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
-  const status = body.status ?? "draft";
-  const denied = publishGuard(session, "products", status);
-  if (denied) return denied;
+  const plan = await editorSavePlan(admin, session, "products", "products", {
+    id: body.id,
+    requestedStatus: body.status ?? "draft",
+    title: name,
+    payload: body,
+  });
+  if (plan.held) return plan.held;
+  const status = plan.status;
 
   const row = {
     id: body.id || crypto.randomUUID(),
@@ -76,8 +91,9 @@ export async function POST(req: NextRequest) {
   const { data, error: upErr } = await admin.from("products").upsert(row).select("id").single();
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   await releaseUnusedValues(admin, previous);
+  await clearReviewDraft(admin, "products", data?.id);
   await logActivity(session.userId, "products", status === "published" ? "publish" : "save", "product", data?.id);
-  return NextResponse.json({ ok: true, id: data?.id });
+  return NextResponse.json(saveBody(session, "products", { id: data?.id }));
 }
 
 export async function DELETE(req: NextRequest) {

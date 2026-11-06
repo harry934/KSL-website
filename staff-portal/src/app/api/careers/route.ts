@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
+import { clearReviewDraft, editorSavePlan, overlayDrafts, overlaySettings, saveBody } from "@/lib/draft-review";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { safeLink } from "@/lib/safe-link";
 import { NextRequest, NextResponse } from "next/server";
@@ -19,8 +20,8 @@ export async function GET() {
 
   const split = splitRemoved(listingsRes.data ?? []);
   return NextResponse.json({
-    settings: settingsRes.data,
-    listings: split.items,
+    settings: await overlaySettings(admin, "careers_settings", "default", settingsRes.data),
+    listings: await overlayDrafts(admin, "career_listings", split.items),
     removed: split.removed,
   });
 }
@@ -37,19 +38,32 @@ export async function POST(req: NextRequest) {
     await logActivity(session.userId, "careers", "restore", "career_listing", String(body.id ?? ""));
     return NextResponse.json({ ok: true });
   }
-  const denied = publishGuard(session, "careers", body.status ?? "draft");
-  if (denied) return denied;
-
   if (body.scope === "settings") {
+    const plan = await editorSavePlan(admin, session, "careers", "careers_settings", {
+      settings: true,
+      key: "default",
+      title: "Careers settings",
+      payload: body,
+    });
+    if (plan.held) return plan.held;
     const { error: upErr } = await admin.from("careers_settings").upsert({
       id: "default",
       apply_email: body.apply_email ?? "careers@kenyashipyards.co.ke",
       apply_note: body.apply_note ?? null,
     });
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await clearReviewDraft(admin, "careers_settings", null, "default");
     await logActivity(session.userId, "careers", "upsert", "careers_settings", "default");
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(saveBody(session, "careers"));
   }
+
+  const plan = await editorSavePlan(admin, session, "careers", "career_listings", {
+    id: body.id,
+    requestedStatus: body.status ?? "draft",
+    title: String(body.title ?? "Untitled listing"),
+    payload: body,
+  });
+  if (plan.held) return plan.held;
 
   const applyRaw = body.apply_url == null || body.apply_url === "" ? null : String(body.apply_url);
   const applyUrl = applyRaw == null ? null : safeLink(applyRaw);
@@ -66,14 +80,15 @@ export async function POST(req: NextRequest) {
     closing_date: body.closing_date ?? null,
     apply_url: applyUrl,
     sort_order: body.sort_order ?? 0,
-    status: body.status ?? "draft",
+    status: plan.status,
     updated_by: session.userId,
   };
 
   const { data, error: upErr } = await admin.from("career_listings").upsert(row).select("id").single();
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+  await clearReviewDraft(admin, "career_listings", data?.id);
   await logActivity(session.userId, "careers", "upsert", "career_listing", data?.id ?? row.id);
-  return NextResponse.json({ ok: true, id: data?.id });
+  return NextResponse.json(saveBody(session, "careers", { id: data?.id }));
 }
 
 export async function DELETE(req: NextRequest) {

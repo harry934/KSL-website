@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
+import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
+import { clearReviewDraft, editorSavePlan, overlayDrafts, overlaySettings, saveBody } from "@/lib/draft-review";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { NextRequest, NextResponse } from "next/server";
@@ -19,8 +20,8 @@ export async function GET() {
 
   const split = splitRemoved(assetsRes.data ?? []);
   return NextResponse.json({
-    settings: settingsRes.data,
-    assets: split.items,
+    settings: await overlaySettings(admin, "press_settings", "default", settingsRes.data),
+    assets: await overlayDrafts(admin, "press_assets", split.items),
     removed: split.removed,
   });
 }
@@ -37,10 +38,14 @@ export async function POST(req: NextRequest) {
     await logActivity(session.userId, "press", "restore", "press_asset", String(body.id ?? ""));
     return NextResponse.json({ ok: true });
   }
-  const denied = publishGuard(session, "press", body.status ?? "draft");
-  if (denied) return denied;
-
   if (body.scope === "settings") {
+    const plan = await editorSavePlan(admin, session, "press", "press_settings", {
+      settings: true,
+      key: "default",
+      title: "Press kit introduction",
+      payload: body,
+    });
+    if (plan.held) return plan.held;
     const { error: upErr } = await admin.from("press_settings").upsert({
       id: "default",
       boilerplate: body.boilerplate ?? null,
@@ -48,9 +53,18 @@ export async function POST(req: NextRequest) {
       contact_phone: body.contact_phone ?? null,
     });
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await clearReviewDraft(admin, "press_settings", null, "default");
     await logActivity(session.userId, "press", "upsert", "press_settings", "default");
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(saveBody(session, "press"));
   }
+
+  const plan = await editorSavePlan(admin, session, "press", "press_assets", {
+    id: body.id,
+    requestedStatus: body.status ?? "draft",
+    title: String(body.title ?? "Untitled item"),
+    payload: body,
+  });
+  if (plan.held) return plan.held;
 
   const row = {
     id: body.id || crypto.randomUUID(),
@@ -59,7 +73,7 @@ export async function POST(req: NextRequest) {
     download_id: body.download_id ?? null,
     asset_type: body.asset_type ?? null,
     sort_order: body.sort_order ?? 0,
-    status: body.status ?? "draft",
+    status: plan.status,
     updated_by: session.userId,
   };
 
@@ -67,8 +81,9 @@ export async function POST(req: NextRequest) {
   const { data, error: upErr } = await admin.from("press_assets").upsert(row).select("id").single();
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   await releaseUnusedValues(admin, previous);
+  await clearReviewDraft(admin, "press_assets", data?.id);
   await logActivity(session.userId, "press", "upsert", "press_asset", data?.id ?? row.id);
-  return NextResponse.json({ ok: true, id: data?.id });
+  return NextResponse.json(saveBody(session, "press", { id: data?.id }));
 }
 
 export async function DELETE(req: NextRequest) {

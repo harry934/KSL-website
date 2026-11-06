@@ -9,7 +9,7 @@ import { ItemList } from "@/components/ui/item-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { reorderItem } from "@/lib/list-utils";
-import { sendJson } from "@/lib/upload-client";
+import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import type { CareerListingRow } from "@/lib/careers";
 import { useOpenEdit } from "@/lib/open-edit";
 
@@ -89,12 +89,12 @@ export function CareersEditor() {
     }
     setSaving("item");
     try {
-      await sendJson("/api/careers", "POST", {
+      const saved = await sendJson("/api/careers", "POST", {
         ...editing,
         closing_date: editing.closing_date || null,
         apply_url: editing.apply_url?.trim() || null,
       });
-      toast(editing.status === "published" ? "Saved and shown on the website." : "Saved as hidden (draft).");
+      toast(awaitingReview(saved) ? DRAFT_SAVED : editing.status === "published" ? "Saved and shown on the website." : "Saved as hidden (draft).");
       setEditing(null);
       load();
     } catch (err) {

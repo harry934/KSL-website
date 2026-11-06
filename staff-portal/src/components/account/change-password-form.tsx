@@ -78,7 +78,7 @@ export function ChangePasswordForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       {changeUsername && (
-        <Field label="New username" hint="Lowercase letters and numbers. This replaces the username you were given.">
+        <Field label="New username" hint="Up to 10 characters. It has to be a username nobody else is using.">
           <Input
             name="username"
             value={username}
@@ -86,6 +86,7 @@ export function ChangePasswordForm({
             autoCapitalize="none"
             autoComplete="username"
             spellCheck={false}
+            maxLength={10}
             required
           />
         </Field>

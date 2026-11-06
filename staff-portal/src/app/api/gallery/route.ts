@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff, logActivity, publishGuard } from "@/lib/api-auth";
+import { requireStaff, logActivity } from "@/lib/api-auth";
+import { clearReviewDraft, editorSavePlan, overlayDrafts, saveBody } from "@/lib/draft-review";
 import { youtubeIdFrom } from "@/lib/gallery";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
@@ -21,8 +22,8 @@ export async function GET() {
   const photos = splitRemoved(photosRes.data ?? []);
   const videos = splitRemoved(videosRes.data ?? []);
   return NextResponse.json({
-    photos: photos.items,
-    videos: videos.items,
+    photos: await overlayDrafts(admin, "gallery_photos", photos.items),
+    videos: await overlayDrafts(admin, "gallery_videos", videos.items),
     removedPhotos: photos.removed,
     removedVideos: videos.removed,
   });
@@ -41,9 +42,14 @@ export async function POST(req: NextRequest) {
     await logActivity(session.userId, "gallery", "restore", table === "gallery_videos" ? "gallery_video" : "gallery_photo", String(body.id ?? ""));
     return NextResponse.json({ ok: true });
   }
-  const status = body.status ?? "published";
-  const denied = publishGuard(session, "gallery", status);
-  if (denied) return denied;
+  const plan = await editorSavePlan(admin, session, "gallery", body.type === "video" ? "gallery_videos" : "gallery_photos", {
+    id: body.id,
+    requestedStatus: body.status ?? "published",
+    title: String(body.title || body.alt_text || (body.type === "video" ? "Untitled video" : "Untitled photo")),
+    payload: body,
+  });
+  if (plan.held) return plan.held;
+  const status = plan.status;
 
   if (body.type === "video") {
     const youtubeId = youtubeIdFrom(String(body.youtube_id ?? ""));
@@ -65,8 +71,9 @@ export async function POST(req: NextRequest) {
     }
     const { data, error: upErr } = await admin.from("gallery_videos").upsert(row).select("id").single();
     if (upErr) return NextResponse.json({ error: "Could not save the video." }, { status: 500 });
+    await clearReviewDraft(admin, "gallery_videos", data.id);
     await logActivity(session.userId, "gallery", "upsert", "gallery_video", data.id);
-    return NextResponse.json({ ok: true, id: data.id });
+    return NextResponse.json(saveBody(session, "gallery", { id: data.id }));
   }
 
   const title = String(body.title ?? "").trim();
@@ -95,8 +102,9 @@ export async function POST(req: NextRequest) {
   const { data, error: upErr } = await admin.from("gallery_photos").upsert(row).select("id").single();
   if (upErr) return NextResponse.json({ error: "Could not save the photo." }, { status: 500 });
   await releaseUnusedValues(admin, previous);
+  await clearReviewDraft(admin, "gallery_photos", data.id);
   await logActivity(session.userId, "gallery", "upsert", "gallery_photo", data.id);
-  return NextResponse.json({ ok: true, id: data.id });
+  return NextResponse.json(saveBody(session, "gallery", { id: data.id }));
 }
 
 export async function DELETE(req: NextRequest) {
@@ -114,6 +122,7 @@ export async function DELETE(req: NextRequest) {
   const { error: delErr } = await applyBinDelete(admin, table, id, permanent);
   if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: "Could not remove it." }, { status: 500 });
+  await clearReviewDraft(admin, table, id);
   await logActivity(session.userId, "gallery", permanent ? "purge" : "delete", isVideo ? "gallery_video" : "gallery_photo", id);
   return NextResponse.json({ ok: true });
 }
