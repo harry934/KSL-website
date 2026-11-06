@@ -13,7 +13,6 @@ import { DraftQueue, ReturnedNotes } from "@/components/portal/drafts-page";
 import { ShipyardMark } from "@/components/portal/shipyard-mark";
 import { PageHeader } from "@/components/portal/page-header";
 import { SectionCards } from "@/components/portal/section-cards";
-import { UsageFold } from "@/components/portal/usage-fold";
 import { MODULE_ICONS } from "@/components/portal/module-icons";
 
 const QUICK_ACTIONS: { module: ModuleKey; label: string }[] = [
@@ -208,8 +207,6 @@ export default async function DashboardPage() {
   const cards = !usesSidebar(session);
   const sections = cards ? permissionNavLinks(session) : [];
   const review = canReviewDrafts(session);
-  const storageHigh = Boolean(storage && storage.buckets.reduce((sum, row) => sum + row.bytes, 0) + storage.bin + storage.spare >= STORAGE_QUOTA * 0.8);
-  const databaseHigh = Boolean(database != null && database >= DATABASE_QUOTA * 0.8);
   const quick = QUICK_ACTIONS.filter((action) => {
     if (session.isSuperAdmin) return true;
     return session.permissions.some((p) => p.module_key === action.module && p.can_edit);
@@ -226,15 +223,6 @@ export default async function DashboardPage() {
         }
         actions={<DashboardRefresh />}
       />
-
-      <ReturnedNotes />
-      {review ? (
-        <section aria-label="Drafts waiting">
-          <h2 className="mb-2.5 text-[13px] font-semibold text-[#5b6775]">Drafts waiting for you</h2>
-          <DraftQueue limit={6} />
-        </section>
-      ) : null}
-      {session.isSuperAdmin ? <AccountRequestsPanel /> : null}
 
       {cards && <SectionCards links={sections} userId={session.userId} />}
 
@@ -261,11 +249,20 @@ export default async function DashboardPage() {
       )}
 
       {session.isSuperAdmin && (
-        <UsageFold tight={storageHigh || databaseHigh}>
+        <section className="grid gap-3 lg:grid-cols-2" aria-label="Supabase usage">
           <StorageMeter usage={storage} />
           <DatabaseMeter bytes={database} />
-        </UsageFold>
+        </section>
       )}
+
+      <ReturnedNotes />
+      {review ? (
+        <section aria-label="Drafts waiting">
+          <h2 className="mb-2.5 text-[13px] font-semibold text-[#5b6775]">Drafts waiting for you</h2>
+          <DraftQueue limit={6} />
+        </section>
+      ) : null}
+      {session.isSuperAdmin ? <AccountRequestsPanel /> : null}
       <ShipyardMark />
     </div>
   );
