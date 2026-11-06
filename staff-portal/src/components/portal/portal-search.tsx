@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
+import { cn } from "@/lib/cn";
 
 type Hit = { id: string; title: string; hint: string; href: string; area: string };
 
-export function PortalSearch() {
+export function PortalSearch({ className }: { className?: string }) {
   const router = useRouter();
   const box = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
@@ -55,7 +56,7 @@ export function PortalSearch() {
   }
 
   return (
-    <div ref={box} className="relative min-w-0 flex-1 max-w-[420px]">
+    <div ref={box} className={cn("relative min-w-0 flex-1", className ?? "max-w-[420px]")}>
       <label className="relative block">
         <span className="sr-only">Search the portal</span>
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98a3b1]" />
@@ -66,7 +67,7 @@ export function PortalSearch() {
             setOpen(true);
           }}
           onFocus={() => results.length > 0 && setOpen(true)}
-          placeholder="Search news, jobs, photos, documents"
+          placeholder="Search news, jobs, photos, documents, messages"
           className="h-10 w-full rounded-[8px] border border-[#d5dce4] bg-white pl-9 pr-3 text-[14px] text-[#0b1f3a] outline-none placeholder:text-[#98a3b1] focus:border-[#0b1f3a]"
         />
       </label>

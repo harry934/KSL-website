@@ -4,13 +4,17 @@ import { Plus } from "lucide-react";
 import { getStaffSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
-import { permissionNavLinks, usesSidebar } from "@/lib/portal-nav";
+import { canReviewDrafts, permissionNavLinks, usesSidebar } from "@/lib/portal-nav";
 import { formatBytes } from "@/lib/downloads";
 import { loadStorageBreakdown, type StorageBreakdown } from "@/lib/storage-files";
+import { AccountRequestsPanel } from "@/components/portal/account-requests-panel";
 import { DashboardRefresh } from "@/components/portal/dashboard-refresh";
+import { DraftQueue, ReturnedNotes } from "@/components/portal/drafts-page";
 import { ShipyardMark } from "@/components/portal/shipyard-mark";
 import { PageHeader } from "@/components/portal/page-header";
+import { PortalSearch } from "@/components/portal/portal-search";
 import { SectionCards } from "@/components/portal/section-cards";
+import { UsageFold } from "@/components/portal/usage-fold";
 import { MODULE_ICONS } from "@/components/portal/module-icons";
 
 const QUICK_ACTIONS: { module: ModuleKey; label: string }[] = [
@@ -80,12 +84,14 @@ function StorageMeter({ usage }: { usage: StorageBreakdown | null }) {
   const free = Math.max(0, STORAGE_QUOTA - stored);
   const scale = Math.max(stored, STORAGE_QUOTA, 1);
   const width = (bytes: number) => `${(bytes / scale) * 100}%`;
+  const high = stored / STORAGE_QUOTA >= 0.8;
 
   return (
-    <article className="storage-meter" aria-label={`Storage, ${storageLabel(used)} in use, ${storageLabel(free)} free of 1 GB`}>
+    <article className={high ? "storage-meter is-tight" : "storage-meter"} aria-label={`Storage, ${storageLabel(used)} in use, ${storageLabel(free)} free of 1 GB`}>
       <div className="storage-head">
         <div>
           <h2>Storage</h2>
+          {high ? <p>More than 80% of the 1 GB allowance is in use.</p> : null}
         </div>
         <p className="storage-figure">
           <strong>{storageLabel(used)}</strong>
@@ -118,14 +124,14 @@ function StorageMeter({ usage }: { usage: StorageBreakdown | null }) {
         {usage.bin > 0 ? (
           <li>
             <span className="storage-swatch is-bin" />
-            <span>Recycle bin</span>
+            <Link href="/recycle">Recycle bin</Link>
             <strong>{storageLabel(usage.bin)}</strong>
           </li>
         ) : null}
         {usage.spare > 0 ? (
           <li>
             <span className="storage-swatch is-other" />
-            <span>Not linked</span>
+            <Link href="/files">Not linked</Link>
             <strong>{storageLabel(usage.spare)}</strong>
           </li>
         ) : null}
@@ -158,13 +164,14 @@ function DatabaseMeter({ bytes }: { bytes: number | null }) {
 
   const free = Math.max(0, DATABASE_QUOTA - bytes);
   const scale = Math.max(bytes, DATABASE_QUOTA, 1);
+  const high = bytes / DATABASE_QUOTA >= 0.8;
 
   return (
-    <article className="storage-meter" aria-label={`Database, ${storageLabel(bytes)} used, ${storageLabel(free)} free of 500 MB`}>
+    <article className={high ? "storage-meter is-tight" : "storage-meter"} aria-label={`Database, ${storageLabel(bytes)} used, ${storageLabel(free)} free of 500 MB`}>
       <div className="storage-head">
         <div>
           <h2>Database</h2>
-          <p>Supabase database, of the 500 MB allowance</p>
+          <p>{high ? "More than 80% of the 500 MB allowance is in use." : "Supabase database, of the 500 MB allowance"}</p>
         </div>
         <p className="storage-figure">
           <strong>{storageLabel(bytes)}</strong>
@@ -196,10 +203,14 @@ export default async function DashboardPage() {
   const session = await getStaffSession();
   if (!session) return null;
 
-  const storage = session.isSuperAdmin ? await loadStorageUsage() : null;
-  const database = session.isSuperAdmin ? await loadDatabaseSize() : null;
+  const [storage, database] = session.isSuperAdmin
+    ? await Promise.all([loadStorageUsage(), loadDatabaseSize()])
+    : [null, null];
   const cards = !usesSidebar(session);
   const sections = cards ? permissionNavLinks(session) : [];
+  const review = canReviewDrafts(session);
+  const storageHigh = Boolean(storage && storage.buckets.reduce((sum, row) => sum + row.bytes, 0) + storage.bin + storage.spare >= STORAGE_QUOTA * 0.8);
+  const databaseHigh = Boolean(database != null && database >= DATABASE_QUOTA * 0.8);
   const quick = QUICK_ACTIONS.filter((action) => {
     if (session.isSuperAdmin) return true;
     return session.permissions.some((p) => p.module_key === action.module && p.can_edit);
@@ -216,6 +227,16 @@ export default async function DashboardPage() {
         }
         actions={<DashboardRefresh />}
       />
+
+      <PortalSearch className="w-full max-w-none flex-none" />
+      <ReturnedNotes />
+      {review ? (
+        <section aria-label="Drafts waiting">
+          <h2 className="mb-2.5 text-[13px] font-semibold text-[#5b6775]">Drafts waiting for you</h2>
+          <DraftQueue limit={6} />
+        </section>
+      ) : null}
+      {session.isSuperAdmin ? <AccountRequestsPanel /> : null}
 
       {cards && <SectionCards links={sections} userId={session.userId} />}
 
@@ -242,10 +263,10 @@ export default async function DashboardPage() {
       )}
 
       {session.isSuperAdmin && (
-        <section className="grid gap-3 lg:grid-cols-2" aria-label="Supabase usage">
+        <UsageFold tight={storageHigh || databaseHigh}>
           <StorageMeter usage={storage} />
           <DatabaseMeter bytes={database} />
-        </section>
+        </UsageFold>
       )}
       <ShipyardMark />
     </div>

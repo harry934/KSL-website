@@ -157,6 +157,7 @@ const UPDATE_ACTIONS = [
   "set active",
   "approve username",
   "reject request",
+  "return draft",
   "cancel invite",
   "reset password",
   "delete invite",

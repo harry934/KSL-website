@@ -66,6 +66,12 @@ export function describeActivity(row: {
   if (row.action === "request password") return "asked for a new password";
   if (row.action === "approve username") return username ? `approved the username @${username}` : "approved a username change";
   if (row.action === "reject request") return "rejected an account request";
+  if (row.action === "return draft") {
+    const title = typeof row.metadata?.title === "string" ? row.metadata.title : "";
+    const reason = typeof row.metadata?.reason === "string" ? row.metadata.reason : "";
+    const thing = title ? `"${title}"` : "a draft";
+    return reason ? `sent ${thing} back: ${reason}` : `sent ${thing} back`;
+  }
   if (row.action === "invite") return "sent a staff invite";
   if (row.action === "cancel invite") return "cancelled a staff invite";
 

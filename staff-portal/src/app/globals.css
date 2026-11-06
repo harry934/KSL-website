@@ -578,6 +578,103 @@ body {
   color: #0b1f3a;
 }
 
+.storage-meter.is-tight {
+  border-color: #f0c08a;
+  background: #fff8f1;
+}
+
+.storage-meter.is-tight .storage-figure strong {
+  color: #9a3412;
+}
+
+.storage-fold {
+  overflow: hidden;
+  border: 1px solid #e3e8ee;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.storage-fold.is-tight {
+  border-color: #f0c08a;
+  background: #fff8f1;
+}
+
+.storage-fold-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0b1f3a;
+  cursor: pointer;
+  list-style: none;
+}
+
+.storage-fold-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.storage-fold[open] .storage-fold-chevron {
+  transform: rotate(180deg);
+}
+
+.storage-fold-body {
+  display: grid;
+  gap: 12px;
+}
+
+@media (max-width: 767.98px) {
+  .storage-fold-body {
+    display: none;
+    padding: 0 12px 12px;
+  }
+
+  .storage-fold[open] .storage-fold-body {
+    display: grid;
+  }
+}
+
+@media (min-width: 768px) {
+  .storage-fold,
+  .storage-fold.is-tight {
+    border: 0;
+    background: transparent;
+    overflow: visible;
+  }
+
+  .storage-fold > .storage-fold-toggle {
+    display: none;
+  }
+
+  .storage-fold-body {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.storage-legend a {
+  color: #0b1f3a;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 767.98px) {
+  .dash-stage {
+    min-height: 0;
+    gap: 14px;
+  }
+
+  .shipyard-mark {
+    display: none;
+  }
+
+  .storage-legend {
+    grid-template-columns: 1fr;
+  }
+}
+
 .storage-head {
   display: flex;
   align-items: flex-end;

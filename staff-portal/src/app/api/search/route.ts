@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { credentialsCurrent } from "@/lib/api-auth";
 import { getStaffSession } from "@/lib/session";
+import { hrefForDraft } from "@/lib/draft-review";
 import { canAccess, MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 
 type Hit = { id: string; title: string; hint: string; href: string; area: string; text?: string };
@@ -259,6 +260,55 @@ export async function GET(req: NextRequest) {
             area: "Board",
           }))
         )
+    );
+  }
+
+  if (can("messages")) {
+    jobs.push(
+      admin
+        .from("website_messages")
+        .select("id, first_name, surname, subject")
+        .or(`subject.ilike.${like},first_name.ilike.${like},surname.ilike.${like}`)
+        .is("deleted_at", null)
+        .limit(6)
+        .then(({ data }) =>
+          (data ?? []).map((row) => ({
+            id: `message:${row.id}`,
+            title: row.subject || "Website message",
+            hint: [row.first_name, row.surname].filter(Boolean).join(" ") || "Website visitor",
+            href: `/messages?id=${row.id}`,
+            area: MODULE_LABELS.messages,
+          }))
+        )
+    );
+  }
+
+  const publishModules = session.isSuperAdmin
+    ? null
+    : session.permissions.filter((row) => row.can_publish).map((row) => row.module_key);
+  if (session.isSuperAdmin || (publishModules && publishModules.length > 0)) {
+    let drafts = admin
+      .from("content_drafts")
+      .select("id, title, module_key, entity_table, entity_id, entity_key")
+      .ilike("title", like)
+      .limit(6);
+    if (publishModules) drafts = drafts.in("module_key", publishModules);
+    jobs.push(
+      drafts.then(({ data }) =>
+        (data ?? []).flatMap((row) => {
+          const key = (row.module_key in MODULE_LABELS ? row.module_key : null) as ModuleKey | null;
+          if (!key) return [];
+          return [
+            {
+              id: `draft:${row.id}`,
+              title: row.title || "Saved changes",
+              hint: "Draft waiting to publish",
+              href: hrefForDraft(String(row.entity_table), row.entity_id ? String(row.entity_id) : null, String(row.entity_key ?? ""), key),
+              area: MODULE_LABELS[key],
+            },
+          ];
+        })
+      )
     );
   }
 

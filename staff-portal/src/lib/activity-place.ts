@@ -29,6 +29,7 @@ export function activityPlace(row: {
   const type = row.entity_type ?? "";
   const entityId = row.entity_id ?? "";
   if (type === "website_message" && entityId) return `/messages?id=${encodeURIComponent(entityId)}`;
+  if (type === "site_setting" && entityId === "announcement") return "/banner";
   if (type === "site_image" && entityId) return `/images?slot=${encodeURIComponent(entityId)}`;
   if (type === "admin_profile") return `/activity?entry=${encodeURIComponent(row.id)}`;
 

@@ -15,6 +15,8 @@ import { UserAvatar } from "@/components/portal/user-avatar";
 
 const EXTRA_TITLES: Record<string, string> = {
   "/": "Dashboard",
+  "/drafts": "Drafts",
+  "/files": "Files not linked",
   "/account": "My account",
   "/activity": "Audit log",
   "/banner": "Banner",

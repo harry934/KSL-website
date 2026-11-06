@@ -108,6 +108,46 @@ async function loadFileRefs(admin: Admin): Promise<FileRef[] | null> {
   return refs;
 }
 
+export type SpareFile = { bucket: string; path: string; bytes: number };
+
+const SPARE_BUCKETS = new Set(["media-public", "downloads", "avatars"]);
+
+function sparePathOk(path: string) {
+  return Boolean(path) && !path.includes("..") && !path.startsWith("/") && /^[\w./ -]+$/.test(path);
+}
+
+/** Files in storage that no page and no recycle-bin row points at. */
+export async function listSpareFiles(admin: Admin): Promise<SpareFile[] | null> {
+  const { data, error } = await admin.rpc("storage_objects");
+  if (error || !Array.isArray(data)) return null;
+  const refs = await loadFileRefs(admin);
+  if (!refs) return null;
+  const files: SpareFile[] = [];
+  for (const row of data as { bucket_id?: string; name?: string; bytes?: number | string }[]) {
+    const bucket = String(row.bucket_id ?? "");
+    const path = String(row.name ?? "");
+    const bytes = Number(row.bytes) || 0;
+    if (!SPARE_BUCKETS.has(bucket) || !sparePathOk(path)) continue;
+    if (refs.some((ref) => ref.bucket === bucket && ref.path === path)) continue;
+    files.push({ bucket, path, bytes });
+  }
+  files.sort((a, b) => b.bytes - a.bytes || a.path.localeCompare(b.path));
+  return files;
+}
+
+/** Deletes one unlinked file. Linked files, including the recycle bin, are left alone. */
+export async function removeSpareFile(admin: Admin, bucket: string, path: string) {
+  if (!SPARE_BUCKETS.has(bucket) || !sparePathOk(path)) return { error: "That file could not be found.", status: 400 as const };
+  const files = await listSpareFiles(admin);
+  if (!files) return { error: "Could not check storage.", status: 500 as const };
+  if (!files.some((file) => file.bucket === bucket && file.path === path)) {
+    return { error: "That file is still used, so it was left in place.", status: 409 as const };
+  }
+  const { error } = await admin.storage.from(bucket).remove([path]);
+  if (error) return { error: "Could not delete that file.", status: 500 as const };
+  return { error: null, status: 200 as const };
+}
+
 /** Live files by bucket, plus bytes held only by the recycle bin or by nothing. */
 export async function loadStorageBreakdown(admin: Admin): Promise<StorageBreakdown | null> {
   const { data, error } = await admin.rpc("storage_objects");
