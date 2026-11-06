@@ -1,6 +1,10 @@
 .git
 **/node_modules
 **/.next
+/staff-portal
+.env
+.env.*
+.vercel
 /supabase
 /tools
 /guides

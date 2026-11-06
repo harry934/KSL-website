@@ -21,6 +21,14 @@ export type ServicesSettings = {
 
 export { slugify };
 
+export const SERVICE_GROUPS = [
+  "Maintenance, Repair and Overhaul",
+  "Civil and Modular Works",
+  "Heavy Engineering",
+  "Leasing",
+  "Production and Design",
+] as const;
+
 export function toPublicServiceItem(row: ServiceRow) {
   const item: Record<string, unknown> = {
     slug: row.slug,

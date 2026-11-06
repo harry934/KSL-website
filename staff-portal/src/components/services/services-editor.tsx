@@ -18,7 +18,7 @@ import { ItemList } from "@/components/ui/item-list";
 import { RowList } from "@/components/ui/row-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
-import type { ServiceRow } from "@/lib/services";
+import { SERVICE_GROUPS, type ServiceRow } from "@/lib/services";
 import { keyFrom, reorderItem, uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import { useOpenEdit } from "@/lib/open-edit";
@@ -70,11 +70,13 @@ export function ServicesEditor() {
 
   useOpenEdit(loading, items, (item) => setEditing(item));
 
-  const categories = useMemo(
-    () =>
-      Array.from(new Set(items.map((i) => i.category).filter((c): c is string => !!c))).map((c) => ({ value: c, label: c })),
-    [items]
-  );
+  const categories = useMemo(() => {
+    const names = [...SERVICE_GROUPS] as string[];
+    for (const item of items) {
+      if (item.category && !names.includes(item.category)) names.push(item.category);
+    }
+    return names.map((name) => ({ value: name, label: name }));
+  }, [items]);
 
   async function saveSettings(what: "intro" | "documents") {
     const missing = docs.find((d) => !d.title.trim() || !d.href.trim());

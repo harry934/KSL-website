@@ -29,14 +29,17 @@
         "civil and modular works": "civil",
         "civil": "civil",
         "heavy engineering": "heavy",
-        "leasing": "leasing"
+        "leasing": "leasing",
+        "production and design": "design",
+        "design": "design"
     };
 
     var GROUP_ICONS = {
         mro: '<path d="M5 29h38l-5 9H10z"/><path d="M13 29v-6h12v6"/><path d="M17 23v-4h5"/><path d="M11 42h8M29 42h8M14 38v4M34 38v4"/><g transform="translate(27 25) rotate(-45) scale(.6)"><path stroke-width="2.8" d="M28.5-2.4A6 6 0 0 1 39.58-2.2H34v4.4h5.58A6 6 0 0 1 28.5 2.4H2.4a2.4 2.4 0 0 1 0-4.8z"/></g>',
         civil: '<path d="M6 36V16l8 6V16l8 6V14l14 8v14H6z"/><path d="M14 36v-6M22 36v-6M30 36v-6"/>',
         heavy: '<path d="m30 14 6-6 6 6-6 6"/><path d="M8 40 28 20"/><path d="m16 28 6 6"/>',
-        leasing: '<circle cx="15" cy="17" r="7"/><circle cx="15" cy="17" r="2.4"/><path d="M19.95 21.95 40 42M30 32l3.5-3.5M35 37l3.5-3.5"/><path d="M11.5 23 9 30.8"/><path d="M9 29.5 4.5 33.5V43h9v-9.5z"/><circle cx="9" cy="33.5" r="1"/>'
+        leasing: '<circle cx="15" cy="17" r="7"/><circle cx="15" cy="17" r="2.4"/><path d="M19.95 21.95 40 42M30 32l3.5-3.5M35 37l3.5-3.5"/><path d="M11.5 23 9 30.8"/><path d="M9 29.5 4.5 33.5V43h9v-9.5z"/><circle cx="9" cy="33.5" r="1"/>',
+        design: '<path d="M8 34h22l-3 6H11z"/><path d="M14 34V23h8l6 7v4"/><path d="M18 23v-5h4"/><path d="M31 11l11 3.4L39 25l-8-2.4z"/><path d="M31 22.6 27 27l8.4 1.4"/>'
     };
 
     var GENERIC_ICON = '<rect x="8" y="10" width="32" height="26" rx="2"/><path d="M8 18h32M18 10v26"/>';
@@ -78,7 +81,7 @@
             }
             groups[id].items.push(item);
         });
-        var preferred = ["mro", "civil", "heavy", "leasing"];
+        var preferred = ["mro", "civil", "heavy", "leasing", "design"];
         order.sort(function (a, b) {
             var ia = preferred.indexOf(a);
             var ib = preferred.indexOf(b);

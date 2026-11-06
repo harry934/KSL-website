@@ -9,3 +9,4 @@ staff-portal/.next/
 staff-portal/node_modules/
 .vercel
 .cursor/
+.env*.local
