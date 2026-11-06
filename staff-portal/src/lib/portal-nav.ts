@@ -9,7 +9,7 @@ export type PortalAccess = {
   permissions: ModulePermission[];
 };
 
-export type PortalNavKind = "dashboard" | "module" | "banner" | "images" | "recycle" | "audit";
+export type PortalNavKind = "dashboard" | "module" | "banner" | "images" | "board" | "recycle" | "audit";
 
 export type PortalNavLink = {
   href: string;
@@ -57,6 +57,18 @@ export function portalNavGroups(access: PortalAccess): PortalNavGroup[] {
         module: key,
         group: group.label,
       }));
+
+    if (group.label === "Company") {
+      const organisation = links.findIndex((link) => link.module === "organization");
+      if (organisation >= 0) {
+        links.splice(organisation + 1, 0, {
+          href: "/board",
+          label: "Board",
+          kind: "board",
+          group: group.label,
+        });
+      }
+    }
 
     if (group.label === "Administration" && canSee(access, "site_settings")) {
       links.push(

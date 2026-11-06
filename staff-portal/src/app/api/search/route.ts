@@ -255,8 +255,8 @@ export async function GET(req: NextRequest) {
             id: `board:${row.id}`,
             title: row.full_name,
             hint: row.role || "Board",
-            href: "/organization",
-            area: MODULE_LABELS.organization,
+            href: "/board",
+            area: "Board",
           }))
         )
     );

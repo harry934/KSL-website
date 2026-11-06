@@ -44,7 +44,7 @@ const BOARD_GROUPS = [
   { value: "independent", label: "Independent members" },
 ];
 
-export function OrganizationEditor() {
+export function OrganizationEditor({ view = "organisation" }: { view?: "organisation" | "board" }) {
   const { toast, confirm } = useFeedback();
   const canPublish = useCan("organization", "publish");
   const canDelete = useCan("organization", "delete");
@@ -220,12 +220,16 @@ export function OrganizationEditor() {
     }
   }
 
+  function memberSection(row: BoardMemberRow) {
+    return row.section || boardSections[0]?.id || "featured";
+  }
+
   async function moveBoard(section: string, from: number, to: number) {
     const order = boardSections.map((item) => item.id);
-    const inSection = board.filter((row) => (row.section || "audit") === section);
+    const inSection = board.filter((row) => memberSection(row) === section);
     const reordered = reorderItem(inSection, from, to);
     const next = order
-      .flatMap((key) => (key === section ? reordered : board.filter((row) => (row.section || "audit") === key)))
+      .flatMap((key) => (key === section ? reordered : board.filter((row) => memberSection(row) === key)))
       .map((row, index) => ({ ...row, sort_order: index }));
     const before = new Map(board.map((row) => [row.id, row.sort_order]));
     setBoard(next);
@@ -289,7 +293,7 @@ export function OrganizationEditor() {
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-[14px] text-[#5b6775]">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading the organisation page…
+        <Loader2 className="h-4 w-4 animate-spin" /> {view === "board" ? "Loading the board…" : "Loading the organisation page…"}
       </div>
     );
   }
@@ -406,6 +410,8 @@ export function OrganizationEditor() {
 
   return (
     <div className="space-y-5">
+      {view === "organisation" && (
+      <>
       <FormSection
         title="1. Introduction"
         description="The lines above the chart. Save this with the chart in step 3."
@@ -556,13 +562,15 @@ export function OrganizationEditor() {
           emptyText="No leadership cards yet."
         />
       </div>
+      </>
+      )}
 
+      {view === "board" && (
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className={step}>Step 5</p>
-            <h2 className="text-[15px] font-bold text-[#0b1f3a]">KSL Board page</h2>
-            <p className="text-[13px] text-[#6b7785]">Each section keeps its name here. The website title is optional, so you can create a section with no title or clear a title and the section still stays. Press Save board sections, then refresh the KSL Board page.</p>
+            <h2 className="text-[15px] font-bold text-[#0b1f3a]">Board members</h2>
+            <p className="text-[13px] text-[#6b7785]">Drag a member inside their section to change the order. The top person is shown first. Save the sections after you change a name or title, then refresh the KSL Board page.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -582,7 +590,7 @@ export function OrganizationEditor() {
           </div>
         </div>
         {boardSections.map((section, index) => {
-          const people = board.filter((row) => (row.section || boardSections[0]?.id) === section.id);
+          const people = board.filter((row) => memberSection(row) === section.id);
           return (
             <div key={section.id} className="space-y-3 rounded-md border border-[#e4eaf2] p-3">
               <div className="flex flex-wrap items-center gap-2">
@@ -648,6 +656,7 @@ export function OrganizationEditor() {
               </div>
               <ItemList
                 showImages
+                dragFrom={2}
                 items={people.map((r) => ({
                   id: r.id,
                   title: r.full_name,
@@ -670,8 +679,11 @@ export function OrganizationEditor() {
           {saving === "settings" ? "Saving…" : "Save board sections"}
         </Button>
       </div>
+      )}
 
-      <FormSection title="6. Chart download" description="The document button under the leadership cards.">
+      {view === "organisation" && (
+      <>
+      <FormSection title="5. Chart download" description="The document button under the leadership cards.">
         <Field label="Document">
           <SearchSelect
             value={chartDownloadId}
@@ -689,7 +701,7 @@ export function OrganizationEditor() {
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className={step}>Step 7</p>
+            <p className={step}>Step 6</p>
             <h2 className="text-[15px] font-bold text-[#0b1f3a]">Major milestones</h2>
             <p className="text-[13px] text-[#6b7785]">The path on Who We Are. The top milestone is shown first. Drag a row to change the order. Set Visibility to Published or it stays off the website.</p>
           </div>
@@ -727,6 +739,8 @@ export function OrganizationEditor() {
           emptyText="No milestones yet."
         />
       </div>
+      </>
+      )}
     </div>
   );
 }

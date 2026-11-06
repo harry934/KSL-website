@@ -18,6 +18,7 @@ const EXTRA_TITLES: Record<string, string> = {
   "/account": "My account",
   "/activity": "Audit log",
   "/banner": "Banner",
+  "/board": "Board",
   "/images": "Website images",
   "/recycle": "Recycle bin",
 };

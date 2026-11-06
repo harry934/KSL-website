@@ -41,7 +41,8 @@ export function useLiveDrag(onCommit: (from: number, to: number) => void) {
     const active = drag?.from === index;
     return {
       transform: y ? `translate3d(0, ${y}px, 0)` : undefined,
-      transition: active || !drag ? undefined : "transform 180ms cubic-bezier(0.2, 0, 0, 1)",
+      transition: active || !drag ? "none" : "transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+      willChange: drag ? "transform" : undefined,
       zIndex: active ? 20 : undefined,
       position: "relative",
       boxShadow: active ? "0 16px 36px rgba(11, 31, 58, 0.18)" : undefined,
@@ -79,6 +80,7 @@ export function useLiveDrag(onCommit: (from: number, to: number) => void) {
     document.body.style.cursor = "grabbing";
     document.body.style.userSelect = "none";
     publish({ from: index, to: index, dy: 0, stride });
+    let frame = 0;
 
     function targetIndex(clientY: number) {
       let to = slots[0]?.i ?? index;
@@ -91,10 +93,17 @@ export function useLiveDrag(onCommit: (from: number, to: number) => void) {
     function move(pointer: PointerEvent) {
       const current = dragRef.current;
       if (!current) return;
-      publish({ ...current, dy: pointer.clientY - startY, to: targetIndex(pointer.clientY) });
+      dragRef.current = { ...current, dy: pointer.clientY - startY, to: targetIndex(pointer.clientY) };
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        const latest = dragRef.current;
+        if (latest) setDrag(latest);
+      });
     }
 
     function end() {
+      if (frame) cancelAnimationFrame(frame);
       handle.removeEventListener("pointermove", move);
       handle.removeEventListener("pointerup", end);
       handle.removeEventListener("pointercancel", end);

@@ -17,6 +17,7 @@ import {
   Settings,
   Trash2,
   UserCog,
+  Users,
   Wrench,
 } from "lucide-react";
 import type { ModuleKey } from "@/lib/modules";
@@ -45,6 +46,7 @@ export const MODULE_ICONS: Record<ModuleKey, IconType> = {
 export function iconForNav(link: Pick<PortalNavLink, "kind" | "module">): IconType {
   if (link.module) return MODULE_ICONS[link.module];
   if (link.kind === "banner") return Megaphone;
+  if (link.kind === "board") return Users;
   if (link.kind === "images") return ImageIcon;
   if (link.kind === "recycle") return Trash2;
   if (link.kind === "audit") return History;

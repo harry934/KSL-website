@@ -27,6 +27,14 @@ test("a sidebar is used only when there are more than six destinations", () => {
   assert.equal(usesSidebar(six), true);
 });
 
+test("organisation access adds a Board destination", () => {
+  const links = permissionNavLinks(access(["organization"]));
+  assert.deepEqual(
+    links.map((link) => link.href),
+    ["/organization", "/board", "/recycle"]
+  );
+});
+
 test("site settings adds banner and website images", () => {
   const links = permissionNavLinks(access(["site_settings"]));
   assert.deepEqual(
