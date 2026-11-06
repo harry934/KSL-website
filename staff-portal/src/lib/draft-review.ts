@@ -290,13 +290,13 @@ export async function listReviewDrafts(admin: Admin, actor: Actor): Promise<Revi
   for (const group of tables) items.push(...group);
 
   for (const row of staged ?? []) {
-    const module = row.module_key as ModuleKey;
-    if (!canAccess(actor.permissions, module, "publish", actor.isSuperAdmin)) continue;
+    const moduleKey = row.module_key as ModuleKey;
+    if (!canAccess(actor.permissions, moduleKey, "publish", actor.isSuperAdmin)) continue;
     const authorId = typeof row.submitted_by === "string" ? row.submitted_by : null;
-    if (!cannotPublish(profiles, perms, authorId, module)) continue;
+    if (!cannotPublish(profiles, perms, authorId, moduleKey)) continue;
     const source = DRAFT_SOURCES.find((item) => item.table === row.entity_table);
     const place = SETTINGS_PLACES[row.entity_table as string];
-    const hrefBase = source?.href || place?.href || MODULE_ROUTES[module] || "/";
+    const hrefBase = source?.href || place?.href || MODULE_ROUTES[moduleKey] || "/";
     const href =
       row.entity_table === "site_settings" && row.entity_key === "announcement"
         ? "/banner"
@@ -308,7 +308,7 @@ export async function listReviewDrafts(admin: Admin, actor: Actor): Promise<Revi
       id: String(row.id),
       kind: "change",
       title: text(row.title, source ? source.title(payload) : "Saved changes"),
-      section: source?.section || place?.section || MODULE_LABELS[module] || "Draft",
+      section: source?.section || place?.section || MODULE_LABELS[moduleKey] || "Draft",
       href,
       author: authorName(profiles, authorId),
       updatedAt: typeof row.updated_at === "string" ? row.updated_at : null,
