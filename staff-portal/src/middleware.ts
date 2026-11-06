@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { STAFF_SESSION_COOKIE, judgeSession, sessionCookieOptions, sessionNeedsTouch } from "@/lib/staff-session";
-import { readStaffSession, touchStaffSession } from "@/lib/staff-session-server";
+import { STAFF_SESSION_COOKIE, judgeSession, sessionCookieOptions } from "@/lib/staff-session";
+import { readStaffSession } from "@/lib/staff-session-server";
 
 const ALLOWED_ORIGINS = new Set([
   "https://ksl-website.vercel.app",
@@ -137,10 +137,6 @@ export async function middleware(request: NextRequest) {
       url.pathname = "/login";
       url.search = "";
       return endBrowserSession(NextResponse.redirect(url));
-    }
-
-    if (row && sessionNeedsTouch(row.seenAt, Date.now())) {
-      await touchStaffSession(user.id).catch(() => null);
     }
   }
 

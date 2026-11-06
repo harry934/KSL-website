@@ -1,5 +1,5 @@
 export const STAFF_SESSION_COOKIE = "ksl_staff_session";
-export const IDLE_MS = 30 * 60 * 1000;
+export const IDLE_MS = 20 * 60 * 1000;
 export const TOUCH_MS = 60 * 1000;
 
 export type SessionStop = "missing" | "elsewhere" | "idle";

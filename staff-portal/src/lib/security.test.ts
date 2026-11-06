@@ -225,8 +225,9 @@ test("code-like text is blocked and ordinary messages are not", () => {
   assert.equal(looksLikeCode("hello onerror=alert(1)"), true);
 });
 
-test("a staff session stays open for one browser and 30 minutes of use", () => {
+test("a staff session stays open for one browser and 20 minutes of use", () => {
   const now = Date.parse("2026-10-23T10:00:00Z");
+  assert.equal(IDLE_MS, 20 * 60 * 1000);
   assert.equal(judgeSession({ cookieKey: "abc", storedKey: "abc", seenAt: new Date(now - 60_000).toISOString(), now }), null);
   assert.equal(judgeSession({ cookieKey: "", storedKey: "abc", seenAt: new Date(now).toISOString(), now }), "missing");
   assert.equal(judgeSession({ cookieKey: "old", storedKey: "new", seenAt: new Date(now).toISOString(), now }), "elsewhere");
