@@ -12,7 +12,6 @@ import { DashboardRefresh } from "@/components/portal/dashboard-refresh";
 import { DraftQueue, ReturnedNotes } from "@/components/portal/drafts-page";
 import { ShipyardMark } from "@/components/portal/shipyard-mark";
 import { PageHeader } from "@/components/portal/page-header";
-import { PortalSearch } from "@/components/portal/portal-search";
 import { SectionCards } from "@/components/portal/section-cards";
 import { UsageFold } from "@/components/portal/usage-fold";
 import { MODULE_ICONS } from "@/components/portal/module-icons";
@@ -228,7 +227,6 @@ export default async function DashboardPage() {
         actions={<DashboardRefresh />}
       />
 
-      <PortalSearch className="w-full max-w-none flex-none" />
       <ReturnedNotes />
       {review ? (
         <section aria-label="Drafts waiting">
