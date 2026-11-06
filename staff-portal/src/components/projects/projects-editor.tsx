@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Plus } from "lucide-react";
+import { GripVertical, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImageField } from "@/components/ui/image-field";
@@ -9,7 +9,8 @@ import { ItemList } from "@/components/ui/item-list";
 import { Field, FormSection, SaveBar, ChoiceField, VisibilitySwitch } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { slugify } from "@/lib/news";
-import { reorderItem, uniqueSlug } from "@/lib/list-utils";
+import { orderedGroups, reorderItem, uniqueSlug } from "@/lib/list-utils";
+import { useLiveDrag } from "@/components/ui/live-drag";
 import { sendJson } from "@/lib/upload-client";
 import { PROJECT_GROUPS, type ProjectRow } from "@/lib/projects";
 import { projectPublicUrl } from "@/lib/public-links";
@@ -18,6 +19,7 @@ import { useOpenEdit } from "@/lib/open-edit";
 export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean; canDelete: boolean }) {
   const { toast, confirm } = useFeedback();
   const [items, setItems] = useState<ProjectRow[]>([]);
+  const [groupOrder, setGroupOrder] = useState<string[]>([]);
   const [editing, setEditing] = useState<Partial<ProjectRow> | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -27,6 +29,7 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setItems(data.items ?? []);
+      setGroupOrder(Array.isArray(data.group_order) ? data.group_order : []);
     } else toast(data.error ?? "Could not load the projects.", "error");
     setLoading(false);
   }, [toast]);
@@ -48,6 +51,22 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
     }
     return list;
   }, [items]);
+
+  const ordered = useMemo(() => {
+    const byValue = new Map(groups.map((group) => [group.value, group]));
+    return orderedGroups(groups.map((group) => group.value), groupOrder)
+      .map((value) => byValue.get(value))
+      .filter((group): group is { value: string; label: string } => !!group);
+  }, [groups, groupOrder]);
+
+  const groupDrag = useLiveDrag((from, to) => {
+    const next = reorderItem(ordered, from, to).map((group) => group.value);
+    setGroupOrder(next);
+    void sendJson("/api/projects", "POST", { scope: "groups", group_order: next }).catch((err) => {
+      toast((err as Error).message, "error");
+      void load();
+    });
+  });
 
   const groupChoices = useMemo(() => {
     const map = new Map<string, string>();
@@ -200,9 +219,24 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
           <Plus className="h-4 w-4" /> New project
         </Button>
       </div>
-      {groups.map((group) => (
-        <div key={group.value}>
-          <h2 className="mb-3 text-[15px] font-bold text-[#0b1f3a]">{group.label}</h2>
+      {ordered.length > 1 && (
+        <p className="text-[13px] text-[#6b7785]">Drag a group by the handle. The top group is shown first on the website.</p>
+      )}
+      {ordered.map((group, index) => (
+        <div key={group.value} ref={groupDrag.itemRef(index)} style={ordered.length > 1 ? groupDrag.itemStyle(index) : undefined}>
+          <div className="mb-3 flex items-center gap-2">
+            {ordered.length > 1 && (
+              <span
+                onPointerDown={(event) => groupDrag.onGripPointerDown(index, event)}
+                className="inline-flex h-8 w-6 cursor-grab touch-none items-center justify-center text-[#98a3b1] active:cursor-grabbing"
+                aria-label={`Drag ${group.label}`}
+                title="Drag to reorder this group"
+              >
+                <GripVertical className="h-4 w-4" />
+              </span>
+            )}
+            <h2 className="text-[15px] font-bold text-[#0b1f3a]">{group.label}</h2>
+          </div>
           <ItemList
             showImages
             items={items

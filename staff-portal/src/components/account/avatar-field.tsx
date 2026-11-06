@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useFeedback } from "@/components/ui/feedback";
 import { UserAvatar } from "@/components/portal/user-avatar";
 import { withBusy } from "@/lib/upload-client";
+import { GalleryBrowser } from "@/components/ui/image-field";
 import { PhotoCropDialog } from "@/components/ui/photo-crop";
 
 export function AvatarField({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
@@ -76,6 +77,19 @@ export function AvatarField({ name, avatarUrl }: { name: string; avatarUrl: stri
         <Button variant="secondary" size="sm" disabled={busy} onClick={() => input.current?.click()}>
           <Camera className="h-4 w-4" /> {url ? "Change photo" : "Upload a photo"}
         </Button>
+        <GalleryBrowser
+          onPick={async (src) => {
+            try {
+              const res = await fetch(src);
+              if (!res.ok) throw new Error("Could not use that gallery photo.");
+              const blob = await res.blob();
+              const type = blob.type || "image/jpeg";
+              setPending(new File([blob], "gallery-photo", { type }));
+            } catch (err) {
+              toast((err as Error).message, "error");
+            }
+          }}
+        />
         {url && (
           <Button variant="ghost" size="sm" disabled={busy} onClick={remove}>
             <Trash2 className="h-4 w-4" /> Remove

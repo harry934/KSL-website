@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { slugify } from "@/lib/news";
 import { projectGroup } from "@/lib/projects";
+import { cleanGroupOrder, rememberGroup } from "@/lib/group-order";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { NextRequest, NextResponse } from "next/server";
@@ -11,10 +12,17 @@ export async function GET() {
   if (error) return error;
 
   const admin = createAdminClient();
-  const { data, error: loadErr } = await admin.from("projects").select("*").order("sort_order", { ascending: true });
-  if (loadErr) return NextResponse.json({ error: dbError(loadErr) }, { status: 500 });
-  const split = splitRemoved(data ?? []);
-  return NextResponse.json({ items: split.items, removed: split.removed });
+  const [itemsRes, settingsRes] = await Promise.all([
+    admin.from("projects").select("*").order("sort_order", { ascending: true }),
+    admin.from("projects_settings").select("group_order").eq("id", "default").maybeSingle(),
+  ]);
+  if (itemsRes.error) return NextResponse.json({ error: dbError(itemsRes.error) }, { status: 500 });
+  const split = splitRemoved(itemsRes.data ?? []);
+  return NextResponse.json({
+    items: split.items,
+    removed: split.removed,
+    group_order: Array.isArray(settingsRes.data?.group_order) ? settingsRes.data.group_order : [],
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -28,6 +36,15 @@ export async function POST(req: NextRequest) {
     await logActivity(session.userId, "projects", "restore", "project", String(body.id ?? ""));
     return NextResponse.json({ ok: true });
   }
+  const admin = createAdminClient();
+  if (body.scope === "groups") {
+    const group_order = cleanGroupOrder(body.group_order);
+    const { error: upErr } = await admin.from("projects_settings").upsert({ id: "default", group_order });
+    if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await logActivity(session.userId, "projects", "reorder", "projects_settings", "groups");
+    return NextResponse.json({ ok: true });
+  }
+
   const title = String(body.title ?? "").trim();
   if (!title) return NextResponse.json({ error: "Give the project a name." }, { status: 400 });
 
@@ -51,10 +68,10 @@ export async function POST(req: NextRequest) {
     updated_by: session.userId,
   };
 
-  const admin = createAdminClient();
   const previous = await rememberFiles(admin, "projects", body.id, ["image_path"]);
   const { data, error: upErr } = await admin.from("projects").upsert(row).select("id").single();
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+  if (row.category) await rememberGroup(admin, "projects_settings", row.category);
   await releaseUnusedValues(admin, previous);
   await logActivity(session.userId, "projects", status === "published" ? "publish" : "save", "project", data?.id);
   return NextResponse.json({ ok: true, id: data?.id });

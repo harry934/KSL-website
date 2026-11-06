@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Plus } from "lucide-react";
+import { GripVertical, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,7 +19,8 @@ import { RowList } from "@/components/ui/row-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { SERVICE_GROUPS, type ServiceRow } from "@/lib/services";
-import { keyFrom, reorderItem, uniqueSlug } from "@/lib/list-utils";
+import { keyFrom, orderedGroups, reorderItem, uniqueSlug } from "@/lib/list-utils";
+import { useLiveDrag } from "@/components/ui/live-drag";
 import { sendJson } from "@/lib/upload-client";
 import { useOpenEdit } from "@/lib/open-edit";
 
@@ -46,6 +47,7 @@ export function ServicesEditor() {
   const [docs, setDocs] = useState<DocRow[]>([]);
   const [savedCatalog, setSavedCatalog] = useState<Record<string, { title: string; href: string }>>({});
   const [items, setItems] = useState<ServiceRow[]>([]);
+  const [groupOrder, setGroupOrder] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<ServiceRow> | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -58,6 +60,7 @@ export function ServicesEditor() {
       setSavedCatalog(data.download_catalog ?? {});
       setDocs(catalogToRows(data.download_catalog ?? {}));
       setItems(data.items ?? []);
+      setGroupOrder(Array.isArray(data.group_order) ? data.group_order : []);
     } else {
       toast(data.error ?? "Could not load the services.", "error");
     }
@@ -69,6 +72,16 @@ export function ServicesEditor() {
   }, [load]);
 
   useOpenEdit(loading, items, (item) => setEditing(item));
+
+  const shownGroups = useMemo(() => orderedGroups(serviceCategories(items), groupOrder), [items, groupOrder]);
+  const groupDrag = useLiveDrag((from, to) => {
+    const next = reorderItem(shownGroups, from, to);
+    setGroupOrder(next);
+    void sendJson("/api/services", "POST", { scope: "groups", group_order: next }).catch((err) => {
+      toast((err as Error).message, "error");
+      void load();
+    });
+  });
 
   const categories = useMemo(() => {
     const names = [...SERVICE_GROUPS] as string[];
@@ -274,11 +287,26 @@ export function ServicesEditor() {
           />
         ) : (
           <div className="space-y-5">
-            {serviceCategories(items).map((category) => {
+            {shownGroups.length > 1 && (
+              <p className="text-[13px] text-[#6b7785]">Drag a group by the handle. The top group is shown first on the website.</p>
+            )}
+            {shownGroups.map((category, index) => {
               const group = items.filter((item) => (item.category || "General") === category);
               return (
-                <div key={category}>
-                  <h3 className="mb-2 text-[13px] font-semibold uppercase tracking-[0.06em] text-[#5b6775]">{category}</h3>
+                <div key={category} ref={groupDrag.itemRef(index)} style={shownGroups.length > 1 ? groupDrag.itemStyle(index) : undefined}>
+                  <div className="mb-2 flex items-center gap-2">
+                    {shownGroups.length > 1 && (
+                      <span
+                        onPointerDown={(event) => groupDrag.onGripPointerDown(index, event)}
+                        className="inline-flex h-8 w-6 cursor-grab touch-none items-center justify-center text-[#98a3b1] active:cursor-grabbing"
+                        aria-label={`Drag ${category}`}
+                        title="Drag to reorder this group"
+                      >
+                        <GripVertical className="h-4 w-4" />
+                      </span>
+                    )}
+                    <h3 className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#5b6775]">{category}</h3>
+                  </div>
                   <ItemList
                     showImages
                     items={group.map((i) => ({ id: i.id, title: i.title, image: i.image_path, status: i.status }))}

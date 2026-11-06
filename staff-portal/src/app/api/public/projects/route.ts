@@ -6,10 +6,16 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const admin = createAdminClient();
-  const { data, error } = await admin.from("projects").select("*").eq("status", "published").order("sort_order", { ascending: true });
-  if (error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
+  const [itemsRes, settingsRes] = await Promise.all([
+    admin.from("projects").select("*").eq("status", "published").order("sort_order", { ascending: true }),
+    admin.from("projects_settings").select("group_order").eq("id", "default").maybeSingle(),
+  ]);
+  if (itemsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
-  const payload = await signPayload(admin, toPublicProjects(kept((data ?? []) as Array<ProjectRow & { deleted_at?: string | null }>)));
+  const payload = await signPayload(admin, {
+    ...toPublicProjects(kept((itemsRes.data ?? []) as Array<ProjectRow & { deleted_at?: string | null }>)),
+    groupOrder: Array.isArray(settingsRes.data?.group_order) ? settingsRes.data.group_order : [],
+  });
   return NextResponse.json(payload, {
     headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
   });

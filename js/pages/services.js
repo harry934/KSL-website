@@ -82,12 +82,12 @@
             groups[id].items.push(item);
         });
         var preferred = ["mro", "civil", "heavy", "leasing", "design"];
+        var saved = ((data && data.groupOrder) || []).map(function (name) { return groupId(name); });
         order.sort(function (a, b) {
-            var ia = preferred.indexOf(a);
-            var ib = preferred.indexOf(b);
-            if (ia === -1 && ib === -1) return 0;
-            if (ia === -1) return 1;
-            if (ib === -1) return -1;
+            var ia = saved.indexOf(a);
+            var ib = saved.indexOf(b);
+            if (ia === -1) ia = saved.length + (preferred.indexOf(a) === -1 ? 100 : preferred.indexOf(a));
+            if (ib === -1) ib = saved.length + (preferred.indexOf(b) === -1 ? 100 : preferred.indexOf(b));
             return ia - ib;
         });
         host.querySelectorAll(".ksl-svc-panel").forEach(function (panel) { panel.remove(); });

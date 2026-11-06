@@ -1,5 +1,11 @@
 import { slugify } from "@/lib/news";
 
+/** Saved group names first, then any group that is not in that list yet. */
+export function orderedGroups(present: string[], saved: string[]) {
+  const kept = saved.filter((name) => present.includes(name));
+  return [...kept, ...present.filter((name) => !kept.includes(name))];
+}
+
 /** Move one item to a new index. Items between the two positions shift to make room. */
 export function reorderItem<T>(list: T[], from: number, to: number): T[] {
   if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return list;

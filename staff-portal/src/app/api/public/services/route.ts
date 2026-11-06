@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   const admin = createAdminClient();
   const [settingsRes, itemsRes] = await Promise.all([
-    admin.from("services_settings").select("intro, download_catalog").eq("id", "default").maybeSingle(),
+    admin.from("services_settings").select("intro, download_catalog, group_order").eq("id", "default").maybeSingle(),
     admin.from("service_items").select("*").eq("status", "published").order("sort_order", { ascending: true }),
   ]);
 

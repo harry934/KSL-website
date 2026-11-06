@@ -17,6 +17,7 @@ export type ServiceRow = {
 export type ServicesSettings = {
   intro: string | null;
   download_catalog: Record<string, { title: string; href: string }>;
+  group_order?: string[] | null;
 };
 
 export { slugify };
@@ -54,5 +55,6 @@ export function toPublicServicesPayload(
       .sort((a, b) => a.sort_order - b.sort_order)
       .map(toPublicServiceItem),
     downloadCatalog: settings?.download_catalog ?? {},
+    groupOrder: Array.isArray(settings?.group_order) ? settings.group_order : [],
   };
 }

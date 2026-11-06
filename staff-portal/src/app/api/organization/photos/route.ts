@@ -6,7 +6,7 @@ import { siteAssetUrl } from "@/lib/site-url";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const { error } = await requireStaff("organization", "view");
+  const { error } = await requireStaff(null, "view");
   if (error) return error;
 
   const admin = createAdminClient();

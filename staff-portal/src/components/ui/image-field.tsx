@@ -13,7 +13,7 @@ export function ImageField({
   value,
   onChange,
   compact,
-  fromGallery,
+  fromGallery = true,
 }: {
   module: ModuleKey;
   value: string;
@@ -157,5 +157,72 @@ export function ImageField({
         />
       )}
     </div>
+  );
+}
+
+/** Opens the published gallery so a photo field can reuse a picture that is already there. */
+export function GalleryBrowser({ onPick, label = "From gallery" }: { onPick: (src: string) => void; label?: string }) {
+  const [open, setOpen] = useState(false);
+  const [gallery, setGallery] = useState<{ src: string; title: string }[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function show() {
+    setOpen(true);
+    setError(null);
+    if (gallery) return;
+    try {
+      const res = await fetch("/api/organization/photos", { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not open the gallery.");
+      setGallery(Array.isArray(data.photos) ? data.photos : []);
+    } catch (e) {
+      setGallery([]);
+      setError((e as Error).message);
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => void show()}
+        className="inline-flex h-[34px] items-center gap-2 rounded-[6px] border border-[#d5dce4] bg-white px-3 text-[13px] font-semibold text-[#0b1f3a] transition-colors hover:bg-[#f4f6f8]"
+      >
+        <Images className="h-4 w-4" />
+        {label}
+      </button>
+      {error && !open && <p className="w-full text-[12.5px] text-[#b42318]">{error}</p>}
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(39,50,114,0.38)] p-4">
+          <div className="flex max-h-[80vh] w-full max-w-3xl flex-col bg-white">
+            <div className="flex items-center justify-between border-b border-[#eef1f4] px-4 py-3">
+              <p className="m-0 text-[15px] font-semibold text-[#0b1f3a]">Choose from the gallery</p>
+              <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="text-[#0b1f3a]">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 overflow-y-auto p-4 sm:grid-cols-4">
+              {gallery === null && <p className="col-span-full text-[13px] text-[#6b7785]">Loading photos…</p>}
+              {error && <p className="col-span-full text-[13px] text-[#b42318]">{error}</p>}
+              {gallery?.length === 0 && !error && <p className="col-span-full text-[13px] text-[#6b7785]">No gallery photos yet. Add them on the Gallery page.</p>}
+              {gallery?.map((image) => (
+                <button
+                  key={image.src}
+                  type="button"
+                  onClick={() => {
+                    onPick(image.src);
+                    setOpen(false);
+                  }}
+                  className="border border-[#e3e8ee] bg-[#f6f8fa] text-left"
+                >
+                  <img src={siteAssetUrl(image.src)} alt="" className="h-24 w-full object-cover" />
+                  <span className="block truncate px-2 py-1 text-[11px] text-[#0b1f3a]">{image.title}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

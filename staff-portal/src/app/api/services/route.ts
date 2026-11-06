@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, publishGuard, dbError } from "@/lib/api-auth";
 import { slugify } from "@/lib/services";
+import { cleanGroupOrder, rememberGroup } from "@/lib/group-order";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { NextRequest, NextResponse } from "next/server";
@@ -22,6 +23,7 @@ export async function GET() {
   return NextResponse.json({
     intro: settingsRes.data?.intro ?? "",
     download_catalog: settingsRes.data?.download_catalog ?? {},
+    group_order: Array.isArray(settingsRes.data?.group_order) ? settingsRes.data.group_order : [],
     items: split.items,
     removed: split.removed,
   });
@@ -41,6 +43,14 @@ export async function POST(req: NextRequest) {
   }
   const denied = publishGuard(session, "services", body.status ?? "draft");
   if (denied) return denied;
+
+  if (body.scope === "groups") {
+    const group_order = cleanGroupOrder(body.group_order);
+    const { error: upErr } = await admin.from("services_settings").upsert({ id: "default", group_order });
+    if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await logActivity(session.userId, "services", "reorder", "services_settings", "groups");
+    return NextResponse.json({ ok: true });
+  }
 
   if (body.scope === "settings") {
     const { error: upErr } = await admin.from("services_settings").upsert({
@@ -73,6 +83,7 @@ export async function POST(req: NextRequest) {
   const previous = await rememberFiles(admin, "service_items", body.id, ["image_path"]);
   const { data, error: upErr } = await admin.from("service_items").upsert(row).select("id").single();
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+  if (row.category) await rememberGroup(admin, "services_settings", row.category);
   await releaseUnusedValues(admin, previous);
   await logActivity(session.userId, "services", "upsert", "service_item", data?.id ?? slug);
   return NextResponse.json({ ok: true, id: data?.id });
