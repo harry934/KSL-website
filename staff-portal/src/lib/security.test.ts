@@ -8,7 +8,7 @@ import { issueContactToken, verifyContactToken } from "./contact-token.ts";
 import { looksLikeCode } from "./input-guard.ts";
 import { IDLE_MS, judgeSession } from "./staff-session.ts";
 import { sanitizeRichHtml } from "./sanitize-html.ts";
-import { cleanBoardSections, cleanIntro, cleanMilestoneInput, cleanOrgChart, toPublicOrganization, type MilestoneRow } from "./organization.ts";
+import { cleanBoardSections, cleanIntro, cleanMilestoneInput, cleanOrgChart, parseMilestoneWhen, toPublicOrganization, type MilestoneRow } from "./organization.ts";
 import { safeLink } from "./safe-link.ts";
 import { verifyTurnstile } from "./contact-token.ts";
 import { clientIp } from "./auth-server.ts";
@@ -143,6 +143,11 @@ test("organisation chart keeps page order and drops unsafe text", () => {
     tag_note: "14 months from keel to water",
   });
   assert.equal(cleaned.happened_on, "2022-08-02");
+  assert.equal(cleaned.date_precision, "day");
+  assert.equal(parseMilestoneWhen("2018").happened_on, "2018-01-01");
+  assert.equal(parseMilestoneWhen("2018").date_precision, "year");
+  assert.equal(parseMilestoneWhen("2018-07").date_precision, "month");
+  assert.equal(parseMilestoneWhen("").happened_on, null);
   assert.equal(cleaned.image_url, null);
   assert.equal(cleaned.image_slot, null);
   assert.equal(cleaned.story_key, "uhuru-ii");
@@ -157,15 +162,18 @@ test("organisation chart keeps page order and drops unsafe text", () => {
   assert.equal(keptImage.image_url, "img/ksl/mombasa.webp");
   assert.equal(keptImage.image_slot, "about.7-mombasa-shipyard-aerial-view");
   const rows: MilestoneRow[] = [
-    { id: "b", happened_on: "2020-09-29", title: "Later", summary: "Second", image_url: "img/ksl/yard.jpg", image_alt: "Yard", image_slot: null, story_key: null, tag_label: null, tag_note: null, sort_order: 1, status: "published" },
-    { id: "a", happened_on: "2018-07-12", title: "First", summary: "Draft", image_url: "img/ksl/mombasa.webp", image_alt: "Yard", image_slot: "about.7-mombasa-shipyard-aerial-view", story_key: null, tag_label: null, tag_note: null, sort_order: 0, status: "draft" },
-    { id: "c", happened_on: "2018-02-31", title: "Bad date", summary: "Skip", image_url: "img/ksl/mombasa.webp", image_alt: null, image_slot: null, story_key: null, tag_label: null, tag_note: null, sort_order: 2, status: "published" },
+    { id: "b", happened_on: "2020-09-29", date_precision: "day", title: "Later", summary: "Second", image_url: "img/ksl/yard.jpg", image_alt: "Yard", image_slot: null, story_key: null, tag_label: "Keep off the page", tag_note: "Hidden", sort_order: 1, status: "published" },
+    { id: "a", happened_on: "2018-07-12", date_precision: "day", title: "First", summary: "Draft", image_url: "img/ksl/mombasa.webp", image_alt: "Yard", image_slot: "about.7-mombasa-shipyard-aerial-view", story_key: null, tag_label: null, tag_note: null, sort_order: 0, status: "draft" },
+    { id: "c", happened_on: "2018-02-31", date_precision: "day", title: "Bad date", summary: "Skip", image_url: "img/ksl/mombasa.webp", image_alt: null, image_slot: null, story_key: null, tag_label: null, tag_note: null, sort_order: 2, status: "published" },
+    { id: "d", happened_on: "2016-01-01", date_precision: "year", title: "", summary: null, image_url: null, image_alt: null, image_slot: null, story_key: null, tag_label: null, tag_note: null, sort_order: 3, status: "published" },
   ];
   const published = toPublicOrganization({ milestones_title: "Major Milestones", milestones_lead: "From the first yard." }, [], [], rows);
   assert.equal(published.milestonesTitle, "Major Milestones");
-  assert.equal(published.milestones.length, 1);
+  assert.equal(published.milestones.length, 2);
   assert.equal(published.milestones[0].title, "Later");
   assert.equal(published.milestones[0].date, "2020-09-29");
+  assert.equal(published.milestones[0].tag, "");
+  assert.equal(published.milestones[1].date, "2016");
 });
 
 test("story HTML drops scripts and unsafe links", () => {

@@ -55,10 +55,13 @@ export const SHIPPED_BOARD_SECTIONS: BoardSection[] = [
   { id: "strategy", name: "Strategy", title: "Strategy", blurb: "Industrial growth and long term direction.", showTitle: true, showBlurb: true },
 ];
 
+export type MilestonePrecision = "year" | "month" | "day";
+
 export type MilestoneRow = {
   id: string;
-  happened_on: string;
-  title: string;
+  happened_on: string | null;
+  date_precision: MilestonePrecision | null;
+  title: string | null;
   summary: string | null;
   image_url: string | null;
   image_alt: string | null;
@@ -188,6 +191,35 @@ export function cleanMilestoneDate(value: unknown) {
   return text;
 }
 
+/** A milestone date can be a year, a year and month, or a full day. */
+export function parseMilestoneWhen(value: unknown): { happened_on: string | null; date_precision: MilestonePrecision | null } {
+  const text = String(value ?? "").trim();
+  if (!text) return { happened_on: null, date_precision: null };
+  const yearOnly = /^(\d{4})$/.exec(text);
+  if (yearOnly) {
+    const year = Number(yearOnly[1]);
+    if (year < 1900 || year > 2100) return { happened_on: null, date_precision: null };
+    return { happened_on: `${yearOnly[1]}-01-01`, date_precision: "year" };
+  }
+  const yearMonth = /^(\d{4})-(\d{2})$/.exec(text);
+  if (yearMonth) {
+    const year = Number(yearMonth[1]);
+    const month = Number(yearMonth[2]);
+    if (year < 1900 || year > 2100 || month < 1 || month > 12) return { happened_on: null, date_precision: null };
+    return { happened_on: `${yearMonth[1]}-${yearMonth[2]}-01`, date_precision: "month" };
+  }
+  const full = cleanMilestoneDate(text);
+  return full ? { happened_on: full, date_precision: "day" } : { happened_on: null, date_precision: null };
+}
+
+export function milestoneDateText(happenedOn: string | null | undefined, precision: MilestonePrecision | null | undefined) {
+  const stored = cleanMilestoneDate(happenedOn);
+  if (!stored) return "";
+  if (precision === "year") return stored.slice(0, 4);
+  if (precision === "month") return stored.slice(0, 7);
+  return stored;
+}
+
 export function cleanStoryKey(value: unknown) {
   const text = String(value ?? "")
     .trim()
@@ -224,8 +256,10 @@ export function cleanImageSlot(value: unknown) {
 export function cleanMilestoneInput(value: unknown) {
   const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   const image = cleanMilestoneImage(record.image_url);
+  const when = parseMilestoneWhen(record.happened_on);
   return {
-    happened_on: cleanMilestoneDate(record.happened_on),
+    happened_on: when.happened_on,
+    date_precision: when.date_precision,
     title: clip(record.title, 120),
     summary: clip(record.summary, 400) || null,
     image_url: image,
@@ -278,20 +312,24 @@ export function toPublicOrganization(
     .filter((row) => row.status === "published")
     .sort((a, b) => a.sort_order - b.sort_order)
     .flatMap((row) => {
-      const date = cleanMilestoneDate(row.happened_on);
+      const rawDate = String(row.happened_on ?? "").trim();
+      const when = parseMilestoneWhen(milestoneDateText(row.happened_on, row.date_precision) || (rawDate ? rawDate : ""));
+      if (rawDate && !when.happened_on) return [];
       const title = clip(row.title, 120);
+      const summary = clip(row.summary, 400);
       const image = cleanMilestoneImage(row.image_url);
-      if (!date || !title || !image) return [];
+      const date = milestoneDateText(when.happened_on, when.date_precision);
+      if (!date && !title && !summary && !image) return [];
       return [{
         date,
         title,
-        summary: clip(row.summary, 400),
-        image,
+        summary,
+        image: image ?? "",
         alt: clip(row.image_alt, 160) || title,
-        imageSlot: image.startsWith("img/") ? cleanImageSlot(row.image_slot) ?? "" : "",
-        story: cleanStoryKey(row.story_key) ?? "",
-        tag: clip(row.tag_label, 80),
-        note: clip(row.tag_note, 80),
+        imageSlot: image?.startsWith("img/") ? cleanImageSlot(row.image_slot) ?? "" : "",
+        story: "",
+        tag: "",
+        note: "",
       }];
     });
   const allowed = new Set(boardSections.map((section) => section.id));

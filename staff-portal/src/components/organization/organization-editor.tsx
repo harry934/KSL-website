@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, FormSection, SaveBar, Select, Switch, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
+import { Field, FormSection, SaveBar, Select, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
 import { ImageField } from "@/components/ui/image-field";
 import { SearchSelect } from "@/components/ui/search-select";
 import { ItemList } from "@/components/ui/item-list";
@@ -13,8 +13,7 @@ import { useCan } from "@/components/portal/session-context";
 import { reorderItem } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
 import { documentOptions, useDocuments } from "@/lib/use-documents";
-import { formatDay } from "@/lib/dates";
-import { cleanBoardSections, cleanIntro, cleanOrgChart, SHIPPED_BOARD_SECTIONS, SHIPPED_CHART, SHIPPED_INTRO, SHIPPED_MILESTONES_HEADING, type BoardMemberRow, type BoardSection, type LeadershipRow, type MilestoneRow, type MilestonesHeading, type OrgChart, type OrgDepartment, type OrgIntro } from "@/lib/organization";
+import { cleanBoardSections, cleanIntro, cleanOrgChart, milestoneDateText, parseMilestoneWhen, SHIPPED_BOARD_SECTIONS, SHIPPED_CHART, SHIPPED_INTRO, SHIPPED_MILESTONES_HEADING, type BoardMemberRow, type BoardSection, type LeadershipRow, type MilestoneRow, type MilestonesHeading, type OrgChart, type OrgDepartment, type OrgIntro } from "@/lib/organization";
 type Scope = "leadership" | "board" | "milestone";
 type Draft = {
   scope: Scope;
@@ -25,6 +24,9 @@ type Draft = {
   section?: string;
   photo_url?: string | null;
   happened_on?: string;
+  year?: string;
+  month?: string;
+  day?: string;
   title?: string;
   image_url?: string | null;
   image_alt?: string | null;
@@ -37,6 +39,18 @@ type Draft = {
   sort_order: number;
   status: string;
 };
+
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+function milestoneWhenLabel(row: MilestoneRow) {
+  const text = milestoneDateText(row.happened_on, row.date_precision || (row.happened_on ? "day" : null));
+  if (/^\d{4}-\d{2}$/.test(text)) return `${MONTHS[Number(text.slice(5, 7)) - 1]} ${text.slice(0, 4)}`;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    const day = Number(text.slice(8, 10));
+    return `${day} ${MONTHS[Number(text.slice(5, 7)) - 1]} ${text.slice(0, 4)}`;
+  }
+  return text;
+}
 
 const BOARD_GROUPS = [
   { value: "defence", label: "Defence" },
@@ -159,6 +173,9 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
     setEditing({
       scope: "milestone",
       happened_on: "",
+      year: "",
+      month: "",
+      day: "",
       title: "",
       summary: "",
       image_url: "",
@@ -176,11 +193,21 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
   async function saveRow(e: React.FormEvent) {
     e.preventDefault();
     if (!editing) return;
+    let payload = editing;
     if (editing.scope === "milestone") {
-      if (!editing.happened_on || !editing.title?.trim() || !editing.summary?.trim() || !editing.image_url) {
-        toast("Add the date, title, description, and photo.", "error");
+      const year = (editing.year ?? "").trim();
+      const month = editing.month ?? "";
+      const day = editing.day ?? "";
+      if (year && !/^\d{4}$/.test(year)) {
+        toast("Use a four-digit year, or leave the year blank.", "error");
         return;
       }
+      const happened = !year ? "" : !month ? year : !day ? `${year}-${month}` : `${year}-${month}-${day}`;
+      if (happened && !parseMilestoneWhen(happened).happened_on) {
+        toast("That day is not in that month.", "error");
+        return;
+      }
+      payload = { ...editing, happened_on: happened, title: editing.title ?? "", summary: editing.summary ?? "", story_key: null, tag_label: null, tag_note: null };
     } else if (editing.scope === "board") {
       if (!editing.full_name?.trim() || !editing.role?.trim()) {
         toast("Write the member's name and role.", "error");
@@ -192,7 +219,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
     }
     setSaving("row");
     try {
-      await sendJson("/api/organization", "POST", editing);
+      await sendJson("/api/organization", "POST", payload);
       toast("Saved.");
       setEditing(null);
       load();
@@ -308,26 +335,33 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
           <FormSection title={isMilestone ? (editing.id ? "Edit milestone" : "New milestone") : isBoard ? (editing.id ? "Edit board member" : "New board member") : editing.id ? "Edit leadership role" : "New leadership role"}>
             {isMilestone ? (
               <>
-                <Field label="Date" hint="The year is shown large. The day and month sit beside it.">
-                  <Input type="date" value={editing.happened_on ?? ""} onChange={(e) => set({ happened_on: e.target.value })} autoFocus={!editing.id} />
+                <Field label="Year" optional hint="A year is enough. Add a month or a day only when you want them shown.">
+                  <Input value={editing.year ?? ""} onChange={(e) => set({ year: e.target.value.replace(/\D/g, "").slice(0, 4) })} inputMode="numeric" placeholder="2018" autoFocus={!editing.id} />
                 </Field>
-                <Field label="Title">
+                <Field label="Month" optional>
+                  <Select value={editing.month ?? ""} onChange={(e) => set({ month: e.target.value, day: e.target.value ? editing.day : "" })}>
+                    <option value="">No month</option>
+                    {MONTHS.map((name, index) => (
+                      <option key={name} value={String(index + 1).padStart(2, "0")}>{name}</option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Day" optional>
+                  <Select value={editing.day ?? ""} onChange={(e) => set({ day: e.target.value })} disabled={!editing.month}>
+                    <option value="">No day</option>
+                    {Array.from({ length: 31 }, (_, index) => String(index + 1).padStart(2, "0")).map((value) => (
+                      <option key={value} value={value}>{Number(value)}</option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Title" optional>
                   <Input value={editing.title ?? ""} onChange={(e) => set({ title: e.target.value })} placeholder="e.g. Mombasa yard begins" />
                 </Field>
-                <Field label="Description">
+                <Field label="Description" optional>
                   <Textarea className="min-h-[90px]" value={editing.summary ?? ""} onChange={(e) => set({ summary: e.target.value })} />
                 </Field>
-                <Field label="Photo description" hint="Read aloud for people who cannot see the photo.">
+                <Field label="Photo description" optional hint="Read aloud for people who cannot see the photo.">
                   <Input value={editing.image_alt ?? ""} onChange={(e) => set({ image_alt: e.target.value })} placeholder="e.g. Mombasa Shipyard aerial view" />
-                </Field>
-                <Field label="Link group" optional hint="Milestones that share this name highlight together. The two MV Uhuru II entries use uhuru.">
-                  <Input value={editing.story_key ?? ""} onChange={(e) => set({ story_key: e.target.value })} placeholder="uhuru" />
-                </Field>
-                <Field label="Gold label" optional hint="A short line under the description, with a ship mark. Leave this blank to hide the label.">
-                  <Input value={editing.tag_label ?? ""} onChange={(e) => set({ tag_label: e.target.value })} placeholder="MV Uhuru II, part 1 of 2" />
-                </Field>
-                <Field label="Label note" optional hint="A second line on that label, such as how long the work took.">
-                  <Input value={editing.tag_note ?? ""} onChange={(e) => set({ tag_note: e.target.value })} placeholder="14 months from keel to water" />
                 </Field>
               </>
             ) : isBoard ? (
@@ -380,9 +414,10 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
               </FormSection>
             )}
             {isMilestone && (
-              <FormSection title="Photo" description="The round photo on the milestone path.">
+              <FormSection title="Photo" description="Optional. The round photo on the milestone path.">
                 <ImageField
                   module="organization"
+                  fromGallery
                   value={editing.image_url ?? ""}
                   onChange={(image_url) => set({ image_url, image_slot: image_url.startsWith("img/") ? editing.image_slot : "" })}
                 />
@@ -570,7 +605,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-[15px] font-bold text-[#0b1f3a]">Board members</h2>
-            <p className="text-[13px] text-[#6b7785]">Drag a member inside their section to change the order. The top person is shown first. Save the sections after you change a name or title, then refresh the KSL Board page.</p>
+            <p className="text-[13px] text-[#6b7785]">Drag a member inside their section to change the order. The top person is shown first. Save the sections after you change a name, then refresh the KSL Board page.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -614,45 +649,6 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
                 <Button variant="secondary" onClick={() => removeSection(section.id)} aria-label="Remove section">
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              </div>
-              <label className="block text-[12px] font-semibold text-[#6b7785]">
-                Website title
-                <Input
-                  className="mt-1 font-normal"
-                  value={section.title}
-                  onChange={(e) => {
-                    const title = e.target.value;
-                    setBoardSections(
-                      boardSections.map((row) =>
-                        row.id === section.id
-                          ? { ...row, title, showTitle: title.trim() ? (row.title.trim() ? row.showTitle : true) : false }
-                          : row
-                      )
-                    );
-                  }}
-                  placeholder="No title on the website"
-                  aria-label={`Section ${index + 1} website title`}
-                />
-              </label>
-              <Input
-                value={section.blurb}
-                onChange={(e) => setBoardSections(boardSections.map((row) => (row.id === section.id ? { ...row, blurb: e.target.value } : row)))}
-                placeholder="No explanation"
-                aria-label={`Section ${index + 1} explanation`}
-              />
-              <div className="flex flex-wrap gap-6">
-                <Switch
-                  checked={section.showTitle !== false && Boolean(section.title.trim())}
-                  onChange={(showTitle) => setBoardSections(boardSections.map((row) => (row.id === section.id ? { ...row, showTitle } : row)))}
-                  label="Show title"
-                  disabled={!section.title.trim()}
-                />
-                <Switch
-                  checked={section.showBlurb !== false && Boolean(section.blurb.trim())}
-                  onChange={(showBlurb) => setBoardSections(boardSections.map((row) => (row.id === section.id ? { ...row, showBlurb } : row)))}
-                  label="Show explanation"
-                  disabled={!section.blurb.trim()}
-                />
               </div>
               <ItemList
                 showImages
@@ -725,14 +721,18 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
           dragFrom={2}
           items={milestones.map((row) => ({
             id: row.id,
-            title: row.title,
-            subtitle: [formatDay(String(row.happened_on).slice(0, 10)), row.tag_label].filter(Boolean).join(" · "),
+            title: row.title || "Milestone",
+            subtitle: milestoneWhenLabel(row),
             image: row.image_url,
             status: row.status,
           }))}
           onEdit={(id) => {
             const row = milestones.find((item) => item.id === id);
-            if (row) setEditing({ ...row, scope: "milestone", happened_on: String(row.happened_on).slice(0, 10) });
+            if (row) {
+              const shown = milestoneDateText(row.happened_on, row.date_precision || (row.happened_on ? "day" : null));
+              const [year, month, day] = shown.split("-");
+              setEditing({ ...row, scope: "milestone", happened_on: row.happened_on ?? "", title: row.title ?? "", year: year || "", month: month || "", day: day || "" });
+            }
           }}
           onDelete={canDelete ? (id) => remove(id, "milestone") : undefined}
           onReorder={(from, to) => move("milestone", from, to)}

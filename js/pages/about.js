@@ -278,17 +278,20 @@
         function milestoneHtml(item) {
             var when = dateParts(item && item.date);
             var title = item && item.title ? String(item.title) : "";
+            var summary = item && item.summary ? String(item.summary) : "";
             var image = safeImage(item && item.image);
-            if (!when || !title || !image) return "";
+            if (!when && !title && !summary && !image) return "";
             var story = safeKey(item.story);
-            var slot = image.indexOf("img/") === 0 ? safeSlot(item.imageSlot) : "";
+            var slot = image && image.indexOf("img/") === 0 ? safeSlot(item.imageSlot) : "";
             var alt = item.alt ? String(item.alt) : title;
             var tag = item.tag ? String(item.tag).trim() : "";
             var note = item.note ? String(item.note).trim() : "";
             var html = "<li" + (story ? ' data-ksl-story="' + story + '"' : "") + ">";
-            html += '<img' + (slot ? ' data-ksl-image="' + slot + '"' : "") + ' src="' + esc(image) + '" alt="' + esc(alt) + '">';
-            html += "<div><time datetime=\"" + when.iso + "\"><b>" + esc(when.year) + "</b>" + esc(when.rest) + "</time>";
-            html += "<h3>" + esc(title) + "</h3><p>" + esc(item.summary || "") + "</p>";
+            if (image) html += '<img' + (slot ? ' data-ksl-image="' + slot + '"' : "") + ' src="' + esc(image) + '" alt="' + esc(alt) + '">';
+            html += "<div>";
+            if (when) html += "<time datetime=\"" + when.iso + "\"><b>" + esc(when.year) + "</b>" + esc(when.rest) + "</time>";
+            if (title) html += "<h3>" + esc(title) + "</h3>";
+            if (summary) html += "<p>" + esc(summary) + "</p>";
             if (tag) {
                 html += '<span class="ksl-path-tag"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76"/><path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6"/><path d="M12 10v4"/><path d="M12 2v3"/></svg>' + esc(tag);
                 if (note) html += "<em>" + esc(note) + "</em>";
@@ -300,7 +303,20 @@
     }
 
     function dateParts(value) {
-        var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
+        var text = String(value || "");
+        var yearOnly = /^(\d{4})$/.exec(text);
+        if (yearOnly) return { iso: yearOnly[1], year: yearOnly[1], rest: "" };
+        var yearMonth = /^(\d{4})-(\d{2})$/.exec(text);
+        if (yearMonth) {
+            var monthDate = new Date(Date.UTC(Number(yearMonth[1]), Number(yearMonth[2]) - 1, 1));
+            if (monthDate.getUTCMonth() !== Number(yearMonth[2]) - 1) return null;
+            return {
+                iso: yearMonth[0],
+                year: yearMonth[1],
+                rest: monthDate.toLocaleDateString("en-GB", { month: "long", timeZone: "UTC" })
+            };
+        }
+        var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
         if (!match) return null;
         var year = Number(match[1]);
         var month = Number(match[2]);

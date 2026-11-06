@@ -88,9 +88,6 @@ export async function POST(req: NextRequest) {
 
   if (body.scope === "milestone") {
     const row = cleanMilestoneInput(body);
-    if (!row.happened_on || !row.title || !row.summary || !row.image_url) {
-      return NextResponse.json({ error: "A date, title, description, and photo are required." }, { status: 400 });
-    }
     const previous = await rememberFiles(admin, "organization_milestones", body.id, ["image_url"]);
     const { data, error: upErr } = await admin
       .from("organization_milestones")
