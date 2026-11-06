@@ -286,7 +286,7 @@
             var alt = item.alt ? String(item.alt) : title;
             var tag = item.tag ? String(item.tag).trim() : "";
             var note = item.note ? String(item.note).trim() : "";
-            var html = "<li" + (story ? ' data-ksl-story="' + story + '"' : "") + ">";
+            var html = "<li" + (image ? "" : ' class="is-text"') + (story ? ' data-ksl-story="' + story + '"' : "") + ">";
             if (image) html += '<img' + (slot ? ' data-ksl-image="' + slot + '"' : "") + ' src="' + esc(image) + '" alt="' + esc(alt) + '">';
             html += "<div>";
             if (when) html += "<time datetime=\"" + when.iso + "\"><b>" + esc(when.year) + "</b>" + esc(when.rest) + "</time>";

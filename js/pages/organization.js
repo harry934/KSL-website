@@ -32,27 +32,22 @@
         if (!chartEl) return;
         var chart = data.chart;
         var departments = chart.departments || [];
-        var html = '<div class="org-leadership">' +
+        var html = '<div class="org-tree"><div class="org-tree-top">' +
             '<div class="org-node org-node-board"><span>' + esc(chart.boardCaption) + "</span><strong>" + esc(chart.boardTitle) + "</strong></div>" +
             '<span class="org-connector" aria-hidden="true"></span>' +
             '<div class="org-node org-node-md"><span>' + esc(chart.executiveCaption) + "</span><strong>" + esc(chart.executiveTitle) + "</strong></div>" +
-            "</div><div class=\"org-department-groups\">";
-        var rowStart = 0;
-        while (rowStart < departments.length) {
-            var row = departments.slice(rowStart, rowStart + 3);
-            html += '<div class="org-department-row">';
-            row.forEach(function (dept, offset) {
-                var number = String(rowStart + offset + 1).padStart(2, "0");
-                html += '<article class="org-department"><header><span>Department ' + number + "</span><h3>" + esc(dept.title) + "</h3></header>";
-                if (dept.units && dept.units.length) {
-                    html += "<ul>" + dept.units.map(function (unit) { return "<li>" + esc(unit) + "</li>"; }).join("") + "</ul>";
-                }
-                html += "</article>";
-            });
+            '<span class="org-connector" aria-hidden="true"></span>' +
+            "</div><div class=\"org-tree-branches\">";
+        departments.forEach(function (dept) {
+            html += '<div class="org-branch"><article class="org-office' + (dept.office ? " is-staff" : "") + '"><h3>' + esc(dept.title) + "</h3></article>";
+            if (dept.units && dept.units.length) {
+                html += '<ul class="org-divisions">' + dept.units.map(function (unit) {
+                    return "<li>" + esc(unit) + "</li>";
+                }).join("") + "</ul>";
+            }
             html += "</div>";
-            rowStart += 3;
-        }
-        html += "</div>";
+        });
+        html += "</div></div>";
         chartEl.innerHTML = html;
     }
 

@@ -29,6 +29,7 @@ export type OrgDepartment = {
   id: string;
   title: string;
   units: string[];
+  office: boolean;
 };
 
 export type OrgChart = {
@@ -86,7 +87,7 @@ export const SHIPPED_MILESTONES_HEADING: MilestonesHeading = {
 export const SHIPPED_INTRO: OrgIntro = {
   kicker: "Governance and operations",
   title: "How Kenya Shipyards Limited is structured",
-  body: "The Board provides governance oversight, while the Managing Director leads nine departments responsible for KSL’s shipbuilding, engineering, commercial, assurance, and corporate functions.",
+  body: "The Board provides governance oversight. The Managing Director leads the shipbuilding, engineering, commercial, assurance, and corporate offices.",
 };
 
 export const SHIPPED_CHART: OrgChart = {
@@ -95,15 +96,17 @@ export const SHIPPED_CHART: OrgChart = {
   executiveCaption: "Executive leadership",
   executiveTitle: "Managing Director",
   departments: [
-    { id: "dept-01", title: "Corporation Secretary and Legal Services", units: ["Legal Services Division", "Board Secretarial Unit", "Compliance & Ethics Unit"] },
-    { id: "dept-02", title: "Production", units: ["Engineering Design & Work Preparation Division", "New Build, Refit & Conversion Division", "Civil & Modular Works Division", "Yard Management Division"] },
-    { id: "dept-03", title: "Maintenance, Repair & Overhaul", units: ["Work Planning & Preparation Division", "MRO Project Management Division"] },
-    { id: "dept-04", title: "Commercial Services", units: ["Business Development Division", "Marketing & Sales Division"] },
-    { id: "dept-05", title: "Strategy & Quality Assurance", units: ["Strategy Planning & Performance Division", "QMS & Risk Coordination Division", "Inspection Division", "Measurement Division", "Commissioning Division", "Non Destructive Testing Unit"] },
-    { id: "dept-06", title: "Supply Chain Management", units: ["Technical Procurement Division", "Logistics & Transport Division", "Warehousing Division", "Administrative Procurement Unit"] },
-    { id: "dept-07", title: "Finance, Accounts & Information Technology", units: ["Financial Planning, Budgeting & Reporting Division", "Accounting Division", "Financial Controls Division", "Information Technology Division", "Project Financing Unit"] },
-    { id: "dept-08", title: "Corporate Services", units: ["Administration & Security Division", "Corporate Communications Division", "Human Resources Division", "Occupational Health, Safety & Environment Division"] },
-    { id: "dept-09", title: "Internal Audit & Risk Assurance", units: [] },
+    { id: "design", title: "Design & Production", office: false, units: ["Engineering Design & Dev Div", "New Build, Refit & Conversion Div", "Civil and Modular works Div"] },
+    { id: "mro", title: "Maintenance Repair & Overhaul", office: false, units: ["Maintenance Planning Div", "MRO & Project Mgt Div", "Precision Machining Div"] },
+    { id: "qa", title: "Quality Assurance & Standards", office: false, units: ["QA & Compliance Div", "Research, Innovation & Advisory Div", "Commissioning & Acceptance Div", "Environment & Safety Div"] },
+    { id: "supply", title: "Supply Chain Management", office: false, units: ["Warehousing Div", "Procurement Div"] },
+    { id: "commercial", title: "Commercial Services", office: false, units: ["Partnerships & Linkages Div", "Business Development Div"] },
+    { id: "finance", title: "Finance and Accounts", office: false, units: ["Finance Div", "Accounts Div", "Project Financing Div"] },
+    { id: "hr", title: "Human Resource & Admin", office: false, units: ["Human Resource Mgt Div", "Administration & Security Div", "Corporate Communication Div", "ICT Div"] },
+    { id: "special", title: "Special Projects", office: false, units: [] },
+    { id: "secretary", title: "Company Secretary & Legal Services", office: false, units: [] },
+    { id: "planning", title: "Corporate Planning", office: true, units: [] },
+    { id: "audit-office", title: "Internal Audit & Risk Assurance", office: false, units: [] },
   ],
 };
 
@@ -140,6 +143,7 @@ export function cleanOrgChart(value: unknown): OrgChart {
         return {
           id,
           title: clip(row.title, 160),
+          office: row.office === true,
           units: units.map((unit) => clip(unit, 160)).filter(Boolean).slice(0, 24),
         };
       })

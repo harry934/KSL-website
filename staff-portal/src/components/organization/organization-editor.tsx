@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Loader2, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormSection, SaveBar, Select, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
@@ -66,7 +66,6 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
   const [chartDownloadId, setChartDownloadId] = useState("");
   const [intro, setIntro] = useState<OrgIntro>(SHIPPED_INTRO);
   const [chart, setChart] = useState<OrgChart>(SHIPPED_CHART);
-  const [openDept, setOpenDept] = useState<string | null>(null);
   const [leadership, setLeadership] = useState<LeadershipRow[]>([]);
   const [board, setBoard] = useState<BoardMemberRow[]>([]);
   const [milestones, setMilestones] = useState<MilestoneRow[]>([]);
@@ -75,6 +74,26 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Draft | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  const returnTo = useRef<string | null>(null);
+
+  function showSection(id: string | null) {
+    if (!id) return;
+    window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  }
+
+  function anchorFor(draft: Draft) {
+    if (draft.scope === "milestone") return "org-milestones";
+    if (draft.scope === "leadership") return "org-leadership";
+    return `board-section-${draft.section || boardSections[0]?.id || "featured"}`;
+  }
+
+  function openDraft(draft: Draft, anchor: string) {
+    returnTo.current = anchor;
+    setEditing(draft);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   const load = useCallback(async () => {
     const res = await fetch("/api/organization");
@@ -112,12 +131,13 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
     };
   }
 
-  async function saveSettings() {
+  async function saveSettings(anchor: string) {
     setSaving("settings");
     try {
       await sendJson("/api/organization", "POST", settingsBody());
       toast("Saved. The website updates within a few seconds.");
       await load();
+      showSection(anchor);
     } catch (err) {
       toast((err as Error).message, "error");
     } finally {
@@ -154,23 +174,23 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
 
   function start(scope: "leadership" | "board") {
     const list = scope === "board" ? board : leadership;
-    setEditing({
+    const section = boardSections[0]?.id ?? "featured";
+    openDraft({
       scope,
       role: "",
       full_name: "",
       board_group: "independent",
-      section: boardSections[0]?.id ?? "featured",
+      section,
       photo_url: "",
       summary: "",
       bio: "",
       sort_order: list.length ? Math.max(...list.map((r) => r.sort_order)) + 1 : 0,
       status: canPublish ? "published" : "draft",
-    });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    }, scope === "board" ? `board-section-${section}` : "org-leadership");
   }
 
   function startMilestone() {
-    setEditing({
+    openDraft({
       scope: "milestone",
       happened_on: "",
       year: "",
@@ -186,8 +206,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
       tag_note: "",
       sort_order: milestones.length ? Math.max(...milestones.map((row) => row.sort_order)) + 1 : 0,
       status: canPublish ? "published" : "draft",
-    });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    }, "org-milestones");
   }
 
   async function saveRow(e: React.FormEvent) {
@@ -221,8 +240,10 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
     try {
       await sendJson("/api/organization", "POST", payload);
       toast("Saved.");
+      const anchor = anchorFor(payload);
       setEditing(null);
-      load();
+      await load();
+      showSection(anchor);
     } catch (err) {
       toast((err as Error).message, "error");
     } finally {
@@ -429,7 +450,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
           </div>
         </div>
         <SaveBar>
-          <Button variant="secondary" onClick={() => setEditing(null)}>
+          <Button variant="secondary" onClick={() => { const anchor = returnTo.current; setEditing(null); showSection(anchor); }}>
             Cancel
           </Button>
           <Button type="submit" disabled={saving === "row"}>
@@ -441,16 +462,28 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
   }
 
   const groupLabel = (value: string) => BOARD_GROUPS.find((group) => group.value === value)?.label ?? value;
-  const step = "text-[12px] font-bold uppercase tracking-wide text-[#0165FC]";
+  const orgNav = [
+    { id: "org-intro", label: "Introduction" },
+    { id: "org-chart", label: "Organogram" },
+    { id: "org-leadership", label: "Leadership" },
+    { id: "org-download", label: "Download" },
+    { id: "org-milestones", label: "Milestones" },
+  ];
 
   return (
     <div className="space-y-5">
       {view === "organisation" && (
       <>
-      <FormSection
-        title="1. Introduction"
-        description="The lines above the chart. Save this with the chart in step 3."
-      >
+      <nav aria-label="Organisation sections" className="sticky top-0 z-20 -mx-1 flex gap-2 overflow-x-auto bg-[#f4f6f8]/95 px-1 py-2 backdrop-blur">
+        {orgNav.map((item) => (
+          <a key={item.id} href={`#${item.id}`} className="shrink-0 rounded-full border border-[#d7e0ec] bg-white px-3 py-1.5 text-[13px] font-semibold text-[#0b1f3a] hover:border-[#0165FC] hover:text-[#0165FC]">
+            {item.label}
+          </a>
+        ))}
+      </nav>
+
+      <div id="org-intro" className="scroll-mt-24">
+      <FormSection title="Introduction" description="The lines above the chart.">
         <Field label="Small heading">
           <Input value={intro.kicker} onChange={(e) => setIntro({ ...intro, kicker: e.target.value })} />
         </Field>
@@ -460,11 +493,27 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
         <Field label="Paragraph">
           <Textarea value={intro.body} onChange={(e) => setIntro({ ...intro, body: e.target.value })} />
         </Field>
+        <Button onClick={() => saveSettings("org-intro")} disabled={saving === "settings"}>
+          {saving === "settings" ? "Saving…" : "Save introduction"}
+        </Button>
       </FormSection>
+      </div>
 
+      <div id="org-chart" className="scroll-mt-24">
       <FormSection
-        title="2. Top of the chart"
-        description="Visitors see the Board first, then the Managing Director."
+        title="Organogram"
+        description="Left to right, the same order as the website. A staff office uses the lighter box."
+        actions={
+          <Button
+            variant="secondary"
+            onClick={() => {
+              const id = `office-${Date.now().toString(36)}`;
+              setChart({ ...chart, departments: [...chart.departments, { id, title: "New office", units: [], office: false }] });
+            }}
+          >
+            <Plus className="h-4 w-4" /> Add office
+          </Button>
+        }
       >
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Board label" hint="The small line on the navy box.">
@@ -480,107 +529,84 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
             <Input value={chart.executiveTitle} onChange={(e) => setChart({ ...chart, executiveTitle: e.target.value })} />
           </Field>
         </div>
-      </FormSection>
-
-      <FormSection
-        title="3. Departments"
-        description="Change them in this order. Department 01 is first on the page, then 02, left to right. Open a department to edit the units under it, top to bottom."
-        actions={
-          <Button
-            variant="secondary"
-            onClick={() => {
-              const id = `dept-${Date.now().toString(36)}`;
-              setChart({ ...chart, departments: [...chart.departments, { id, title: "New department", units: [] }] });
-              setOpenDept(id);
-            }}
-          >
-            <Plus className="h-4 w-4" /> Add department
-          </Button>
-        }
-      >
-        <div className="space-y-3">
-          {chart.departments.map((dept, index) => {
-            const open = openDept === dept.id;
-            const number = String(index + 1).padStart(2, "0");
-            return (
-              <div key={dept.id} className="rounded-md border border-[#e4eaf2]">
-                <div className="flex flex-wrap items-center gap-2 px-3 py-2">
-                  <span className="w-8 text-[12px] font-bold text-[#99792c]">{number}</span>
-                  <Input
-                    className="min-w-[220px] flex-1"
-                    value={dept.title}
-                    onChange={(e) => patchDept(dept.id, { title: e.target.value })}
-                    aria-label={`Department ${number} name`}
-                  />
-                  <Button variant="secondary" onClick={() => moveDept(index, -1)} disabled={index === 0} aria-label="Move department up">
-                    <ChevronUp className="h-4 w-4" />
-                  </Button>
-                  <Button variant="secondary" onClick={() => moveDept(index, 1)} disabled={index === chart.departments.length - 1} aria-label="Move department down">
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                  <Button variant="secondary" onClick={() => setOpenDept(open ? null : dept.id)}>
-                    {open ? "Hide units" : `Units (${dept.units.length})`}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    aria-label="Remove department"
-                    onClick={() => {
-                      setChart({ ...chart, departments: chart.departments.filter((row) => row.id !== dept.id) });
-                      if (open) setOpenDept(null);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-                {open && (
-                  <div className="space-y-2 border-t border-[#eef1f4] px-3 py-3">
-                    {dept.units.map((unit, unitIndex) => (
-                      <div key={`${dept.id}-${unitIndex}`} className="flex items-center gap-2">
-                        <span className="w-6 text-[12px] text-[#6b7785]">{unitIndex + 1}</span>
-                        <Input
-                          value={unit}
-                          onChange={(e) => {
-                            const units = dept.units.slice();
-                            units[unitIndex] = e.target.value;
-                            patchDept(dept.id, { units });
-                          }}
-                          aria-label={`Unit ${unitIndex + 1}`}
-                        />
-                        <Button variant="secondary" onClick={() => moveUnit(dept.id, unitIndex, -1)} disabled={unitIndex === 0} aria-label="Move unit up">
-                          <ChevronUp className="h-4 w-4" />
-                        </Button>
-                        <Button variant="secondary" onClick={() => moveUnit(dept.id, unitIndex, 1)} disabled={unitIndex === dept.units.length - 1} aria-label="Move unit down">
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          aria-label="Remove unit"
-                          onClick={() => patchDept(dept.id, { units: dept.units.filter((_, i) => i !== unitIndex) })}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button variant="secondary" onClick={() => patchDept(dept.id, { units: [...dept.units, ""] })}>
-                      <Plus className="h-4 w-4" /> Add unit
-                    </Button>
-                  </div>
-                )}
+        <div className="flex gap-3 overflow-x-auto pb-1">
+          {chart.departments.map((dept, index) => (
+            <article key={dept.id} className="flex w-[240px] shrink-0 flex-col gap-2 rounded-md border border-[#d7e0ec] bg-[#f7f9fc] p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wide text-[#99792c]">{dept.office ? "Staff office" : "Directorate"}</span>
+                <span className="text-[12px] font-semibold text-[#6b7785]">{index + 1}</span>
               </div>
-            );
-          })}
+              <Input
+                value={dept.title}
+                onChange={(e) => patchDept(dept.id, { title: e.target.value })}
+                aria-label={`Office ${index + 1} name`}
+              />
+              <label className="flex items-center gap-2 text-[12px] text-[#3d4a63]">
+                <input
+                  type="checkbox"
+                  checked={dept.office}
+                  onChange={(e) => patchDept(dept.id, { office: e.target.checked })}
+                />
+                Lighter staff office
+              </label>
+              <div className="space-y-2">
+                {dept.units.map((unit, unitIndex) => (
+                  <div key={`${dept.id}-${unitIndex}`} className="rounded-md border border-[#e4eaf2] bg-white p-2">
+                    <Input
+                      value={unit}
+                      onChange={(e) => {
+                        const units = dept.units.slice();
+                        units[unitIndex] = e.target.value;
+                        patchDept(dept.id, { units });
+                      }}
+                      aria-label={`${dept.title || "Office"} division ${unitIndex + 1}`}
+                    />
+                    <div className="mt-1 flex gap-1">
+                      <Button variant="secondary" onClick={() => moveUnit(dept.id, unitIndex, -1)} disabled={unitIndex === 0} aria-label="Move division up">
+                        <ChevronUp className="h-4 w-4" />
+                      </Button>
+                      <Button variant="secondary" onClick={() => moveUnit(dept.id, unitIndex, 1)} disabled={unitIndex === dept.units.length - 1} aria-label="Move division down">
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                      <Button variant="secondary" aria-label="Remove division" onClick={() => patchDept(dept.id, { units: dept.units.filter((_, i) => i !== unitIndex) })}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                <Button variant="secondary" onClick={() => patchDept(dept.id, { units: [...dept.units, ""] })}>
+                  <Plus className="h-4 w-4" /> Add division
+                </Button>
+              </div>
+              <div className="mt-auto flex gap-1">
+                <Button variant="secondary" onClick={() => moveDept(index, -1)} disabled={index === 0} aria-label="Move office left">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="secondary" onClick={() => moveDept(index, 1)} disabled={index === chart.departments.length - 1} aria-label="Move office right">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="secondary"
+                  aria-label="Remove office"
+                  onClick={() => setChart({ ...chart, departments: chart.departments.filter((row) => row.id !== dept.id) })}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </article>
+          ))}
         </div>
-        <Button onClick={saveSettings} disabled={saving === "settings"}>
-          {saving === "settings" ? "Saving…" : "Save introduction and chart"}
+        <Button onClick={() => saveSettings("org-chart")} disabled={saving === "settings"}>
+          {saving === "settings" ? "Saving…" : "Save organogram"}
         </Button>
       </FormSection>
+      </div>
 
-      <div>
+      <div id="org-leadership" className="scroll-mt-24">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className={step}>Step 4</p>
             <h2 className="text-[15px] font-bold text-[#0b1f3a]">Cards under the chart</h2>
-            <p className="text-[13px] text-[#6b7785]">These sit below the departments. The top card is shown first. Set Visibility to Published or the card stays off the website.</p>
+            <p className="text-[13px] text-[#6b7785]">These sit below the organogram. The top card is shown first. Set Visibility to Published or the card stays off the website.</p>
           </div>
           <Button onClick={() => start("leadership")}>
             <Plus className="h-4 w-4" /> New role
@@ -590,7 +616,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
           items={leadership.map((r) => ({ id: r.id, title: r.role, subtitle: r.summary, status: r.status }))}
           onEdit={(id) => {
             const row = leadership.find((r) => r.id === id);
-            if (row) setEditing({ ...row, scope: "leadership" });
+            if (row) openDraft({ ...row, scope: "leadership" }, "org-leadership");
           }}
           onDelete={canDelete ? (id) => remove(id, "leadership") : undefined}
           onReorder={(from, to) => move("leadership", from, to)}
@@ -601,7 +627,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
       )}
 
       {view === "board" && (
-      <div className="space-y-4">
+      <div id="board-sections" className="scroll-mt-24 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-[15px] font-bold text-[#0b1f3a]">Board members</h2>
@@ -627,7 +653,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
         {boardSections.map((section, index) => {
           const people = board.filter((row) => memberSection(row) === section.id);
           return (
-            <div key={section.id} className="space-y-3 rounded-md border border-[#e4eaf2] p-3">
+            <div key={section.id} id={`board-section-${section.id}`} className="scroll-mt-24 space-y-3 rounded-md border border-[#e4eaf2] p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="w-6 text-[12px] font-bold text-[#99792c]">{index + 1}</span>
                 <label className="min-w-[180px] flex-1 text-[12px] font-semibold text-[#6b7785]">
@@ -662,7 +688,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
                 }))}
                 onEdit={(id) => {
                   const row = board.find((r) => r.id === id);
-                  if (row) setEditing({ ...row, scope: "board" });
+                  if (row) openDraft({ ...row, scope: "board" }, `board-section-${memberSection(row)}`);
                 }}
                 onDelete={canDelete ? (id) => remove(id, "board") : undefined}
                 onReorder={(from, to) => moveBoard(section.id, from, to)}
@@ -671,7 +697,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
             </div>
           );
         })}
-        <Button onClick={saveSettings} disabled={saving === "settings"}>
+        <Button onClick={() => saveSettings("board-sections")} disabled={saving === "settings"}>
           {saving === "settings" ? "Saving…" : "Save board sections"}
         </Button>
       </div>
@@ -679,7 +705,8 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
 
       {view === "organisation" && (
       <>
-      <FormSection title="5. Chart download" description="The document button under the leadership cards.">
+      <div id="org-download" className="scroll-mt-24">
+      <FormSection title="Chart download" description="The document button under the leadership cards.">
         <Field label="Document">
           <SearchSelect
             value={chartDownloadId}
@@ -689,15 +716,15 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
             searchPlaceholder="Search documents"
           />
         </Field>
-        <Button onClick={saveSettings} disabled={saving === "settings"}>
+        <Button onClick={() => saveSettings("org-download")} disabled={saving === "settings"}>
           {saving === "settings" ? "Saving…" : "Save download"}
         </Button>
       </FormSection>
+      </div>
 
-      <div className="space-y-4">
+      <div id="org-milestones" className="scroll-mt-24 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className={step}>Step 6</p>
             <h2 className="text-[15px] font-bold text-[#0b1f3a]">Major milestones</h2>
             <p className="text-[13px] text-[#6b7785]">The path on Who We Are. The top milestone is shown first. Drag a row to change the order. Set Visibility to Published or it stays off the website.</p>
           </div>
@@ -712,7 +739,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
           <Field label="Introduction">
             <Textarea value={milestonesHeading.lead} onChange={(e) => setMilestonesHeading({ ...milestonesHeading, lead: e.target.value })} />
           </Field>
-          <Button onClick={saveSettings} disabled={saving === "settings"}>
+          <Button onClick={() => saveSettings("org-milestones")} disabled={saving === "settings"}>
             {saving === "settings" ? "Saving…" : "Save heading"}
           </Button>
         </FormSection>
@@ -731,7 +758,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
             if (row) {
               const shown = milestoneDateText(row.happened_on, row.date_precision || (row.happened_on ? "day" : null));
               const [year, month, day] = shown.split("-");
-              setEditing({ ...row, scope: "milestone", happened_on: row.happened_on ?? "", title: row.title ?? "", year: year || "", month: month || "", day: day || "" });
+              openDraft({ ...row, scope: "milestone", happened_on: row.happened_on ?? "", title: row.title ?? "", year: year || "", month: month || "", day: day || "" }, "org-milestones");
             }
           }}
           onDelete={canDelete ? (id) => remove(id, "milestone") : undefined}

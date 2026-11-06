@@ -12,7 +12,7 @@ export default async function OrganizationPage() {
 
   return (
     <>
-      <PageHeader title="Organisation" description="Work from the top of the page downward. The chart is saved as one piece, then the cards under it. Major milestones are the path on Who We Are. Board members are edited from Board in the sidebar." />
+    <PageHeader title="Organisation" description="Introduction, the organogram, leadership cards, the chart download, and the milestones on Who We Are. Saving returns you to the section you changed. Board members are edited from Board in the sidebar." />
       <OrganizationEditor />
     </>
   );

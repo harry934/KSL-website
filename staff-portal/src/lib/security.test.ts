@@ -104,6 +104,8 @@ test("organisation chart keeps page order and drops unsafe text", () => {
   assert.equal(chart.departments[0].id, "dept-02");
   assert.deepEqual(chart.departments[0].units, ["Yard Management Division"]);
   assert.equal(chart.departments[1].id, "dept-2");
+  assert.equal(chart.departments[0].office, false);
+  assert.equal(cleanOrgChart({ departments: [{ id: "planning", title: "Corporate Planning", office: true, units: [] }] }).departments[0].office, true);
   const intro = cleanIntro({ intro_kicker: "Governance and operations", intro_title: "How it is structured", intro_body: "The Board leads." });
   const payload = toPublicOrganization(
     { chart_download_id: "plan", ...intro, intro_kicker: intro.kicker, intro_title: intro.title, intro_body: intro.body, chart },

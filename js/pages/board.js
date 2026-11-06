@@ -95,7 +95,24 @@
         });
     });
 
+    function cardHasBiography(card) {
+        var summary = card.querySelector(".board-card-body > p:not(.board-role)");
+        var full = card.querySelector("template.board-bio");
+        var summaryText = summary ? summary.textContent.replace(/\s+/g, " ").trim() : "";
+        var bioText = full ? full.textContent.replace(/\s+/g, " ").trim() : "";
+        return !!(summaryText || bioText);
+    }
+
     function wireCard(card) {
+        var readable = cardHasBiography(card);
+        card.classList.toggle("is-static", !readable);
+        if (!readable) {
+            card.removeAttribute("tabindex");
+            var extra = card.querySelector(".ksl-more");
+            if (extra) extra.remove();
+            return;
+        }
+        if (!card.hasAttribute("tabindex")) card.setAttribute("tabindex", "0");
         var body = card.querySelector(".board-card-body");
         if (body && !body.querySelector(".ksl-more")) {
             var more = document.createElement("span");
@@ -257,10 +274,14 @@
 
     function memberCard(member, featured) {
         var group = member.group === "defence" || member.group === "ps" ? member.group : "independent";
+        var summary = String(member.summary || "").trim();
         var bio = bioHtml(member.bio);
-        return '<article class="board-card' + (featured ? " board-card-featured" : "") + '" tabindex="0" data-board-group="' + escapeHtml(group) + '">' +
+        var readable = !!(summary || bio);
+        return '<article class="board-card' + (featured ? " board-card-featured" : "") + (readable ? "" : " is-static") + '"' +
+            (readable ? ' tabindex="0"' : "") + ' data-board-group="' + escapeHtml(group) + '">' +
             '<div class="board-portrait"><img src="' + escapeHtml(portraitSrc(member)) + '" alt="' + escapeHtml(member.name) + '" loading="lazy" decoding="async"></div>' +
-            '<div class="board-card-body"><p class="board-role">' + escapeHtml(member.role) + "</p><h3>" + escapeHtml(member.name) + "</h3><p>" + escapeHtml(member.summary) + "</p>" +
+            '<div class="board-card-body"><p class="board-role">' + escapeHtml(member.role) + "</p><h3>" + escapeHtml(member.name) + "</h3>" +
+            (summary ? "<p>" + escapeHtml(summary) + "</p>" : "") +
             (bio ? '<template class="board-bio">' + bio + "</template>" : "") +
             "</div></article>";
     }
