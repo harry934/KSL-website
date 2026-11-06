@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GripVertical, Loader2, Pencil, Plus, Star, Trash2, Upload } from "lucide-react";
+import { GripVertical, Loader2, Pencil, Plus, Star, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { EmptyState, Field, FieldGrid, FormSection, Select, Switch, Textarea } from "@/components/ui/form-bits";
+import { EmptyState, Field, FieldGrid, FormSection, Switch, Textarea } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { GALLERY_CATEGORIES, photoSrc, youtubeIdFrom, type GalleryRow, type GalleryVideoRow } from "@/lib/gallery";
@@ -21,7 +21,6 @@ const EMPTY_VIDEO: VideoDraft = { link: "", title: "", caption: "", featured: fa
 
 export function GalleryEditor() {
   const { toast, confirm } = useFeedback();
-  const canEdit = useCan("gallery", "edit");
   const canPublish = useCan("gallery", "publish");
   const canDelete = useCan("gallery", "delete");
 
@@ -32,9 +31,7 @@ export function GalleryEditor() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [cropQueue, setCropQueue] = useState<File[]>([]);
-  const [trimFile, setTrimFile] = useState<File | null>(null);
-  const [trimRow, setTrimRow] = useState<GalleryRow | null>(null);
-  const batch = useRef({ total: 0, added: 0 });
+  const batch = useRef({ total: 0, added: 0, held: false });
   const [video, setVideo] = useState<VideoDraft | null>(null);
   const [savingVideo, setSavingVideo] = useState(false);
 
@@ -105,13 +102,13 @@ export function GalleryEditor() {
   }
 
   function queueUploads(files: FileList | null) {
-    if (!files?.length || cropQueue.length || trimFile) return;
+    if (!files?.length || cropQueue.length) return;
     const list = Array.from(files).filter((file) => /^image\/(jpeg|png|webp)$/.test(file.type));
     if (!list.length) {
       toast("Choose a JPG, PNG, or WebP photo.", "error");
       return;
     }
-    batch.current = { total: list.length, added: 0 };
+    batch.current = { total: list.length, added: 0, held: false };
     setCropQueue(list);
   }
 
@@ -124,9 +121,10 @@ export function GalleryEditor() {
   useEffect(() => {
     if (cropQueue.length > 0 || batch.current.total === 0) return;
     const added = batch.current.added;
-    batch.current = { total: 0, added: 0 };
+    const held = batch.current.held;
+    batch.current = { total: 0, added: 0, held: false };
     if (!added) return;
-    toast(added === 1 ? "Photo added. Write what it shows, then turn it on." : `${added} photos added. Write what each one shows, then turn them on.`);
+    toast(held ? DRAFT_SAVED : added === 1 ? "Photo added." : `${added} photos added.`);
     void load();
   }, [cropQueue, load, toast]);
 
@@ -138,57 +136,21 @@ export function GalleryEditor() {
     try {
       const up = await uploadFile("gallery", cropped);
       const order = photos.reduce((max, p) => Math.max(max, p.sort_order), 0) + batch.current.added + 1;
-      await sendJson("/api/gallery", "POST", {
+      const saved = await sendJson("/api/gallery", "POST", {
         title: "",
         alt_text: "",
         category: place === "any" ? "all" : place,
         public_url: up.public_url,
         storage_path: up.storage_path,
         sort_order: order,
-        status: "draft",
+        status: "published",
       });
+      if (awaitingReview(saved)) batch.current.held = true;
       finishQueued(true);
     } catch (e) {
       toast(`${source.name}: ${(e as Error).message}`, "error");
       finishQueued(false);
     }
-  }
-
-  async function startTrim(row: GalleryRow) {
-    if (cropQueue.length || progress) return;
-    setProgress("Opening the photo…");
-    try {
-      const res = await fetch(`/api/gallery/file?id=${encodeURIComponent(row.id)}`);
-      const type = res.headers.get("content-type") || "";
-      if (!res.ok || type.includes("application/json")) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error(json.error ?? "That photo could not be opened for trimming.");
-      }
-      const blob = await res.blob();
-      setTrimRow(row);
-      setTrimFile(new File([blob], "photo.jpg", { type: blob.type || "image/jpeg" }));
-    } catch (e) {
-      toast((e as Error).message, "error");
-    }
-    setProgress(null);
-  }
-
-  async function saveTrim(cropped: File) {
-    const row = trimRow;
-    if (!row) return;
-    setTrimFile(null);
-    setProgress("Saving the crop…");
-    try {
-      const up = await uploadFile("gallery", cropped);
-      const next = { ...row, public_url: up.public_url, storage_path: up.storage_path };
-      setPhotos((list) => list.map((p) => (p.id === row.id ? next : p)));
-      await savePhoto(next, "Photo trimmed.");
-    } catch (e) {
-      toast((e as Error).message, "error");
-      load();
-    }
-    setTrimRow(null);
-    setProgress(null);
   }
 
   async function removePhoto(row: GalleryRow) {
@@ -321,7 +283,7 @@ export function GalleryEditor() {
     <div className="space-y-5">
       <FormSection
         title="Photos"
-        description={`${photos.length} photos, ${live} on the website. Tap a photo to change it.`}
+        description={`${photos.length} photos, ${live} on the website.`}
         actions={
           <>
             <label
@@ -364,67 +326,63 @@ export function GalleryEditor() {
           ))}
         </div>
         {openPhoto ? (
-          <div id={`gallery-${openPhoto.id}`} className="rounded-[8px] border border-[#e3e8ee] bg-[#fafbfc] p-3">
-            <div className="flex flex-wrap items-end gap-3">
-              <label className="min-w-[180px] flex-1">
-                <span className="mb-1 block text-[12px] font-semibold text-[#5b6775]">What the photo shows</span>
-                <Input
-                  value={openPhoto.alt_text || openPhoto.title || ""}
-                  placeholder="e.g. MV Uhuru at Kisumu"
-                  onChange={(e) => patchPhoto(openPhoto.id, { title: e.target.value, alt_text: e.target.value }, false)}
-                  onBlur={(e) => savePhoto({ ...openPhoto, title: e.target.value, alt_text: e.target.value }, "Description saved.")}
-                  aria-label="What the photo shows"
-                />
-              </label>
-              <label className="w-full sm:w-[180px]">
-                <span className="mb-1 block text-[12px] font-semibold text-[#5b6775]">Place</span>
-                <Select
-                  value={openPhoto.category || "all"}
-                  onChange={(e) => patchPhoto(openPhoto.id, { category: e.target.value }, true, "Place saved.")}
-                  aria-label="Where it appears"
-                >
-                  {GALLERY_CATEGORIES.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
-                    </option>
-                  ))}
-                </Select>
-              </label>
-              <div className="flex items-center gap-1 pb-0.5">
-                {canEdit && (
+          <div id={`gallery-${openPhoto.id}`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={siteAssetUrl(photoSrc(openPhoto))}
+              alt=""
+              className="mx-auto max-h-[420px] w-full bg-[#f6f8fa] object-contain"
+            />
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Move this photo">
+                {GALLERY_CATEGORIES.map((option) => (
                   <button
+                    key={option.value}
                     type="button"
-                    className="h-8 px-2 text-[13px] font-semibold text-[#0b1f3a] hover:underline disabled:opacity-50"
-                    disabled={Boolean(progress) || cropQueue.length > 0}
-                    onClick={() => startTrim(openPhoto)}
+                    onClick={() => patchPhoto(openPhoto.id, { category: option.value }, true)}
+                    className={cn(
+                      "h-8 rounded-full px-3 text-[13px] font-semibold",
+                      (openPhoto.category || "all") === option.value ? "bg-[#0b1f3a] text-white" : "bg-[#f1f4f7] text-[#3d4c5f] hover:bg-[#e7edf3]"
+                    )}
+                    aria-pressed={(openPhoto.category || "all") === option.value}
                   >
-                    Trim
+                    {option.label}
                   </button>
-                )}
-                <Switch
-                  checked={openPhoto.status === "published"}
-                  disabled={!canPublish}
-                  onChange={(on) => {
-                    if (on && !(openPhoto.alt_text || openPhoto.title || "").trim()) {
-                      toast("Write what the photo shows before it can go on the website.", "error");
-                      return;
-                    }
-                    patchPhoto(openPhoto.id, { status: on ? "published" : "draft", alt_text: openPhoto.alt_text || openPhoto.title || "" }, true, on ? "Photo is now on the website." : "Photo hidden.");
-                  }}
-                  label={<span className="text-[13px]">{openPhoto.status === "published" ? "On the page" : "Hidden"}</span>}
-                />
-                {canDelete && (
-                  <button
-                    type="button"
-                    onClick={() => removePhoto(openPhoto)}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-[6px] text-[#98a3b1] hover:bg-[#fdecea] hover:text-[#b42318]"
-                    aria-label="Remove photo"
-                    title="Remove photo"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
+                ))}
               </div>
+              <button
+                type="button"
+                disabled={!canPublish}
+                onClick={() =>
+                  patchPhoto(
+                    openPhoto.id,
+                    { status: openPhoto.status === "published" ? "draft" : "published" },
+                    true,
+                    openPhoto.status === "published" ? "Photo hidden." : "Photo is now on the website."
+                  )
+                }
+                className="h-8 rounded-full bg-[#f1f4f7] px-3 text-[13px] font-semibold text-[#0b1f3a] disabled:opacity-50"
+              >
+                {openPhoto.status === "published" ? "Hide" : "Show"}
+              </button>
+              {canDelete ? (
+                <button
+                  type="button"
+                  onClick={() => removePhoto(openPhoto)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#98a3b1] hover:bg-[#fdecea] hover:text-[#b42318]"
+                  aria-label="Remove photo"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setOpenId(null)}
+                className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[#5b6775] hover:bg-[#f1f4f7]"
+                aria-label="Close photo"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           </div>
         ) : null}
@@ -436,7 +394,7 @@ export function GalleryEditor() {
               <li key={p.id} id={openPhoto?.id === p.id ? undefined : `gallery-${p.id}`}>
                 <button
                   type="button"
-                  onClick={() => setOpenId(p.id)}
+                  onClick={() => setOpenId((current) => (current === p.id ? null : p.id))}
                   className={cn(
                     "relative block aspect-square w-full overflow-hidden bg-[#e7edf3]",
                     openId === p.id && "outline outline-2 outline-[#0b1f3a] outline-offset-[-2px]"
@@ -594,25 +552,13 @@ export function GalleryEditor() {
           </ul>
         )}
       </FormSection>
-      {cropQueue[0] && !progress && !trimFile && (
+      {cropQueue[0] && !progress && (
         <PhotoCropDialog
           file={cropQueue[0]}
           note={batch.current.total > 1 ? `Photo ${batch.current.total - cropQueue.length + 1} of ${batch.current.total}.` : undefined}
           onCancel={() => finishQueued(false)}
           onDone={(file) => {
             void acceptQueued(file);
-          }}
-        />
-      )}
-      {trimFile && (
-        <PhotoCropDialog
-          file={trimFile}
-          onCancel={() => {
-            setTrimFile(null);
-            setTrimRow(null);
-          }}
-          onDone={(file) => {
-            void saveTrim(file);
           }}
         />
       )}
