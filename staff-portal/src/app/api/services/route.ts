@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   const row = {
     id: body.id || crypto.randomUUID(),
     slug,
-    category: body.category ?? null,
+    category: String(body.category ?? "").trim() || null,
     title: body.title,
     excerpt: body.excerpt ?? null,
     detail: body.detail ?? null,

@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImageField } from "@/components/ui/image-field";
 import { ItemList } from "@/components/ui/item-list";
-import { Field, FormSection, SaveBar, Select, VisibilitySwitch } from "@/components/ui/form-bits";
+import { Field, FormSection, SaveBar, ChoiceField, VisibilitySwitch } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { slugify } from "@/lib/news";
 import { reorderItem, uniqueSlug } from "@/lib/list-utils";
 import { sendJson } from "@/lib/upload-client";
-import { PROJECT_GROUPS, projectGroup, type ProjectRow } from "@/lib/projects";
+import { PROJECT_GROUPS, type ProjectRow } from "@/lib/projects";
 import { projectPublicUrl } from "@/lib/public-links";
 import { useOpenEdit } from "@/lib/open-edit";
 
@@ -38,9 +38,23 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
   useOpenEdit(loading, items, (item) => setEditing(item));
 
   const groups = useMemo(() => {
-    const present = new Set(items.map((item) => item.category));
-    return PROJECT_GROUPS.filter((group) => present.has(group.value));
+    const seen = new Set<string>();
+    const list: { value: string; label: string }[] = [];
+    for (const item of items) {
+      if (seen.has(item.category)) continue;
+      seen.add(item.category);
+      const known = PROJECT_GROUPS.find((group) => group.value === item.category);
+      list.push({ value: item.category, label: known?.label || item.category_label || item.category });
+    }
+    return list;
   }, [items]);
+
+  const groupChoices = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const group of PROJECT_GROUPS) map.set(group.label, group.value);
+    for (const group of groups) map.set(group.label, group.value);
+    return [...map.entries()].map(([label, value]) => ({ value: label, slug: value, label }));
+  }, [groups]);
 
   function startNew() {
     setEditing({
@@ -61,17 +75,23 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
       toast("Give the project a name.", "error");
       return;
     }
+    const label = (editing.category_label || "").trim();
+    if (!label) {
+      toast("Choose a group, or type a new one.", "error");
+      return;
+    }
+    const known = groupChoices.find((group) => group.label === label);
+    const category = known?.slug || slugify(label);
     setSaving(true);
     try {
-      const group = projectGroup(editing.category);
       const slug =
         editing.slug?.trim() ||
         uniqueSlug(editing.title, items.filter((item) => item.id !== editing.id).map((item) => item.slug), "project");
       await sendJson("/api/projects", "POST", {
         ...editing,
         slug: slug || slugify(editing.title),
-        category: group.value,
-        category_label: group.label,
+        category,
+        category_label: label,
       });
       toast(editing.status === "published" ? "Project saved and shown on the website." : "Project saved as hidden (draft).");
       setEditing(null);
@@ -136,19 +156,15 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
               <Input value={editing.subtitle ?? ""} onChange={(event) => set({ subtitle: event.target.value })} />
             </Field>
             <Field label="Group">
-              <Select
-                value={projectGroup(editing.category).value}
-                onChange={(event) => {
-                  const group = projectGroup(event.target.value);
-                  set({ category: group.value, category_label: group.label });
+              <ChoiceField
+                value={editing.category_label ?? ""}
+                options={groupChoices.map((group) => ({ value: group.label, label: group.label }))}
+                onChange={(label) => {
+                  const known = groupChoices.find((group) => group.label === label);
+                  set({ category_label: label, category: known?.slug || slugify(label) });
                 }}
-              >
-                {PROJECT_GROUPS.map((group) => (
-                  <option key={group.value} value={group.value}>
-                    {group.label}
-                  </option>
-                ))}
-              </Select>
+                newLabel="Add a new group…"
+              />
             </Field>
           </FormSection>
           <div className="space-y-4">

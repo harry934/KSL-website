@@ -17,8 +17,18 @@ export type ProjectRow = {
   status: string;
 };
 
-export function projectGroup(category: string | null | undefined) {
-  return PROJECT_GROUPS.find((group) => group.value === category) ?? PROJECT_GROUPS[0];
+export function projectGroup(category: string | null | undefined, label?: string | null) {
+  const known = PROJECT_GROUPS.find((group) => group.value === category);
+  if (known) return known;
+  const text = String(label ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
+  const value = String(category ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+  if (value && text) return { value, label: text };
+  return PROJECT_GROUPS[0];
 }
 
 export function toPublicProjects(rows: ProjectRow[]) {

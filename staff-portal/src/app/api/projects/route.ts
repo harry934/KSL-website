@@ -35,7 +35,9 @@ export async function POST(req: NextRequest) {
   const denied = publishGuard(session, "projects", status);
   if (denied) return denied;
 
-  const group = projectGroup(body.category);
+  const label = String(body.category_label ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
+  const requested = String(body.category ?? "").trim() || slugify(label);
+  const group = projectGroup(requested, label);
   const row = {
     id: body.id || crypto.randomUUID(),
     slug: String(body.slug || slugify(title)).trim() || slugify(title),
