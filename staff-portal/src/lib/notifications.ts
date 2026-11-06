@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { describeActivity } from "@/lib/activity-words";
-import { MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
+import { activityPlace } from "@/lib/activity-place";
+import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 import type { StaffSession } from "@/lib/session";
 import type { NotificationIcon, NotificationTone } from "@/components/ui/notification-center";
 
@@ -20,6 +21,8 @@ export type NoticeItem = {
   tone: NotificationTone;
   source: string;
   time?: string;
+  /** Sidebar count. Only deletes are pinned, and only on the recycle bin. */
+  pin?: "recycle";
 };
 
 type MessageRow = {
@@ -137,20 +140,60 @@ function canSeeModule(session: StaffSession, key: ModuleKey) {
   return session.permissions.some((item) => item.module_key === key && item.can_view);
 }
 
-/** Deletes, and a person's first sign-in, for the sidebar badges and the bell. */
+const UPDATE_ACTIONS = [
+  "upsert",
+  "update",
+  "save",
+  "publish",
+  "create",
+  "restore",
+  "delete",
+  "purge",
+  "reorder",
+  "invite",
+  "permissions",
+  "profile",
+  "set role",
+  "set active",
+  "approve username",
+  "reject request",
+  "cancel invite",
+  "reset password",
+  "delete invite",
+  "resend invite",
+];
+
+function sentence(text: string) {
+  const trimmed = text.trim();
+  if (!trimmed) return "Updated something.";
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1) + (trimmed.endsWith(".") ? "" : ".");
+}
+
+/** Admin changes for the bell. Deletes are also pinned to the recycle bin. */
 async function loadWatches(session: StaffSession): Promise<NoticeItem[]> {
   const admin = createAdminClient();
   const since = new Date();
   since.setDate(since.getDate() - 21);
-  const { data } = await admin
-    .from("activity_log")
-    .select("id, actor_id, module_key, action, entity_type, entity_id, metadata, created_at, admin_profiles(display_name, username)")
-    .in("action", ["delete", "purge", "sign in"])
-    .gte("created_at", since.toISOString())
-    .order("created_at", { ascending: false })
-    .limit(60);
-  const rows = (data ?? []) as ActivityRow[];
-  const actors = [...new Set(rows.filter((row) => row.action === "sign in" && row.actor_id).map((row) => row.actor_id as string))];
+  const columns = "id, actor_id, module_key, action, entity_type, entity_id, metadata, created_at, admin_profiles(display_name, username)";
+  const [{ data: updates }, { data: signIns }] = await Promise.all([
+    admin
+      .from("activity_log")
+      .select(columns)
+      .in("action", UPDATE_ACTIONS)
+      .gte("created_at", since.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(40),
+    admin
+      .from("activity_log")
+      .select(columns)
+      .eq("action", "sign in")
+      .gte("created_at", since.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(30),
+  ]);
+  const rows = (updates ?? []) as ActivityRow[];
+  const signInRows = (signIns ?? []) as ActivityRow[];
+  const actors = [...new Set(signInRows.map((row) => row.actor_id).filter((id): id is string => Boolean(id)))];
   const firstSignIn = new Map<string, string>();
   if (actors.length && session.isSuperAdmin) {
     const { data: history } = await admin
@@ -165,41 +208,41 @@ async function loadWatches(session: StaffSession): Promise<NoticeItem[]> {
   }
 
   const notices: NoticeItem[] = [];
-  for (const row of rows) {
-    if (row.action === "sign in") {
-      if (!session.isSuperAdmin || !row.actor_id || row.actor_id === session.userId) continue;
-      if (firstSignIn.get(row.actor_id) !== row.id) continue;
-      notices.push({
-        id: `watch:${row.id}`,
-        kind: "watch",
-        module: "staff",
-        who: personName(row),
-        text: "Signed in for the first time.",
-        area: "Staff",
-        href: "/staff",
-        createdAt: row.created_at,
-        icon: "username",
-        tone: "info",
-        source: "First sign-in",
-      });
-      continue;
-    }
+  for (const row of signInRows) {
+    if (!session.isSuperAdmin || !row.actor_id || row.actor_id === session.userId) continue;
+    if (firstSignIn.get(row.actor_id) !== row.id) continue;
+    notices.push({
+      id: `watch:${row.id}`,
+      kind: "watch",
+      module: "staff",
+      who: personName(row),
+      text: "Signed in for the first time.",
+      area: "Staff",
+      href: "/staff",
+      createdAt: row.created_at,
+      icon: "username",
+      tone: "info",
+      source: "First sign-in",
+    });
+  }
 
+  for (const row of rows) {
     const key = moduleKey(row.module_key);
     if (!key || !canSeeModule(session, key)) continue;
-    const gone = describeActivity({ action: row.action, entity_type: row.entity_type, metadata: row.metadata });
+    const removed = row.action === "delete" || row.action === "purge";
     notices.push({
       id: `watch:${row.id}`,
       kind: "watch",
       module: key,
       who: personName(row),
-      text: gone.charAt(0).toUpperCase() + gone.slice(1) + ".",
+      text: sentence(describeActivity({ action: row.action, entity_type: row.entity_type, metadata: row.metadata })),
       area: MODULE_LABELS[key],
-      href: MODULE_ROUTES[key],
+      href: removed ? "/recycle" : activityPlace(row),
       createdAt: row.created_at,
-      icon: "attention",
-      tone: "danger",
-      source: row.action === "purge" ? "Deleted permanently" : "Deleted",
+      icon: removed ? "attention" : row.action === "publish" ? "scheduled" : "bell",
+      tone: removed ? "danger" : row.action === "publish" ? "success" : "default",
+      source: removed ? (row.action === "purge" ? "Deleted permanently" : "Deleted") : MODULE_LABELS[key],
+      pin: removed ? "recycle" : undefined,
     });
   }
   return notices;

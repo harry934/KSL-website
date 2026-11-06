@@ -86,7 +86,7 @@ export async function sendJson(url: string, method: string, body?: unknown) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error ?? "Something went wrong. Please try again.");
-    if (method.toUpperCase() === "DELETE") refreshNotices();
+    if (method.toUpperCase() !== "GET") refreshNotices();
     return data;
   };
   const message = BUSY_WORDS[method.toUpperCase()] ?? "Saving…";

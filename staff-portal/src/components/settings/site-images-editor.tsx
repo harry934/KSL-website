@@ -833,11 +833,11 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       )}
 
       {picking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(39,50,114,0.38)] p-4">
-          <div className="flex max-h-[80vh] w-full max-w-3xl flex-col bg-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(39,50,114,0.38)] p-4" onClick={() => window.setTimeout(() => setPicking(null), 0)}>
+          <div className="flex max-h-[80vh] w-full max-w-3xl flex-col bg-white" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-[#eef1f4] px-4 py-3">
               <p className="m-0 text-[15px] font-semibold text-[#0b1f3a]">Choose from the gallery</p>
-              <button type="button" aria-label="Close" onClick={() => setPicking(null)} className="text-[#0b1f3a]">
+              <button type="button" aria-label="Close" onClick={() => window.setTimeout(() => setPicking(null), 0)} className="text-[#0b1f3a]">
                 <X className="h-5 w-5" />
               </button>
             </div>

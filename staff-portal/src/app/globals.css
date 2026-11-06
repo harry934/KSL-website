@@ -187,9 +187,11 @@ body {
 
 .app-collapsed .app-sidebar {
   width: 0;
+  min-width: 0;
   padding: 0;
   transform: translateX(-100%);
   overflow: hidden;
+  visibility: hidden;
   pointer-events: none;
 }
 
@@ -235,9 +237,11 @@ body {
 
   .app-collapsed .app-sidebar {
     width: var(--sidebar-w);
+    min-width: 0;
     padding: 14px 10px;
     transform: translateX(-100%);
     overflow: auto;
+    visibility: visible;
     pointer-events: auto;
   }
 

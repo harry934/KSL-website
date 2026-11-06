@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import { dismissNotices, NOTICES_REFRESH, readDismissed, readSeen, SEEN_EVENT } from "@/lib/notification-seen";
 import { NotificationCenter, type NotificationIcon, type NotificationItem, type NotificationTone } from "@/components/ui/notification-center";
@@ -36,6 +37,7 @@ function timeAgo(iso: string) {
 }
 
 export function NotificationBell({ userId }: { userId: string }) {
+  const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [seenAt, setSeenAt] = useState(0);
   const [dismissed, setDismissed] = useState<string[]>([]);
@@ -140,8 +142,11 @@ export function NotificationBell({ userId }: { userId: string }) {
   function openItem(item: NotificationItem) {
     dismissNotices(userId, [item.id]);
     markMessages([item.id]);
-    setOpen(false);
-    if (item.href) window.location.assign(item.href);
+    const href = item.href;
+    window.setTimeout(() => {
+      setOpen(false);
+      if (href) router.push(href);
+    }, 0);
   }
 
   return (

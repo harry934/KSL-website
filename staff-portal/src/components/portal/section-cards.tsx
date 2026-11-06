@@ -31,7 +31,7 @@ export function SectionCards({ links, userId }: { links: PortalNavLink[]; userId
       <div className="dash-launch-grid">
         {links.map((link) => {
           const Icon = iconForNav(link);
-          const count = link.module ? (badges[link.module] ?? 0) : 0;
+          const count = link.kind === "recycle" ? badges.recycle : 0;
           const note = noteFor(link);
           return (
             <Link key={link.href} href={link.href} className="ksl-card dash-section">

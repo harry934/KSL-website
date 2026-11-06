@@ -45,8 +45,13 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
   );
 
   function close(ok: boolean) {
-    dialog?.resolve(ok);
-    setDialog(null);
+    const resolve = dialog?.resolve;
+    // Wait until the click finishes. Removing the layer on mouse-down leaves the page unable to take the next click.
+    window.setTimeout(() => {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      resolve?.(ok);
+      setDialog(null);
+    }, 0);
   }
 
   return (
@@ -108,13 +113,13 @@ function ConfirmDialog({ options, onClose }: { options: ConfirmOptions; onClose:
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-[#0b1f3a]/45 p-4" onMouseDown={() => onClose(false)}>
+    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-[#0b1f3a]/45 p-4" onClick={() => onClose(false)}>
       <div
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="ksl-confirm-title"
         className="toast-enter w-full max-w-[420px] rounded-[12px] bg-white p-6 shadow-[0_24px_60px_rgba(11,31,58,0.3)]"
-        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start gap-3">
           <span

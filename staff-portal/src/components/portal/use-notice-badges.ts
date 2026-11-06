@@ -1,16 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ModuleKey } from "@/lib/modules";
 import type { NoticeItem } from "@/lib/notifications";
-import { NOTICES_REFRESH, SEEN_EVENT, readDismissed, readSeen } from "@/lib/notification-seen";
+import { NOTICES_REFRESH, SEEN_EVENT, readDismissed } from "@/lib/notification-seen";
 
 const POLL_MS = 15_000;
 
-/** Unread count per sidebar section, using the same rows as the notification bell. */
+/** Recycle-bin count. Other admin changes stay in the notification bell. */
 export function useNoticeBadges(userId: string) {
   const [marks, setMarks] = useState<NoticeItem[]>([]);
-  const [seenAt, setSeenAt] = useState(0);
   const [dismissed, setDismissed] = useState<string[]>([]);
 
   const load = useCallback(async () => {
@@ -25,11 +23,9 @@ export function useNoticeBadges(userId: string) {
   }, []);
 
   useEffect(() => {
-    setSeenAt(readSeen(userId));
     setDismissed(readDismissed(userId));
     load();
     function onSeen() {
-      setSeenAt(readSeen(userId));
       setDismissed(readDismissed(userId));
       load();
     }
@@ -46,18 +42,11 @@ export function useNoticeBadges(userId: string) {
   }, [load, userId]);
 
   return useMemo(() => {
-    const counts: Partial<Record<ModuleKey, number>> = {};
+    let recycle = 0;
     for (const mark of marks) {
-      if (!mark.module || dismissed.includes(mark.id)) continue;
-      const unread =
-        mark.kind === "message"
-          ? !!mark.unread
-          : mark.kind === "request" || mark.kind === "watch"
-            ? true
-            : new Date(mark.createdAt).getTime() > seenAt;
-      if (!unread) continue;
-      counts[mark.module] = (counts[mark.module] ?? 0) + 1;
+      if (mark.pin !== "recycle" || dismissed.includes(mark.id)) continue;
+      recycle += 1;
     }
-    return counts;
-  }, [dismissed, marks, seenAt]);
+    return { recycle };
+  }, [dismissed, marks]);
 }

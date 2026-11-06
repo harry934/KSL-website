@@ -116,11 +116,11 @@ export function ImageField({
         {error && <p className="text-[12.5px] text-[#b42318]">{error}</p>}
       </div>
       {galleryOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(39,50,114,0.38)] p-4">
-          <div className="flex max-h-[80vh] w-full max-w-3xl flex-col bg-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(39,50,114,0.38)] p-4" onClick={() => window.setTimeout(() => setGalleryOpen(false), 0)}>
+          <div className="flex max-h-[80vh] w-full max-w-3xl flex-col bg-white" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-[#eef1f4] px-4 py-3">
               <p className="m-0 text-[15px] font-semibold text-[#0b1f3a]">Choose from the gallery</p>
-              <button type="button" aria-label="Close" onClick={() => setGalleryOpen(false)} className="text-[#0b1f3a]">
+              <button type="button" aria-label="Close" onClick={() => window.setTimeout(() => setGalleryOpen(false), 0)} className="text-[#0b1f3a]">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -193,11 +193,11 @@ export function GalleryBrowser({ onPick, label = "From gallery" }: { onPick: (sr
       </button>
       {error && !open && <p className="w-full text-[12.5px] text-[#b42318]">{error}</p>}
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(39,50,114,0.38)] p-4">
-          <div className="flex max-h-[80vh] w-full max-w-3xl flex-col bg-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(39,50,114,0.38)] p-4" onClick={() => window.setTimeout(() => setOpen(false), 0)}>
+          <div className="flex max-h-[80vh] w-full max-w-3xl flex-col bg-white" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-[#eef1f4] px-4 py-3">
               <p className="m-0 text-[15px] font-semibold text-[#0b1f3a]">Choose from the gallery</p>
-              <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="text-[#0b1f3a]">
+              <button type="button" aria-label="Close" onClick={() => window.setTimeout(() => setOpen(false), 0)} className="text-[#0b1f3a]">
                 <X className="h-5 w-5" />
               </button>
             </div>

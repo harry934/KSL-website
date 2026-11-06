@@ -93,7 +93,7 @@ export function Sidebar({ session }: { session: StaffSession }) {
                 label={link.label}
                 icon={iconForNav(link)}
                 active={isActive(link.href)}
-                count={link.module ? (badges[link.module] ?? 0) : 0}
+                count={link.kind === "recycle" ? badges.recycle : 0}
               />
             ))}
           </div>

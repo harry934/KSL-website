@@ -70,8 +70,8 @@ export function VideoTrimDialog({
   const width = duration > 0 ? (span / duration) * 100 : 100;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(11,31,58,0.45)] p-4">
-      <div className="flex max-h-[92vh] w-full max-w-[720px] flex-col bg-white">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(11,31,58,0.45)] p-4" onClick={() => window.setTimeout(onCancel, 0)}>
+      <div className="flex max-h-[92vh] w-full max-w-[720px] flex-col bg-white" onClick={(event) => event.stopPropagation()}>
         <div className="border-b border-[#eef1f4] px-4 py-3">
           <p className="m-0 text-[15px] font-semibold text-[#0b1f3a]">Trim the video</p>
           <p className="m-0 mt-1 text-[13px] text-[#6b7785]">
@@ -133,7 +133,7 @@ export function VideoTrimDialog({
           </p>
         </div>
         <div className="flex flex-wrap justify-end gap-2 border-t border-[#eef1f4] px-4 py-3">
-          <Button type="button" variant="secondary" onClick={onCancel}>
+          <Button type="button" variant="secondary" onClick={() => window.setTimeout(onCancel, 0)}>
             Cancel
           </Button>
           <Button type="button" variant="secondary" onClick={() => onDone(null)} disabled={!ready}>
