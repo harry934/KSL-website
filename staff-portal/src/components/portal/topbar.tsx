@@ -73,7 +73,8 @@ export function Topbar({
             type="button"
             className="icon-button"
             onClick={onToggleSidebar}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? "Open sidebar" : "Close sidebar"}
+            title={collapsed ? "Open sidebar" : "Close sidebar"}
           >
             <PanelLeft className="h-4 w-4" />
           </button>

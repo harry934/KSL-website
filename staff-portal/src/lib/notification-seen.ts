@@ -3,6 +3,14 @@
 /** Shared with the bell and the sidebar so "Mark all read" clears both. */
 export const SEEN_EVENT = "ksl-notifications-seen";
 
+/** Fired after a delete so the sidebar badges refresh without waiting for the next poll. */
+export const NOTICES_REFRESH = "ksl-notifications-refresh";
+
+export function refreshNotices() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(NOTICES_REFRESH));
+}
+
 export function seenKey(userId: string) {
   return `ksl-notifications-seen:${userId}`;
 }

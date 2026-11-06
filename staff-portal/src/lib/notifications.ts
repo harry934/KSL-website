@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { ModuleKey } from "@/lib/modules";
+import { describeActivity } from "@/lib/activity-words";
+import { MODULE_LABELS, MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import type { StaffSession } from "@/lib/session";
 import type { NotificationIcon, NotificationTone } from "@/components/ui/notification-center";
 
@@ -108,11 +109,108 @@ async function loadAccountRequests(): Promise<NoticeItem[]> {
   });
 }
 
-/** Password and username requests, then website messages. */
+type ActivityRow = {
+  id: string;
+  actor_id: string | null;
+  module_key: string | null;
+  action: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  admin_profiles: { display_name: string | null; username: string | null } | { display_name: string | null; username: string | null }[] | null;
+};
+
+function personName(row: ActivityRow) {
+  const profile = Array.isArray(row.admin_profiles) ? row.admin_profiles[0] : row.admin_profiles;
+  return profile?.display_name || profile?.username || "A staff member";
+}
+
+function moduleKey(value: string | null): ModuleKey | null {
+  if (value && value in MODULE_LABELS) return value as ModuleKey;
+  return null;
+}
+
+function canSeeModule(session: StaffSession, key: ModuleKey) {
+  if (session.isSuperAdmin) return true;
+  if (key === "staff") return false;
+  return session.permissions.some((item) => item.module_key === key && item.can_view);
+}
+
+/** Deletes, and a person's first sign-in, for the sidebar badges and the bell. */
+async function loadWatches(session: StaffSession): Promise<NoticeItem[]> {
+  const admin = createAdminClient();
+  const since = new Date();
+  since.setDate(since.getDate() - 21);
+  const { data } = await admin
+    .from("activity_log")
+    .select("id, actor_id, module_key, action, entity_type, entity_id, metadata, created_at, admin_profiles(display_name, username)")
+    .in("action", ["delete", "purge", "sign in"])
+    .gte("created_at", since.toISOString())
+    .order("created_at", { ascending: false })
+    .limit(60);
+  const rows = (data ?? []) as ActivityRow[];
+  const actors = [...new Set(rows.filter((row) => row.action === "sign in" && row.actor_id).map((row) => row.actor_id as string))];
+  const firstSignIn = new Map<string, string>();
+  if (actors.length && session.isSuperAdmin) {
+    const { data: history } = await admin
+      .from("activity_log")
+      .select("id, actor_id, created_at")
+      .eq("action", "sign in")
+      .in("actor_id", actors)
+      .order("created_at", { ascending: true });
+    for (const row of history ?? []) {
+      if (row.actor_id && !firstSignIn.has(row.actor_id)) firstSignIn.set(row.actor_id, row.id);
+    }
+  }
+
+  const notices: NoticeItem[] = [];
+  for (const row of rows) {
+    if (row.action === "sign in") {
+      if (!session.isSuperAdmin || !row.actor_id || row.actor_id === session.userId) continue;
+      if (firstSignIn.get(row.actor_id) !== row.id) continue;
+      notices.push({
+        id: `watch:${row.id}`,
+        kind: "watch",
+        module: "staff",
+        who: personName(row),
+        text: "Signed in for the first time.",
+        area: "Staff",
+        href: "/staff",
+        createdAt: row.created_at,
+        icon: "username",
+        tone: "info",
+        source: "First sign-in",
+      });
+      continue;
+    }
+
+    const key = moduleKey(row.module_key);
+    if (!key || !canSeeModule(session, key)) continue;
+    const gone = describeActivity({ action: row.action, entity_type: row.entity_type, metadata: row.metadata });
+    notices.push({
+      id: `watch:${row.id}`,
+      kind: "watch",
+      module: key,
+      who: personName(row),
+      text: gone.charAt(0).toUpperCase() + gone.slice(1) + ".",
+      area: MODULE_LABELS[key],
+      href: MODULE_ROUTES[key],
+      createdAt: row.created_at,
+      icon: "attention",
+      tone: "danger",
+      source: row.action === "purge" ? "Deleted permanently" : "Deleted",
+    });
+  }
+  return notices;
+}
+
+/** Deletes and first sign-ins, then password and username requests, then website messages. */
 export async function loadNotifications(session: StaffSession): Promise<NoticeItem[]> {
-  const [messages, requests] = await Promise.all([
+  const [messages, requests, watches] = await Promise.all([
     loadMessages(session),
     session.isSuperAdmin ? loadAccountRequests() : Promise.resolve([]),
+    loadWatches(session),
   ]);
-  return [...requests, ...messages].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return [...watches, ...requests, ...messages].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }

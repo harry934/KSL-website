@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ModuleKey } from "@/lib/modules";
 import type { NoticeItem } from "@/lib/notifications";
-import { SEEN_EVENT, readDismissed, readSeen } from "@/lib/notification-seen";
+import { NOTICES_REFRESH, SEEN_EVENT, readDismissed, readSeen } from "@/lib/notification-seen";
 
 const POLL_MS = 15_000;
 
@@ -34,11 +34,13 @@ export function useNoticeBadges(userId: string) {
       load();
     }
     window.addEventListener(SEEN_EVENT, onSeen);
+    window.addEventListener(NOTICES_REFRESH, load);
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") load();
     }, POLL_MS);
     return () => {
       window.removeEventListener(SEEN_EVENT, onSeen);
+      window.removeEventListener(NOTICES_REFRESH, load);
       window.clearInterval(timer);
     };
   }, [load, userId]);
@@ -46,9 +48,7 @@ export function useNoticeBadges(userId: string) {
   return useMemo(() => {
     const counts: Partial<Record<ModuleKey, number>> = {};
     for (const mark of marks) {
-      if (!mark.module) continue;
-      if (mark.module === "messages" && mark.kind !== "message") continue;
-      if (dismissed.includes(mark.id)) continue;
+      if (!mark.module || dismissed.includes(mark.id)) continue;
       const unread =
         mark.kind === "message"
           ? !!mark.unread

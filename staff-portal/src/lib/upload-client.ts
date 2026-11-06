@@ -1,4 +1,5 @@
 import type { ModuleKey } from "@/lib/modules";
+import { refreshNotices } from "@/lib/notification-seen";
 
 export const BUSY_EVENT = "ksl-busy";
 export type BusyDetail = { delta: 1 | -1; message?: string };
@@ -85,6 +86,7 @@ export async function sendJson(url: string, method: string, body?: unknown) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error ?? "Something went wrong. Please try again.");
+    if (method.toUpperCase() === "DELETE") refreshNotices();
     return data;
   };
   const message = BUSY_WORDS[method.toUpperCase()] ?? "Saving…";

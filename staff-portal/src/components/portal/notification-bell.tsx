@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
-import { dismissNotices, readDismissed, readSeen, SEEN_EVENT } from "@/lib/notification-seen";
+import { dismissNotices, NOTICES_REFRESH, readDismissed, readSeen, SEEN_EVENT } from "@/lib/notification-seen";
 import { NotificationCenter, type NotificationIcon, type NotificationItem, type NotificationTone } from "@/components/ui/notification-center";
 
 type Item = {
@@ -63,6 +63,7 @@ export function NotificationBell({ userId }: { userId: string }) {
       setDismissed(readDismissed(userId));
     }
     window.addEventListener(SEEN_EVENT, onSeen);
+    window.addEventListener(NOTICES_REFRESH, load);
     function onVisible() {
       if (document.visibilityState === "visible") load();
     }
@@ -72,6 +73,7 @@ export function NotificationBell({ userId }: { userId: string }) {
     }, POLL_MS);
     return () => {
       window.removeEventListener(SEEN_EVENT, onSeen);
+      window.removeEventListener(NOTICES_REFRESH, load);
       document.removeEventListener("visibilitychange", onVisible);
       window.clearInterval(timer);
     };

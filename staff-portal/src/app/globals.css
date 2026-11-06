@@ -186,12 +186,15 @@ body {
 }
 
 .app-collapsed .app-sidebar {
-  width: var(--sidebar-w-collapsed);
-  padding: 16px 6px;
+  width: 0;
+  padding: 0;
+  transform: translateX(-100%);
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .app-collapsed .app-main {
-  margin-left: var(--sidebar-w-collapsed);
+  margin-left: 0;
 }
 
 .app-no-sidebar .app-main,
@@ -233,6 +236,9 @@ body {
   .app-collapsed .app-sidebar {
     width: var(--sidebar-w);
     padding: 14px 10px;
+    transform: translateX(-100%);
+    overflow: auto;
+    pointer-events: auto;
   }
 
   .app-collapsed .brand-text,

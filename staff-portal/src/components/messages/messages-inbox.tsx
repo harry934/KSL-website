@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useFeedback } from "@/components/ui/feedback";
 import { Notice } from "@/components/ui/form-bits";
 import { cn } from "@/lib/cn";
+import { refreshNotices } from "@/lib/notification-seen";
 
 type Message = {
   id: string;
@@ -98,6 +99,7 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
       toast(data.error ?? "Could not delete the message.", "error");
       return;
     }
+    refreshNotices();
     setMessages((prev) => prev.filter((item) => item.id !== row.id));
     setOpenId(null);
     const url = new URL(window.location.href);
