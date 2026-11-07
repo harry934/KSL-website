@@ -320,15 +320,18 @@ body {
 }
 
 .nav-group + .nav-group {
-  margin-top: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .nav-group-label {
-  margin: 4px 10px 3px;
+  margin: 0 10px 6px;
   font-size: 10.5px;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #8c9bad;
+  color: var(--gold);
 }
 
 .nav-link {

@@ -69,7 +69,7 @@ export function portalNavGroups(access: PortalAccess): PortalNavGroup[] {
         group: group.label,
       }));
 
-    if (group.label === "Company") {
+    if (group.label === "Organisation") {
       const organisation = links.findIndex((link) => link.module === "organization");
       if (organisation >= 0) {
         links.splice(organisation + 1, 0, {
@@ -81,7 +81,7 @@ export function portalNavGroups(access: PortalAccess): PortalNavGroup[] {
       }
     }
 
-    if (group.label === "Administration" && canSee(access, "site_settings")) {
+    if (group.label === "Website" && canSee(access, "site_settings")) {
       links.push(
         { href: "/banner", label: "Banner", kind: "banner", group: group.label },
         { href: "/images", label: "Website images", kind: "images", group: group.label }
@@ -91,18 +91,15 @@ export function portalNavGroups(access: PortalAccess): PortalNavGroup[] {
     if (links.length) groups.push({ label: group.label, links });
   }
 
+  const systemLinks: PortalNavLink[] = [];
   if (canOpenBin(access)) {
-    groups.push({
-      label: null,
-      links: [{ href: "/recycle", label: "Recycle bin", kind: "recycle", group: null }],
-    });
+    systemLinks.push({ href: "/recycle", label: "Recycle bin", kind: "recycle", group: "System" });
   }
-
   if (access.isSuperAdmin) {
-    groups.push({
-      label: "Audit",
-      links: [{ href: "/activity", label: "Audit log", kind: "audit", group: "Audit" }],
-    });
+    systemLinks.push({ href: "/activity", label: "Audit log", kind: "audit", group: "System" });
+  }
+  if (systemLinks.length) {
+    groups.push({ label: "System", links: systemLinks });
   }
 
   return groups;

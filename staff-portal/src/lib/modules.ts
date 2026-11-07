@@ -49,7 +49,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   products: "Products",
   projects: "Projects",
   careers: "Careers",
-  faq: "Questions (FAQ)",
+  faq: "FAQ",
   csr: "Community (CSR)",
   downloads: "Downloads",
   organization: "Organisation",
@@ -59,11 +59,15 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   staff: "Staff",
 };
 
+/** Sidebar and permission panels use this order and these category titles. */
 export const MODULE_GROUPS: { label: string; modules: ModuleKey[] }[] = [
-  { label: "Content", modules: ["news", "events", "gallery", "press"] },
-  { label: "Company", modules: ["services", "products", "projects", "organization", "careers", "csr"] },
-  { label: "Resources", modules: ["faq", "downloads", "messages"] },
-  { label: "Administration", modules: ["staff", "site_settings"] },
+  { label: "Publish", modules: ["news", "events", "gallery", "press"] },
+  { label: "Catalogue", modules: ["services", "products", "projects"] },
+  { label: "Organisation", modules: ["organization", "careers", "csr"] },
+  { label: "Library", modules: ["faq", "downloads"] },
+  { label: "Inbox", modules: ["messages"] },
+  { label: "Access", modules: ["staff"] },
+  { label: "Website", modules: ["site_settings"] },
 ];
 
 export function canAccess(
