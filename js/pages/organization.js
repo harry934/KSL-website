@@ -42,26 +42,22 @@
         if (!data || !data.chart) return;
         var chart = data.chart;
         var departments = chart.departments || [];
-        var html = '<div class="org-tree">' +
-            '<div class="org-tree-top" role="list">' +
-            '<div class="org-node org-node-board" role="listitem"><span>' + esc(chart.boardCaption) + "</span><strong>" + esc(chart.boardTitle) + "</strong></div>" +
+        var html = '<div class="org-tree"><div class="org-tree-top">' +
+            '<div class="org-node org-node-board"><span>' + esc(chart.boardCaption) + "</span><strong>" + esc(chart.boardTitle) + "</strong></div>" +
             '<span class="org-connector" aria-hidden="true"></span>' +
-            '<div class="org-node org-node-md" role="listitem"><span>' + esc(chart.executiveCaption) + "</span><strong>" + esc(chart.executiveTitle) + "</strong></div>" +
-            "</div>" +
-            '<div class="org-tier">' +
-            '<p class="org-tier-label">Directorates &amp; offices</p>' +
-            '<div class="org-tree-branches">';
+            '<div class="org-node org-node-md"><span>' + esc(chart.executiveCaption) + "</span><strong>" + esc(chart.executiveTitle) + "</strong></div>" +
+            '<span class="org-connector" aria-hidden="true"></span>' +
+            '</div><div class="org-tree-branches">';
         departments.forEach(function (dept) {
-            html += '<article class="org-branch' + (dept.office ? " is-staff" : "") + '">' +
-                '<div class="org-office"><h3>' + esc(dept.title) + "</h3></div>";
+            html += '<div class="org-branch"><article class="org-office' + (dept.office ? " is-staff" : "") + '"><h3>' + esc(dept.title) + "</h3></article>";
             if (dept.units && dept.units.length) {
                 html += '<ul class="org-divisions">' + dept.units.map(function (unit) {
                     return "<li>" + esc(unit) + "</li>";
                 }).join("") + "</ul>";
             }
-            html += "</article>";
+            html += "</div>";
         });
-        html += "</div></div></div>";
+        html += "</div></div>";
         chartEl.innerHTML = html;
         applyZoom(1);
     }
