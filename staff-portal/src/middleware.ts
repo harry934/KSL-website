@@ -5,6 +5,8 @@ import { readStaffSession } from "@/lib/staff-session-server";
 
 const ALLOWED_ORIGINS = new Set([
   "https://ksl-website.vercel.app",
+  "https://kenyashipyards.co.ke",
+  "https://www.kenyashipyards.co.ke",
 ]);
 
 /** Unauthenticated API routes that skip the staff session gate. `/api/public/*` is handled separately. */

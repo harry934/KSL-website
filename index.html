@@ -8,20 +8,8 @@
     <meta content="Kenya Shipyards Limited, shipbuilding, Mombasa, Kisumu" name="keywords">
     <meta content="Kenya Shipyards Limited catalyzes the shipbuilding industry in Eastern Africa." name="description">
     <link href="img/ksl/favicon.png" rel="icon">
-    <script>
-        (function () {
-            var path = (location.pathname || "").split("/").pop();
-            var home = !path || path === "index.html";
-            var force = /[?&]ksl-intro=1(?:&|$)/.test(location.search || "");
-            var seen = false;
-            try { seen = sessionStorage.getItem("ksl-intro-seen") === "1"; } catch (e) {}
-            if (force || (home && !seen)) document.documentElement.classList.add("ksl-intro-pending");
-        })();
-    </script>
-    <style>
-        html.ksl-intro-pending { background: #09296C; }
-        html.ksl-intro-pending body { visibility: hidden; overflow: hidden; }
-    </style>
+    <script src="js/intro-boot.js?v=20261107-1"></script>
+    <link href="css/intro-boot.css?v=20261107-1" rel="stylesheet">
     <link rel="preload" as="image" href="img/ksl/mombasa.webp" fetchpriority="high">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
