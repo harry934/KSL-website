@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Loader2, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormSection, SaveBar, Select, Textarea, VisibilitySwitch } from "@/components/ui/form-bits";
@@ -13,7 +13,7 @@ import { useCan } from "@/components/portal/session-context";
 import { reorderItem } from "@/lib/list-utils";
 import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { documentOptions, useDocuments } from "@/lib/use-documents";
-import { cleanBoardSections, cleanIntro, cleanOrgChart, milestoneDateText, parseMilestoneWhen, SHIPPED_BOARD_SECTIONS, SHIPPED_CHART, SHIPPED_INTRO, SHIPPED_MILESTONES_HEADING, type BoardMemberRow, type BoardSection, type LeadershipRow, type MilestoneRow, type MilestonesHeading, type OrgChart, type OrgDepartment, type OrgIntro } from "@/lib/organization";
+import { cleanBoardSections, cleanIntro, cleanOrgChart, milestoneDateText, parseMilestoneWhen, SHIPPED_BOARD_SECTIONS, SHIPPED_CHART, SHIPPED_INTRO, SHIPPED_MILESTONES_HEADING, type BoardMemberRow, type BoardSection, type LeadershipRow, type MilestoneRow, type MilestonesHeading, type OrgChart, type OrgIntro } from "@/lib/organization";
 type Scope = "leadership" | "board" | "milestone";
 type Draft = {
   scope: Scope;
@@ -179,33 +179,6 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
     } finally {
       setSaving(null);
     }
-  }
-
-  function patchDept(id: string, patch: Partial<OrgDepartment>) {
-    setChart({
-      ...chart,
-      departments: chart.departments.map((dept) => (dept.id === id ? { ...dept, ...patch } : dept)),
-    });
-  }
-
-  function moveDept(index: number, direction: -1 | 1) {
-    const next = index + direction;
-    if (next < 0 || next >= chart.departments.length) return;
-    const departments = chart.departments.slice();
-    const [row] = departments.splice(index, 1);
-    departments.splice(next, 0, row);
-    setChart({ ...chart, departments });
-  }
-
-  function moveUnit(deptId: string, index: number, direction: -1 | 1) {
-    const dept = chart.departments.find((row) => row.id === deptId);
-    if (!dept) return;
-    const next = index + direction;
-    if (next < 0 || next >= dept.units.length) return;
-    const units = dept.units.slice();
-    const [row] = units.splice(index, 1);
-    units.splice(next, 0, row);
-    patchDept(deptId, { units });
   }
 
   function start(scope: "leadership" | "board") {
@@ -500,7 +473,6 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
   const groupLabel = (value: string) => BOARD_GROUPS.find((group) => group.value === value)?.label ?? value;
   const orgNav = [
     { id: "org-intro", label: "Introduction" },
-    { id: "org-chart", label: "Organogram" },
     { id: "org-leadership", label: "Leadership" },
     { id: "org-download", label: "Download" },
     { id: "org-milestones", label: "Milestones" },
@@ -519,7 +491,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
       </nav>
 
       <div id="org-intro" className="scroll-mt-24">
-      <FormSection title="Introduction" description="The lines above the chart.">
+      <FormSection title="Introduction" description="Shown above the View organisation structure button on the website.">
         <Field label="Small heading">
           <Input value={intro.kicker} onChange={(e) => setIntro({ ...intro, kicker: e.target.value })} />
         </Field>
@@ -535,114 +507,11 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
       </FormSection>
       </div>
 
-      <div id="org-chart" className="scroll-mt-24">
-      <FormSection
-        title="Organogram"
-        description="Left to right, the same order as the website. A staff office uses the lighter box."
-        actions={
-          <Button
-            variant="secondary"
-            onClick={() => {
-              const id = `office-${Date.now().toString(36)}`;
-              setChart({ ...chart, departments: [...chart.departments, { id, title: "New office", units: [], office: false }] });
-            }}
-          >
-            <Plus className="h-4 w-4" /> Add office
-          </Button>
-        }
-      >
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Board label" hint="The small line on the navy box.">
-            <Input value={chart.boardCaption} onChange={(e) => setChart({ ...chart, boardCaption: e.target.value })} />
-          </Field>
-          <Field label="Board name">
-            <Input value={chart.boardTitle} onChange={(e) => setChart({ ...chart, boardTitle: e.target.value })} />
-          </Field>
-          <Field label="Managing Director label" hint="The small line on the blue box.">
-            <Input value={chart.executiveCaption} onChange={(e) => setChart({ ...chart, executiveCaption: e.target.value })} />
-          </Field>
-          <Field label="Managing Director name">
-            <Input value={chart.executiveTitle} onChange={(e) => setChart({ ...chart, executiveTitle: e.target.value })} />
-          </Field>
-        </div>
-        <div className="flex gap-3 overflow-x-auto pb-1">
-          {chart.departments.map((dept, index) => (
-            <article key={dept.id} className="flex w-[240px] shrink-0 flex-col gap-2 rounded-md border border-[#d7e0ec] bg-[#f7f9fc] p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-wide text-[#99792c]">{dept.office ? "Staff office" : "Directorate"}</span>
-                <span className="text-[12px] font-semibold text-[#6b7785]">{index + 1}</span>
-              </div>
-              <Input
-                value={dept.title}
-                onChange={(e) => patchDept(dept.id, { title: e.target.value })}
-                aria-label={`Office ${index + 1} name`}
-              />
-              <label className="flex items-center gap-2 text-[12px] text-[#3d4a63]">
-                <input
-                  type="checkbox"
-                  checked={dept.office}
-                  onChange={(e) => patchDept(dept.id, { office: e.target.checked })}
-                />
-                Lighter staff office
-              </label>
-              <div className="space-y-2">
-                {dept.units.map((unit, unitIndex) => (
-                  <div key={`${dept.id}-${unitIndex}`} className="rounded-md border border-[#e4eaf2] bg-white p-2">
-                    <Input
-                      value={unit}
-                      onChange={(e) => {
-                        const units = dept.units.slice();
-                        units[unitIndex] = e.target.value;
-                        patchDept(dept.id, { units });
-                      }}
-                      aria-label={`${dept.title || "Office"} division ${unitIndex + 1}`}
-                    />
-                    <div className="mt-1 flex gap-1">
-                      <Button variant="secondary" onClick={() => moveUnit(dept.id, unitIndex, -1)} disabled={unitIndex === 0} aria-label="Move division up">
-                        <ChevronUp className="h-4 w-4" />
-                      </Button>
-                      <Button variant="secondary" onClick={() => moveUnit(dept.id, unitIndex, 1)} disabled={unitIndex === dept.units.length - 1} aria-label="Move division down">
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                      <Button variant="secondary" aria-label="Remove division" onClick={() => patchDept(dept.id, { units: dept.units.filter((_, i) => i !== unitIndex) })}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                <Button variant="secondary" onClick={() => patchDept(dept.id, { units: [...dept.units, ""] })}>
-                  <Plus className="h-4 w-4" /> Add division
-                </Button>
-              </div>
-              <div className="mt-auto flex gap-1">
-                <Button variant="secondary" onClick={() => moveDept(index, -1)} disabled={index === 0} aria-label="Move office left">
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button variant="secondary" onClick={() => moveDept(index, 1)} disabled={index === chart.departments.length - 1} aria-label="Move office right">
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="secondary"
-                  aria-label="Remove office"
-                  onClick={() => setChart({ ...chart, departments: chart.departments.filter((row) => row.id !== dept.id) })}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </article>
-          ))}
-        </div>
-        <Button onClick={() => saveSettings("org-chart")} disabled={saving === "settings"}>
-          {saving === "settings" ? "Saving…" : "Save organogram"}
-        </Button>
-      </FormSection>
-      </div>
-
       <div id="org-leadership" className="scroll-mt-24">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-[15px] font-bold text-[#0b1f3a]">Cards under the chart</h2>
-            <p className="text-[13px] text-[#6b7785]">These sit below the organogram. The top card is shown first. Set Visibility to Published or the card stays off the website.</p>
+            <h2 className="text-[15px] font-bold text-[#0b1f3a]">Leadership cards</h2>
+            <p className="text-[13px] text-[#6b7785]">Shown on the Organisation page under the structure button. The top card is shown first. Set Visibility to Published or the card stays off the website.</p>
           </div>
           <Button onClick={() => start("leadership")}>
             <Plus className="h-4 w-4" /> New role
@@ -742,7 +611,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
       {view === "organisation" && (
       <>
       <div id="org-download" className="scroll-mt-24">
-      <FormSection title="Chart download" description="The document button under the leadership cards.">
+      <FormSection title="Chart download" description="The Strategic Plan button under the leadership cards.">
         <Field label="Document">
           <SearchSelect
             value={chartDownloadId}

@@ -331,7 +331,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: #d8c48a;
 }
 
 .nav-link {

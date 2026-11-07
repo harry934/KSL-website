@@ -15,7 +15,7 @@
     <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
-    <link href="css/ksl.css?v=20261106-1" rel="stylesheet">
+    <link href="css/ksl.css?v=20261107-orgmodal" rel="stylesheet">
     <script src="js/intro.js?v=20261018-34"></script>
     <script src="js/ksl-live.js?v=20261105-8"></script>
 </head>
@@ -148,10 +148,32 @@
 <main class="container-xxl py-5">
   <div class="container">
     <div class="org-intro" data-ksl-await="page"></div>
-    <section class="org-chart" data-ksl-await="page" aria-labelledby="organization-title"></section>
+    <div class="org-structure-cta" data-ksl-await="page">
+      <button type="button" class="btn btn-primary org-structure-open" data-org-open>
+        View organisation structure
+      </button>
+    </div>
     <div id="ksl-org-extra" data-ksl-await="page"></div>
   </div>
 </main>
+<div class="org-chart-modal" id="kslOrgChartModal" hidden>
+  <div class="org-chart-modal-panel" role="dialog" aria-modal="true" aria-labelledby="org-chart-modal-title">
+    <header class="org-chart-modal-bar">
+      <h2 id="org-chart-modal-title">Organisation structure</h2>
+      <div class="org-chart-modal-tools">
+        <button type="button" class="org-chart-zoom" data-org-zoom-out aria-label="Zoom out">−</button>
+        <span class="org-chart-zoom-label" data-org-zoom-label>100%</span>
+        <button type="button" class="org-chart-zoom" data-org-zoom-in aria-label="Zoom in">+</button>
+        <button type="button" class="org-chart-zoom" data-org-zoom-reset aria-label="Reset zoom">Reset</button>
+        <button type="button" class="org-chart-close" data-org-close aria-label="Close">×</button>
+      </div>
+    </header>
+    <div class="org-chart-modal-stage" data-org-stage>
+      <section class="org-chart" data-org-chart aria-label="Organisation chart"></section>
+    </div>
+  </div>
+  <button type="button" class="org-chart-modal-backdrop" data-org-close aria-label="Close organisation structure"></button>
+</div>
     <div class="container-fluid bg-dark text-light footer footer-zones mt-5 py-5">
         <div class="container py-5">
             <h2 class="text-white mb-4" data-ksl-await="settings">Catalyzing Shipbuilding Industry</h2>

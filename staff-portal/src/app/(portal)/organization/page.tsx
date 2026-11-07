@@ -12,7 +12,7 @@ export default async function OrganizationPage() {
 
   return (
     <>
-    <PageHeader title="Organisation" description="Introduction, the organogram, leadership cards, the chart download, and the milestones on Who We Are. Saving returns you to the section you changed. Board members are edited from Board in the sidebar." />
+    <PageHeader title="Organisation" description="Introduction, leadership cards, the Strategic Plan download, and the milestones on Who We Are. The organisation structure opens in a popup on the website. Board members are edited from Board in the sidebar." />
       <OrganizationEditor />
     </>
   );

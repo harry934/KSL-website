@@ -1,11 +1,21 @@
-/* Organisation page: yards, leaders and the chart. */
+/* Organisation page: intro, leadership, and a zoomable structure popup. */
 (function () {
     "use strict";
 
     var mount = document.getElementById("ksl-org-extra");
-    if (!mount) {
+    var modal = document.getElementById("kslOrgChartModal");
+    var chartEl = document.querySelector("[data-org-chart]");
+    var stage = document.querySelector("[data-org-stage]");
+    var zoomLabel = document.querySelector("[data-org-zoom-label]");
+    if (!mount || !modal || !chartEl) {
         return;
     }
+
+    var zoom = 1;
+    var MIN_ZOOM = 0.6;
+    var MAX_ZOOM = 1.8;
+    var ZOOM_STEP = 0.15;
+    var lastFocus = null;
 
     function fetchOrg() {
         return window.KSL_CONTENT
@@ -19,17 +29,17 @@
             : fetch("data/downloads.json").then(function (res) { return res.json(); });
     }
 
-    function paintStructure(data, esc) {
-        if (!data || !data.chart) return;
+    function paintIntro(data, esc) {
         var intro = document.querySelector(".org-intro");
-        var chartEl = document.querySelector(".org-chart");
-        if (intro && data.intro) {
-            intro.innerHTML =
-                '<p class="org-kicker">' + esc(data.intro.kicker) + "</p>" +
-                '<h2 id="organization-title">' + esc(data.intro.title) + "</h2>" +
-                "<p>" + esc(data.intro.body) + "</p>";
-        }
-        if (!chartEl) return;
+        if (!intro || !data || !data.intro) return;
+        intro.innerHTML =
+            '<p class="org-kicker">' + esc(data.intro.kicker) + "</p>" +
+            '<h2 id="organization-title">' + esc(data.intro.title) + "</h2>" +
+            "<p>" + esc(data.intro.body) + "</p>";
+    }
+
+    function paintChart(data, esc) {
+        if (!data || !data.chart) return;
         var chart = data.chart;
         var departments = chart.departments || [];
         var html = '<div class="org-tree">' +
@@ -53,6 +63,71 @@
         });
         html += "</div></div></div>";
         chartEl.innerHTML = html;
+        applyZoom(1);
+    }
+
+    function applyZoom(next) {
+        zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(next * 100) / 100));
+        chartEl.style.transform = "scale(" + zoom + ")";
+        chartEl.style.transformOrigin = "top center";
+        if (zoomLabel) zoomLabel.textContent = Math.round(zoom * 100) + "%";
+    }
+
+    function openModal() {
+        if (!modal.hidden) return;
+        lastFocus = document.activeElement;
+        modal.hidden = false;
+        document.documentElement.style.overflow = "hidden";
+        document.body.classList.add("modal-open");
+        if (stage) stage.scrollTop = 0;
+        var closeBtn = modal.querySelector("[data-org-close].org-chart-close");
+        if (closeBtn) closeBtn.focus();
+    }
+
+    function closeModal() {
+        if (modal.hidden) return;
+        modal.hidden = true;
+        document.documentElement.style.overflow = "";
+        document.body.classList.remove("modal-open");
+        if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+
+    document.addEventListener("click", function (event) {
+        if (event.target.closest("[data-org-open]")) {
+            openModal();
+            return;
+        }
+        if (event.target.closest("[data-org-close]")) {
+            closeModal();
+            return;
+        }
+        if (event.target.closest("[data-org-zoom-in]")) {
+            applyZoom(zoom + ZOOM_STEP);
+            return;
+        }
+        if (event.target.closest("[data-org-zoom-out]")) {
+            applyZoom(zoom - ZOOM_STEP);
+            return;
+        }
+        if (event.target.closest("[data-org-zoom-reset]")) {
+            applyZoom(1);
+        }
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closeModal();
+    });
+
+    if (stage) {
+        stage.addEventListener(
+            "wheel",
+            function (event) {
+                if (!event.ctrlKey && !event.metaKey) return;
+                event.preventDefault();
+                applyZoom(zoom + (event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
+            },
+            { passive: false }
+        );
     }
 
     Promise.all([fetchOrg(), fetchDownloads()])
@@ -60,7 +135,10 @@
             var data = pair[0];
             var dl = pair[1];
             var esc = window.KSL_ESCAPE || function (value) { return String(value == null ? "" : value); };
-            if (data) paintStructure(data, esc);
+            if (data) {
+                paintIntro(data, esc);
+                paintChart(data, esc);
+            }
             if (!data || !dl) {
                 return;
             }
