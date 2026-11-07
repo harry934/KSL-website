@@ -41,7 +41,7 @@ export function AvatarField({ name, avatarUrl }: { name: string; avatarUrl: stri
   }
 
   async function remove() {
-    const ok = await confirm({ title: "Remove your photo?", message: "Your initials will be shown instead.", confirmLabel: "Remove", danger: true });
+    const ok = await confirm({ title: "Remove your photo?", message: "The default profile picture will be shown instead.", confirmLabel: "Remove", danger: true });
     if (!ok) return;
     setBusy(true);
     try {
