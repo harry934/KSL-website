@@ -339,7 +339,7 @@ function brandedPlainText(issued: Issued) {
     issued.isNew ? "Staff portal invite" : "Password reset",
     "",
     `Passcode: ${issued.passcode}`,
-    "Copy the passcode first, then click the button to open the page.",
+    "Open the link below. Your passcode fills in automatically.",
     until ? `Expires ${until} EAT` : "Expires in 10 minutes",
   ].join("\n");
 }
@@ -352,7 +352,7 @@ async function inviteHtmlEmail(issued: Issued) {
     ? "You have been invited to the Kenya Shipyards Limited staff portal."
     : "Use this passcode to choose a new password.";
   const cta = issued.isNew ? "Click here to sign up" : "Click here to choose a new password";
-  const step = "Copy the one-time passcode first. Then click the button.";
+  const step = "Click the button to open the page. Your passcode fills in automatically. Keep the code below if you need it.";
   const expiry = until
     ? `Expires <strong style="color:#0b1f3a;">${until} East Africa Time</strong>`
     : "Expires in <strong style=\"color:#0b1f3a;\">10 minutes</strong>";
@@ -428,7 +428,7 @@ function outlookDraft(issued: Issued) {
     "",
     `One-time passcode: ${issued.passcode}`,
     "",
-    "Copy the one-time passcode first. Then open the sign-up page:",
+    "Open the sign-up page. Your passcode fills in automatically:",
     issued.signupUrl,
     "",
     until ? `Expires ${until} East Africa Time.` : "Expires in 10 minutes.",

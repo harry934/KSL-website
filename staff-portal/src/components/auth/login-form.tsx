@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { fieldLabel, Notice } from "@/components/ui/form-bits";
+import { useFeedback } from "@/components/ui/feedback";
 import { createClient } from "@/lib/supabase/client";
 import { passkeyError } from "@/lib/passkey";
 
 export function LoginForm({ notice }: { notice?: string | null }) {
+  const { toast } = useFeedback();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -30,9 +32,12 @@ export function LoginForm({ notice }: { notice?: string | null }) {
     const json = res ? await res.json().catch(() => ({})) : {};
     if (!res || !res.ok) {
       setLoading(false);
-      setError(json.error ?? "Could not sign in. Check your internet connection and try again.");
+      const message = json.error ?? "Could not sign in. Check your internet connection and try again.";
+      setError(message);
+      toast(message, "error");
       return;
     }
+    toast("Signed in.");
     window.location.href = "/";
   }
 
@@ -45,7 +50,10 @@ export function LoginForm({ notice }: { notice?: string | null }) {
     if (signInError || !data?.session) {
       if (signInError) await supabase.auth.signOut().catch(() => null);
       setPasskeyLoading(false);
-      if (message) setError(message);
+      if (message) {
+        setError(message);
+        toast(message, "error");
+      }
       return;
     }
     const res = await fetch("/api/auth/passkey", { method: "POST" }).catch(() => null);
@@ -53,9 +61,12 @@ export function LoginForm({ notice }: { notice?: string | null }) {
     if (!res || !res.ok) {
       await supabase.auth.signOut().catch(() => null);
       setPasskeyLoading(false);
-      setError(json.error ?? "This passkey is not linked to an active staff account.");
+      const fail = json.error ?? "This passkey is not linked to an active staff account.";
+      setError(fail);
+      toast(fail, "error");
       return;
     }
+    toast("Signed in.");
     window.location.href = "/";
   }
 
@@ -75,10 +86,14 @@ export function LoginForm({ notice }: { notice?: string | null }) {
     const json = res ? await res.json().catch(() => ({})) : {};
     setForgotLoading(false);
     if (!res || !res.ok) {
-      setError(json.error ?? "Could not send the request. Please try again.");
+      const fail = json.error ?? "Could not send the request. Please try again.";
+      setError(fail);
+      toast(fail, "error");
       return;
     }
-    setForgotMessage(json.message ?? "Your request has been sent. Wait for an email or message from an administrator.");
+    const ok = json.message ?? "Your request has been sent. Wait for an email or message from an administrator.";
+    setForgotMessage(ok);
+    toast(ok);
   }
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { InputHTMLAttributes, forwardRef, useMemo, useState } from "react";
+import { InputHTMLAttributes, forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { controlClass } from "@/components/ui/input";
@@ -128,23 +128,76 @@ export function PasscodeDisplay({ value, accepted = false }: { value: string; ac
   );
 }
 
-/** Interactive 6-digit passcode entry. */
+function digitsOnly(value: string) {
+  return value.replace(/\D/g, "").slice(0, 6);
+}
+
+/** Interactive 6-digit passcode entry with staggered paste / autofill animation. */
 export function PasscodeInput({
   value,
   onChange,
   disabled,
   accepted = false,
+  animateFill,
 }: {
   value: string;
   onChange: (next: string) => void;
   disabled?: boolean;
   accepted?: boolean;
+  /** When this changes to a 6-digit code, fill the boxes with a staggered animation. */
+  animateFill?: string | null;
 }) {
-  const digits = value.replace(/\D/g, "").slice(0, 6).split("");
+  const digits = digitsOnly(value).split("");
   while (digits.length < 6) digits.push("");
   const [focused, setFocused] = useState<number | null>(null);
+  const [popping, setPopping] = useState<number>(-1);
+  const animRef = useRef<number | null>(null);
+  const lastFillRef = useRef<string | null>(null);
+
+  function clearAnim() {
+    if (animRef.current != null) {
+      window.clearTimeout(animRef.current);
+      animRef.current = null;
+    }
+  }
+
+  function fillAnimated(code: string) {
+    const next = digitsOnly(code);
+    if (!next) return;
+    clearAnim();
+    setPopping(-1);
+    onChange("");
+    let i = 0;
+    const step = () => {
+      i += 1;
+      onChange(next.slice(0, i));
+      setPopping(i - 1);
+      if (i < next.length) {
+        animRef.current = window.setTimeout(step, 55);
+      } else {
+        animRef.current = window.setTimeout(() => {
+          setPopping(-1);
+          focusIndex(Math.min(next.length, 5));
+        }, 180);
+      }
+    };
+    animRef.current = window.setTimeout(step, 40);
+  }
+
+  useEffect(() => () => clearAnim(), []);
+
+  useEffect(() => {
+    const next = digitsOnly(String(animateFill ?? ""));
+    if (!/^\d{6}$/.test(next)) return;
+    if (lastFillRef.current === next) return;
+    lastFillRef.current = next;
+    fillAnimated(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when animateFill changes
+  }, [animateFill]);
 
   function setAt(index: number, char: string) {
+    clearAnim();
+    setPopping(-1);
     const next = digits.map((d, i) => (i === index ? char : d));
     onChange(next.join("").replace(/\D/g, "").slice(0, 6));
   }
@@ -160,7 +213,12 @@ export function PasscodeInput({
       <input
         key={i}
         id={`passcode-digit-${i}`}
-        className={cn("passcode-cell passcode-input-cell", accepted && "is-accepted", waiting && "is-waiting")}
+        className={cn(
+          "passcode-cell passcode-input-cell",
+          accepted && "is-accepted",
+          waiting && "is-waiting",
+          popping === i && "is-pop"
+        )}
         inputMode="numeric"
         autoComplete={i === 0 ? "one-time-code" : "off"}
         aria-label={`Digit ${i + 1} of 6`}
@@ -185,10 +243,9 @@ export function PasscodeInput({
         }}
         onPaste={(e) => {
           e.preventDefault();
-          const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+          const pasted = digitsOnly(e.clipboardData.getData("text"));
           if (!pasted) return;
-          onChange(pasted);
-          focusIndex(Math.min(pasted.length, 5));
+          fillAnimated(pasted);
         }}
       />
     );

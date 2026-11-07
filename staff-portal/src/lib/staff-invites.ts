@@ -91,9 +91,12 @@ export function portalBaseUrl() {
   return "https://ksl-websitekiza.vercel.app";
 }
 
-/** Short invite link, e.g. https://host/i/aB3xY9k2 */
-export function signupUrlFor(token: string) {
-  return `${portalBaseUrl()}/i/${encodeURIComponent(token)}`;
+/** Short invite link, e.g. https://host/i/aB3xY9k2?code=123456 */
+export function signupUrlFor(token: string, passcode?: string) {
+  const base = `${portalBaseUrl()}/i/${encodeURIComponent(token)}`;
+  const digits = String(passcode ?? "").replace(/\D/g, "");
+  if (/^\d{6}$/.test(digits)) return `${base}?code=${encodeURIComponent(digits)}`;
+  return base;
 }
 
 function newToken() {
@@ -215,7 +218,7 @@ export async function createStaffInvite(input: {
     token,
     passcode,
     expiresAt,
-    signupUrl: signupUrlFor(token),
+    signupUrl: signupUrlFor(token, passcode),
     email: contactEmail ?? "",
     phone: phone ?? "",
     kind: input.kind,
@@ -423,7 +426,7 @@ export async function resendStaffInvite(actorId: string, id: string) {
     token,
     passcode,
     expiresAt,
-    signupUrl: signupUrlFor(token),
+    signupUrl: signupUrlFor(token, passcode),
     email: contactEmail,
     phone,
     kind,

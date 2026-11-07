@@ -10,11 +10,15 @@ export const metadata = {
 
 export default async function InvitePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ code?: string }>;
 }) {
   const { token: raw } = await params;
+  const query = await searchParams;
   const token = String(raw ?? "").trim();
+  const initialCode = String(query.code ?? "").replace(/\D/g, "").slice(0, 6);
   const invite = token ? await loadOpenInvite(token) : null;
 
   if (!invite) {
@@ -54,8 +58,12 @@ export default async function InvitePage({
 
           <div className="rounded-[8px] border border-[#e3e8ee] bg-white p-4 text-left sm:p-5">
             <strong className="mb-1 block text-[15px] text-[#0b1f3a]">Enter your one-time passcode</strong>
-            <p className="mb-4 text-[13.5px] text-[#5b6775]">Enter the 6-digit passcode from your administrator.</p>
-            <SignupForm token={token} />
+            <p className="mb-4 text-[13.5px] text-[#5b6775]">
+              {/^\d{6}$/.test(initialCode)
+                ? "Your passcode is filling in from the email link. Confirm it, then continue."
+                : "Enter the 6-digit passcode from your administrator, or paste it."}
+            </p>
+            <SignupForm token={token} initialCode={initialCode} />
           </div>
         </section>
       </div>

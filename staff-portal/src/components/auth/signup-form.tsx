@@ -5,11 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordHints, PasswordInput, PasscodeInput } from "@/components/ui/password-input";
 import { Field, Notice, fieldLabel } from "@/components/ui/form-bits";
+import { useFeedback } from "@/components/ui/feedback";
 import { normalizeUsername, validatePassword, validateUsername } from "@/lib/accounts";
 import { cn } from "@/lib/cn";
 
-export function SignupForm({ token }: { token: string }) {
+export function SignupForm({ token, initialCode = "" }: { token: string; initialCode?: string }) {
+  const { toast } = useFeedback();
   const [passcode, setPasscode] = useState("");
+  const [animateFill, setAnimateFill] = useState<string | null>(null);
   const [kind, setKind] = useState<"create" | "password_reset" | null>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -19,6 +22,16 @@ export function SignupForm({ token }: { token: string }) {
   const [saving, setSaving] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
   const [usernameHint, setUsernameHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fromProp = String(initialCode ?? "").replace(/\D/g, "").slice(0, 6);
+    const fromQuery =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("code")?.replace(/\D/g, "").slice(0, 6) ?? ""
+        : "";
+    const code = /^\d{6}$/.test(fromProp) ? fromProp : /^\d{6}$/.test(fromQuery) ? fromQuery : "";
+    if (code) setAnimateFill(code);
+  }, [initialCode, token]);
 
   useEffect(() => {
     if (kind !== "create") return;
@@ -65,7 +78,9 @@ export function SignupForm({ token }: { token: string }) {
     e.preventDefault();
     setError(null);
     if (!/^\d{6}$/.test(passcode)) {
-      setError("Enter the 6-digit passcode.");
+      const message = "Enter the 6-digit passcode.";
+      setError(message);
+      toast(message, "error");
       return;
     }
     setVerifying(true);
@@ -77,9 +92,12 @@ export function SignupForm({ token }: { token: string }) {
     const json = res ? await res.json().catch(() => ({})) : {};
     setVerifying(false);
     if (!res || !res.ok) {
-      setError(json.error ?? "Could not check the passcode. Please try again.");
+      const message = json.error ?? "Could not check the passcode. Please try again.";
+      setError(message);
+      toast(message, "error");
       return;
     }
+    toast("Passcode accepted.");
     setKind(json.kind === "password_reset" ? "password_reset" : "create");
   }
 
@@ -89,10 +107,13 @@ export function SignupForm({ token }: { token: string }) {
     const policyError = validatePassword(password);
     if (policyError) {
       setError(policyError);
+      toast(policyError, "error");
       return;
     }
     if (password !== confirm) {
-      setError("The two new passwords are not the same.");
+      const message = "The two new passwords are not the same.";
+      setError(message);
+      toast(message, "error");
       return;
     }
     const nextUsername = normalizeUsername(username);
@@ -100,10 +121,13 @@ export function SignupForm({ token }: { token: string }) {
       const usernameError = validateUsername(nextUsername);
       if (usernameError) {
         setError(usernameError);
+        toast(usernameError, "error");
         return;
       }
       if (usernameStatus === "taken" || usernameStatus === "invalid") {
-        setError(usernameHint ?? "This username isn't available. Please try another.");
+        const message = usernameHint ?? "This username isn't available. Please try another.";
+        setError(message);
+        toast(message, "error");
         return;
       }
     }
@@ -121,9 +145,12 @@ export function SignupForm({ token }: { token: string }) {
     const json = res ? await res.json().catch(() => ({})) : {};
     setSaving(false);
     if (!res || !res.ok) {
-      setError(json.error ?? "Could not finish sign-up. Please try again.");
+      const message = json.error ?? "Could not finish sign-up. Please try again.";
+      setError(message);
+      toast(message, "error");
       return;
     }
+    toast(kind === "create" ? "Account ready. Sign in next." : "Password saved. Sign in next.");
     const notice = kind === "create" ? "account-ready" : "password-ready";
     window.location.href = `/login?notice=${notice}`;
   }
@@ -134,7 +161,12 @@ export function SignupForm({ token }: { token: string }) {
         <div className="text-center">
           <p className={fieldLabel}>One-time passcode</p>
           <div className="mt-3">
-            <PasscodeInput value={passcode} onChange={setPasscode} disabled={verifying} />
+            <PasscodeInput
+              value={passcode}
+              onChange={setPasscode}
+              disabled={verifying}
+              animateFill={animateFill}
+            />
           </div>
         </div>
         {error && <Notice kind="error">{error}</Notice>}

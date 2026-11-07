@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { FeedbackProvider } from "@/components/ui/feedback";
 import "./globals.css";
 
 const sourceSans = localFont({
@@ -19,7 +20,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${sourceSans.variable} font-sans antialiased`}>{children}</body>
+      <body className={`${sourceSans.variable} font-sans antialiased`}>
+        <FeedbackProvider>{children}</FeedbackProvider>
+      </body>
     </html>
   );
 }

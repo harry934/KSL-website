@@ -6,7 +6,6 @@ import { ActivityIndicators } from "@/components/portal/activity-indicators";
 import { Sidebar } from "@/components/portal/sidebar";
 import { Topbar } from "@/components/portal/topbar";
 import { SessionProvider } from "@/components/portal/session-context";
-import { FeedbackProvider } from "@/components/ui/feedback";
 import { cn } from "@/lib/cn";
 import { usesSidebar } from "@/lib/portal-nav";
 import type { StaffSession } from "@/lib/session";
@@ -97,7 +96,6 @@ export function PortalShell({
 
   return (
     <SessionProvider session={session}>
-      <FeedbackProvider>
         <div
           className={cn(
             sidebarOn && collapsed && "app-collapsed",
@@ -142,7 +140,6 @@ export function PortalShell({
             <main className="app-content">{children}</main>
           </div>
         </div>
-      </FeedbackProvider>
     </SessionProvider>
   );
 }
