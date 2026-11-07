@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
   if (!profile?.is_active) {
     await supabase.auth.signOut();
     await recordAttempt(username, ip, false);
-    return NextResponse.json({ error: "Your account is suspended. Contact an administrator." }, { status: 403 });
+    return NextResponse.json({ error: INVALID }, { status: 401 });
   }
 
   await recordAttempt(username, ip, true);

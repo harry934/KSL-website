@@ -62,7 +62,8 @@
             }
             var chartId = data.chartDownloadId;
             var chart = (dl.items || []).find(function (i) { return i.id === chartId; });
-            var chartHref = chart ? (chart.href || (dl.baseUrl + chart.file)) : "downloads.html";
+            var chartHrefRaw = chart ? (chart.href || (dl.baseUrl + chart.file)) : "downloads.html";
+            var chartHref = (window.KSL_SAFE_LINK && window.KSL_SAFE_LINK(chartHrefRaw)) || "downloads.html";
             var html = '<section class="ksl-org-extra mb-5" aria-label="Leadership">';
             html += '<h2 class="h4 mb-3">Executive leadership</h2><div class="row g-3">';
             (data.leadership || []).forEach(function (row) {
@@ -70,7 +71,7 @@
             });
             html += '</div><p class="mt-4 mb-0">' + (window.kslDocButton
                 ? window.kslDocButton(chartHref, "Strategic Plan")
-                : '<a class="btn btn-outline-primary" href="' + chartHref + '" target="_blank" rel="noopener">Download organisation reference (Strategic Plan)</a>') + '</p>';
+                : '<a class="btn btn-outline-primary" href="' + esc(chartHref) + '" target="_blank" rel="noopener">Download organisation reference (Strategic Plan)</a>') + '</p>';
             html += "</section>";
             mount.innerHTML = html;
         }).then(function () {

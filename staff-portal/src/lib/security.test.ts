@@ -275,6 +275,40 @@ test("published careers drop unsafe apply links", () => {
   assert.equal(payload.vacancies[0].applyUrl, undefined);
 });
 
+test("published press drops unsafe asset links and bad contact emails", async () => {
+  const { toPublicPress } = await import("./press.ts");
+  const payload = toPublicPress(
+    {
+      boilerplate: "About KSL",
+      contact_email: 'bad"><script>@evil.test',
+      contact_phone: "0700",
+    },
+    [
+      {
+        id: "1",
+        title: "Logo",
+        href: "javascript:alert(1)",
+        download_id: null,
+        asset_type: "png",
+        sort_order: 1,
+        status: "published",
+      },
+      {
+        id: "2",
+        title: "Safe",
+        href: "https://example.com/logo.png",
+        download_id: null,
+        asset_type: "png",
+        sort_order: 2,
+        status: "published",
+      },
+    ]
+  );
+  assert.equal(payload.contactEmail, "");
+  assert.equal(payload.assets[0].href, undefined);
+  assert.equal(payload.assets[1].href, "https://example.com/logo.png");
+});
+
 test("Turnstile fails closed in production without a secret", async () => {
   const prevSecret = process.env.TURNSTILE_SECRET_KEY;
   const prevNode = process.env.NODE_ENV;

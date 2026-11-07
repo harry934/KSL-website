@@ -15,7 +15,13 @@
 
     function safeLink(value) {
         var href = String(value || "").trim();
-        return /^(https?:|mailto:|tel:)/i.test(href) ? href : "";
+        if (!href || href.length > 500) return "";
+        if (/[\s<>"'`]/.test(href)) return "";
+        if (/^(javascript|data|vbscript):/i.test(href)) return "";
+        if (href.indexOf("//") === 0) return "";
+        if (/^(https?:\/\/|mailto:|tel:)/i.test(href)) return href;
+        if (/^(\/|#|[a-z0-9][a-z0-9./_-]*\.html)/i.test(href)) return href;
+        return "";
     }
 
     function sanitizeRichHtml(input) {

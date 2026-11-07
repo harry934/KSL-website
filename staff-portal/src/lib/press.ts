@@ -1,3 +1,5 @@
+import { safeLink } from "@/lib/safe-link";
+
 export type PressAssetRow = {
   id: string;
   title: string;
@@ -23,14 +25,18 @@ export function toPublicPress(settings: PressSettings | null, assets: PressAsset
         title: r.title,
         type: r.asset_type ?? undefined,
       };
-      if (r.href) item.href = r.href;
+      const href = r.href ? safeLink(r.href) : null;
+      if (href) item.href = href;
       if (r.download_id) item.downloadId = r.download_id;
       return item;
     });
 
+  const email = String(settings?.contact_email ?? "").trim();
+  const mail = email ? safeLink(email.startsWith("mailto:") ? email : `mailto:${email}`) : null;
+
   return {
     boilerplate: settings?.boilerplate ?? "",
-    contactEmail: settings?.contact_email ?? "",
+    contactEmail: mail ? email.replace(/^mailto:/i, "") : "",
     contactPhone: settings?.contact_phone ?? "",
     assets: published,
   };

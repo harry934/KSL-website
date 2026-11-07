@@ -413,7 +413,10 @@
             if (copy && item.subtitle) copy.textContent = item.subtitle;
             if (button) {
                 if (item.buttonLabel) button.textContent = item.buttonLabel;
-                if (item.buttonUrl) button.setAttribute("href", item.buttonUrl);
+                if (item.buttonUrl) {
+                    var heroHref = (window.KSL_SAFE_LINK && window.KSL_SAFE_LINK(item.buttonUrl)) || "";
+                    if (heroHref) button.setAttribute("href", heroHref);
+                }
             }
         }
 

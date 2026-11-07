@@ -3,6 +3,7 @@ import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { clearReviewDraft, editorSavePlan, overlayDrafts, overlaySettings, saveBody } from "@/lib/draft-review";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
+import { safeLink } from "@/lib/safe-link";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -66,10 +67,16 @@ export async function POST(req: NextRequest) {
   });
   if (plan.held) return plan.held;
 
+  const hrefRaw = body.href == null || body.href === "" ? null : String(body.href);
+  const href = hrefRaw == null ? null : safeLink(hrefRaw);
+  if (hrefRaw && !href) {
+    return NextResponse.json({ error: "That link is not allowed." }, { status: 400 });
+  }
+
   const row = {
     id: body.id || crypto.randomUUID(),
     title: body.title,
-    href: body.href ?? null,
+    href,
     download_id: body.download_id ?? null,
     asset_type: body.asset_type ?? null,
     sort_order: body.sort_order ?? 0,

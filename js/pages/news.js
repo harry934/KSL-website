@@ -292,6 +292,15 @@
                 if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
                 return;
             }
+            var esc = window.KSL_ESCAPE || function (value) {
+                return String(value == null ? "" : value)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#39;");
+            };
+            var safeHref = window.KSL_SAFE_LINK || function () { return ""; };
             var links = (data.assets || []).map(function (asset) {
                 var href = asset.href;
                 if (asset.downloadId) {
@@ -300,14 +309,25 @@
                         href = item.href || (dl.baseUrl + (item.file || item.filename));
                     }
                 }
+                var title = esc(asset.title);
+                var type = esc(asset.type);
                 if (asset.downloadId && window.kslDocButton) {
                     return '<li>' + window.kslDocButton(href, asset.title) + '</li>';
                 }
-                return '<li><a href="' + href + '" target="_blank" rel="noopener">' + asset.title + '</a> <span class="text-muted">(' + asset.type + ')</span></li>';
+                var link = safeHref(href);
+                if (!link) {
+                    return '<li>' + title + (type ? ' <span class="text-muted">(' + type + ')</span>' : "") + '</li>';
+                }
+                return '<li><a href="' + esc(link) + '" target="_blank" rel="noopener">' + title + '</a> <span class="text-muted">(' + type + ')</span></li>';
             }).join("");
+            var email = String(data.contactEmail || "");
+            var mail = safeHref(email.indexOf("mailto:") === 0 ? email : "mailto:" + email);
+            var contactHtml = mail
+                ? '<a href="' + esc(mail) + '">' + esc(email.replace(/^mailto:/i, "")) + "</a>"
+                : esc(email);
             press.innerHTML =
-                "<p>" + data.boilerplate + "</p>" +
-                "<p><strong>Media contact:</strong> <a href=\"mailto:" + data.contactEmail + "\">" + data.contactEmail + "</a> · " + data.contactPhone + "</p>" +
+                "<p>" + esc(data.boilerplate) + "</p>" +
+                "<p><strong>Media contact:</strong> " + contactHtml + " · " + esc(data.contactPhone) + "</p>" +
                 "<h3 class=\"h5 mt-4\">Press assets</h3><ul class=\"ksl-press-list\">" + links + "</ul>";
             if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
         });
