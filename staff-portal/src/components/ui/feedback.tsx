@@ -1,13 +1,13 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, X, XCircle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DingToaster, toast as dingToast } from "@/components/ui/ding-toast";
 import { cn } from "@/lib/cn";
 
 type ToastKind = "success" | "error";
 type ToastAction = { label: string; onClick: () => void };
-type Toast = { id: number; kind: ToastKind; message: string; action?: ToastAction };
 
 type ConfirmOptions = {
   title: string;
@@ -24,20 +24,26 @@ type FeedbackApi = {
 const FeedbackContext = createContext<FeedbackApi | null>(null);
 
 export function FeedbackProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
   const [dialog, setDialog] = useState<(ConfirmOptions & { resolve: (ok: boolean) => void }) | null>(null);
-  const nextId = useRef(1);
 
-  const dismiss = useCallback((id: number) => setToasts((list) => list.filter((t) => t.id !== id)), []);
+  const toast = useCallback((message: string, kind: ToastKind = "success", action?: ToastAction) => {
+    const opts = action
+      ? {
+          action: {
+            label: action.label,
+            onClick: () => {
+              action.onClick();
+            },
+          },
+          duration: 12000,
+        }
+      : kind === "error"
+        ? { duration: 7000 }
+        : { duration: 4000 };
 
-  const toast = useCallback(
-    (message: string, kind: ToastKind = "success", action?: ToastAction) => {
-      const id = nextId.current++;
-      setToasts((list) => [...list.slice(-3), { id, kind, message, action }]);
-      window.setTimeout(() => dismiss(id), action ? 12000 : kind === "error" ? 7000 : 4000);
-    },
-    [dismiss]
-  );
+    if (kind === "error") dingToast.error(message, opts);
+    else dingToast.success(message, opts);
+  }, []);
 
   const confirm = useCallback(
     (options: ConfirmOptions) => new Promise<boolean>((resolve) => setDialog({ ...options, resolve })),
@@ -57,44 +63,7 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
   return (
     <FeedbackContext.Provider value={{ toast, confirm }}>
       {children}
-
-      <div className="pointer-events-none fixed bottom-4 right-4 z-[90] flex w-[min(380px,calc(100vw-2rem))] flex-col gap-2" aria-live="polite">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={cn(
-              "toast-enter pointer-events-auto flex items-start gap-2.5 rounded-[8px] px-4 py-3 text-[14px] text-white shadow-[0_10px_28px_rgba(11,31,58,0.25)]",
-              t.kind === "success" ? "bg-[#1b7a3d]" : "bg-[#b42318]"
-            )}
-            role={t.kind === "error" ? "alert" : "status"}
-          >
-            {t.kind === "success" ? (
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-            ) : (
-              <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            )}
-            <span className="min-w-0 flex-1">
-              {t.message}
-              {t.action && (
-                <button
-                  type="button"
-                  className="ml-2 font-semibold underline"
-                  onClick={() => {
-                    t.action?.onClick();
-                    dismiss(t.id);
-                  }}
-                >
-                  {t.action.label}
-                </button>
-              )}
-            </span>
-            <button type="button" onClick={() => dismiss(t.id)} aria-label="Dismiss" className="opacity-80 hover:opacity-100">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        ))}
-      </div>
-
+      <DingToaster position="top-center" theme="light" />
       {dialog && <ConfirmDialog options={dialog} onClose={close} />}
     </FeedbackContext.Provider>
   );
