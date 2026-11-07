@@ -28,23 +28,17 @@ export async function GET() {
       )
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
-    admin.from("staff_sessions").select("user_id, seen_at, client_label"),
+    admin.from("staff_sessions").select("user_id, seen_at"),
   ]);
 
   if (dbError) return NextResponse.json({ error: "Could not load the staff list." }, { status: 500 });
-  const seenByUser = new Map(
-    (sessions ?? []).map((row) => [row.user_id as string, { seen_at: row.seen_at as string | null, client_label: (row.client_label as string | null) ?? null }])
-  );
+  const seenByUser = new Map((sessions ?? []).map((row) => [row.user_id as string, (row.seen_at as string | null) ?? null]));
   const staff = await Promise.all(
-    (data ?? []).map(async ({ avatar_path, ...row }) => {
-      const live = seenByUser.get(row.id);
-      return {
-        ...row,
-        avatar_url: avatar_path ? await avatarUrl(avatar_path) : null,
-        last_seen_at: live?.seen_at ?? null,
-        client_label: live?.client_label ?? null,
-      };
-    })
+    (data ?? []).map(async ({ avatar_path, ...row }) => ({
+      ...row,
+      avatar_url: avatar_path ? await avatarUrl(avatar_path) : null,
+      last_seen_at: seenByUser.get(row.id) ?? null,
+    }))
   );
   return NextResponse.json({ staff });
 }

@@ -35,7 +35,6 @@ type StaffRow = {
   must_change_password: boolean;
   avatar_url: string | null;
   last_seen_at: string | null;
-  client_label: string | null;
   permissions: PermRow[];
 };
 
@@ -1226,22 +1225,17 @@ export function StaffManager() {
                   {(() => {
                     const status = presenceOf(row);
                     return (
-                      <div className="min-w-0">
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-semibold",
-                            presenceClass(status)
-                          )}
-                        >
-                          {status === "online" ? (
-                            <span className="h-1.5 w-1.5 rounded-full bg-[#1b7a3d]" aria-hidden />
-                          ) : null}
-                          {presenceLabel(status)}
-                        </span>
-                        {status === "online" && row.client_label ? (
-                          <p className="mt-1 text-[11.5px] text-[#6b7785]">{row.client_label}</p>
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-semibold",
+                          presenceClass(status)
+                        )}
+                      >
+                        {status === "online" ? (
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#1b7a3d]" aria-hidden />
                         ) : null}
-                      </div>
+                        {presenceLabel(status)}
+                      </span>
                     );
                   })()}
                 </td>
