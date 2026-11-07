@@ -12825,7 +12825,6 @@ body[data-ksl-motif="wheel"] {
 .ksl-path {
     position: relative;
     isolation: isolate;
-    overflow-x: clip;
 }
 
 .ksl-path-art {
