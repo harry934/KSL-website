@@ -3051,46 +3051,39 @@ body {
 .org-structure-open-corner {
     position: absolute;
     z-index: 2;
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    overflow: hidden;
-    border-radius: 4px;
+    width: 14px;
+    height: 14px;
     background: #c5a028;
-    transition: margin .5s ease;
+    pointer-events: none;
+    transition: opacity .2s ease, transform .45s ease;
 }
 
 .org-structure-open-corner span {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 20px;
-    height: 20px;
-    background: #fff;
-    transform: translate(50%, -50%) rotate(45deg);
+    display: none;
 }
 
 .org-structure-open-corner-tr {
     top: 0;
     right: 0;
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
 }
 
 .org-structure-open-corner-bl {
     bottom: 0;
     left: 0;
-    transform: rotate(180deg);
+    clip-path: polygon(0 0, 0 100%, 100% 100%);
 }
 
 .org-structure-open:hover .org-structure-open-corner-tr,
 .org-structure-open:focus-visible .org-structure-open-corner-tr {
-    margin-top: -16px;
-    margin-right: -16px;
+    opacity: 0;
+    transform: translate(18px, -18px);
 }
 
 .org-structure-open:hover .org-structure-open-corner-bl,
 .org-structure-open:focus-visible .org-structure-open-corner-bl {
-    margin-bottom: -16px;
-    margin-left: -16px;
+    opacity: 0;
+    transform: translate(-18px, 18px);
 }
 
 .org-chart-modal {
