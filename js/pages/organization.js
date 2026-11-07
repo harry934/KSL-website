@@ -112,12 +112,13 @@
     }
 
     function openModal() {
-        if (!modal.hidden) return;
+        if (modal.classList.contains("is-open")) return;
         lastFocus = document.activeElement;
         modal.hidden = false;
         document.documentElement.style.overflow = "hidden";
         document.body.classList.add("modal-open");
         window.requestAnimationFrame(function () {
+            modal.classList.add("is-open");
             window.requestAnimationFrame(fitChart);
         });
         var closeBtn = modal.querySelector("[data-org-close].org-chart-close");
@@ -125,13 +126,29 @@
     }
 
     function closeModal() {
-        if (modal.hidden) return;
-        modal.hidden = true;
-        document.documentElement.style.overflow = "";
-        document.body.classList.remove("modal-open");
-        if (stage) stage.classList.remove("is-grabbing");
+        if (modal.hidden && !modal.classList.contains("is-open")) return;
+        modal.classList.remove("is-open");
         dragging = false;
-        if (lastFocus && lastFocus.focus) lastFocus.focus();
+        if (stage) stage.classList.remove("is-grabbing");
+
+        var finished = false;
+        function finishClose() {
+            if (finished) return;
+            finished = true;
+            modal.hidden = true;
+            document.documentElement.style.overflow = "";
+            document.body.classList.remove("modal-open");
+            if (lastFocus && lastFocus.focus) lastFocus.focus();
+        }
+
+        function onTransitionEnd(event) {
+            if (event.target !== modal.querySelector(".org-chart-modal-panel")) return;
+            modal.removeEventListener("transitionend", onTransitionEnd);
+            finishClose();
+        }
+
+        modal.addEventListener("transitionend", onTransitionEnd);
+        window.setTimeout(finishClose, 420);
     }
 
     document.addEventListener("click", function (event) {
