@@ -12830,18 +12830,13 @@ body[data-ksl-motif="wheel"] {
 
 .ksl-path-art {
     position: absolute;
-    z-index: 0;
+    z-index: -1;
     display: block;
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
     opacity: .075;
     pointer-events: none;
-}
-
-.ksl-path > :not(.ksl-path-art) {
-    position: relative;
-    z-index: 1;
 }
 
 .ksl-path-art-drydock {
