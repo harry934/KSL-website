@@ -26,6 +26,12 @@ export function sessionNeedsTouch(seenAt: string | null | undefined, now: number
   return now - seen >= touchMs;
 }
 
+/** True when the staff session was used within the idle window. */
+export function sessionIsLive(seenAt: string | null | undefined, now = Date.now(), idleMs = IDLE_MS) {
+  const seen = seenAt ? Date.parse(seenAt) : Number.NaN;
+  return Number.isFinite(seen) && now - seen <= idleMs;
+}
+
 export function sessionCookieOptions(maxAge = 60 * 60 * 12) {
   return {
     httpOnly: true,

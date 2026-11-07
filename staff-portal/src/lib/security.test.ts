@@ -6,7 +6,7 @@ import { matchesDeclaredType, mp4IsHevc } from "./file-bytes.ts";
 import { heroFrameOffset, parseHeroCrop, parseHeroTrim } from "./hero-frame.ts";
 import { issueContactToken, verifyContactToken } from "./contact-token.ts";
 import { looksLikeCode } from "./input-guard.ts";
-import { IDLE_MS, judgeSession } from "./staff-session.ts";
+import { IDLE_MS, judgeSession, sessionIsLive } from "./staff-session.ts";
 import { sanitizeRichHtml } from "./sanitize-html.ts";
 import { cleanBoardSections, cleanIntro, cleanMilestoneInput, cleanOrgChart, parseMilestoneWhen, toPublicOrganization, type MilestoneRow } from "./organization.ts";
 import { safeLink } from "./safe-link.ts";
@@ -235,6 +235,9 @@ test("a staff session stays open for one browser and 20 minutes of use", () => {
     judgeSession({ cookieKey: "abc", storedKey: "abc", seenAt: new Date(now - IDLE_MS - 1000).toISOString(), now }),
     "idle"
   );
+  assert.equal(sessionIsLive(new Date(now - 60_000).toISOString(), now), true);
+  assert.equal(sessionIsLive(new Date(now - IDLE_MS - 1000).toISOString(), now), false);
+  assert.equal(sessionIsLive(null, now), false);
 });
 
 test("contact tokens expire into use and reject tampering", () => {

@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { STAFF_SESSION_COOKIE, judgeSession, sessionCookieOptions } from "@/lib/staff-session";
-import { readStaffSession } from "@/lib/staff-session-server";
+import { clearStaffSession, readStaffSession } from "@/lib/staff-session-server";
 
 const ALLOWED_ORIGINS = new Set([
   "https://ksl-website.vercel.app",
@@ -130,6 +130,10 @@ export async function middleware(request: NextRequest) {
         });
 
     if (reason) {
+      // Idle sessions must leave the table so the staff list stops showing them as online.
+      if (reason === "idle") {
+        await clearStaffSession(user.id).catch(() => null);
+      }
       await supabase.auth.signOut();
       if (pathname.startsWith("/api/")) {
         return endBrowserSession(NextResponse.json({ error: "Please sign in again." }, { status: 401 }));

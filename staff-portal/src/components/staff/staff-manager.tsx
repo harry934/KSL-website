@@ -13,6 +13,7 @@ import { MODULE_GROUPS, MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 import { parseRoleTitle, roleLabel } from "@/lib/staff-role";
 import { SIDEBAR_ITEM_LIMIT, permissionNavLinks } from "@/lib/portal-nav";
 import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
+import { sessionIsLive } from "@/lib/staff-session";
 import { sendJson } from "@/lib/upload-client";
 import { cn } from "@/lib/cn";
 import { PasscodeDisplay } from "@/components/ui/password-input";
@@ -33,8 +34,32 @@ type StaffRow = {
   is_active: boolean;
   must_change_password: boolean;
   avatar_url: string | null;
+  last_seen_at: string | null;
+  client_label: string | null;
   permissions: PermRow[];
 };
+
+type PresenceStatus = "suspended" | "invited" | "online" | "offline";
+
+function presenceOf(row: StaffRow): PresenceStatus {
+  if (!row.is_active) return "suspended";
+  if (row.must_change_password) return "invited";
+  return sessionIsLive(row.last_seen_at) ? "online" : "offline";
+}
+
+function presenceLabel(status: PresenceStatus) {
+  if (status === "suspended") return "Suspended";
+  if (status === "invited") return "Waiting for first sign-in";
+  if (status === "online") return "Online";
+  return "Offline";
+}
+
+function presenceClass(status: PresenceStatus) {
+  if (status === "suspended") return "bg-[#fdecea] text-[#b42318]";
+  if (status === "invited") return "bg-[#fff4e5] text-[#b45309]";
+  if (status === "online") return "bg-[#1b7a3d]/10 text-[#1b7a3d]";
+  return "bg-[#eef2f6] text-[#5b6775]";
+}
 
 type Panel = { kind: "create" } | { kind: "edit"; row: StaffRow } | null;
 type AccountRequest = {
@@ -608,6 +633,10 @@ export function StaffManager() {
 
   useEffect(() => {
     load();
+    const timer = window.setInterval(() => {
+      void load();
+    }, 30_000);
+    return () => window.clearInterval(timer);
   }, [load]);
 
   function editAccess(next: PermRow[]) {
@@ -1194,18 +1223,27 @@ export function StaffManager() {
                 </td>
                 <td className="px-4 py-3 text-[#5b6775]">{roleLabel(row.is_super_admin, row.role_title)}</td>
                 <td className="px-4 py-3">
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-semibold",
-                      !row.is_active
-                        ? "bg-[#fdecea] text-[#b42318]"
-                        : row.must_change_password
-                          ? "bg-[#fff4e5] text-[#b45309]"
-                          : "bg-[#1b7a3d]/10 text-[#1b7a3d]"
-                    )}
-                  >
-                    {!row.is_active ? "Suspended" : row.must_change_password ? "Waiting for first sign-in" : "Active"}
-                  </span>
+                  {(() => {
+                    const status = presenceOf(row);
+                    return (
+                      <div className="min-w-0">
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-semibold",
+                            presenceClass(status)
+                          )}
+                        >
+                          {status === "online" ? (
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#1b7a3d]" aria-hidden />
+                          ) : null}
+                          {presenceLabel(status)}
+                        </span>
+                        {status === "online" && row.client_label ? (
+                          <p className="mt-1 text-[11.5px] text-[#6b7785]">{row.client_label}</p>
+                        ) : null}
+                      </div>
+                    );
+                  })()}
                 </td>
                 <td className="max-w-[280px] px-4 py-3 text-[#5b6775]">
                   {row.is_super_admin

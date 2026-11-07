@@ -56,6 +56,11 @@ export async function closeMatchingStaffSession(userId: string, cookieKey: strin
   return true;
 }
 
+/** Drops a stale or idle session so the staff list no longer shows the person as online. */
+export async function clearStaffSession(userId: string) {
+  await createAdminClient().from("staff_sessions").delete().eq("user_id", userId);
+}
+
 export async function clearSessionCookie() {
   const jar = await cookies();
   jar.set(STAFF_SESSION_COOKIE, "", sessionCookieOptions(0));
