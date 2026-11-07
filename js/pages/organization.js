@@ -37,11 +37,21 @@
 
     function paintIntro(data, esc) {
         var intro = document.querySelector(".org-intro");
-        if (!intro || !data || !data.intro) return;
+        if (!intro) return;
+        var block = data && data.intro ? data.intro : null;
+        var kicker = block && block.kicker ? String(block.kicker).trim() : "";
+        var title = block && block.title ? String(block.title).trim() : "";
+        var body = block && block.body ? String(block.body).trim() : "";
+        if (!kicker && !title && !body) {
+            intro.innerHTML = "";
+            intro.hidden = true;
+            return;
+        }
+        intro.hidden = false;
         intro.innerHTML =
-            '<p class="org-kicker">' + esc(data.intro.kicker) + "</p>" +
-            '<h2 id="organization-title">' + esc(data.intro.title) + "</h2>" +
-            "<p>" + esc(data.intro.body) + "</p>";
+            (kicker ? '<p class="org-kicker">' + esc(kicker) + "</p>" : "") +
+            (title ? '<h2 id="organization-title">' + esc(title) + "</h2>" : "") +
+            (body ? "<p>" + esc(body) + "</p>" : "");
     }
 
     function paintChart(data, esc) {

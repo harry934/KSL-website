@@ -85,9 +85,9 @@ export const SHIPPED_MILESTONES_HEADING: MilestonesHeading = {
 };
 
 export const SHIPPED_INTRO: OrgIntro = {
-  kicker: "Governance and operations",
-  title: "How Kenya Shipyards Limited is structured",
-  body: "The Board provides governance oversight. The Managing Director leads the shipbuilding, engineering, commercial, assurance, and corporate offices.",
+  kicker: "",
+  title: "",
+  body: "",
 };
 
 export const SHIPPED_CHART: OrgChart = {
@@ -117,9 +117,9 @@ function clip(value: unknown, max: number) {
 export function cleanIntro(value: unknown): OrgIntro {
   const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   return {
-    kicker: clip(record.intro_kicker ?? record.kicker, 80) || SHIPPED_INTRO.kicker,
-    title: clip(record.intro_title ?? record.title, 160) || SHIPPED_INTRO.title,
-    body: clip(record.intro_body ?? record.body, 600) || SHIPPED_INTRO.body,
+    kicker: clip(record.intro_kicker ?? record.kicker, 80),
+    title: clip(record.intro_title ?? record.title, 160),
+    body: clip(record.intro_body ?? record.body, 600),
   };
 }
 
