@@ -2961,32 +2961,47 @@ body {
     position: relative;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     min-width: 280px;
     padding: 14px 28px;
     overflow: hidden;
-    border: 0;
+    border: 1.5px solid #273272;
     border-radius: 6px;
     background: #273272;
     color: #fff;
     font: 700 14px/1.3 Manrope, sans-serif;
     letter-spacing: .01em;
     cursor: pointer;
-    transition: background-color .25s ease;
+    transition:
+        background-color .25s ease,
+        color .25s ease,
+        border-color .25s ease;
 }
 
 .org-structure-open:hover,
 .org-structure-open:focus-visible {
-    background: #1c2557;
-    color: #fff;
+    background: transparent;
+    border-color: #273272;
+    color: #273272;
+    transition:
+        background-color .3s ease .5s,
+        color .3s ease .5s,
+        border-color .3s ease .5s;
 }
 
 .org-structure-open-label {
     position: relative;
     z-index: 1;
     width: 100%;
-    text-align: left;
+    text-align: center;
     color: #fff;
-    transition: color .2s ease;
+    transition: color .25s ease;
+}
+
+.org-structure-open:hover .org-structure-open-label,
+.org-structure-open:focus-visible .org-structure-open-label {
+    color: #273272;
+    transition: color .3s ease .5s;
 }
 
 .org-structure-open-wipe {
@@ -2995,12 +3010,16 @@ body {
     border-radius: 6px;
     background: #1c2557;
     transform: translateX(-100%);
-    transition: transform .5s ease .15s;
+    opacity: 1;
+    transition: transform .5s ease .12s, opacity .28s ease;
+    pointer-events: none;
 }
 
 .org-structure-open:hover .org-structure-open-wipe,
 .org-structure-open:focus-visible .org-structure-open-wipe {
     transform: translateX(0);
+    opacity: 0;
+    transition: transform .5s ease .12s, opacity .28s ease .48s;
 }
 
 .org-structure-open-corner {
