@@ -52,6 +52,7 @@
             '<div class="org-node org-node-board"><span>' + esc(chart.boardCaption) + "</span><strong>" + esc(chart.boardTitle) + "</strong></div>" +
             '<span class="org-connector" aria-hidden="true"></span>' +
             '<div class="org-node org-node-md"><span>' + esc(chart.executiveCaption) + "</span><strong>" + esc(chart.executiveTitle) + "</strong></div>" +
+            '<span class="org-connector" aria-hidden="true"></span>' +
             '</div><div class="org-tree-branches">';
         departments.forEach(function (dept) {
             html += '<div class="org-branch"><article class="org-office' + (dept.office ? " is-staff" : "") + '"><h3>' + esc(dept.title) + "</h3></article>";

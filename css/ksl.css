@@ -2966,7 +2966,7 @@ body {
     overflow: hidden;
     border: 0;
     border-radius: 6px;
-    background: #0165FC;
+    background: #273272;
     color: #fff;
     font: 700 14px/1.3 Manrope, sans-serif;
     letter-spacing: .01em;
@@ -2976,7 +2976,7 @@ body {
 
 .org-structure-open:hover,
 .org-structure-open:focus-visible {
-    background: #0A3E95;
+    background: #1c2557;
     color: #fff;
 }
 
@@ -2993,7 +2993,7 @@ body {
     position: absolute;
     inset: 0;
     border-radius: 6px;
-    background: #0A3E95;
+    background: #1c2557;
     transform: translateX(-100%);
     transition: transform .5s ease .15s;
 }
@@ -3011,7 +3011,7 @@ body {
     height: 16px;
     overflow: hidden;
     border-radius: 4px;
-    background: #273272;
+    background: #c5a028;
     transition: margin .5s ease;
 }
 
@@ -3053,9 +3053,9 @@ body {
     inset: 0;
     z-index: 1080;
     display: flex;
-    align-items: stretch;
+    align-items: center;
     justify-content: center;
-    padding: 10px;
+    padding: 14px;
 }
 
 .org-chart-modal[hidden] {
@@ -3066,7 +3066,8 @@ body {
     position: absolute;
     inset: 0;
     border: 0;
-    background: rgba(39, 50, 114, 0.55);
+    background: rgba(11, 31, 58, 0.58);
+    backdrop-filter: blur(2px);
     cursor: pointer;
 }
 
@@ -3075,12 +3076,13 @@ body {
     z-index: 1;
     display: flex;
     flex-direction: column;
-    width: min(96vw, 1600px);
-    height: calc(100vh - 20px);
-    max-height: calc(100vh - 20px);
+    width: min(96vw, 1680px);
+    height: calc(100vh - 28px);
+    max-height: calc(100vh - 28px);
     background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 20px 48px rgba(39, 50, 114, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    box-shadow: 0 28px 64px rgba(11, 31, 58, 0.28);
     overflow: hidden;
 }
 
@@ -3090,15 +3092,25 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 12px 16px;
-    border-bottom: 1px solid #DDE5F0;
-    background: #273272;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, #2f3d86 0%, #273272 100%);
+}
+
+.org-chart-modal-heading {
+    min-width: 0;
 }
 
 .org-chart-modal-bar h2 {
     margin: 0;
     color: #fff;
-    font: 700 16px/1.3 Poppins, sans-serif;
+    font: 700 17px/1.3 Poppins, sans-serif;
+}
+
+.org-chart-modal-hint {
+    margin: 3px 0 0;
+    color: rgba(255, 255, 255, 0.68);
+    font: 500 12px/1.35 Manrope, sans-serif;
 }
 
 .org-chart-modal-tools {
@@ -3113,31 +3125,39 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 34px;
-    height: 34px;
-    padding: 0 10px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.08);
+    min-width: 36px;
+    height: 36px;
+    padding: 0 11px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
     color: #fff;
     font: 700 15px/1 Manrope, sans-serif;
     cursor: pointer;
+    transition: background-color .2s ease, border-color .2s ease;
 }
 
 .org-chart-zoom:hover,
 .org-chart-close:hover {
-    background: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.35);
 }
 
 .org-chart-close {
-    min-width: 38px;
+    min-width: 40px;
     font-size: 22px;
     line-height: 1;
+    background: rgba(197, 160, 40, 0.22);
+    border-color: rgba(197, 160, 40, 0.45);
+}
+
+.org-chart-close:hover {
+    background: rgba(197, 160, 40, 0.35);
 }
 
 .org-chart-zoom-label {
     min-width: 48px;
-    color: #dbe5f5;
+    color: #e8d9a4;
     font: 700 12px/1 Manrope, sans-serif;
     text-align: center;
 }
@@ -3146,8 +3166,10 @@ body {
     flex: 1;
     min-height: 0;
     overflow: auto;
-    padding: 16px;
-    background: #F7F9FC;
+    padding: 18px;
+    background:
+        radial-gradient(ellipse 70% 40% at 50% 0%, rgba(1, 101, 252, 0.06), transparent 60%),
+        #F4F7FB;
     cursor: grab;
     -webkit-overflow-scrolling: touch;
     touch-action: none;
@@ -3159,6 +3181,7 @@ body {
 }
 
 .org-chart {
+    --org-line: #C2CCD8;
     padding: 28px 18px 22px;
     background: #fff;
     border: 1px solid #DDE5F0;
@@ -3178,14 +3201,13 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 22px;
 }
 
 .org-connector {
     width: 1px;
     height: 22px;
     display: block;
-    background: #C2CCD8;
+    background: var(--org-line);
 }
 
 .org-node {
@@ -3227,10 +3249,45 @@ body {
 }
 
 .org-branch {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     width: 168px;
+    padding-top: 16px;
+}
+
+.org-branch::before {
+    position: absolute;
+    content: "";
+    top: 0;
+    left: 50%;
+    width: 1px;
+    height: 16px;
+    background: var(--org-line);
+    transform: translateX(-50%);
+}
+
+.org-branch::after {
+    position: absolute;
+    content: "";
+    top: 0;
+    left: -6px;
+    right: -6px;
+    height: 1px;
+    background: var(--org-line);
+}
+
+.org-branch:first-child::after {
+    left: 50%;
+}
+
+.org-branch:last-child::after {
+    right: 50%;
+}
+
+.org-branch:only-child::after {
+    display: none;
 }
 
 .org-office {
@@ -3269,15 +3326,15 @@ body {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
     width: 100%;
-    margin: 10px 0 0;
+    margin: 0;
     padding: 0;
     list-style: none;
 }
 
 .org-divisions li {
-    margin: 0;
+    position: relative;
+    margin-top: 14px;
     padding: 9px 8px;
     background: #fff;
     border: 1px solid #D7E0EC;
@@ -3286,6 +3343,17 @@ body {
     font-size: 12px;
     line-height: 1.35;
     text-align: center;
+}
+
+.org-divisions li::before {
+    position: absolute;
+    content: "";
+    top: -14px;
+    left: 50%;
+    width: 1px;
+    height: 14px;
+    background: var(--org-line);
+    transform: translateX(-50%);
 }
 
 .about-page-hero h2 {
@@ -3845,7 +3913,6 @@ html.board-motion .board-card.is-in .board-card-body {
 
     .org-tree-top {
         align-items: center;
-        margin-bottom: 16px;
     }
 
     .org-node {
@@ -3856,10 +3923,52 @@ html.board-motion .board-card.is-in .board-card-body {
         flex-direction: column;
         align-items: stretch;
         gap: 14px;
+        padding-left: 22px;
     }
 
     .org-branch {
         width: auto;
+        padding-top: 0;
+    }
+
+    .org-branch::before {
+        top: 28px;
+        left: -22px;
+        width: 22px;
+        height: 1px;
+        transform: none;
+    }
+
+    .org-branch::after {
+        top: 0;
+        bottom: -14px;
+        left: -22px;
+        right: auto;
+        width: 1px;
+        height: auto;
+    }
+
+    .org-branch:first-child::after {
+        top: 0;
+        left: -22px;
+        right: auto;
+    }
+
+    .org-branch:last-child::after {
+        right: auto;
+        bottom: auto;
+        height: 28px;
+    }
+
+    .org-branch:only-child::before,
+    .org-branch:only-child::after {
+        display: block;
+    }
+
+    .org-branch:only-child::after {
+        top: 0;
+        height: 28px;
+        bottom: auto;
     }
 
     .product-range-grid {
