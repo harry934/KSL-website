@@ -130,14 +130,14 @@
                 if (!url) {
                     html += "<li><div><h3>" + escapeHtml(item.title) + "</h3><p>" + escapeHtml(item.note) + "</p></div>";
                     html += '<span class="ksl-library-note">Not available</span></li>';
-                    return;
+                } else {
+                    var sub = item.subtitle ? '<p class="text-muted small mb-1">' + escapeHtml(item.subtitle) + "</p>" : "";
+                    var meta = [item.type, item.size, item.language, item.date].filter(Boolean).map(escapeHtml).join(" · ");
+                    html += "<li><div><h3>" + escapeHtml(item.title) + "</h3>" + sub + "<p>" + escapeHtml(displayFilename(item.filename)) + "</p>";
+                    html += '<p class="ksl-downloads-meta">' + meta + "</p></div>";
+                    html += docButton(url) + "</li>";
                 }
-                var sub = item.subtitle ? '<p class="text-muted small mb-1">' + escapeHtml(item.subtitle) + "</p>" : "";
-                var meta = [item.type, item.size, item.language, item.date].filter(Boolean).map(escapeHtml).join(" · ");
-                html += "<li><div><h3>" + escapeHtml(item.title) + "</h3>" + sub + "<p>" + escapeHtml(displayFilename(item.filename)) + "</p>";
-                html += '<p class="ksl-downloads-meta">' + meta + "</p></div>";
-                html += docButton(url) + "</li>";
-                if (item.id === "charter-sw" || /citizen service delivery charter \(kiswahili\)/i.test(item.title || "")) {
+                if (item.id === "charter-sw" || /kiswahili/i.test(item.title || "") && /charter/i.test(item.title || "")) {
                     html +=
                         '<li class="ksl-charter-video-item">' +
                         '<div class="ksl-charter-video">' +
@@ -146,7 +146,7 @@
                         "<h3>Citizen Service Delivery Charter (Kiswahili)</h3>" +
                         "</div>" +
                         '<div class="ksl-charter-video-frame">' +
-                        '<iframe src="https://www.youtube-nocookie.com/embed/e8BYWZH2h5g" title="Citizen Service Delivery Charter (Kiswahili)" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>' +
+                        '<iframe src="https://www.youtube.com/embed/e8BYWZH2h5g" title="Citizen Service Delivery Charter (Kiswahili)" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>' +
                         "</div></div></li>";
                 }
             });
