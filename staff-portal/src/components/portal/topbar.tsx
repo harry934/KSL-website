@@ -89,9 +89,8 @@ export function Topbar({
         <p className={cn("truncate text-[15px] font-bold text-[#0b1f3a]", showSidebar && "hidden sm:block")}>{titleFor(pathname)}</p>
       </div>
 
-      <PortalSearch />
-
-      <div className="flex items-center gap-1.5">
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
+        <PortalSearch />
         <NotificationBell userId={session.userId} />
 
         <div className="relative" ref={menuRef}>

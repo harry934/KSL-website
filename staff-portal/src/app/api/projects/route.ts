@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
     slug: String(body.slug || slugify(title)).trim() || slugify(title),
     title,
     subtitle: String(body.subtitle ?? "").trim() || null,
+    details: String(body.details ?? "").trim() || null,
     category: group.value,
     category_label: group.label,
     image_path: body.image_path || null,

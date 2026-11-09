@@ -137,6 +137,19 @@
                 html += "<li><div><h3>" + escapeHtml(item.title) + "</h3>" + sub + "<p>" + escapeHtml(displayFilename(item.filename)) + "</p>";
                 html += '<p class="ksl-downloads-meta">' + meta + "</p></div>";
                 html += docButton(url) + "</li>";
+                if (item.id === "charter-sw" || /citizen service delivery charter \(kiswahili\)/i.test(item.title || "")) {
+                    html +=
+                        '<li class="ksl-charter-video-item">' +
+                        '<div class="ksl-charter-video">' +
+                        '<div class="ksl-charter-video-copy">' +
+                        '<p class="ksl-charter-video-kicker">Video briefing</p>' +
+                        "<h3>Citizen Service Delivery Charter (Kiswahili)</h3>" +
+                        "<p>Watch a short Kiswahili overview of the charter alongside the document.</p>" +
+                        "</div>" +
+                        '<div class="ksl-charter-video-frame">' +
+                        '<iframe src="https://www.youtube-nocookie.com/embed/e8BYWZH2h5g" title="Citizen Service Delivery Charter (Kiswahili)" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>' +
+                        "</div></div></li>";
+                }
             });
             html += "</ul></section>";
         });

@@ -10,6 +10,7 @@ export type ProjectRow = {
   slug: string;
   title: string;
   subtitle: string | null;
+  details: string | null;
   category: string;
   category_label: string;
   image_path: string | null;
@@ -36,13 +37,17 @@ export function toPublicProjects(rows: ProjectRow[]) {
     items: rows
       .filter((row) => row.status === "published")
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map((row) => ({
-        slug: row.slug,
-        title: row.title,
-        subtitle: row.subtitle ?? "",
-        category: row.category,
-        categoryLabel: row.category_label || projectGroup(row.category).label,
-        image: row.image_path ?? "",
-      })),
+      .map((row) => {
+        const details = String(row.details ?? "").trim();
+        return {
+          slug: row.slug,
+          title: row.title,
+          subtitle: row.subtitle ?? "",
+          category: row.category,
+          categoryLabel: row.category_label || projectGroup(row.category).label,
+          image: row.image_path ?? "",
+          ...(details ? { details } : {}),
+        };
+      }),
   };
 }

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImageField } from "@/components/ui/image-field";
 import { ItemList } from "@/components/ui/item-list";
-import { Field, FormSection, SaveBar, ChoiceField, VisibilitySwitch } from "@/components/ui/form-bits";
+import { Field, FormSection, SaveBar, ChoiceField, VisibilitySwitch, Textarea } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { slugify } from "@/lib/news";
 import { orderedGroups, reorderItem, uniqueSlug } from "@/lib/list-utils";
@@ -79,6 +79,7 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
     setEditing({
       title: "",
       subtitle: "",
+      details: "",
       category: PROJECT_GROUPS[0].value,
       category_label: PROJECT_GROUPS[0].label,
       image_path: "",
@@ -173,6 +174,17 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
             </Field>
             <Field label="Short line" hint="Shown under the name, for example New build.">
               <Input value={editing.subtitle ?? ""} onChange={(event) => set({ subtitle: event.target.value })} />
+            </Field>
+            <Field
+              label="Project details"
+              hint="Optional. When filled in, the website card shows Read more with a ship icon. Leave blank to hide that control."
+            >
+              <Textarea
+                value={editing.details ?? ""}
+                onChange={(event) => set({ details: event.target.value })}
+                rows={8}
+                placeholder="What was built or repaired, client, scope, and outcome…"
+              />
             </Field>
             <Field label="Group">
               <ChoiceField

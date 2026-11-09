@@ -5,6 +5,11 @@
     var root = document.querySelector("main.ksl-projects");
     if (!root || !window.KSL_CONTENT) return;
 
+    var SHIP_ICON =
+        '<svg class="ksl-project-ship" viewBox="0 0 24 24" aria-hidden="true">' +
+        '<path d="M3 16.5 12 7l9 9.5"/><path d="M4.5 16.5h15l-1.6 3.2a1 1 0 0 1-.9.55H7a1 1 0 0 1-.9-.55L4.5 16.5z"/>' +
+        '<path d="M12 7V4.8"/><path d="M9.5 16.5V12h5v4.5"/></svg>';
+
     function escapeHtml(value) {
         return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) {
             return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -15,6 +20,16 @@
         var url = String(value || "").trim();
         if (/^(https?:)?\/\//i.test(url) || /^[\w./#?=&%-]+$/.test(url)) return url;
         return "";
+    }
+
+    function detailsHtml(text) {
+        return String(text || "")
+            .trim()
+            .split(/\n{2,}/)
+            .map(function (block) {
+                return "<p>" + escapeHtml(block).replace(/\n/g, "<br>") + "</p>";
+            })
+            .join("");
     }
 
     var GROUP_ICONS = {
@@ -34,6 +49,9 @@
     };
 
     var go = '<svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>';
+    var projectBySlug = {};
+    var modalEl = document.getElementById("kslProjectModal");
+    var modalInstance = null;
 
     function groupKey(item) {
         var key = String(item.category || "ship-construction").trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-|-$/g, "");
@@ -43,6 +61,11 @@
     function card(item) {
         var image = safeUrl(item.image);
         var title = escapeHtml(item.title);
+        var details = String(item.details || "").trim();
+        var more = details
+            ? '<button type="button" class="ksl-project-more" data-project-more="' + escapeHtml(item.slug || "") + '">' +
+              SHIP_ICON + "<span>Read more</span></button>"
+            : "";
         return (
             '<article class="ksl-project">' +
             (image
@@ -50,13 +73,49 @@
                   '<img src="' + escapeHtml(image) + '" alt="' + title + '"></a>'
                 : "") +
             "<div><h3>" + title + "</h3><p>" + escapeHtml(item.subtitle || "") + "</p>" +
-            '<a href="contact.html">Enquire</a></div></article>'
+            '<div class="ksl-project-actions"><a href="contact.html">Enquire</a>' + more + "</div></div></article>"
         );
+    }
+
+    function openProject(slug) {
+        var item = projectBySlug[slug];
+        if (!item || !modalEl || !window.bootstrap || !window.bootstrap.Modal) return;
+        var title = document.getElementById("kslProjectModalTitle");
+        var summary = document.getElementById("kslProjectModalSummary");
+        var body = document.getElementById("kslProjectModalBody");
+        var img = document.getElementById("kslProjectModalImg");
+        var media = document.getElementById("kslProjectModalMedia");
+        var kicker = document.getElementById("kslProjectModalKicker");
+        if (title) title.textContent = item.title || "";
+        if (summary) {
+            summary.textContent = item.subtitle || "";
+            summary.hidden = !item.subtitle;
+        }
+        if (kicker) kicker.textContent = item.categoryLabel || "Our projects";
+        if (body) body.innerHTML = detailsHtml(item.details);
+        if (img && media) {
+            var image = safeUrl(item.image);
+            if (image) {
+                img.src = image;
+                img.alt = item.title || "";
+                media.hidden = false;
+            } else {
+                img.removeAttribute("src");
+                img.alt = "";
+                media.hidden = true;
+            }
+        }
+        if (!modalInstance) modalInstance = new window.bootstrap.Modal(modalEl);
+        modalInstance.show();
     }
 
     function render(data) {
         if (!data) return;
         var items = (data && data.items) || [];
+        projectBySlug = {};
+        items.forEach(function (item) {
+            if (item && item.slug) projectBySlug[item.slug] = item;
+        });
         var list = root.querySelector(".ksl-svc-tabs");
         var host = list && list.parentElement;
         if (!list || !host) return;
@@ -106,6 +165,13 @@
         });
         if (window.kslBindServiceTabs) window.kslBindServiceTabs();
     }
+
+    root.addEventListener("click", function (event) {
+        var btn = event.target.closest("[data-project-more]");
+        if (!btn) return;
+        event.preventDefault();
+        openProject(btn.getAttribute("data-project-more") || "");
+    });
 
     window.KSL_CONTENT.fetchJson("/api/public/projects", "data/projects.json").then(function (data) {
         render(data);
