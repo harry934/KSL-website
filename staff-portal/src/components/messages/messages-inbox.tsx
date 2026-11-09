@@ -42,6 +42,8 @@ const FLAG_LABELS: Record<string, string> = {
   short_message_with_link: "Short + link",
   repeated_characters: "Spam pattern",
   high_risk: "High risk",
+  encoded_layers: "Encoded text",
+  encoded_obfuscation: "Hidden encoding",
 };
 
 function when(iso: string) {

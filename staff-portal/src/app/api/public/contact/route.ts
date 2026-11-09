@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { clientIp } from "@/lib/auth-server";
 import { verifyContactToken, verifyTurnstile } from "@/lib/contact-token";
 import { assessContactRisk } from "@/lib/contact-risk";
-import { looksLikeCode } from "@/lib/input-guard";
+import { scanContactFields } from "@/lib/contact-payload-scan";
 import { NextRequest, NextResponse } from "next/server";
 
 const PREFERRED = new Set(["Phone Call", "Email", "Message / WhatsApp", ""]);
@@ -29,7 +29,8 @@ export async function POST(req: NextRequest) {
   const message = clip(body.message, 4000);
   const preferred = clip(body.preferredContact, 40);
 
-  if ([firstName, otherName, surname, email, subject, message].some(looksLikeCode)) {
+  const payloadScan = scanContactFields([firstName, otherName, surname, email, subject, message]);
+  if (payloadScan.blocked) {
     return NextResponse.json({ error: "That text was blocked.", code: "blocked" }, { status: 400 });
   }
   if (!firstName || !surname || !subject || !message) {
@@ -69,7 +70,15 @@ export async function POST(req: NextRequest) {
   }
   await admin.from("contact_attempts").insert({ ip });
 
-  const risk = assessContactRisk({ firstName, otherName, surname, email, subject, message });
+  const risk = assessContactRisk({
+    firstName,
+    otherName,
+    surname,
+    email,
+    subject,
+    message,
+    encodingLayers: payloadScan.encodings,
+  });
 
   const { error } = await admin.from("website_messages").insert({
     first_name: firstName,

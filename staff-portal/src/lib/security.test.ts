@@ -6,6 +6,8 @@ import { matchesDeclaredType, mp4IsHevc } from "./file-bytes.ts";
 import { heroFrameOffset, parseHeroCrop, parseHeroTrim } from "./hero-frame.ts";
 import { issueContactToken, verifyContactToken } from "./contact-token.ts";
 import { assessContactRisk } from "./contact-risk.ts";
+import { scanContactPayload } from "./contact-payload-scan.ts";
+import { gzipSync } from "node:zlib";
 import { looksLikeCode } from "./input-guard.ts";
 import { issueMessagesUnlockToken, maskWebsiteMessage, verifyMessagesUnlockToken } from "./message-unlock.ts";
 import { IDLE_MS, judgeSession, sessionIsLive } from "./staff-session.ts";
@@ -330,6 +332,21 @@ test("Turnstile fails closed in production without a secret", async () => {
   else process.env.NODE_ENV = prevNode;
   if (prevVercel === undefined) delete process.env.VERCEL_ENV;
   else process.env.VERCEL_ENV = prevVercel;
+});
+
+test("contact payload scan decodes obfuscation layers before blocking", () => {
+  assert.equal(scanContactPayload("Hello, we need a quote for dry dock work.").blocked, false);
+
+  const b64Script = Buffer.from("<script>alert(1)</script>", "utf8").toString("base64");
+  assert.equal(scanContactPayload(b64Script).blocked, true);
+
+  assert.equal(scanContactPayload("%3Cscript%3Ealert(1)%3C/script%3E").blocked, true);
+  assert.equal(scanContactPayload("&lt;script&gt;alert(1)&lt;/script&gt;").blocked, true);
+  assert.equal(scanContactPayload("\\x3cscript\\x3ealert(1)\\x3c/script\\x3e").blocked, true);
+
+  const gz = gzipSync(Buffer.from("<iframe src=x></iframe>", "utf8")).toString("base64");
+  assert.equal(scanContactPayload(gz).blocked, true);
+  assert.ok(scanContactPayload(gz).encodings.includes("gzip"));
 });
 
 test("contact risk flags injection in names and links in messages", () => {

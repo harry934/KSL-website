@@ -27,6 +27,7 @@ export function assessContactRisk(input: {
   email: string;
   subject: string;
   message: string;
+  encodingLayers?: string[];
 }): ContactRisk {
   const risk: ContactRisk = { score: 0, flags: [] };
   const names = [input.firstName, input.otherName, input.surname].filter(Boolean);
@@ -54,6 +55,12 @@ export function assessContactRisk(input: {
 
   if (/(.)\1{7,}/.test(message)) bump(risk, 18, "repeated_characters");
 
+  const layers = input.encodingLayers ?? [];
+  if (layers.length > 0) bump(risk, 8, "encoded_layers");
+  if (layers.some((layer) => layer === "gzip" || layer === "base64" || layer === "base64_embedded")) {
+    bump(risk, 15, "encoded_obfuscation");
+  }
+
   if (risk.score >= 40) bump(risk, 0, "high_risk");
 
   return risk;
@@ -73,4 +80,6 @@ export const RISK_FLAG_LABELS: Record<string, string> = {
   short_message_with_link: "Short note with link",
   repeated_characters: "Repeated characters",
   high_risk: "High risk",
+  encoded_layers: "Encoded text",
+  encoded_obfuscation: "Hidden encoding",
 };
