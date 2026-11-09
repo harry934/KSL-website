@@ -108,6 +108,7 @@ flowchart LR
 - **HTML safety:** User-generated text from the API is sanitised in the browser (`js/sanitize.js`) with rules aligned to the portal editors.
 - **Intro animation:** Home page optional intro (`js/intro-boot.js`).
 - **Security headers:** On Vercel, `vercel.json` sets CSP, HSTS, and related headers. On VPS, the same policies move to **Nginx** (see section 7).
+- **404 handling:** Unknown URLs should serve [`404.html`](../404.html) with HTTP 404. The page uses `<base href="/">` so CSS/JS still load when the browser URL is a **nested** path (e.g. `/old/path/missing`). Vercel: `vercel.json` `routes` after `filesystem`. VPS: Nginx `error_page 404 /404.html`. Missing news/event **slugs** show an in-page message on `article.html` / `event.html` instead of redirecting to `404.html`. Full regression list: [VPS-MIGRATION-CHECKLIST.md](./VPS-MIGRATION-CHECKLIST.md).
 
 ---
 
@@ -172,15 +173,71 @@ Responses are cached for roughly **60 seconds** at the edge on Vercel; on VPS, r
 
 | Layer | Technology |
 |-------|------------|
-| Public UI | HTML5, CSS3, jQuery, Bootstrap 5 (bundled in `css/`) |
+| Public UI | HTML5, CSS3, jQuery, Bootstrap 5 (vendored under `lib/vendor/` and `css/`) |
 | Public data layer | Vanilla JS (`ksl-content.js`, `js/pages/*`) |
-| Admin UI | Next.js 15.5, React 19, TypeScript, Tailwind 4 |
-| Rich text editors | TipTap |
-| Database / auth / files | Supabase (Postgres, Auth, Storage) |
-| Spam protection | Cloudflare Turnstile |
+| Admin UI | Next.js 15, React 19, TypeScript 5, Tailwind CSS 4 |
+| Rich text editors | TipTap 3 |
+| Database / auth / files | Supabase (managed Postgres, Auth, Storage) |
+| Spam protection | Cloudflare Turnstile (API v0) |
 | Version control | Git → https://github.com/harry934/KSL-website |
 | Pre-production hosting | Two Vercel projects (see [DEPLOYMENT.md](./DEPLOYMENT.md)) |
 | Planned production hosting | One **Linux VPS**: Nginx + Node.js (PM2 or systemd) |
+
+### 5.1 Pinned versions (source of truth)
+
+**Staff portal** — exact install versions come from [`staff-portal/package-lock.json`](../staff-portal/package-lock.json) after `npm ci`. Declared ranges are in [`staff-portal/package.json`](../staff-portal/package.json).
+
+| Component | Version | Notes |
+|-----------|---------|--------|
+| **Node.js (runtime)** | 18.18+, 19.8+, or 20+ (per Next.js `engines`) | **VPS recommendation:** Node **20 LTS** or **22 LTS** — use the same major version for `npm ci` / `npm run build` on the server. |
+| Next.js | **15.5.29** | App Router |
+| React / React DOM | **19.1.0** | |
+| TypeScript | **5.9.3** | Dev dependency |
+| ESLint | **9.39.5** | `eslint-config-next` **15.5.29** |
+| Tailwind CSS | **4.3.3** | `@tailwindcss/postcss` **4.3.3** |
+| PostCSS (override) | **8.5.6** | `package.json` `overrides` |
+| `@supabase/supabase-js` | **2.117.3** | |
+| `@supabase/ssr` | **0.12.7** | Cookies / middleware |
+| TipTap (`react`, `starter-kit`, `pm`, `extensions`) | **3.32.0** | |
+| `sanitize-html` | **2.18.1** | Server-side HTML cleanup |
+| `lucide-react` | **1.57.0** | Icons |
+| `clsx` | **2.1.1** | |
+| `tailwind-merge` | **3.7.0** | |
+| `@yusufceng1z/ding-react` | **0.0.2** | Toast UI |
+| `@types/node` | **20.19.43** | Types only |
+
+**Public website** — vendored copies in the repo (no `package.json` at root). Loaded via [`js/scripts.js`](../js/scripts.js).
+
+| Component | Version | Path / source |
+|-----------|---------|----------------|
+| jQuery | **3.7.1** | `lib/vendor/jquery-3.7.1.min.js` |
+| Bootstrap (JS bundle) | **5.0.0** | `lib/vendor/bootstrap.bundle.min.js` |
+| Bootstrap (CSS) | **5.0.0** | `css/bootstrap.min.css` |
+| Owl Carousel | **2.1.6** | `lib/owlcarousel/` |
+| Lightbox2 | **2.10.0** | `lib/lightbox/js/lightbox.js` |
+| WOW.js | **1.3.0** | `lib/wow/wow.js` |
+| Font Awesome (CDN) | **5.10.0** | cdnjs on public HTML |
+| Bootstrap Icons (CDN) | **1.4.1** | jsDelivr on public HTML |
+| Google Fonts | — | Manrope, Open Sans, Poppins, Roboto (CDN) |
+
+**External services** (versions managed by the provider):
+
+| Service | Role | Versioning |
+|---------|------|------------|
+| Supabase Cloud | Postgres, Auth, Storage | Project `envqgczfhxywkxcnsrt`; Postgres major version shown in Supabase Dashboard → Database |
+| Cloudflare Turnstile | Contact form CAPTCHA | Client: `challenges.cloudflare.com/turnstile/v0/api.js` |
+| Google Translate widget | Optional translation | Loaded from Google CDN where enabled |
+
+**Production VPS (recommended, not enforced in code):**
+
+| Component | Recommendation |
+|-----------|----------------|
+| OS | Ubuntu **22.04** or **24.04** LTS |
+| Nginx | Distribution package (e.g. 1.24.x on Ubuntu 24.04) |
+| Certbot | `python3-certbot-nginx` from apt |
+| Process manager | PM2 **latest** global install, or systemd |
+
+To regenerate the portal lockfile versions after upgrades, run `npm ls` or inspect `package-lock.json` in `staff-portal/`.
 
 ### Environment variables (staff portal only)
 
@@ -333,6 +390,13 @@ server {
 
     # After certbot, certbot will add SSL listen 443 blocks or use certbot --nginx
 
+    # Custom 404 body (keep HTTP 404). Requires root-absolute assets on 404.html (<base href="/">).
+    error_page 404 /404.html;
+    location = /404.html {
+        root /var/www/ksl;
+        internal;
+    }
+
     location / {
         try_files $uri $uri/ $uri.html =404;
     }
@@ -413,8 +477,10 @@ During a short transition you may keep Vercel origins in `ALLOWED_ORIGINS` and C
 ### Phase E — Go-live sequence
 
 1. Deploy to VPS; confirm TLS on both hostnames.
-2. **Smoke tests on VPS IP or hosts file** before DNS:
+2. **Smoke tests on VPS IP or hosts file** before DNS (see [VPS-MIGRATION-CHECKLIST.md](./VPS-MIGRATION-CHECKLIST.md)):
    - `curl -I https://www.kenyashipyards.co.ke/`
+   - `curl -I https://www.kenyashipyards.co.ke/does-not-exist` → **404** and HTML contains `Page not found`
+   - Browser: `/foo/bar/missing` → branded 404 (not unstyled / eternal spinner)
    - `curl -s https://PORTAL_HOST/api/public/news | head`
    - Staff login, edit news, publish; refresh public news page.
    - Contact form with Turnstile; message appears in portal Messages.

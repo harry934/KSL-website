@@ -6,7 +6,8 @@ Staff admin portal: https://ksl-websitekiza.vercel.app/login
 
 One Git repository. Two Vercel projects. Setup and status notes are in `guides/`.
 
-**Production overview and VPS migration:** [guides/PRODUCTION-OVERVIEW-AND-VPS.md](guides/PRODUCTION-OVERVIEW-AND-VPS.md)
+**Production overview and VPS migration:** [guides/PRODUCTION-OVERVIEW-AND-VPS.md](guides/PRODUCTION-OVERVIEW-AND-VPS.md)  
+**VPS regression checklist:** [guides/VPS-MIGRATION-CHECKLIST.md](guides/VPS-MIGRATION-CHECKLIST.md)
 
 ## Folders
 
