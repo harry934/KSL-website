@@ -2247,7 +2247,16 @@
                 .then(function (res) { return res.json(); })
                 .then(function (data) {
                     contactChallenge = data && data.challenge ? data.challenge : "";
-                    if (!data || !data.turnstileSiteKey || turnstileWidget) return;
+                    if (!data || !data.turnstileSiteKey) {
+                        if (contactError && !data.turnstileSiteKey) {
+                            contactError.hidden = false;
+                            contactError.textContent =
+                                "The security check is not set up yet. Please email publicaffairs@kenyashipyards.co.ke.";
+                            if (contactBtn) contactBtn.disabled = true;
+                        }
+                        return;
+                    }
+                    if (turnstileWidget) return;
                     var slot = document.getElementById("ksl-turnstile");
                     if (!slot) return;
                     var render = function () {
@@ -2329,6 +2338,12 @@
             };
             if (!base) {
                 fail("The form cannot be sent right now. Email publicaffairs@kenyashipyards.co.ke.");
+                return;
+            }
+            if (!turnstileToken) {
+                fail("Complete the security check below the form, or refresh the page and try again.");
+                contactBtn.disabled = false;
+                contactForm.classList.remove("is-sailing");
                 return;
             }
             fetch(base + "/api/public/contact", {
