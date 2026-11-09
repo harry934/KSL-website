@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261109-projmoreanim";
+    var ASSET_V = "20261109-projactions";
 
     var BUNDLES = {
         wow: [
