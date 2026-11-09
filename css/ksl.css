@@ -6957,31 +6957,31 @@ html[lang="sw"] .download-button .download::after {
     text-decoration: underline;
 }
 
-.ksl-project-more:hover .ksl-yard,
-.ksl-project-more:focus-visible .ksl-yard {
-    transform-origin: 50% 85%;
-    animation: ksl-yard-bob 1.1s ease-in-out infinite;
+.ksl-project-more:hover .ksl-yard-hull,
+.ksl-project-more:focus-visible .ksl-yard-hull {
+    transform-origin: 50% 100%;
+    animation: ksl-yard-hull 1.2s ease-in-out infinite;
 }
 
-.ksl-project-more:hover .ksl-yard-mast,
-.ksl-project-more:focus-visible .ksl-yard-mast {
-    transform-origin: 20px 18px;
-    animation: ksl-yard-mast 1.1s ease-in-out infinite;
+.ksl-project-more:hover .ksl-yard-crane,
+.ksl-project-more:focus-visible .ksl-yard-crane {
+    transform-origin: 6.5px 4.2px;
+    animation: ksl-yard-crane 1.2s ease-in-out infinite;
 }
 
-@keyframes ksl-yard-bob {
+@keyframes ksl-yard-hull {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-1.5px); }
+    50% { transform: translateY(-1.2px); }
 }
 
-@keyframes ksl-yard-mast {
+@keyframes ksl-yard-crane {
     0%, 100% { transform: rotate(0); }
-    50% { transform: rotate(-8deg); }
+    50% { transform: rotate(6deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .ksl-project-more .ksl-yard,
-    .ksl-project-more .ksl-yard-mast {
+    .ksl-project-more .ksl-yard-hull,
+    .ksl-project-more .ksl-yard-crane {
         animation: none !important;
     }
 }

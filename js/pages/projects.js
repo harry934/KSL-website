@@ -6,12 +6,12 @@
     if (!root || !window.KSL_CONTENT) return;
 
     var MORE_ICON =
-        '<i aria-hidden="true"><svg viewBox="0 0 48 48">' +
-        '<g class="ksl-yard">' +
-        '<path d="M8 30h32l-4 8H12z"/>' +
-        '<path d="M16 30V18h8l8 8h4v4"/>' +
-        '<path class="ksl-yard-mast" d="M20 18V12h6"/>' +
-        "</g></svg></i>";
+        '<i aria-hidden="true"><svg viewBox="0 0 24 24">' +
+        '<path d="M3.5 20.5V8.5h2.2V20.5M18.3 20.5V8.5h2.2V20.5"/>' +
+        '<path d="M3.5 20.5h17"/>' +
+        '<g class="ksl-yard-hull"><path d="M7 16.2 8.6 18.8h6.8L17 16.2H7z"/><path d="M9.2 16.2V13.4h4.4l1.2 2.8"/></g>' +
+        '<g class="ksl-yard-crane"><path d="M5.7 8.5V4.2h1.6"/><path d="M5.7 5.2h11.2"/><path d="M16.2 5.2v3.4"/></g>' +
+        "</svg></i>";
 
     function escapeHtml(value) {
         return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) {
