@@ -11,7 +11,7 @@ export async function GET() {
 
   const { data, error: loadErr } = await createAdminClient()
     .from("website_messages")
-    .select("id, first_name, other_name, surname, email, subject, message, preferred_contact, created_at, read_at, deleted_at")
+    .select("id, first_name, other_name, surname, email, subject, message, preferred_contact, submitter_ip, created_at, read_at, deleted_at")
     .order("created_at", { ascending: false })
     .limit(200);
 

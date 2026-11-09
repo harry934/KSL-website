@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
     subject,
     message,
     preferred_contact: preferred || null,
+    submitter_ip: ip === "unknown" ? null : ip,
   });
 
   if (error) return NextResponse.json({ error: "Could not send the message. Please try again." }, { status: 500 });

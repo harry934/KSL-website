@@ -18,6 +18,7 @@ type Message = {
   subject: string;
   message: string;
   preferred_contact: string | null;
+  submitter_ip: string | null;
   created_at: string;
   read_at: string | null;
   deleted_at?: string | null;
@@ -157,6 +158,14 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
             </p>
             {openRow.preferred_contact && (
               <p className="mt-1 text-[13.5px] text-[#5b6775]">Preferred contact: {openRow.preferred_contact}</p>
+            )}
+            {openRow.submitter_ip ? (
+              <p className="mt-1 text-[13px] text-[#6b7785]">
+                Submitted from IP: <span className="font-mono text-[12.5px]">{openRow.submitter_ip}</span>
+                <span className="ml-1 text-[#8a96a3]">(public internet address — helps spot spam batches; not exact location)</span>
+              </p>
+            ) : (
+              <p className="mt-1 text-[13px] text-[#8a96a3]">Submitter IP not recorded (older message or unknown).</p>
             )}
             <p className="mt-4 whitespace-pre-wrap text-[15px] leading-relaxed text-[#1f2933]">{openRow.message}</p>
             {canDelete && (
