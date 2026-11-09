@@ -142,9 +142,8 @@
                         '<li class="ksl-charter-video-item">' +
                         '<div class="ksl-charter-video">' +
                         '<div class="ksl-charter-video-copy">' +
-                        '<p class="ksl-charter-video-kicker">Video briefing</p>' +
+                        '<p class="ksl-charter-video-kicker">Video</p>' +
                         "<h3>Citizen Service Delivery Charter (Kiswahili)</h3>" +
-                        "<p>Watch a short Kiswahili overview of the charter alongside the document.</p>" +
                         "</div>" +
                         '<div class="ksl-charter-video-frame">' +
                         '<iframe src="https://www.youtube-nocookie.com/embed/e8BYWZH2h5g" title="Citizen Service Delivery Charter (Kiswahili)" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>' +
