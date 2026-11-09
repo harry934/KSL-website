@@ -137,17 +137,15 @@
                     html += '<p class="ksl-downloads-meta">' + meta + "</p></div>";
                     html += docButton(url) + "</li>";
                 }
-                if (item.id === "charter-sw" || /kiswahili/i.test(item.title || "") && /charter/i.test(item.title || "")) {
+                if (item.id === "charter-sw" || (/kiswahili/i.test(item.title || "") && /charter/i.test(item.title || ""))) {
                     html +=
                         '<li class="ksl-charter-video-item">' +
                         '<div class="ksl-charter-video">' +
-                        '<div class="ksl-charter-video-copy">' +
                         '<p class="ksl-charter-video-kicker">Video</p>' +
-                        "<h3>Citizen Service Delivery Charter (Kiswahili)</h3>" +
-                        "</div>" +
-                        '<div class="ksl-charter-video-frame">' +
-                        '<iframe src="https://www.youtube.com/embed/e8BYWZH2h5g" title="Citizen Service Delivery Charter (Kiswahili)" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>' +
-                        "</div></div></li>";
+                        '<button type="button" class="ksl-charter-video-frame" data-ksl-yt="e8BYWZH2h5g" aria-label="Play Citizen Service Delivery Charter (Kiswahili) video">' +
+                        '<img src="https://i.ytimg.com/vi/e8BYWZH2h5g/hqdefault.jpg" alt="Citizen Service Delivery Charter (Kiswahili) video">' +
+                        '<span class="ksl-charter-video-play" aria-hidden="true"></span>' +
+                        "</button></div></li>";
                 }
             });
             html += "</ul></section>";
@@ -194,6 +192,17 @@
 
     if (listRoot) {
         listRoot.addEventListener("click", function (event) {
+            var play = event.target.closest("[data-ksl-yt]");
+            if (play) {
+                event.preventDefault();
+                var id = play.getAttribute("data-ksl-yt");
+                if (!id || play.getAttribute("data-playing") === "1") return;
+                play.setAttribute("data-playing", "1");
+                play.classList.add("is-playing");
+                play.innerHTML =
+                    '<iframe src="https://www.youtube.com/embed/' + encodeURIComponent(id) + '?autoplay=1&rel=0" title="Citizen Service Delivery Charter (Kiswahili)" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>';
+                return;
+            }
             if (!event.target.closest("[data-downloads-clear]") || !searchInput) {
                 return;
             }

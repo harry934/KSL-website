@@ -9504,23 +9504,16 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
 }
 
 .ksl-charter-video {
-    display: grid;
-    grid-template-columns: minmax(0, 0.85fr) minmax(240px, 420px);
-    gap: 22px;
-    align-items: center;
-    padding: 18px 18px 18px 0;
+    max-width: 640px;
+    padding: 14px;
     background:
         linear-gradient(135deg, rgba(10, 62, 149, 0.06), rgba(10, 62, 149, 0.01) 45%, transparent 70%),
         #f7faff;
     border: 1px solid #d9e5f6;
 }
 
-.ksl-charter-video-copy {
-    padding-left: 18px;
-}
-
 .ksl-charter-video-kicker {
-    margin: 0 0 6px;
+    margin: 0 0 10px;
     color: #0A3E95;
     font-size: 11px;
     font-weight: 700;
@@ -9528,25 +9521,56 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     text-transform: uppercase;
 }
 
-.ksl-charter-video-copy h3 {
-    margin: 0 0 8px;
-    font-size: 1.05rem;
-    color: #172033;
-}
-
-.ksl-charter-video-copy p:last-child {
-    margin: 0;
-    color: #3d4a63;
-    font-size: 14px;
-    line-height: 1.55;
-}
-
 .ksl-charter-video-frame {
     position: relative;
+    display: block;
     width: 100%;
     aspect-ratio: 16 / 9;
+    padding: 0;
+    border: 0;
     background: #0b1f3a;
     overflow: hidden;
+    cursor: pointer;
+}
+
+.ksl-charter-video-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.ksl-charter-video-play {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(10, 62, 149, 0.92);
+    box-shadow: 0 8px 24px rgba(11, 31, 58, 0.28);
+}
+
+.ksl-charter-video-play::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 54%;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 10px 0 10px 16px;
+    border-color: transparent transparent transparent #fff;
+    transform: translate(-50%, -50%);
+}
+
+.ksl-charter-video-frame:hover .ksl-charter-video-play,
+.ksl-charter-video-frame:focus-visible .ksl-charter-video-play {
+    background: #0A3E95;
+}
+
+.ksl-charter-video-frame.is-playing {
+    cursor: default;
 }
 
 .ksl-charter-video-frame iframe {
@@ -9555,17 +9579,6 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     width: 100%;
     height: 100%;
     border: 0;
-}
-
-@media (max-width: 767.98px) {
-    .ksl-charter-video {
-        grid-template-columns: 1fr;
-        padding: 16px;
-    }
-
-    .ksl-charter-video-copy {
-        padding-left: 0;
-    }
 }
 
 .ksl-documents-frame {

@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261109-dlbtn";
+    var ASSET_V = "20261109-chartervid2";
 
     var BUNDLES = {
         wow: [
