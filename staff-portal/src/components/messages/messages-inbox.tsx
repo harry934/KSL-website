@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  ArrowLeft,
   Check,
   Copy,
   Forward,
@@ -9,6 +10,8 @@ import {
   Loader2,
   Lock,
   Mail,
+  PanelLeftClose,
+  PanelLeftOpen,
   Reply,
   ShieldAlert,
 } from "lucide-react";
@@ -41,6 +44,14 @@ type Message = {
 };
 
 type Filter = "all" | "unread" | "risk";
+
+const FILTER_META: Record<Filter, { label: string; icon: typeof Inbox }> = {
+  all: { label: "All", icon: Inbox },
+  unread: { label: "Unread", icon: Mail },
+  risk: { label: "High risk", icon: ShieldAlert },
+};
+
+const LIST_COLLAPSE_KEY = "ksl-messages-list-collapsed";
 
 const FLAG_LABELS: Record<string, string> = {
   suspicious_name: "Suspicious name",
@@ -142,7 +153,28 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [forwardTo, setForwardTo] = useState("");
   const [copied, setCopied] = useState(false);
+  const [listCollapsed, setListCollapsed] = useState(false);
   const marked = useRef(new Set<string>());
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(LIST_COLLAPSE_KEY) === "1") setListCollapsed(true);
+    } catch {
+      /* private mode */
+    }
+  }, []);
+
+  function toggleListCollapsed() {
+    setListCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(LIST_COLLAPSE_KEY, next ? "1" : "0");
+      } catch {
+        /* private mode */
+      }
+      return next;
+    });
+  }
 
   const stats = useMemo(() => {
     const unread = messages.filter((m) => !m.read_at).length;
@@ -298,139 +330,227 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
     );
   }
 
+  const statFor = (key: Filter) => (key === "all" ? stats.total : key === "unread" ? stats.unread : stats.risk);
+  const showListOnMobile = !openId;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {error && <Notice kind="error">{error}</Notice>}
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard label="Inbox" value={stats.total} icon={<Inbox className="h-4 w-4" />} />
-        <StatCard label="Unread" value={stats.unread} accent={stats.unread > 0 ? "navy" : undefined} />
-        <StatCard label="High risk" value={stats.risk} accent={stats.risk > 0 ? "danger" : undefined} icon={<ShieldAlert className="h-4 w-4" />} />
-      </div>
-
       {!unlocked && (
-        <div className="overflow-hidden rounded-xl border border-[#dfe6ee] bg-gradient-to-br from-[#f8fafc] to-white p-5 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0b1f3a] text-white">
-              <Lock className="h-5 w-5" aria-hidden />
+        <div className="ksl-card flex flex-col gap-3 p-3 sm:p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0b1f3a] text-white">
+              <Lock className="h-4 w-4" aria-hidden />
             </div>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-[16px] font-bold text-[#0b1f3a]">Protected inbox</h2>
-              <p className="mt-1 text-[13.5px] leading-relaxed text-[#5b6775]">
-                Names, email, and body text stay hidden until you confirm your password. Risk badges stay visible for triage.
+            <div className="min-w-0">
+              <p className="text-[14px] font-semibold text-[#0b1f3a]">Protected inbox</p>
+              <p className="mt-0.5 text-[12.5px] leading-snug text-[#5b6775]">
+                Unlock with your password to read details. Risk badges stay visible.
               </p>
-              <form
-                className="mt-4 flex max-w-lg flex-col gap-2 sm:flex-row sm:items-end"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void unlockView();
-                }}
-              >
-                <div className="min-w-0 flex-1">
-                  <PasswordInput
-                    id="messages-unlock"
-                    value={unlockPassword}
-                    onChange={(e) => setUnlockPassword(e.target.value)}
-                    autoComplete="current-password"
-                    placeholder="Account password"
-                  />
-                </div>
-                <Button type="submit" disabled={unlocking}>
-                  {unlocking ? "Checking…" : "Unlock 15 min"}
-                </Button>
-              </form>
-              {unlockError && (
-                <div className="mt-2">
-                  <Notice kind="error">{unlockError}</Notice>
-                </div>
-              )}
             </div>
           </div>
+          <form
+            className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:min-w-[280px] sm:flex-row sm:items-end"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void unlockView();
+            }}
+          >
+            <PasswordInput
+              id="messages-unlock"
+              value={unlockPassword}
+              onChange={(e) => setUnlockPassword(e.target.value)}
+              autoComplete="current-password"
+              placeholder="Password"
+              className="sm:min-w-[160px]"
+            />
+            <Button type="submit" disabled={unlocking} size="sm">
+              {unlocking ? "Checking" : "Unlock"}
+            </Button>
+          </form>
+          </div>
+          {unlockError ? <Notice kind="error">{unlockError}</Notice> : null}
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(280px,380px)_1fr] lg:items-start">
-        <aside className="overflow-hidden rounded-xl border border-[#e8ecf1] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
-          <div className="flex items-center justify-between border-b border-[#eef1f4] px-4 py-3">
-            <p className="text-[13px] font-semibold text-[#0b1f3a]">All messages</p>
-            <div className="flex gap-1">
-              {(["all", "unread", "risk"] as const).map((key) => (
+      <div className="ksl-card overflow-hidden">
+        <div className="flex flex-wrap items-center gap-2 border-b border-[#eef1f4] bg-[#fafbfc] px-2 py-2 sm:px-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="hidden h-8 w-8 shrink-0 p-0 lg:inline-flex"
+            onClick={toggleListCollapsed}
+            aria-label={listCollapsed ? "Expand message list" : "Collapse message list"}
+            title={listCollapsed ? "Expand list" : "Collapse list"}
+          >
+            {listCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          </Button>
+          <p className="text-[13px] font-semibold text-[#0b1f3a]">Messages</p>
+          <div className="flex flex-wrap items-center gap-1.5 sm:ml-1">
+            {(["all", "unread", "risk"] as const).map((key) => {
+              const meta = FILTER_META[key];
+              const Icon = meta.icon;
+              const count = statFor(key);
+              const active = filter === key;
+              return (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setFilter(key)}
                   className={cn(
-                    "rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize transition",
-                    filter === key ? "bg-[#0b1f3a] text-white" : "bg-[#f4f7fb] text-[#5b6775] hover:bg-[#e8eef5]"
+                    "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition",
+                    active
+                      ? "border-[#0b1f3a] bg-[#0b1f3a] text-white"
+                      : "border-[#e3e8ee] bg-white text-[#5b6775] hover:border-[#c5d4e8] hover:bg-[#f8fafc]"
                   )}
                 >
-                  {key}
+                  <Icon className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
+                  <span className="hidden sm:inline">{meta.label}</span>
+                  <span
+                    className={cn(
+                      "tabular-nums",
+                      !active && key === "risk" && count > 0 && "text-[#9b1c1c]",
+                      !active && key === "unread" && count > 0 && "text-[#0b1f3a]"
+                    )}
+                  >
+                    {count}
+                  </span>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
-          {filtered.length === 0 ? (
-            <p className="px-4 py-12 text-center text-[14px] text-[#6b7785]">No messages in this view.</p>
-          ) : (
-            <ul className="max-h-[min(70vh,640px)] overflow-y-auto">
-              {filtered.map((row) => {
-                const active = openId === row.id;
-                return (
-                  <li key={row.id}>
+        </div>
+
+        <div className="flex min-h-[min(72vh,640px)]">
+          <aside
+            className={cn(
+              "flex shrink-0 flex-col border-[#eef1f4] bg-white transition-[width] duration-200 ease-out",
+              listCollapsed ? "hidden w-0 lg:flex lg:w-[52px] lg:border-r" : "w-full border-b lg:w-[min(100%,300px)] lg:border-b-0 lg:border-r xl:w-[320px]",
+              !showListOnMobile && "hidden lg:flex"
+            )}
+          >
+            {listCollapsed ? (
+              <nav className="hidden flex-1 flex-col gap-0.5 p-1.5 lg:flex" aria-label="Message filters">
+                {(["all", "unread", "risk"] as const).map((key) => {
+                  const meta = FILTER_META[key];
+                  const Icon = meta.icon;
+                  const count = statFor(key);
+                  const active = filter === key;
+                  return (
                     <button
+                      key={key}
                       type="button"
-                      onClick={() => open(row)}
+                      title={`${meta.label} (${count})`}
+                      onClick={() => setFilter(key)}
                       className={cn(
-                        "flex w-full gap-3 border-b border-[#f0f3f6] px-4 py-3.5 text-left transition",
-                        active ? "bg-[#f0f5fb] ring-1 ring-inset ring-[#c5d4e8]" : "hover:bg-[#f8fafc]"
+                        "relative flex h-9 w-full items-center justify-center rounded-md transition",
+                        active ? "bg-[#0b1f3a] text-white" : "text-[#5b6775] hover:bg-[#f4f7fb]"
                       )}
                     >
-                      <span
-                        className={cn(
-                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold",
-                          !row.read_at ? "bg-[#0b1f3a] text-white" : "bg-[#e8ecf1] text-[#5b6775]"
-                        )}
-                      >
-                        {initials(row)}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-1.5">
-                          {!row.read_at && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#c5a028]" aria-hidden />}
-                          {(row.risk_score ?? 0) >= 40 && <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-[#9b1c1c]" />}
-                          <span className={cn("truncate text-[14px] font-semibold text-[#0b1f3a]", !unlocked && "blur-[5px]")}>
-                            {row.subject}
-                          </span>
+                      <Icon className="h-4 w-4" aria-hidden />
+                      {count > 0 ? (
+                        <span className="absolute -right-0.5 -top-0.5 min-w-[16px] rounded-full bg-[#c5a028] px-1 text-center text-[9px] font-bold leading-4 text-[#0b1f3a]">
+                          {count > 9 ? "9+" : count}
                         </span>
-                        <span className={cn("mt-0.5 block truncate text-[12.5px] text-[#5b6775]", !unlocked && "blur-[4px]")}>
-                          {fullName(row)}
-                        </span>
-                        <RiskBadges row={row} compact />
-                        <span className="mt-1 block text-[11px] text-[#8a96a3]">{when(row.created_at)}</span>
-                      </span>
+                      ) : null}
                     </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </aside>
+                  );
+                })}
+                <button
+                  type="button"
+                  className="mt-auto flex h-9 w-full items-center justify-center rounded-md text-[#5b6775] hover:bg-[#f4f7fb]"
+                  onClick={toggleListCollapsed}
+                  aria-label="Expand message list"
+                  title="Expand list"
+                >
+                  <PanelLeftOpen className="h-4 w-4" />
+                </button>
+              </nav>
+            ) : (
+              <>
+                {filtered.length === 0 ? (
+                  <p className="px-3 py-10 text-center text-[13px] text-[#6b7785]">No messages in this view.</p>
+                ) : (
+                  <ul className="min-h-0 flex-1 overflow-y-auto">
+                    {filtered.map((row) => {
+                      const active = openId === row.id;
+                      return (
+                        <li key={row.id}>
+                          <button
+                            type="button"
+                            onClick={() => open(row)}
+                            className={cn(
+                              "flex w-full gap-2.5 border-b border-[#f0f3f6] px-3 py-2.5 text-left transition",
+                              active ? "bg-[#f0f5fb] ring-1 ring-inset ring-[#c5d4e8]" : "hover:bg-[#f8fafc]"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
+                                !row.read_at ? "bg-[#0b1f3a] text-white" : "bg-[#e8ecf1] text-[#5b6775]"
+                              )}
+                            >
+                              {initials(row)}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="flex items-center gap-1">
+                                {!row.read_at && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#c5a028]" aria-hidden />}
+                                {(row.risk_score ?? 0) >= 40 && <ShieldAlert className="h-3 w-3 shrink-0 text-[#9b1c1c]" />}
+                                <span className={cn("truncate text-[13px] font-semibold text-[#0b1f3a]", !unlocked && "blur-[5px]")}>
+                                  {row.subject}
+                                </span>
+                              </span>
+                              <span className={cn("mt-0.5 block truncate text-[12px] text-[#5b6775]", !unlocked && "blur-[4px]")}>
+                                {fullName(row)}
+                              </span>
+                              <span className="mt-0.5 block text-[10px] text-[#8a96a3]">{when(row.created_at)}</span>
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </>
+            )}
+          </aside>
 
-        <section className="relative min-h-[420px] overflow-hidden rounded-xl border border-[#e8ecf1] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+          <section className="relative min-w-0 flex-1 bg-white">
           {!openRow ? (
-            <div className="flex h-full min-h-[420px] flex-col items-center justify-center gap-2 px-6 text-center">
+            <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-2 px-6 py-12 text-center lg:min-h-[420px]">
               <Mail className="h-10 w-10 text-[#c5d4e8]" aria-hidden />
               <p className="text-[15px] font-semibold text-[#0b1f3a]">Select a message</p>
               <p className="max-w-sm text-[13px] text-[#6b7785]">Choose an item from the list to read it, reply, or forward to Outlook or Gmail.</p>
             </div>
           ) : (
-            <article className={cn("flex h-full flex-col", !unlocked && "pointer-events-none")}>
+            <article className={cn("flex h-full min-h-[280px] flex-col lg:min-h-[420px]", !unlocked && "pointer-events-none")}>
               {!unlocked && (
                 <div className="pointer-events-auto absolute inset-0 z-20 flex items-center justify-center bg-white/80 backdrop-blur-sm">
                   <p className="max-w-xs px-6 text-center text-[14px] font-medium text-[#0b1f3a]">Unlock above to read and forward this message.</p>
                 </div>
               )}
 
-              <header className="border-b border-[#eef1f4] bg-[#fafbfc] px-5 py-4">
+              <header className="border-b border-[#eef1f4] bg-[#fafbfc] px-4 py-3 sm:px-5 sm:py-4">
+                <div className="mb-2 flex items-center gap-2 lg:hidden">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1 px-2"
+                    onClick={() => {
+                      setOpenId(null);
+                      const url = new URL(window.location.href);
+                      url.searchParams.delete("id");
+                      window.history.replaceState(null, "", url.pathname + url.search);
+                    }}
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back
+                  </Button>
+                </div>
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-[#8a96a3]">{when(openRow.created_at)}</p>
                 <h2 className={cn("mt-1 text-[22px] font-bold leading-snug text-[#0b1f3a]", !unlocked && "blur-md")}>
                   {openRow.subject}
@@ -520,36 +640,8 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
             </article>
           )}
         </section>
+        </div>
       </div>
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  accent,
-  icon,
-}: {
-  label: string;
-  value: number;
-  accent?: "navy" | "danger";
-  icon?: ReactNode;
-}) {
-  return (
-    <div className="rounded-xl border border-[#e8ecf1] bg-white px-4 py-3 shadow-sm">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[12px] font-semibold uppercase tracking-wide text-[#8a96a3]">{label}</p>
-        {icon && <span className="text-[#8a96a3]">{icon}</span>}
-      </div>
-      <p
-        className={cn(
-          "mt-1 text-[28px] font-bold tabular-nums",
-          accent === "danger" ? "text-[#9b1c1c]" : accent === "navy" ? "text-[#0b1f3a]" : "text-[#1f2933]"
-        )}
-      >
-        {value}
-      </p>
     </div>
   );
 }
