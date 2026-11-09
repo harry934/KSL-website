@@ -61,10 +61,10 @@ export function maskWebsiteMessage<T extends WebsiteMessageRow>(row: T, unlocked
   const label = score > 0 ? ` · risk ${score}` : "";
   return {
     ...row,
-    first_name: "—",
+    first_name: "Hidden",
     other_name: null,
-    surname: "—",
-    email: "—",
+    surname: "",
+    email: "Hidden",
     subject: `Website message${label}`,
     message: "",
     preferred_contact: null,

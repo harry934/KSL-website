@@ -35,7 +35,7 @@ export function forwardPlainBody(row: WebsiteMessageRow) {
   if (row.submitter_ip) lines.push(`Submitter IP: ${row.submitter_ip}`);
   if (row.risk_score != null && row.risk_score > 0) lines.push(`Risk score: ${row.risk_score}`);
   if (row.risk_flags?.length) lines.push(`Flags: ${row.risk_flags.join(", ")}`);
-  lines.push("", "--- Message ---", "", row.message.trim() || "(empty)");
+  lines.push("", "MESSAGE", "", row.message.trim() || "(empty)");
   return lines.join("\r\n");
 }
 
@@ -44,7 +44,7 @@ export function replyPlainBody(row: WebsiteMessageRow) {
     `Dear ${row.first_name || "Sir/Madam"},`,
     "",
     "",
-    "---",
+    "",
     `On ${formatWhen(row.created_at)}, you wrote via kenyashipyards.co.ke:`,
     "",
     row.message.trim(),

@@ -15,7 +15,7 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
     <>
       <PageHeader
         title="Messages"
-        description="Website contact submissions — unlock to read, reply, or forward through Gmail or Outlook."
+        description="Website contact mail. Unlock to read, reply, or forward with Gmail or Outlook."
       />
       <MessagesInbox initialId={params.id ?? null} />
     </>

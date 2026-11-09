@@ -50,7 +50,7 @@ const FLAG_LABELS: Record<string, string> = {
   unusual_name_characters: "Unusual name",
   disposable_email: "Disposable email",
   long_email: "Long email",
-  injection_pattern: "Code-like text",
+  injection_pattern: "Code like text",
   contains_links: "Links",
   many_links: "Many links",
   short_message_with_link: "Short + link",
@@ -258,7 +258,7 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
   function openGmail(row: Message, mode: "forward" | "reply", to: string) {
     const fields = composeFields(row, mode, to);
     window.open(gmailComposeUrl(fields), "_blank", "noopener");
-    toast(mode === "forward" ? "Gmail compose opened — check To and send." : "Gmail reply opened.");
+    toast(mode === "forward" ? "Gmail compose opened. Check To and send." : "Gmail reply opened.");
   }
 
   function openOutlook(row: Message, mode: "forward" | "reply", to: string) {
@@ -266,7 +266,7 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
     const web = outlookWebComposeUrl(fields);
     const opened = window.open(web, "_blank", "noopener");
     if (!opened) openMailto(fields);
-    else toast(mode === "forward" ? "Outlook compose opened — check To and send." : "Outlook reply opened.");
+    else toast(mode === "forward" ? "Outlook compose opened. Check To and send." : "Outlook reply opened.");
   }
 
   function forwardToColleague(row: Message, provider: "gmail" | "outlook") {
@@ -284,7 +284,7 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
       await navigator.clipboard.writeText(forwardPlainBody(row));
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
-      toast("Message copied — paste into any email app.");
+      toast("Message copied. Paste into any email app.");
     } catch {
       toast("Could not copy.", "error");
     }
@@ -293,86 +293,93 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
   if (loading) {
     return (
       <div className="flex min-h-[240px] items-center justify-center gap-2 text-[14px] text-[#5b6775]">
-        <Loader2 className="h-5 w-5 animate-spin text-[#0b1f3a]" /> Loading inbox…
+        <Loader2 className="h-5 w-5 animate-spin text-[#0078d4]" /> Loading mail
       </div>
     );
   }
 
+  const folderLabels: Record<Filter, string> = { all: "Inbox", unread: "Unread", risk: "Suspicious" };
+
   return (
-    <div className="space-y-4">
-      {error && <Notice kind="error">{error}</Notice>}
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard label="Inbox" value={stats.total} icon={<Inbox className="h-4 w-4" />} />
-        <StatCard label="Unread" value={stats.unread} accent={stats.unread > 0 ? "navy" : undefined} />
-        <StatCard label="High risk" value={stats.risk} accent={stats.risk > 0 ? "danger" : undefined} icon={<ShieldAlert className="h-4 w-4" />} />
-      </div>
-
-      {!unlocked && (
-        <div className="overflow-hidden rounded-xl border border-[#dfe6ee] bg-gradient-to-br from-[#f8fafc] to-white p-5 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0b1f3a] text-white">
-              <Lock className="h-5 w-5" aria-hidden />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-[16px] font-bold text-[#0b1f3a]">Protected inbox</h2>
-              <p className="mt-1 text-[13.5px] leading-relaxed text-[#5b6775]">
-                Names, email, body text, and IP are hidden until you confirm your password. Risk badges stay visible for triage.
-              </p>
-              <form
-                className="mt-4 flex max-w-lg flex-col gap-2 sm:flex-row sm:items-end"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void unlockView();
-                }}
-              >
-                <div className="min-w-0 flex-1">
-                  <PasswordInput
-                    id="messages-unlock"
-                    value={unlockPassword}
-                    onChange={(e) => setUnlockPassword(e.target.value)}
-                    autoComplete="current-password"
-                    placeholder="Account password"
-                  />
-                </div>
-                <Button type="submit" disabled={unlocking}>
-                  {unlocking ? "Checking…" : "Unlock 15 min"}
-                </Button>
-              </form>
-              {unlockError && (
-                <div className="mt-2">
-                  <Notice kind="error">{unlockError}</Notice>
-                </div>
-              )}
-            </div>
-          </div>
+    <div className="overflow-hidden rounded-md border border-[#edebe9] bg-[#f3f2f1] shadow-sm">
+      {error && (
+        <div className="border-b border-[#edebe9] bg-white px-4 py-2">
+          <Notice kind="error">{error}</Notice>
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(280px,380px)_1fr] lg:items-start">
-        <aside className="overflow-hidden rounded-xl border border-[#e8ecf1] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
-          <div className="flex items-center justify-between border-b border-[#eef1f4] px-4 py-3">
-            <p className="text-[13px] font-semibold text-[#0b1f3a]">All messages</p>
-            <div className="flex gap-1">
-              {(["all", "unread", "risk"] as const).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setFilter(key)}
-                  className={cn(
-                    "rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize transition",
-                    filter === key ? "bg-[#0b1f3a] text-white" : "bg-[#f4f7fb] text-[#5b6775] hover:bg-[#e8eef5]"
-                  )}
-                >
-                  {key}
-                </button>
-              ))}
-            </div>
+      <div className="flex items-center justify-between bg-[#0078d4] px-4 py-2.5 text-white">
+        <p className="text-[15px] font-semibold">Mail</p>
+        <p className="text-[12px] text-white/90">
+          {stats.unread} unread · {stats.total} total
+        </p>
+      </div>
+
+      {!unlocked && (
+        <div className="border-b border-[#edebe9] bg-[#fff4ce] px-4 py-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <Lock className="h-5 w-5 shrink-0 text-[#8a6116]" aria-hidden />
+            <p className="min-w-[200px] flex-1 text-[13px] text-[#323130]">
+              Unlock to read names and message text. Suspicious script attempts may show a sender IP after unlock.
+            </p>
+            <form
+              className="flex flex-wrap items-end gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void unlockView();
+              }}
+            >
+              <PasswordInput
+                id="messages-unlock"
+                value={unlockPassword}
+                onChange={(e) => setUnlockPassword(e.target.value)}
+                autoComplete="current-password"
+                placeholder="Password"
+                className="min-w-[180px]"
+              />
+              <Button type="submit" disabled={unlocking} variant="secondary" size="sm">
+                {unlocking ? "Checking" : "Unlock 15 minutes"}
+              </Button>
+            </form>
           </div>
+          {unlockError && (
+            <div className="mt-2">
+              <Notice kind="error">{unlockError}</Notice>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex min-h-[min(72vh,680px)] flex-col lg:flex-row">
+        <nav className="w-full shrink-0 border-b border-[#edebe9] bg-white lg:w-44 lg:border-b-0 lg:border-r">
+          <p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#605e5c]">Folders</p>
+          {(["all", "unread", "risk"] as const).map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setFilter(key)}
+              className={cn(
+                "flex w-full items-center justify-between px-3 py-2.5 text-left text-[13px]",
+                filter === key ? "bg-[#deecf9] font-semibold text-[#0078d4]" : "text-[#323130] hover:bg-[#f3f2f1]"
+              )}
+            >
+              <span className="flex items-center gap-2">
+                {key === "all" && <Inbox className="h-4 w-4" />}
+                {key === "risk" && <ShieldAlert className="h-4 w-4" />}
+                {folderLabels[key]}
+              </span>
+              <span className="text-[12px] text-[#605e5c]">
+                {key === "all" ? stats.total : key === "unread" ? stats.unread : stats.risk}
+              </span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="flex min-h-0 flex-1 flex-col border-[#edebe9] bg-white lg:max-w-md lg:border-r">
           {filtered.length === 0 ? (
-            <p className="px-4 py-12 text-center text-[14px] text-[#6b7785]">No messages in this view.</p>
+            <p className="px-4 py-16 text-center text-[13px] text-[#605e5c]">No messages here.</p>
           ) : (
-            <ul className="max-h-[min(70vh,640px)] overflow-y-auto">
+            <ul className="max-h-[min(72vh,680px)] overflow-y-auto">
               {filtered.map((row) => {
                 const active = openId === row.id;
                 return (
@@ -381,41 +388,28 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
                       type="button"
                       onClick={() => open(row)}
                       className={cn(
-                        "flex w-full gap-3 border-b border-[#f0f3f6] px-4 py-3.5 text-left transition",
-                        active ? "bg-[#f0f5fb] ring-1 ring-inset ring-[#c5d4e8]" : "hover:bg-[#f8fafc]"
+                        "w-full border-b border-[#edebe9] px-3 py-2.5 text-left transition",
+                        active ? "border-l-[3px] border-l-[#0078d4] bg-[#deecf9] pl-[9px]" : "border-l-[3px] border-l-transparent hover:bg-[#f3f2f1]"
                       )}
                     >
-                      <span
-                        className={cn(
-                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold",
-                          !row.read_at ? "bg-[#0b1f3a] text-white" : "bg-[#e8ecf1] text-[#5b6775]"
-                        )}
-                      >
-                        {initials(row)}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-1.5">
-                          {!row.read_at && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#c5a028]" aria-hidden />}
-                          {(row.risk_score ?? 0) >= 40 && <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-[#9b1c1c]" />}
-                          <span className={cn("truncate text-[14px] font-semibold text-[#0b1f3a]", !unlocked && "blur-[5px]")}>
-                            {row.subject}
-                          </span>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className={cn("min-w-0 truncate text-[13px] font-semibold text-[#323130]", !unlocked && "blur-[4px]")}>
+                          {!row.read_at && <span className="mr-1 text-[#0078d4]">•</span>}
+                          {row.subject}
                         </span>
-                        <span className={cn("mt-0.5 block truncate text-[12.5px] text-[#5b6775]", !unlocked && "blur-[4px]")}>
-                          {fullName(row)}
-                        </span>
-                        <RiskBadges row={row} compact />
-                        <span className="mt-1 block text-[11px] text-[#8a96a3]">{when(row.created_at)}</span>
-                      </span>
+                        <span className="shrink-0 text-[11px] text-[#605e5c]">{when(row.created_at)}</span>
+                      </div>
+                      <p className={cn("mt-0.5 truncate text-[12px] text-[#605e5c]", !unlocked && "blur-[3px]")}>{fullName(row)}</p>
+                      <RiskBadges row={row} compact />
                     </button>
                   </li>
                 );
               })}
             </ul>
           )}
-        </aside>
+        </div>
 
-        <section className="relative min-h-[420px] overflow-hidden rounded-xl border border-[#e8ecf1] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+        <section className="relative min-h-[320px] min-w-0 flex-1 bg-white">
           {!openRow ? (
             <div className="flex h-full min-h-[420px] flex-col items-center justify-center gap-2 px-6 text-center">
               <Mail className="h-10 w-10 text-[#c5d4e8]" aria-hidden />
@@ -455,7 +449,7 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
                     </Meta>
                   )}
                   {openRow.submitter_ip && (
-                    <Meta label="IP" blurred={!unlocked}>
+                    <Meta label="Suspicious sender IP" blurred={!unlocked}>
                       <span className="font-mono text-[12px]">{openRow.submitter_ip}</span>
                     </Meta>
                   )}
@@ -506,14 +500,14 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
 
               <div className="flex-1 overflow-y-auto px-5 py-5">
                 <p className={cn("whitespace-pre-wrap text-[15px] leading-relaxed text-[#1f2933]", !unlocked && "blur-md")}>
-                  {openRow.message || (openRow.locked ? "—" : "")}
+                  {openRow.message || (openRow.locked ? "" : "")}
                 </p>
               </div>
 
               {canDelete && unlocked && (
                 <footer className="border-t border-[#eef1f4] px-5 py-4">
                   <Button variant="danger" disabled={deleting} onClick={() => remove(openRow)}>
-                    {deleting ? "Deleting…" : "Delete message"}
+                    {deleting ? "Deleting" : "Delete message"}
                   </Button>
                 </footer>
               )}
@@ -521,35 +515,6 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
           )}
         </section>
       </div>
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  accent,
-  icon,
-}: {
-  label: string;
-  value: number;
-  accent?: "navy" | "danger";
-  icon?: ReactNode;
-}) {
-  return (
-    <div className="rounded-xl border border-[#e8ecf1] bg-white px-4 py-3 shadow-sm">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[12px] font-semibold uppercase tracking-wide text-[#8a96a3]">{label}</p>
-        {icon && <span className="text-[#8a96a3]">{icon}</span>}
-      </div>
-      <p
-        className={cn(
-          "mt-1 text-[28px] font-bold tabular-nums",
-          accent === "danger" ? "text-[#9b1c1c]" : accent === "navy" ? "text-[#0b1f3a]" : "text-[#1f2933]"
-        )}
-      >
-        {value}
-      </p>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { clientIp } from "@/lib/auth-server";
 import { verifyContactToken, verifyTurnstile } from "@/lib/contact-token";
 import { assessContactRisk } from "@/lib/contact-risk";
+import { shouldRetainSubmitterIp } from "@/lib/contact-threat";
 import { scanContactFields } from "@/lib/contact-payload-scan";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -88,7 +89,8 @@ export async function POST(req: NextRequest) {
     subject,
     message,
     preferred_contact: preferred || null,
-    submitter_ip: ip === "unknown" ? null : ip,
+    submitter_ip:
+      shouldRetainSubmitterIp(risk, false) && ip !== "unknown" ? ip : null,
     risk_score: risk.score,
     risk_flags: risk.flags,
   });

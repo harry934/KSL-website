@@ -391,7 +391,7 @@ test("masked website messages hide PII until unlock", () => {
   };
   const masked = maskWebsiteMessage(row, false);
   assert.equal(masked.locked, true);
-  assert.equal(masked.email, "—");
+  assert.equal(masked.email, "Hidden");
   assert.equal(masked.message, "");
   assert.equal(masked.submitter_ip, null);
   const open = maskWebsiteMessage(row, true);
