@@ -330,10 +330,27 @@ test("Turnstile fails closed in production without a secret", async () => {
   else process.env.VERCEL_ENV = prevVercel;
 });
 
-test("client IP prefers x-real-ip then the first forwarded hop", () => {
+test("client IP prefers Vercel and x-real-ip; ignores spoofed XFF prefix", () => {
   const asReq = (headers: Record<string, string>) =>
     ({ headers: { get: (name: string) => headers[name.toLowerCase()] ?? null } }) as NextRequest;
+  assert.equal(
+    clientIp(asReq({ "x-vercel-forwarded-for": "8.8.8.8", "x-forwarded-for": "9.9.9.9, 1.1.1.1" })),
+    "8.8.8.8"
+  );
   assert.equal(clientIp(asReq({ "x-real-ip": "10.0.0.1", "x-forwarded-for": "1.1.1.1, 2.2.2.2" })), "10.0.0.1");
   assert.equal(clientIp(asReq({ "x-forwarded-for": "1.1.1.1, 2.2.2.2" })), "1.1.1.1");
   assert.equal(clientIp(asReq({})), "unknown");
+});
+
+test("client IP with TRUSTED_PROXY_HOPS uses rightmost trusted hop", () => {
+  const prev = process.env.TRUSTED_PROXY_HOPS;
+  process.env.TRUSTED_PROXY_HOPS = "1";
+  const asReq = (headers: Record<string, string>) =>
+    ({ headers: { get: (name: string) => headers[name.toLowerCase()] ?? null } }) as NextRequest;
+  assert.equal(
+    clientIp(asReq({ "x-forwarded-for": "203.0.113.7, 198.51.100.42" })),
+    "198.51.100.42"
+  );
+  if (prev === undefined) delete process.env.TRUSTED_PROXY_HOPS;
+  else process.env.TRUSTED_PROXY_HOPS = prev;
 });

@@ -22,10 +22,7 @@ export async function POST(req: NextRequest) {
 
   if (!profile?.is_active || profile.deleted_at) {
     await supabase.auth.signOut();
-    return NextResponse.json(
-      { error: "This passkey is not linked to an active staff account." },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "The passkey was not accepted." }, { status: 401 });
   }
 
   const { error: othersError } = await supabase.auth.signOut({ scope: "others" });

@@ -1,6 +1,8 @@
 # Current security posture
 
-Updated 4 November 2026 after the remediation pass. Historical notes remain in [production-security-audit.md](production-security-audit.md) and [security-coverage.md](security-coverage.md). Dashboard steps stay in [dashboard-security-steps.md](dashboard-security-steps.md).
+Updated March 2026. Burp / pen-test scope: [../BURP-SECURITY-BRIEF.md](../BURP-SECURITY-BRIEF.md). Historical notes remain in [production-security-audit.md](production-security-audit.md) and [security-coverage.md](security-coverage.md). Dashboard steps stay in [dashboard-security-steps.md](dashboard-security-steps.md).
+
+**Live check (March 2026):** Migration `security_lockdown_followup` is applied. `information_schema` shows **no** table privileges for `anon` / `authenticated` on `public` — direct PostgREST reads with the anon key should fail. Supabase advisor still warns **leaked-password protection disabled** (enable in Auth settings).
 
 ## Closed in code
 

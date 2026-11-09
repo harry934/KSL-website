@@ -8,13 +8,24 @@ const WINDOW_MINUTES = 15;
 const MAX_FAILURES_PER_IDENTIFIER = 5;
 const MAX_FAILURES_PER_IP = 20;
 
+/** Client IP for rate limits — prefer platform-set headers; resist X-Forwarded-For spoofing. */
 export function clientIp(req: NextRequest) {
+  const vercel = req.headers.get("x-vercel-forwarded-for")?.trim();
+  if (vercel) {
+    return vercel.split(",")[0]?.trim() || "unknown";
+  }
   const real = req.headers.get("x-real-ip")?.trim();
   if (real) return real;
   const forwarded = req.headers.get("x-forwarded-for");
   if (!forwarded) return "unknown";
-  // On Vercel / trusted proxies the client is the first hop.
   const hops = forwarded.split(",").map((hop) => hop.trim()).filter(Boolean);
+  if (!hops.length) return "unknown";
+  const trusted = Number(process.env.TRUSTED_PROXY_HOPS || "0");
+  // Behind nginx (VPS): one trusted hop → client is the rightmost address nginx appended.
+  if (trusted > 0 && hops.length >= trusted) {
+    return hops[hops.length - trusted] ?? "unknown";
+  }
+  // Local dev / direct: first hop only; on Vercel prefer x-vercel-forwarded-for above.
   return hops[0] ?? "unknown";
 }
 

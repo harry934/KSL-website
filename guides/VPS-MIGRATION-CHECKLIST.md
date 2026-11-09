@@ -85,23 +85,31 @@ Use this when moving from Vercel to your Linux VPS **or** after any production i
 
 ---
 
-## F. Supabase (unchanged host, verify anyway)
+## F. Security (Burp / pen-test readiness)
 
 | # | Check | Expected | Pass |
 |---|--------|----------|------|
-| F1 | Migrations **001–039** applied | No missing tables in portal | |
-| F2 | Public sign-ups disabled | Invite-only staff | |
-| F3 | Service role | Not in repo; only portal server env | |
+| F0 | Share [BURP-SECURITY-BRIEF.md](./BURP-SECURITY-BRIEF.md) with tester | Scope + accounts agreed | |
+| F0b | Anon PostgREST `GET /rest/v1/news_items` with anon key | **Denied** (no grants) | |
+| F0c | Turnstile on production portal | Contact POST fails without token | |
+
+## G. Supabase (unchanged host, verify anyway)
+
+| # | Check | Expected | Pass |
+|---|--------|----------|------|
+| G1 | Migrations **001–039** applied | No missing tables in portal | |
+| G2 | Public sign-ups disabled | Invite-only staff | |
+| G3 | Service role | Not in repo; only portal server env | |
 
 ---
 
-## G. Performance and ops
+## H. Performance and ops
 
 | # | Check | Expected | Pass |
 |---|--------|----------|------|
-| G1 | `pm2` / systemd | Portal restarts after reboot | |
-| G2 | Certbot renewal dry-run | Succeeds | |
-| G3 | `git pull` deploy | Static + portal rebuild documented | |
+| H1 | `pm2` / systemd | Portal restarts after reboot | |
+| H2 | Certbot renewal dry-run | Succeeds | |
+| H3 | `git pull` deploy | Static + portal rebuild documented | |
 
 ---
 
