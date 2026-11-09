@@ -3,7 +3,8 @@
 **GitHub repo:** https://github.com/harry934/KSL-website  
 
 **Quick Vercel clicks:** [VERCEL-GITHUB-SETUP.md](./VERCEL-GITHUB-SETUP.md)  
-**Current status:** [PROJECT-STATUS.md](./PROJECT-STATUS.md)
+**Current status:** [PROJECT-STATUS.md](./PROJECT-STATUS.md)  
+**Production on a Linux VPS (overview + runbook):** [PRODUCTION-OVERVIEW-AND-VPS.md](./PRODUCTION-OVERVIEW-AND-VPS.md)
 
 | Live URL | Vercel project |
 |----------|----------------|

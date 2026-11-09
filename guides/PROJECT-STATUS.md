@@ -1,6 +1,6 @@
 # KSL website + admin portal — project status
 
-Last updated: October 2026
+Last updated: March 2026
 
 ## What is live
 
@@ -8,14 +8,14 @@ Last updated: October 2026
 |-------|-------|-------|
 | Public website (static HTML/CSS/JS) | Vercel project `ksl-website` → https://ksl-website.vercel.app | Repo root. Root Directory = `.` |
 | Staff admin portal (Next.js 15) | Vercel project `ksl-website_kiza` → https://ksl-websitekiza.vercel.app/login | Folder `staff-portal/`. Root Directory = `staff-portal` |
-| Database, auth, file storage | Supabase project `envqgczfhxywkxcnsxrt` | Migrations in `supabase/migrations/` |
+| Database, auth, file storage | Supabase project `envqgczfhxywkxcnsxrt` | Migrations `001`–`039` in `supabase/migrations/` |
 | Source code | https://github.com/harry934/KSL-website (`main`) | One repo, two Vercel projects |
 
 ## Portal modules
 
 | Status | Modules |
 |--------|---------|
-| Live | Dashboard, Staff, News, Events, Gallery, Press kit, Services, Products, Organisation, Careers, Community (CSR), Questions (FAQ), Downloads, Site settings, Activity log, My account |
+| Live | Dashboard, Staff, News, Events, Gallery, Press kit, Services, Products, **Projects**, Organisation (chart, board, milestones), Careers, Community (CSR), Questions (FAQ), Downloads, Messages, Site settings, Drafts, Activity log, My account |
 
 - Staff are created by the super admin only (no public sign-up). Each agent gets per-section rights: See, Change, Put live, Remove.
 - Everyone signs in with **username and password** only. When the admin adds an agent (or clicks "New password"), the portal shows a **one-time password** once; the agent must choose their own password at first sign-in.
@@ -34,19 +34,9 @@ Last updated: October 2026
 
 ## Database migrations
 
-| File | Adds |
-|------|------|
-| `001_staff_portal_schema.sql` | Staff profiles, module permissions, activity log, FAQ, news |
-| `002_gallery_photos.sql` | Gallery |
-| `003_events_services.sql` | Events, services |
-| `004_careers_downloads.sql` | Careers, downloads |
-| `005_organization_press.sql` | Organization, press |
-| `006_products_csr_settings.sql` | Products, CSR projects, site settings |
-| `007_usernames_security.sql` | Usernames, optional contact email, forced password change, login rate limiting |
-| `008_gallery_videos.sql` | Gallery videos (YouTube) |
-| `009_profile_photos.sql` | Staff profile photos (`admin_profiles.avatar_path`, files in `media-public/avatars/`) |
-| `010_board_and_first_login.sql` | Board members edited in the portal, and a first-sign-in username change |
-| `011_messages_module.sql` | Messages section for the website contact form |
+**39 files** in `supabase/migrations/` (`001_staff_portal_schema.sql` through `039_projects_details.sql`). Apply in numeric order.
+
+Early migrations (001–011) cover the core portal schema, gallery, events, services, careers, downloads, organisation, press, products, CSR, settings, usernames, messages, and board. Later migrations add projects, staff invites, organisation chart/milestones, drafts, recycle bin, storage hardening, and security follow-ups. Full list: see repo folder or [PRODUCTION-OVERVIEW-AND-VPS.md](./PRODUCTION-OVERVIEW-AND-VPS.md#6-database-migrations).
 
 ## Security summary
 
@@ -64,8 +54,13 @@ Last updated: October 2026
 - [ ] Rotate the Supabase service role key if it was ever shared outside Vercel.
 - [ ] If the public site moves to a domain other than `kenyashipyards.co.ke`, add it to `ALLOWED_ORIGINS` in `staff-portal/src/middleware.ts`.
 
+## Production target
+
+Planned go-live: **one Linux VPS** (`www.kenyashipyards.co.ke` + private portal hostname), **Supabase Cloud unchanged**. See [PRODUCTION-OVERVIEW-AND-VPS.md](./PRODUCTION-OVERVIEW-AND-VPS.md).
+
 ## Related docs
 
-- [DEPLOYMENT.md](./DEPLOYMENT.md) — architecture and full deployment steps
+- [PRODUCTION-OVERVIEW-AND-VPS.md](./PRODUCTION-OVERVIEW-AND-VPS.md) — technical overview, stack, VPS migration runbook
+- [DEPLOYMENT.md](./DEPLOYMENT.md) — architecture and full deployment steps (Vercel)
 - [VERCEL-GITHUB-SETUP.md](./VERCEL-GITHUB-SETUP.md) — Vercel project settings and root-directory troubleshooting
 - [../staff-portal/README.md](../staff-portal/README.md) — local development and import scripts

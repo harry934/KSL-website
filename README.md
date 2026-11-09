@@ -6,6 +6,8 @@ Staff admin portal: https://ksl-websitekiza.vercel.app/login
 
 One Git repository. Two Vercel projects. Setup and status notes are in `guides/`.
 
+**Production overview and VPS migration:** [guides/PRODUCTION-OVERVIEW-AND-VPS.md](guides/PRODUCTION-OVERVIEW-AND-VPS.md)
+
 ## Folders
 
 | Folder | What it is |
@@ -19,7 +21,7 @@ One Git repository. Two Vercel projects. Setup and status notes are in `guides/`
 | `docs/` | Files visitors download (plans, forms, the brochure). These addresses are linked from the site, so do not rename them. |
 | `guides/` | Notes for the team: deployment, status, and the website proposal. Not published. |
 | `staff-portal/` | The Next.js admin portal. Its own readme is `staff-portal/README.md`. |
-| `supabase/migrations/` | Database changes, numbered `001` to `011`. Run them in that order. |
+| `supabase/migrations/` | Database changes, numbered `001` to `039`. Run them in that order. |
 | `tools/` | One-off scripts. `tools/scrape/` holds saved copies of old pages used to build the JSON. Not published. |
 
 ## Public pages
