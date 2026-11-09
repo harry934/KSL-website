@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261107-orgopen";
+    var ASSET_V = "20261109-dlbtn";
 
     var BUNDLES = {
         wow: [

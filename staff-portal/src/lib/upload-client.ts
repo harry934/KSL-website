@@ -4,7 +4,7 @@ import { refreshNotices } from "@/lib/notification-seen";
 export const BUSY_EVENT = "ksl-busy";
 export type BusyDetail = { delta: 1 | -1; message?: string };
 
-/** Shows the "Please wait" overlay and loading bar while `work` runs. */
+/** Marks the portal busy for the thin top progress bar while `work` runs. Buttons should show their own Saving… / Deleting… label. */
 export async function withBusy<T>(message: string, work: () => Promise<T>): Promise<T> {
   window.dispatchEvent(new CustomEvent<BusyDetail>(BUSY_EVENT, { detail: { delta: 1, message } }));
   try {

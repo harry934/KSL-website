@@ -13782,6 +13782,12 @@ a.ksl-more:focus-visible .ksl-ship-flag {
 /*** Download buttons: "View document" slides over the button itself; full width in pop-ups and on phones ***/
 .download-button {
     overflow: hidden;
+    min-width: 148px;
+    min-height: 44px;
+}
+
+.ksl-library-list .download-button {
+    align-self: center;
 }
 
 .download-button .docs {
