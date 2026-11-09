@@ -1,28 +1,46 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logActivity, requireStaff } from "@/lib/api-auth";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
+import { maskWebsiteMessage, MESSAGES_UNLOCK_MS } from "@/lib/message-unlock";
+import { messagesViewUnlocked } from "@/lib/message-unlock-server";
 import { NextRequest, NextResponse } from "next/server";
 
 const MESSAGE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET() {
-  const { error } = await requireStaff("messages", "view");
+  const { error, session } = await requireStaff("messages", "view");
   if (error) return error;
+
+  const unlocked = await messagesViewUnlocked(session.userId);
 
   const { data, error: loadErr } = await createAdminClient()
     .from("website_messages")
-    .select("id, first_name, other_name, surname, email, subject, message, preferred_contact, submitter_ip, created_at, read_at, deleted_at")
+    .select(
+      "id, first_name, other_name, surname, email, subject, message, preferred_contact, submitter_ip, risk_score, risk_flags, created_at, read_at, deleted_at"
+    )
     .order("created_at", { ascending: false })
     .limit(200);
 
   if (loadErr) return NextResponse.json({ error: "Could not load messages." }, { status: 500 });
   const split = splitRemoved(data ?? []);
-  return NextResponse.json({ messages: split.items, removed: split.removed }, { headers: { "Cache-Control": "no-store" } });
+  const items = split.items.map((row) => maskWebsiteMessage(row, unlocked));
+  return NextResponse.json(
+    {
+      messages: items,
+      removed: split.removed,
+      sensitiveUnlocked: unlocked,
+      unlockTtlMs: MESSAGES_UNLOCK_MS,
+    },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }
 
 export async function PATCH(req: NextRequest) {
-  const { error } = await requireStaff("messages", "view");
+  const { error, session } = await requireStaff("messages", "view");
   if (error) return error;
+  if (!(await messagesViewUnlocked(session.userId))) {
+    return NextResponse.json({ error: "Unlock messages with your password before marking them read." }, { status: 403 });
+  }
 
   const body = await req.json().catch(() => ({}));
   const admin = createAdminClient();

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { STAFF_SESSION_COOKIE } from "@/lib/staff-session";
 import { clearSessionCookie, closeMatchingStaffSession } from "@/lib/staff-session-server";
+import { clearMessagesUnlockCookie } from "@/lib/message-unlock-server";
 import { logActivity } from "@/lib/api-auth";
 
 export async function POST() {
@@ -19,5 +20,6 @@ export async function POST() {
     await supabase.auth.signOut({ scope: "local" });
   }
   await clearSessionCookie();
+  await clearMessagesUnlockCookie();
   return NextResponse.json({ ok: true });
 }

@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { clientIp } from "@/lib/auth-server";
 import { verifyContactToken, verifyTurnstile } from "@/lib/contact-token";
+import { assessContactRisk } from "@/lib/contact-risk";
 import { looksLikeCode } from "@/lib/input-guard";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -68,6 +69,8 @@ export async function POST(req: NextRequest) {
   }
   await admin.from("contact_attempts").insert({ ip });
 
+  const risk = assessContactRisk({ firstName, otherName, surname, email, subject, message });
+
   const { error } = await admin.from("website_messages").insert({
     first_name: firstName,
     other_name: otherName || null,
@@ -77,6 +80,8 @@ export async function POST(req: NextRequest) {
     message,
     preferred_contact: preferred || null,
     submitter_ip: ip === "unknown" ? null : ip,
+    risk_score: risk.score,
+    risk_flags: risk.flags,
   });
 
   if (error) return NextResponse.json({ error: "Could not send the message. Please try again." }, { status: 500 });

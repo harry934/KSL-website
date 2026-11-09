@@ -30,6 +30,7 @@ type MessageRow = {
   first_name: string;
   surname: string;
   subject: string;
+  risk_score: number | null;
   created_at: string;
   read_at: string | null;
   deleted_at?: string | null;
@@ -40,13 +41,13 @@ function canSeeMessages(session: StaffSession) {
   return session.permissions.some((item) => item.module_key === "messages" && item.can_view);
 }
 
-async function loadMessages(session: StaffSession): Promise<NoticeItem[]> {
+async function loadMessages(session: StaffSession, messagesUnlocked: boolean): Promise<NoticeItem[]> {
   if (!canSeeMessages(session)) return [];
 
   const admin = createAdminClient();
   const { data } = await admin
     .from("website_messages")
-    .select("id, first_name, surname, subject, created_at, read_at, deleted_at")
+    .select("id, first_name, surname, subject, risk_score, created_at, read_at, deleted_at")
     .order("created_at", { ascending: false })
     .limit(MARK_LIMIT);
 
@@ -54,8 +55,14 @@ async function loadMessages(session: StaffSession): Promise<NoticeItem[]> {
     id: `message:${row.id}`,
     kind: "message" as const,
     module: "messages" as const,
-    who: [row.first_name, row.surname].filter(Boolean).join(" ") || "Website visitor",
-    text: row.subject || "Sent a message from the website",
+    who: messagesUnlocked
+      ? [row.first_name, row.surname].filter(Boolean).join(" ") || "Website visitor"
+      : "Website visitor",
+    text: messagesUnlocked
+      ? row.subject || "Sent a message from the website"
+      : row.risk_score
+        ? `Website message · risk ${row.risk_score}`
+        : "Website message (locked)",
     area: "Messages",
     href: `/messages?id=${row.id}`,
     createdAt: row.created_at,
@@ -250,9 +257,9 @@ async function loadWatches(session: StaffSession): Promise<NoticeItem[]> {
 }
 
 /** Deletes and first sign-ins, then password and username requests, then website messages. */
-export async function loadNotifications(session: StaffSession): Promise<NoticeItem[]> {
+export async function loadNotifications(session: StaffSession, messagesUnlocked: boolean): Promise<NoticeItem[]> {
   const [messages, requests, watches] = await Promise.all([
-    loadMessages(session),
+    loadMessages(session, messagesUnlocked),
     session.isSuperAdmin ? loadAccountRequests() : Promise.resolve([]),
     loadWatches(session),
   ]);

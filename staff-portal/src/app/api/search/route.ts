@@ -4,6 +4,7 @@ import { credentialsCurrent } from "@/lib/api-auth";
 import { getStaffSession } from "@/lib/session";
 import { hrefForDraft } from "@/lib/draft-review";
 import { canAccess, MODULE_LABELS, type ModuleKey } from "@/lib/modules";
+import { messagesViewUnlocked } from "@/lib/message-unlock-server";
 
 type Hit = { id: string; title: string; hint: string; href: string; area: string; text?: string };
 
@@ -263,7 +264,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  if (can("messages")) {
+  if (can("messages") && (await messagesViewUnlocked(session.userId))) {
     jobs.push(
       admin
         .from("website_messages")

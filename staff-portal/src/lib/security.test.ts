@@ -5,7 +5,9 @@ import { toPublicDownloadsPayload } from "./downloads.ts";
 import { matchesDeclaredType, mp4IsHevc } from "./file-bytes.ts";
 import { heroFrameOffset, parseHeroCrop, parseHeroTrim } from "./hero-frame.ts";
 import { issueContactToken, verifyContactToken } from "./contact-token.ts";
+import { assessContactRisk } from "./contact-risk.ts";
 import { looksLikeCode } from "./input-guard.ts";
+import { issueMessagesUnlockToken, maskWebsiteMessage, verifyMessagesUnlockToken } from "./message-unlock.ts";
 import { IDLE_MS, judgeSession, sessionIsLive } from "./staff-session.ts";
 import { sanitizeRichHtml } from "./sanitize-html.ts";
 import { cleanBoardSections, cleanIntro, cleanMilestoneInput, cleanOrgChart, parseMilestoneWhen, toPublicOrganization, type MilestoneRow } from "./organization.ts";
@@ -328,6 +330,66 @@ test("Turnstile fails closed in production without a secret", async () => {
   else process.env.NODE_ENV = prevNode;
   if (prevVercel === undefined) delete process.env.VERCEL_ENV;
   else process.env.VERCEL_ENV = prevVercel;
+});
+
+test("contact risk flags injection in names and links in messages", () => {
+  const clean = assessContactRisk({
+    firstName: "Jane",
+    otherName: "",
+    surname: "Doe",
+    email: "jane@example.com",
+    subject: "Dry dock enquiry",
+    message: "Please call me about maintenance windows.",
+  });
+  assert.equal(clean.score, 0);
+
+  const nasty = assessContactRisk({
+    firstName: "CLICK",
+    otherName: "HTTP",
+    surname: "NOW",
+    email: "x@mailinator.com",
+    subject: "Deal",
+    message: "see https://evil.test https://evil2.test https://evil3.test",
+  });
+  assert.ok(nasty.score >= 40);
+  assert.ok(nasty.flags.includes("disposable_email"));
+  assert.ok(nasty.flags.includes("high_risk"));
+});
+
+test("masked website messages hide PII until unlock", () => {
+  const row = {
+    id: "1",
+    first_name: "Jane",
+    other_name: null,
+    surname: "Doe",
+    email: "jane@example.com",
+    subject: "Hello",
+    message: "Body",
+    preferred_contact: "Email",
+    submitter_ip: "203.0.113.1",
+    risk_score: 12,
+    risk_flags: ["contains_links"],
+    created_at: new Date().toISOString(),
+    read_at: null,
+  };
+  const masked = maskWebsiteMessage(row, false);
+  assert.equal(masked.locked, true);
+  assert.equal(masked.email, "—");
+  assert.equal(masked.message, "");
+  assert.equal(masked.submitter_ip, null);
+  const open = maskWebsiteMessage(row, true);
+  assert.equal(open.message, "Body");
+});
+
+test("messages unlock token is bound to user and expires", () => {
+  const prev = process.env.SUPABASE_JWT_SECRET;
+  process.env.SUPABASE_JWT_SECRET = "test-secret-for-unlock";
+  const token = issueMessagesUnlockToken("user-1", 1_000_000);
+  assert.equal(verifyMessagesUnlockToken(token, "user-1", 1_000_000), true);
+  assert.equal(verifyMessagesUnlockToken(token, "user-2", 1_000_000), false);
+  assert.equal(verifyMessagesUnlockToken(token, "user-1", 2_000_000), false);
+  if (prev === undefined) delete process.env.SUPABASE_JWT_SECRET;
+  else process.env.SUPABASE_JWT_SECRET = prev;
 });
 
 test("client IP prefers Vercel and x-real-ip; ignores spoofed XFF prefix", () => {

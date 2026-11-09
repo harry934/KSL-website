@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { credentialsCurrent } from "@/lib/api-auth";
 import { getStaffSession } from "@/lib/session";
 import { loadNotifications } from "@/lib/notifications";
+import { messagesViewUnlocked } from "@/lib/message-unlock-server";
 
 /** Bell items are account requests and website messages. */
 export async function GET() {
@@ -10,7 +11,7 @@ export async function GET() {
   const blocked = credentialsCurrent(session);
   if (blocked) return blocked;
 
-  const marks = await loadNotifications(session);
+  const marks = await loadNotifications(session, await messagesViewUnlocked(session.userId));
   return NextResponse.json(
     { items: marks.slice(0, 20), marks },
     { headers: { "Cache-Control": "no-store" } }
