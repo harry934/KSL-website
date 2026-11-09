@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261109-projdock";
+    var ASSET_V = "20261109-projprop";
 
     var BUNDLES = {
         wow: [

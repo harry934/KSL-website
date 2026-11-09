@@ -7,11 +7,13 @@
 
     var MORE_ICON =
         '<i aria-hidden="true"><svg viewBox="0 0 24 24">' +
-        '<path d="M3.5 20.5V8.5h2.2V20.5M18.3 20.5V8.5h2.2V20.5"/>' +
-        '<path d="M3.5 20.5h17"/>' +
-        '<g class="ksl-yard-hull"><path d="M7 16.2 8.6 18.8h6.8L17 16.2H7z"/><path d="M9.2 16.2V13.4h4.4l1.2 2.8"/></g>' +
-        '<g class="ksl-yard-crane"><path d="M5.7 8.5V4.2h1.6"/><path d="M5.7 5.2h11.2"/><path d="M16.2 5.2v3.4"/></g>' +
-        "</svg></i>";
+        '<g class="ksl-yard-prop">' +
+        '<circle cx="12" cy="12" r="1.7"/>' +
+        '<path d="M12 10.3C12.8 7.2 14.8 4.8 17.6 4.6c.4 2.7-1 5.3-3.4 6.8"/>' +
+        '<path d="M13.7 12c3.1.8 5.5 2.8 5.7 5.6-2.7.4-5.3-1-6.8-3.4"/>' +
+        '<path d="M12 13.7c-.8 3.1-2.8 5.5-5.6 5.7-.4-2.7 1-5.3 3.4-6.8"/>' +
+        '<path d="M10.3 12C7.2 11.2 4.8 9.2 4.6 6.4c2.7-.4 5.3 1 6.8 3.4"/>' +
+        "</g></svg></i>";
 
     function escapeHtml(value) {
         return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) {

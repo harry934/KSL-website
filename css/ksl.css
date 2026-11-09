@@ -6957,31 +6957,19 @@ html[lang="sw"] .download-button .download::after {
     text-decoration: underline;
 }
 
-.ksl-project-more:hover .ksl-yard-hull,
-.ksl-project-more:focus-visible .ksl-yard-hull {
-    transform-origin: 50% 100%;
-    animation: ksl-yard-hull 1.2s ease-in-out infinite;
+.ksl-project-more:hover .ksl-yard-prop,
+.ksl-project-more:focus-visible .ksl-yard-prop {
+    transform-origin: 12px 12px;
+    animation: ksl-yard-prop 1.05s linear infinite;
 }
 
-.ksl-project-more:hover .ksl-yard-crane,
-.ksl-project-more:focus-visible .ksl-yard-crane {
-    transform-origin: 6.5px 4.2px;
-    animation: ksl-yard-crane 1.2s ease-in-out infinite;
-}
-
-@keyframes ksl-yard-hull {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-1.2px); }
-}
-
-@keyframes ksl-yard-crane {
-    0%, 100% { transform: rotate(0); }
-    50% { transform: rotate(6deg); }
+@keyframes ksl-yard-prop {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .ksl-project-more .ksl-yard-hull,
-    .ksl-project-more .ksl-yard-crane {
+    .ksl-project-more .ksl-yard-prop {
         animation: none !important;
     }
 }
