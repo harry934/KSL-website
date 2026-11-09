@@ -6,10 +6,12 @@
     if (!root || !window.KSL_CONTENT) return;
 
     var MORE_ICON =
-        '<i aria-hidden="true"><svg viewBox="0 0 24 24">' +
-        '<path class="ksl-ship-wave" d="M1.8 19.6c1.3-1.1 2.3-1.1 3.5 0s2.2 1.1 3.5 0 2.3-1.1 3.5 0 2.2 1.1 3.5 0 2.3-1.1 3.5 0"/>' +
-        '<g class="ksl-ship"><path d="M3.2 14.4 5.8 18h12.4l2.6-3.6H3.2z"/><path d="M8 14.4V11.4h7.4v3"/><path d="M11.4 11.4V7.2"/>' +
-        '<path class="ksl-ship-flag" d="M11.4 7.2h4.6L14 8.8l2 1.6h-4.6"/></g></svg></i>';
+        '<i aria-hidden="true"><svg viewBox="0 0 48 48">' +
+        '<g class="ksl-yard">' +
+        '<path d="M8 30h32l-4 8H12z"/>' +
+        '<path d="M16 30V18h8l8 8h4v4"/>' +
+        '<path class="ksl-yard-mast" d="M20 18V12h6"/>' +
+        "</g></svg></i>";
 
     function escapeHtml(value) {
         return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) {
