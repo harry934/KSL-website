@@ -13,7 +13,10 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <PageHeader title="Messages" description="Forms sent from the website contact page." />
+      <PageHeader
+        title="Messages"
+        description="Website contact submissions — unlock to read, reply, or forward through Gmail or Outlook."
+      />
       <MessagesInbox initialId={params.id ?? null} />
     </>
   );

@@ -1,13 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Lock, ShieldAlert } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  Check,
+  Copy,
+  Forward,
+  Inbox,
+  Loader2,
+  Lock,
+  Mail,
+  Reply,
+  ShieldAlert,
+} from "lucide-react";
 import { useCan } from "@/components/portal/session-context";
 import { Button } from "@/components/ui/button";
 import { useFeedback } from "@/components/ui/feedback";
 import { Notice } from "@/components/ui/form-bits";
 import { PasswordInput } from "@/components/ui/password-input";
 import { cn } from "@/lib/cn";
+import { gmailComposeUrl, openMailto, outlookWebComposeUrl } from "@/lib/mail-compose";
+import { forwardPlainBody, forwardSubject, replyPlainBody, replySubject } from "@/lib/message-forward";
 import { refreshNotices } from "@/lib/notification-seen";
 
 type Message = {
@@ -27,6 +39,8 @@ type Message = {
   deleted_at?: string | null;
   locked?: boolean;
 };
+
+type Filter = "all" | "unread" | "risk";
 
 const FLAG_LABELS: Record<string, string> = {
   suspicious_name: "Suspicious name",
@@ -58,12 +72,17 @@ function fullName(row: Message) {
   return [row.first_name, row.other_name, row.surname].filter(Boolean).join(" ");
 }
 
-function RiskBadges({ row }: { row: Message }) {
+function initials(row: Message) {
+  const parts = [row.first_name, row.surname].filter(Boolean);
+  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "?";
+}
+
+function RiskBadges({ row, compact }: { row: Message; compact?: boolean }) {
   const score = row.risk_score ?? 0;
   const flags = row.risk_flags ?? [];
   if (!score && !flags.length) return null;
   return (
-    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+    <div className={cn("flex flex-wrap items-center gap-1.5", !compact && "mt-2")}>
       {score > 0 && (
         <span
           className={cn(
@@ -74,7 +93,7 @@ function RiskBadges({ row }: { row: Message }) {
           Risk {score}
         </span>
       )}
-      {flags.slice(0, 4).map((flag) => (
+      {flags.slice(0, compact ? 2 : 6).map((flag) => (
         <span key={flag} className="rounded-full bg-[#f4f7fb] px-2 py-0.5 text-[11px] text-[#5b6775]">
           {FLAG_LABELS[flag] ?? flag}
         </span>
@@ -83,11 +102,37 @@ function RiskBadges({ row }: { row: Message }) {
   );
 }
 
+function MailProviderButton({
+  label,
+  src,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  src: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[#e8ecf1] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <img src={src} alt="" className="h-6 w-6 object-contain" draggable={false} />
+    </button>
+  );
+}
+
 export function MessagesInbox({ initialId }: { initialId: string | null }) {
   const canDelete = useCan("messages", "delete");
   const { confirm, toast } = useFeedback();
   const [messages, setMessages] = useState<Message[]>([]);
   const [openId, setOpenId] = useState<string | null>(initialId);
+  const [filter, setFilter] = useState<Filter>("all");
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +140,22 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
   const [unlockPassword, setUnlockPassword] = useState("");
   const [unlocking, setUnlocking] = useState(false);
   const [unlockError, setUnlockError] = useState<string | null>(null);
+  const [forwardTo, setForwardTo] = useState("");
+  const [copied, setCopied] = useState(false);
   const marked = useRef(new Set<string>());
+
+  const stats = useMemo(() => {
+    const unread = messages.filter((m) => !m.read_at).length;
+    const risk = messages.filter((m) => (m.risk_score ?? 0) >= 40).length;
+    return { total: messages.length, unread, risk };
+  }, [messages]);
+
+  const filtered = useMemo(() => {
+    const sorted = [...messages].sort((a, b) => (b.risk_score ?? 0) - (a.risk_score ?? 0));
+    if (filter === "unread") return sorted.filter((m) => !m.read_at);
+    if (filter === "risk") return sorted.filter((m) => (m.risk_score ?? 0) >= 40);
+    return sorted;
+  }, [messages, filter]);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/messages", { cache: "no-store" });
@@ -188,34 +248,79 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
   }
 
   const openRow = messages.find((row) => row.id === openId) ?? null;
-  const sorted = [...messages].sort((a, b) => (b.risk_score ?? 0) - (a.risk_score ?? 0));
+
+  function composeFields(row: Message, mode: "forward" | "reply", to: string) {
+    const subject = mode === "forward" ? forwardSubject(row) : replySubject(row);
+    const body = mode === "forward" ? forwardPlainBody(row) : replyPlainBody(row);
+    return { to, subject, body };
+  }
+
+  function openGmail(row: Message, mode: "forward" | "reply", to: string) {
+    const fields = composeFields(row, mode, to);
+    window.open(gmailComposeUrl(fields), "_blank", "noopener");
+    toast(mode === "forward" ? "Gmail compose opened — check To and send." : "Gmail reply opened.");
+  }
+
+  function openOutlook(row: Message, mode: "forward" | "reply", to: string) {
+    const fields = composeFields(row, mode, to);
+    const web = outlookWebComposeUrl(fields);
+    const opened = window.open(web, "_blank", "noopener");
+    if (!opened) openMailto(fields);
+    else toast(mode === "forward" ? "Outlook compose opened — check To and send." : "Outlook reply opened.");
+  }
+
+  function forwardToColleague(row: Message, provider: "gmail" | "outlook") {
+    const to = forwardTo.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      toast("Enter a valid colleague email in Forward to.", "error");
+      return;
+    }
+    if (provider === "gmail") openGmail(row, "forward", to);
+    else openOutlook(row, "forward", to);
+  }
+
+  async function copyForward(row: Message) {
+    try {
+      await navigator.clipboard.writeText(forwardPlainBody(row));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+      toast("Message copied — paste into any email app.");
+    } catch {
+      toast("Could not copy.", "error");
+    }
+  }
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-[14px] text-[#5b6775]">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading messages…
+      <div className="flex min-h-[240px] items-center justify-center gap-2 text-[14px] text-[#5b6775]">
+        <Loader2 className="h-5 w-5 animate-spin text-[#0b1f3a]" /> Loading inbox…
       </div>
     );
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(260px,360px)_1fr]">
+    <div className="space-y-4">
       {error && <Notice kind="error">{error}</Notice>}
 
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatCard label="Inbox" value={stats.total} icon={<Inbox className="h-4 w-4" />} />
+        <StatCard label="Unread" value={stats.unread} accent={stats.unread > 0 ? "navy" : undefined} />
+        <StatCard label="High risk" value={stats.risk} accent={stats.risk > 0 ? "danger" : undefined} icon={<ShieldAlert className="h-4 w-4" />} />
+      </div>
+
       {!unlocked && (
-        <div className="ksl-card flex flex-col gap-3 p-4 lg:col-span-2">
-          <div className="flex items-start gap-3">
-            <div className="rounded-full bg-[#0b1f3a]/10 p-2 text-[#0b1f3a]">
+        <div className="overflow-hidden rounded-xl border border-[#dfe6ee] bg-gradient-to-br from-[#f8fafc] to-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0b1f3a] text-white">
               <Lock className="h-5 w-5" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-[15px] font-semibold text-[#0b1f3a]">Message details are hidden</h2>
+              <h2 className="text-[16px] font-bold text-[#0b1f3a]">Protected inbox</h2>
               <p className="mt-1 text-[13.5px] leading-relaxed text-[#5b6775]">
-                Names, email, message text, and IP stay blurred until you enter your account password. Risk scores still show so you
-                can spot suspicious submissions first.
+                Names, email, body text, and IP are hidden until you confirm your password. Risk badges stay visible for triage.
               </p>
               <form
-                className="mt-3 flex max-w-md flex-col gap-2 sm:flex-row sm:items-end"
+                className="mt-4 flex max-w-lg flex-col gap-2 sm:flex-row sm:items-end"
                 onSubmit={(e) => {
                   e.preventDefault();
                   void unlockView();
@@ -227,11 +332,11 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
                     value={unlockPassword}
                     onChange={(e) => setUnlockPassword(e.target.value)}
                     autoComplete="current-password"
-                    placeholder="Your account password"
+                    placeholder="Account password"
                   />
                 </div>
                 <Button type="submit" disabled={unlocking}>
-                  {unlocking ? "Checking…" : "Unlock for 15 min"}
+                  {unlocking ? "Checking…" : "Unlock 15 min"}
                 </Button>
               </form>
               {unlockError && (
@@ -244,99 +349,216 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
         </div>
       )}
 
-      <div className="ksl-card overflow-hidden">
-        {messages.length === 0 && <p className="px-4 py-8 text-center text-[14px] text-[#6b7785]">No messages yet.</p>}
-        <ul>
-          {sorted.map((row) => (
-            <li key={row.id} className="border-b border-[#eef1f4] last:border-b-0">
-              <button
-                type="button"
-                onClick={() => open(row)}
-                className={cn(
-                  "flex w-full flex-col gap-0.5 px-4 py-3 text-left hover:bg-[#f6f8fa]",
-                  openId === row.id && "bg-[#f4f7fb]"
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  {!row.read_at && <span className="h-2 w-2 shrink-0 rounded-full bg-[#0b1f3a]" aria-label="Unread" />}
-                  {(row.risk_score ?? 0) >= 40 && <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-[#9b1c1c]" aria-hidden />}
-                  <span
-                    className={cn(
-                      "truncate text-[14px] font-semibold text-[#0b1f3a]",
-                      !unlocked && "select-none blur-[6px]"
-                    )}
-                  >
-                    {row.subject}
-                  </span>
-                </span>
-                <span className={cn("truncate text-[13px] text-[#5b6775]", !unlocked && "select-none blur-[5px]")}>
-                  {fullName(row)}
-                </span>
-                <RiskBadges row={row} />
-                <span className="text-[12px] text-[#6b7785]">{when(row.created_at)}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <div className="grid gap-4 lg:grid-cols-[minmax(280px,380px)_1fr] lg:items-start">
+        <aside className="overflow-hidden rounded-xl border border-[#e8ecf1] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+          <div className="flex items-center justify-between border-b border-[#eef1f4] px-4 py-3">
+            <p className="text-[13px] font-semibold text-[#0b1f3a]">All messages</p>
+            <div className="flex gap-1">
+              {(["all", "unread", "risk"] as const).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFilter(key)}
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize transition",
+                    filter === key ? "bg-[#0b1f3a] text-white" : "bg-[#f4f7fb] text-[#5b6775] hover:bg-[#e8eef5]"
+                  )}
+                >
+                  {key}
+                </button>
+              ))}
+            </div>
+          </div>
+          {filtered.length === 0 ? (
+            <p className="px-4 py-12 text-center text-[14px] text-[#6b7785]">No messages in this view.</p>
+          ) : (
+            <ul className="max-h-[min(70vh,640px)] overflow-y-auto">
+              {filtered.map((row) => {
+                const active = openId === row.id;
+                return (
+                  <li key={row.id}>
+                    <button
+                      type="button"
+                      onClick={() => open(row)}
+                      className={cn(
+                        "flex w-full gap-3 border-b border-[#f0f3f6] px-4 py-3.5 text-left transition",
+                        active ? "bg-[#f0f5fb] ring-1 ring-inset ring-[#c5d4e8]" : "hover:bg-[#f8fafc]"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold",
+                          !row.read_at ? "bg-[#0b1f3a] text-white" : "bg-[#e8ecf1] text-[#5b6775]"
+                        )}
+                      >
+                        {initials(row)}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-1.5">
+                          {!row.read_at && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#c5a028]" aria-hidden />}
+                          {(row.risk_score ?? 0) >= 40 && <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-[#9b1c1c]" />}
+                          <span className={cn("truncate text-[14px] font-semibold text-[#0b1f3a]", !unlocked && "blur-[5px]")}>
+                            {row.subject}
+                          </span>
+                        </span>
+                        <span className={cn("mt-0.5 block truncate text-[12.5px] text-[#5b6775]", !unlocked && "blur-[4px]")}>
+                          {fullName(row)}
+                        </span>
+                        <RiskBadges row={row} compact />
+                        <span className="mt-1 block text-[11px] text-[#8a96a3]">{when(row.created_at)}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </aside>
 
-      <section className="ksl-card relative p-5">
-        {!openRow && <p className="text-[14px] text-[#6b7785]">Choose a message to read it.</p>}
-        {openRow && (
-          <article className={cn(!unlocked && "pointer-events-none")}>
-            {!unlocked && (
-              <div className="pointer-events-auto absolute inset-0 z-10 flex items-center justify-center rounded-[inherit] bg-white/75 backdrop-blur-md">
-                <p className="max-w-xs px-6 text-center text-[14px] font-medium text-[#0b1f3a]">
-                  Enter your password above to view this message.
+        <section className="relative min-h-[420px] overflow-hidden rounded-xl border border-[#e8ecf1] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+          {!openRow ? (
+            <div className="flex h-full min-h-[420px] flex-col items-center justify-center gap-2 px-6 text-center">
+              <Mail className="h-10 w-10 text-[#c5d4e8]" aria-hidden />
+              <p className="text-[15px] font-semibold text-[#0b1f3a]">Select a message</p>
+              <p className="max-w-sm text-[13px] text-[#6b7785]">Choose an item from the list to read it, reply, or forward to Outlook or Gmail.</p>
+            </div>
+          ) : (
+            <article className={cn("flex h-full flex-col", !unlocked && "pointer-events-none")}>
+              {!unlocked && (
+                <div className="pointer-events-auto absolute inset-0 z-20 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+                  <p className="max-w-xs px-6 text-center text-[14px] font-medium text-[#0b1f3a]">Unlock above to read and forward this message.</p>
+                </div>
+              )}
+
+              <header className="border-b border-[#eef1f4] bg-[#fafbfc] px-5 py-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#8a96a3]">{when(openRow.created_at)}</p>
+                <h2 className={cn("mt-1 text-[22px] font-bold leading-snug text-[#0b1f3a]", !unlocked && "blur-md")}>
+                  {openRow.subject}
+                </h2>
+                <RiskBadges row={openRow} />
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <Meta label="From" blurred={!unlocked}>
+                    {fullName(openRow)}
+                  </Meta>
+                  <Meta label="Email" blurred={!unlocked}>
+                    {unlocked ? (
+                      <a className="text-[#0b4a8a] underline" href={`mailto:${openRow.email}`}>
+                        {openRow.email}
+                      </a>
+                    ) : (
+                      openRow.email
+                    )}
+                  </Meta>
+                  {openRow.preferred_contact && (
+                    <Meta label="Preferred" blurred={!unlocked}>
+                      {openRow.preferred_contact}
+                    </Meta>
+                  )}
+                  {openRow.submitter_ip && (
+                    <Meta label="IP" blurred={!unlocked}>
+                      <span className="font-mono text-[12px]">{openRow.submitter_ip}</span>
+                    </Meta>
+                  )}
+                </div>
+              </header>
+
+              {unlocked && (
+                <div className="border-b border-[#eef1f4] bg-white px-5 py-4">
+                  <p className="text-[12px] font-semibold uppercase tracking-wide text-[#6b7785]">Send via email</p>
+                  <div className="mt-3 flex flex-wrap items-end gap-3">
+                    <Button variant="secondary" size="sm" onClick={() => openGmail(openRow, "reply", openRow.email)}>
+                      <Reply className="h-4 w-4" /> Reply (Gmail)
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => openOutlook(openRow, "reply", openRow.email)}>
+                      <Reply className="h-4 w-4" /> Reply (Outlook)
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => copyForward(openRow)}>
+                      {copied ? <Check className="h-4 w-4 text-[#12b76a]" /> : <Copy className="h-4 w-4" />}
+                      {copied ? "Copied" : "Copy text"}
+                    </Button>
+                  </div>
+                  <div className="mt-4 rounded-lg border border-dashed border-[#d5dce4] bg-[#f8fafc] p-3">
+                    <p className="flex items-center gap-1.5 text-[12px] font-semibold text-[#0b1f3a]">
+                      <Forward className="h-3.5 w-3.5" /> Forward to a colleague
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <input
+                        type="email"
+                        value={forwardTo}
+                        onChange={(e) => setForwardTo(e.target.value)}
+                        placeholder="colleague@company.com"
+                        className="h-9 min-w-[200px] flex-1 rounded-md border border-[#d5dce4] px-3 text-[13px] outline-none focus:border-[#0b1f3a] focus:ring-2 focus:ring-[#0b1f3a]/15"
+                      />
+                      <MailProviderButton
+                        label="Forward with Gmail"
+                        src="/brand/gmail.svg"
+                        onClick={() => forwardToColleague(openRow, "gmail")}
+                      />
+                      <MailProviderButton
+                        label="Forward with Outlook"
+                        src="/brand/outlook.svg"
+                        onClick={() => forwardToColleague(openRow, "outlook")}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex-1 overflow-y-auto px-5 py-5">
+                <p className={cn("whitespace-pre-wrap text-[15px] leading-relaxed text-[#1f2933]", !unlocked && "blur-md")}>
+                  {openRow.message || (openRow.locked ? "—" : "")}
                 </p>
               </div>
-            )}
-            <p className="text-[12.5px] font-semibold uppercase tracking-wide text-[#6b7785]">{when(openRow.created_at)}</p>
-            <RiskBadges row={openRow} />
-            <h2 className={cn("mt-2 text-[20px] font-bold text-[#0b1f3a]", !unlocked && "select-none blur-md")}>
-              {openRow.subject}
-            </h2>
-            <p className={cn("mt-2 text-[14px] text-[#1f2933]", !unlocked && "select-none blur-md")}>
-              {fullName(openRow)} ·{" "}
-              {unlocked ? (
-                <a className="underline" href={`mailto:${openRow.email}`}>
-                  {openRow.email}
-                </a>
-              ) : (
-                <span>{openRow.email}</span>
+
+              {canDelete && unlocked && (
+                <footer className="border-t border-[#eef1f4] px-5 py-4">
+                  <Button variant="danger" disabled={deleting} onClick={() => remove(openRow)}>
+                    {deleting ? "Deleting…" : "Delete message"}
+                  </Button>
+                </footer>
               )}
-            </p>
-            {openRow.preferred_contact && (
-              <p className={cn("mt-1 text-[13.5px] text-[#5b6775]", !unlocked && "select-none blur-md")}>
-                Preferred contact: {openRow.preferred_contact}
-              </p>
-            )}
-            {openRow.submitter_ip ? (
-              <p className={cn("mt-1 text-[13px] text-[#6b7785]", !unlocked && "select-none blur-md")}>
-                Submitted from IP: <span className="font-mono text-[12.5px]">{openRow.submitter_ip}</span>
-              </p>
-            ) : (
-              !openRow.locked && <p className="mt-1 text-[13px] text-[#8a96a3]">Submitter IP not recorded.</p>
-            )}
-            <p className={cn("mt-4 whitespace-pre-wrap text-[15px] leading-relaxed text-[#1f2933]", !unlocked && "select-none blur-md")}>
-              {openRow.message || (openRow.locked ? "—" : "")}
-            </p>
-            {canDelete && unlocked && (
-              <NeedsDeleteRow deleting={deleting} onDelete={() => remove(openRow)} />
-            )}
-          </article>
-        )}
-      </section>
+            </article>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
 
-function NeedsDeleteRow({ deleting, onDelete }: { deleting: boolean; onDelete: () => void }) {
+function StatCard({
+  label,
+  value,
+  accent,
+  icon,
+}: {
+  label: string;
+  value: number;
+  accent?: "navy" | "danger";
+  icon?: ReactNode;
+}) {
   return (
-    <div className="pointer-events-auto mt-6 border-t border-[#eef1f4] pt-4">
-      <Button variant="danger" disabled={deleting} onClick={onDelete}>
-        {deleting ? "Deleting…" : "Delete message"}
-      </Button>
+    <div className="rounded-xl border border-[#e8ecf1] bg-white px-4 py-3 shadow-sm">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[12px] font-semibold uppercase tracking-wide text-[#8a96a3]">{label}</p>
+        {icon && <span className="text-[#8a96a3]">{icon}</span>}
+      </div>
+      <p
+        className={cn(
+          "mt-1 text-[28px] font-bold tabular-nums",
+          accent === "danger" ? "text-[#9b1c1c]" : accent === "navy" ? "text-[#0b1f3a]" : "text-[#1f2933]"
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function Meta({ label, children, blurred }: { label: string; children: ReactNode; blurred?: boolean }) {
+  return (
+    <div className="rounded-lg border border-[#eef1f4] bg-white px-3 py-2">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8a96a3]">{label}</p>
+      <p className={cn("mt-0.5 text-[13px] font-medium text-[#1f2933]", blurred && "blur-sm")}>{children}</p>
     </div>
   );
 }
