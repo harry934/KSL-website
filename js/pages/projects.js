@@ -5,10 +5,11 @@
     var root = document.querySelector("main.ksl-projects");
     if (!root || !window.KSL_CONTENT) return;
 
-    var ENQUIRE_ICON =
-        '<i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5h16v11H4z"/><path d="m4 7 8 6 8-6"/></svg></i>';
     var MORE_ICON =
-        '<i aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><path d="M12 8.2v5.1"/><path d="M12 16.2h.01"/></svg></i>';
+        '<i aria-hidden="true"><svg viewBox="0 0 24 24">' +
+        '<path class="ksl-ship-wave" d="M1.8 19.6c1.3-1.1 2.3-1.1 3.5 0s2.2 1.1 3.5 0 2.3-1.1 3.5 0 2.2 1.1 3.5 0 2.3-1.1 3.5 0"/>' +
+        '<g class="ksl-ship"><path d="M3.2 14.4 5.8 18h12.4l2.6-3.6H3.2z"/><path d="M8 14.4V11.4h7.4v3"/><path d="M11.4 11.4V7.2"/>' +
+        '<path class="ksl-ship-flag" d="M11.4 7.2h4.6L14 8.8l2 1.6h-4.6"/></g></svg></i>';
 
     function escapeHtml(value) {
         return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) {
@@ -63,7 +64,7 @@
         var title = escapeHtml(item.title);
         var details = String(item.details || "").trim();
         var more = details
-            ? '<button type="button" class="ksl-project-action" data-project-more="' + escapeHtml(item.slug || "") + '">' +
+            ? '<button type="button" class="ksl-project-action ksl-project-more" data-project-more="' + escapeHtml(item.slug || "") + '">' +
               "<span>Read more</span>" + MORE_ICON + "</button>"
             : "";
         return (
@@ -74,7 +75,7 @@
                 : "") +
             "<div><h3>" + title + "</h3><p>" + escapeHtml(item.subtitle || "") + "</p>" +
             '<div class="ksl-project-actions">' +
-            '<a class="ksl-project-action" href="contact.html"><span>Enquire</span>' + ENQUIRE_ICON + "</a>" +
+            '<a class="ksl-project-action" href="contact.html">Enquire</a>' +
             more +
             "</div></div></article>"
         );
