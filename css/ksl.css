@@ -6910,34 +6910,13 @@ html[lang="sw"] .download-button .download::after {
     text-decoration: underline;
 }
 
-.ksl-project-more {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+button.ksl-more.ksl-project-more {
     margin: 0;
     padding: 0;
     border: 0;
     background: none;
-    color: #0A3E95;
-    font: inherit;
-    font-weight: 700;
-    font-size: 13px;
     cursor: pointer;
-}
-
-.ksl-project-more:hover {
-    text-decoration: underline;
-}
-
-.ksl-project-ship {
-    width: 18px;
-    height: 18px;
-    flex: none;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.7;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    appearance: none;
 }
 
 .ksl-project-modal-dialog {
@@ -13231,30 +13210,39 @@ body[data-ksl-motif="wheel"] {
     100% { transform: rotate(0); }
 }
 
-a.ksl-more i {
+a.ksl-more i,
+button.ksl-more i {
     width: 22px;
     height: 22px;
 }
 
 a.ksl-more:hover i,
-a.ksl-more:focus-visible i {
+a.ksl-more:focus-visible i,
+button.ksl-more:hover i,
+button.ksl-more:focus-visible i {
     animation: none;
 }
 
 a.ksl-more:hover .ksl-ship,
-a.ksl-more:focus-visible .ksl-ship {
+a.ksl-more:focus-visible .ksl-ship,
+button.ksl-more:hover .ksl-ship,
+button.ksl-more:focus-visible .ksl-ship {
     transform-origin: 50% 80%;
     animation: ksl-ship-bob 1.15s ease-in-out infinite;
 }
 
 a.ksl-more:hover .ksl-ship-wave,
-a.ksl-more:focus-visible .ksl-ship-wave {
+a.ksl-more:focus-visible .ksl-ship-wave,
+button.ksl-more:hover .ksl-ship-wave,
+button.ksl-more:focus-visible .ksl-ship-wave {
     transform-origin: center;
     animation: ksl-wave-roll 1.15s ease-in-out infinite;
 }
 
 a.ksl-more:hover .ksl-ship-flag,
-a.ksl-more:focus-visible .ksl-ship-flag {
+a.ksl-more:focus-visible .ksl-ship-flag,
+button.ksl-more:hover .ksl-ship-flag,
+button.ksl-more:focus-visible .ksl-ship-flag {
     transform-origin: 0 50%;
     animation: ksl-flag-flutter .7s ease-in-out infinite;
 }
