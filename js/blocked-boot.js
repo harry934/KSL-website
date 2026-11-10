@@ -2,7 +2,7 @@
 (function () {
     document.documentElement.classList.toggle("ksl-blocked", /(?:^|[?&])blocked=1(?:&|$)/.test(location.search));
     if (document.documentElement.classList.contains("ksl-blocked")) {
-        document.title = "Input blocked | Kenya Shipyards Limited";
+        document.title = "Page not found | Kenya Shipyards Limited";
     }
     function hide404Spinner() {
         if (!document.body || !document.body.classList.contains("ksl-404")) return;
