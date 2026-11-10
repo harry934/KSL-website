@@ -18,8 +18,10 @@
     "locations": [
       { "name": "Nairobi Head Office", "address": "Herufi House, Treasury Buildings." },
       { "name": "Mombasa Shipyard", "address": "Next to Kenya Navy Base, Mtongwe." },
-      { "name": "Kisumu Shipyard", "address": "Next to Kisumu Port, along Marine Drive." }
-    ]
+      { "name": "Kisumu Shipyard", "address": "Next to Kisumu Port, along Marine Drive." },
+      { "name": "Kenya Railways", "address": "Locomotive workshop with KRC, Nairobi." }
+    ],
+    "qualitySystem": "ISO 9001:2015 certified quality management system"
   },
   "announcement": {
     "enabled": false,

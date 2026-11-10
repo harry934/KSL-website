@@ -99,10 +99,19 @@
             locations.forEach(function (loc, idx) {
                 var p = document.createElement("p");
                 if (idx === locations.length - 1) p.className = "mb-0";
+                else p.className = "mb-2";
                 p.innerHTML = "<strong>" + escapeHtml(loc.name) + "</strong><br>" + escapeHtml(loc.address);
                 col.appendChild(p);
             });
         });
+        if (f.qualitySystem) {
+            document.querySelectorAll("[data-ksl-footer-iso]").forEach(function (el) {
+                if (el.tagName === "SPAN" && el.textContent.indexOf("©") !== -1) {
+                    var base = el.textContent.split(" · ")[0];
+                    el.textContent = base + " · " + f.qualitySystem.replace(/ certified quality management system$/i, " certified");
+                }
+            });
+        }
     }
 
     function yardIcon(paths) {

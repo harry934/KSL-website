@@ -2078,6 +2078,26 @@ body {
 .about-gallery.is-visible .about-frame:nth-child(3) { transition-delay: 180ms; }
 .about-gallery.is-visible .about-frame:nth-child(4) { transition-delay: 270ms; }
 
+.about-gallery.is-single {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    height: min(520px, 70vw);
+    padding-bottom: 0;
+    margin: 0;
+}
+
+.about-gallery.is-single::before {
+    display: none;
+}
+
+.about-gallery.is-single .about-frame:nth-child(even) {
+    top: 0;
+}
+
+.about-gallery.is-single .about-frame-alt {
+    display: none;
+}
+
 .service-item .service-text .btn-square {
     width: 64px;
     height: 64px;
@@ -12482,15 +12502,13 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     --ksl-draw-lighthouse: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 200' fill='none' stroke='%2314213d' stroke-linecap='round' stroke-linejoin='round'><path d='M92 44L156 30L156 66ZM68 44L4 30L4 66Z' stroke-width='.5' stroke-dasharray='2 2'/><path d='M58 166L66 70H94L102 166Z' stroke-width='1.2'/><g fill='%2314213d' stroke='none'><path d='M10 186C24 172 40 176 52 166C66 160 96 160 110 168C124 174 140 172 150 186Z'/><path d='M58 166L59.33 150H100.67L102 166Z'/><path d='M60.67 134L62 118H98L99.33 134Z'/><path d='M63.33 102L64.67 86H95.33L96.67 102Z'/><path d='M60 70H100V64H60Z'/><path d='M64 40L80 26L96 40Z'/><circle cx='80' cy='17' r='2'/><circle cx='80' cy='48' r='4'/><path d='M78 138h4v6h-4zM79 106h3v5h-3z'/></g><path d='M76 166V158a4 4 0 0 1 8 0V166' fill='%23fff' stroke='none'/><path d='M62 64V56M68 64V56M74 64V56M80 64V56M86 64V56M92 64V56M98 64V56M60 56H100' stroke-width='.8'/><path d='M68 56V40H92V56' stroke-width='1.2'/><path d='M76 40V56M84 40V56' stroke-width='.6'/><path d='M80 26V19' stroke-width='1.2'/><path d='M0 192Q10 188 20 192T40 192T60 192T80 192T100 192T120 192T140 192T160 192M-10 198Q0 194 10 198T30 198T50 198T70 198T90 198T110 198T130 198T150 198T170 198' stroke-width='.8'/><path d='M118 92q4-4 8 0q4-4 8 0M28 104q3-3 6 0q3-3 6 0' stroke-width='.8'/></svg>");
 }
 
-body[data-ksl-motif] main,
-#about {
+body[data-ksl-motif] main {
     position: relative;
     isolation: isolate;
     overflow-x: clip;
 }
 
-body[data-ksl-motif] main::before,
-#about::before {
+body[data-ksl-motif] main::before {
     content: "";
     position: absolute;
     z-index: -1;
@@ -12501,15 +12519,6 @@ body[data-ksl-motif] main::before,
     background: var(--ksl-motif, none) center / contain no-repeat;
     opacity: var(--ksl-motif-opacity, .055);
     pointer-events: none;
-}
-
-#about {
-    --ksl-motif-w: 420px;
-    --ksl-motif-ratio: 1;
-    --ksl-motif-top: 24px;
-    --ksl-motif-right: -60px;
-    --ksl-motif-opacity: .065;
-    --ksl-motif: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='%2314213d' stroke-linecap='round' stroke-linejoin='round'><defs><path id='t' d='M23 100A77 77 0 0 1 177 100'/><path id='b' d='M16 100A84 84 0 0 0 184 100'/></defs><circle cx='100' cy='100' r='95' stroke-width='5' stroke-dasharray='2.6 1.4' stroke-linecap='butt'/><circle cx='100' cy='100' r='98.6' stroke-width='.6'/><circle cx='100' cy='100' r='91.4' stroke-width='.6'/><circle cx='100' cy='100' r='88' stroke-width='.5'/><circle cx='100' cy='100' r='68' stroke-width='.9'/><circle cx='100' cy='100' r='65' stroke-width='.35'/><g fill='%2314213d' stroke='none' font-family='Georgia,serif' font-size='9.5' letter-spacing='2.4' text-anchor='middle'><text><textPath href='%23t' startOffset='50%25'>KENYA SHIPYARDS LIMITED</textPath></text><text><textPath href='%23b' startOffset='50%25'>MOMBASA · KISUMU</textPath></text><path d='M18 100L22 96.5L26 100L22 103.5ZM174 100L178 96.5L182 100L178 103.5Z'/></g><g fill='%2314213d' stroke='none'><rect x='74' y='66' width='52' height='6' rx='3'/><circle cx='73' cy='69' r='4'/><circle cx='127' cy='69' r='4'/><path d='M97 60H103L104.5 140H95.5Z'/><path d='M62 118C64 140 80 152 100 152C120 152 136 140 138 118H132C130 136 116 145 100 145C84 145 70 136 68 118Z'/><path d='M65 102L75 125L65 119L55 125ZM135 102L145 125L135 119L125 125ZM95 150L100 159L105 150Z'/></g><circle cx='100' cy='53' r='6' stroke-width='3'/><path d='M106 55C122 58 122 78 108 84C94 90 86 98 92 108C98 118 112 118 110 130' stroke='%23fff' stroke-width='5'/><path d='M106 55C122 58 122 78 108 84C94 90 86 98 92 108C98 118 112 118 110 130' stroke-width='2.4' stroke-dasharray='2.2 1' stroke-linecap='butt'/><path d='M30 100H36M164 100H170' stroke-width='.8'/></svg>");
 }
 
 body[data-ksl-motif="wheel"] {
@@ -12731,10 +12740,17 @@ body.ksl-404 .ksl-lost-needle .is-north {
 }
 
 @media (max-width: 767.98px) {
-    body[data-ksl-motif] main::before,
-    #about::before {
+    body[data-ksl-motif] main::before {
         right: -60px;
         width: 240px;
+    }
+
+    .about-gallery.is-single {
+        height: auto;
+    }
+
+    .about-gallery.is-single .about-frame {
+        aspect-ratio: 4 / 3;
     }
 }
 
