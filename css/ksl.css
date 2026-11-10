@@ -12840,132 +12840,53 @@ body.ksl-404 {
     min-height: 100vh;
     min-height: 100dvh;
     margin: 0;
-    overflow: hidden;
     padding-bottom: 0 !important;
-    background:
-        radial-gradient(ellipse at 50% 38%, rgba(201, 169, 92, .18), transparent 52%),
-        #09296C;
+    background: #fff;
 }
 
 body.ksl-404 .ksl-miss {
-    position: relative;
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    padding: 32px 20px 40px;
+    gap: 8px;
+    padding: 40px 20px;
     text-align: center;
-    color: #fff;
-}
-
-body.ksl-404 .ksl-miss-mark {
-    position: absolute;
-    top: 22px;
-    left: 22px;
 }
 
 body.ksl-404 .ksl-miss-mark img {
-    height: 64px;
+    height: 72px;
     width: auto;
+    margin-bottom: 12px;
 }
 
-body.ksl-404 .ksl-miss-kicker {
-    margin: 10px 0 0;
-    color: #C4A35A;
-    font: 700 .78rem/1 Manrope, sans-serif;
+body.ksl-404 .ksl-miss-code {
+    margin: 0;
+    color: #0165FC;
+    font: 700 14px/1 Manrope, sans-serif;
     letter-spacing: .16em;
-    text-transform: uppercase;
 }
 
 body.ksl-404 .ksl-miss h1 {
     margin: 0;
-    color: #fff;
-    font-size: clamp(2rem, 5vw, 3.5rem);
-    line-height: 1.1;
+    color: #09296C;
+    font-size: clamp(1.75rem, 4vw, 2.4rem);
+    line-height: 1.15;
 }
 
 body.ksl-404 .ksl-miss-note {
-    max-width: 28rem;
-    margin: 4px 0 8px;
-    padding: 14px 18px;
-    border: 1px solid rgba(255, 255, 255, .2);
-    border-radius: 14px;
-    background: rgba(255, 255, 255, .08);
-    color: rgba(255, 255, 255, .92);
-    font-size: 1.05rem;
+    max-width: 24rem;
+    margin: 0 0 14px;
+    color: #4a5878;
+    font-size: 1rem;
     line-height: 1.5;
-}
-
-html.ksl-blocked body.ksl-404 .ksl-miss-note {
-    border-color: rgba(196, 163, 90, .7);
-    background: rgba(196, 163, 90, .16);
 }
 
 .ksl-miss-blocked-copy { display: none; }
 html.ksl-blocked .ksl-miss-lost-copy { display: none; }
 html.ksl-blocked .ksl-miss-blocked-copy { display: block; }
-
-body.ksl-404 .ksl-lost svg {
-    stroke: #fff;
-}
-
-body.ksl-404 .ksl-lost-needle path {
-    fill: #fff;
-}
-
-body.ksl-404 .ksl-lost-needle .is-north {
-    fill: #C4A35A;
-}
-
-.ksl-lost {
-    width: 132px;
-    margin: 0 auto 22px;
-}
-
-.ksl-lost svg {
-    display: block;
-    width: 100%;
-    fill: none;
-    stroke: #14213d;
-    stroke-width: 1.4;
-}
-
-.ksl-lost-ticks {
-    stroke-width: 3;
-    stroke-dasharray: .6 5.37;
-    opacity: .5;
-}
-
-.ksl-lost-needle {
-    transform-box: view-box;
-    transform-origin: 50% 50%;
-    animation: ksl-lost-swing 2.6s cubic-bezier(.22, .61, .36, 1) .3s both;
-}
-
-.ksl-lost-needle path {
-    fill: #14213d;
-    stroke: none;
-}
-
-.ksl-lost-needle .is-north {
-    fill: #C4A35A;
-}
-
-.ksl-lost-hub {
-    fill: #fff;
-}
-
-@keyframes ksl-lost-swing {
-    0% { transform: rotate(-150deg); }
-    35% { transform: rotate(28deg); }
-    55% { transform: rotate(-14deg); }
-    72% { transform: rotate(7deg); }
-    86% { transform: rotate(-3deg); }
-    100% { transform: rotate(0); }
-}
 
 @media (max-width: 767.98px) {
     body[data-ksl-motif] main::before {
@@ -12979,12 +12900,6 @@ body.ksl-404 .ksl-lost-needle .is-north {
 
     .about-gallery.is-single .about-frame {
         aspect-ratio: 4 / 3;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .ksl-lost-needle {
-        animation: none;
     }
 }
 
