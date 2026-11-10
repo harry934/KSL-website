@@ -12861,8 +12861,8 @@ body.ksl-404 .ksl-miss-empty {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
-    width: min(100%, 24rem);
+    gap: 8px;
+    width: min(100%, 40rem);
     text-align: center;
 }
 
@@ -12875,18 +12875,41 @@ body.ksl-404 .ksl-miss-head {
 body.ksl-404 .ksl-miss-code {
     margin: 0;
     color: #0b1f3a;
-    font: 800 clamp(6.5rem, 22vw, 8rem)/1 Poppins, sans-serif;
-    letter-spacing: -.04em;
+    font: 800 clamp(10rem, 30vw, 16rem)/.85 Poppins, sans-serif;
+    letter-spacing: -.05em;
     -webkit-mask-image: linear-gradient(to bottom, #000 20%, transparent 80%);
     mask-image: linear-gradient(to bottom, #000 20%, transparent 80%);
     user-select: none;
 }
 
 body.ksl-404 .ksl-miss-note {
-    margin: -2rem 0 0;
+    margin: clamp(-5rem, -6vw, -2.5rem) 0 0;
     color: rgba(11, 31, 58, .8);
-    font-size: .875rem;
+    font-size: 1rem;
     line-height: 1.625;
+}
+
+body.ksl-404 .ksl-miss-shield {
+    display: none;
+    place-items: center;
+    width: 84px;
+    height: 84px;
+    margin: 0 0 18px;
+    border-radius: 50%;
+    background: #0b1f3a;
+    color: #fff;
+}
+
+body.ksl-404 .ksl-miss-shield svg {
+    width: 36px;
+    height: 36px;
+}
+
+body.ksl-404 .ksl-miss-title {
+    display: none;
+    margin: 0 0 10px;
+    color: #0b1f3a;
+    font: 600 clamp(1.6rem, 3vw, 2.15rem)/1.2 Poppins, sans-serif;
 }
 
 body.ksl-404 .ksl-miss-actions {
@@ -12961,6 +12984,9 @@ body.ksl-404 .ksl-miss-sr {
 .ksl-miss-blocked-copy { display: none; }
 html.ksl-blocked .ksl-miss-lost-copy { display: none; }
 html.ksl-blocked .ksl-miss-blocked-copy { display: block; }
+html.ksl-blocked .ksl-miss-shield { display: grid; }
+html.ksl-blocked body.ksl-404 .ksl-miss-note { margin: 0; }
+html.ksl-blocked body.ksl-404 .ksl-miss-empty { gap: 28px; width: min(100%, 28rem); }
 
 @media (max-width: 767.98px) {
     body[data-ksl-motif] main::before {
