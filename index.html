@@ -21,7 +21,7 @@
     <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
-    <link href="css/ksl.css?v=20261110-2" rel="stylesheet">
+    <link href="css/ksl.css?v=20261110-3" rel="stylesheet">
     <script src="js/intro.js?v=20261018-34"></script>
     <script src="js/ksl-live.js?v=20261105-8"></script>
 </head>
@@ -219,19 +219,19 @@
 
     <div class="container-xxl py-5" id="about">
         <div class="container">
-            <div class="row g-5 align-items-center">
-                <div class="col-lg-6 wow fadeInUp">
-                    <div class="about-gallery is-single ksl-reveal" aria-label="Kenya Shipyards Limited facilities and vessels">
+            <div class="row g-5 align-items-lg-stretch about-split">
+                <div class="col-lg-5 col-xl-5 wow fadeInUp order-lg-1">
+                    <div class="about-gallery is-single ksl-reveal h-100" aria-label="Kenya Shipyards Limited facilities and vessels">
                         <figure class="about-frame">
                             <img data-ksl-image="index.1-aerial-view-of-mombasa-shipyard-at-mtongwe" src="img/ksl/mombasa.webp" alt="Aerial view of Mombasa Shipyard at Mtongwe">
                         </figure>
                     </div>
                 </div>
-                <div class="col-lg-6 wow fadeInUp">
+                <div class="col-lg-7 col-xl-7 wow fadeInUp about-copy order-lg-2">
                     <p class="fs-5 fw-bold text-primary mb-2">Who we are</p>
                     <h2 class="mb-3">About Kenya Shipyards Limited</h2>
                     <p>Kenya Shipyards Limited was incorporated on 29 September 2020 to lead shipbuilding in Eastern Africa. It builds, repairs, and refits vessels for the Kenya Navy, ministries, departments and agencies, and other public and private clients.</p>
-                    <p>KSL is a state corporation under the Ministry of Defence. Headquarters is at Herufi House, Treasury Buildings, Nairobi. The yards are in Mombasa, next to Kenya Navy Base at Mtongwe, and in Kisumu, next to the port along Marine Drive.</p>
+                    <p>KSL is a state corporation under the Ministry of Defence. Headquarters is at Herufi House, Treasury Buildings, Nairobi, with a locomotive workshop at Kenya Railways Corporation. The yards are in Mombasa, next to Kenya Navy Base at Mtongwe, and in Kisumu, next to the port along Marine Drive.</p>
                     <p>Work covers new construction, maintenance and overhaul, civil and modular yard works, and heavy engineering.</p>
                     <div class="about-facts">
                         <div><strong data-toggle="counter-up" data-ksl-since="2020-09-29">6</strong><span>Years of shipbuilding</span></div>
@@ -719,6 +719,9 @@
                     <p class="mb-0"><strong>Kenya Railways</strong><br>Locomotive workshop with KRC, Nairobi.</p>
                 </div>
             </div>
+            <div class="ksl-footer-quality-bar border-top border-secondary border-opacity-25 pt-4 mt-4">
+                <p class="mb-0 text-light d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-2"><span class="ksl-footer-iso-badge" data-ksl-footer-iso>ISO 9001:2015</span><span>Certified quality management system</span></p>
+            </div>
             <div class="row g-4 mt-4" data-ksl-contact data-ksl-await="settings">
                 <div class="col-md-3"><h5 class="text-white">Head Office</h5><p>Herufi House, Treasury Buildings, Nairobi, Kenya</p></div>
                 <div class="col-md-3"><h5 class="text-white">Inquiries / complaints</h5><p>+254 726 277 377<br><a class="text-light" href="mailto:publicaffairs@kenyashipyards.co.ke">publicaffairs@kenyashipyards.co.ke</a></p></div>
@@ -760,11 +763,10 @@
     </div>
 
     <div class="container-fluid copyright py-4">
-        <div class="container">
-            <div class="row">
-                <div class="col-12 text-center text-md-start">
-                    <span data-ksl-footer-iso>&copy; 2025, All Rights Reserved by Kenya Shipyards Limited · ISO 9001:2015 certified</span>
-                </div>
+        <div class="container" data-ksl-await="settings">
+            <div class="row align-items-center g-2">
+                <div class="col-12 col-md text-center text-md-start"><span data-ksl-footer-copy>&copy; 2025, All Rights Reserved by Kenya Shipyards Limited.</span></div>
+                <div class="col-12 col-md-auto text-center text-md-end"><span class="ksl-footer-iso-badge ksl-footer-iso-badge--copy" data-ksl-footer-iso>ISO 9001:2015 certified</span></div>
             </div>
         </div>
     </div>

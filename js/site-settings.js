@@ -88,10 +88,9 @@
         if (!f) return;
         var heading = document.querySelector(".footer h2");
         if (heading && f.tagline) heading.textContent = f.tagline;
-        var copyright = document.querySelector(".copyright .container");
-        if (copyright && f.copyright) copyright.textContent = f.copyright;
+        var copyEl = document.querySelector("[data-ksl-footer-copy]");
+        if (copyEl && f.copyright) copyEl.textContent = f.copyright;
         var locations = f.locations || [];
-        if (!locations.length) return;
         document.querySelectorAll(".footer h4").forEach(function (h4) {
             if (h4.textContent.trim() !== "Locations") return;
             var col = h4.parentElement;
@@ -105,11 +104,16 @@
             });
         });
         if (f.qualitySystem) {
-            document.querySelectorAll("[data-ksl-footer-iso]").forEach(function (el) {
-                if (el.tagName === "SPAN" && el.textContent.indexOf("©") !== -1) {
-                    var base = el.textContent.split(" · ")[0];
-                    el.textContent = base + " · " + f.qualitySystem.replace(/ certified quality management system$/i, " certified");
-                }
+            var isoShort = f.qualitySystem.replace(/ certified quality management system$/i, " certified");
+            var isoBadge = (f.qualitySystem.match(/ISO\s*9001(?::\d{4})?/i) || ["ISO 9001:2015"])[0];
+            document.querySelectorAll(".ksl-footer-iso-badge--copy[data-ksl-footer-iso]").forEach(function (el) {
+                el.textContent = isoShort;
+            });
+            document.querySelectorAll(".ksl-footer-quality-bar [data-ksl-footer-iso]").forEach(function (el) {
+                el.textContent = isoBadge;
+            });
+            document.querySelectorAll(".copyright .ksl-footer-iso-badge:not(.ksl-footer-iso-badge--copy)[data-ksl-footer-iso]").forEach(function (el) {
+                el.textContent = isoShort;
             });
         }
     }
