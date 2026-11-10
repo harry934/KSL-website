@@ -131,15 +131,29 @@
     {
       "id": "about.1-mombasa-shipyard-aerial-view",
       "page": "About",
-      "label": "Patrol vessel stern in the Mombasa construction hall",
+      "label": "Story photos, left",
       "src": "img/ksl/gallery/dsc_5580-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "about.1-hover-slipway",
+      "page": "About",
+      "label": "Story photos, left, shown on hover",
+      "src": "img/ksl/gallery/repair-1.jpg",
       "kind": "img"
     },
     {
       "id": "about.2-marine-infrastructure-by-ksl",
       "page": "About",
-      "label": "Marine infrastructure by KSL",
+      "label": "Story photos, right",
       "src": "img/ksl/linkspan.webp",
+      "kind": "img"
+    },
+    {
+      "id": "about.2-hover-refit",
+      "page": "About",
+      "label": "Story photos, right, shown on hover",
+      "src": "img/ksl/gallery/mv-uhuru-2-scaled.jpg",
       "kind": "img"
     },
     {
@@ -236,8 +250,15 @@
     {
       "id": "index.1-aerial-view-of-mombasa-shipyard-at-mtongwe",
       "page": "Home",
-      "label": "Patrol vessel stern in the Mombasa construction hall",
+      "label": "Who we are photo",
       "src": "img/ksl/gallery/dsc_5580-scaled.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "index.1-hover-slipway",
+      "page": "Home",
+      "label": "Who we are photo, shown on hover",
+      "src": "img/ksl/gallery/repair-1.jpg",
       "kind": "img"
     },
     {
