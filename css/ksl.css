@@ -2146,8 +2146,38 @@ body {
 }
 
 .about-gallery.is-single .about-frame img {
-    object-position: 78% 46%;
+    object-position: center 58%;
     filter: saturate(1.08) contrast(1.05);
+}
+
+.about-gallery.is-single .about-frame-hover {
+    position: absolute;
+    inset: 0;
+    object-position: center 42%;
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path 720ms cubic-bezier(.2, .7, .2, 1);
+}
+
+.about-gallery.is-single .about-frame:hover .about-frame-hover,
+.about-gallery.is-single .about-frame:focus-within .about-frame-hover {
+    clip-path: inset(0 0 0 0);
+}
+
+.about-gallery.is-single .about-frame:hover img,
+.about-gallery.is-single .about-frame:focus-within img {
+    transform: none;
+    filter: saturate(1.08) contrast(1.05);
+}
+
+.about-gallery.is-single .about-frame:hover::after,
+.about-gallery.is-single .about-frame:focus-within::after {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .about-gallery.is-single .about-frame-hover {
+        display: none;
+    }
 }
 
 .about-gallery.is-single .about-frame::after {
