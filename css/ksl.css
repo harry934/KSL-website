@@ -12841,81 +12841,110 @@ body.ksl-404 {
     min-height: 100dvh;
     margin: 0;
     padding-bottom: 0 !important;
-    background:
-        linear-gradient(#09296C, #09296C) top / 100% 6px no-repeat,
-        #f3f6fb;
+    background: #071633;
+    color: #fff;
 }
 
 body.ksl-404 .ksl-miss {
+    position: relative;
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 28px;
-    padding: 48px 20px;
-    text-align: center;
+    align-items: flex-end;
+    overflow: hidden;
+    padding: 28px clamp(24px, 6vw, 88px) clamp(48px, 8vh, 88px);
+}
+
+body.ksl-404 .ksl-miss-mark {
+    position: absolute;
+    z-index: 2;
+    top: 28px;
+    left: clamp(24px, 6vw, 88px);
+}
+
+body.ksl-404 .ksl-miss-mark {
+    display: grid;
+    place-items: center;
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: #fff;
 }
 
 body.ksl-404 .ksl-miss-mark img {
-    height: 64px;
+    height: 58px;
     width: auto;
 }
 
-body.ksl-404 .ksl-miss-card {
-    width: min(100%, 460px);
-    padding: 40px 36px 32px;
-    border: 1px solid #d7e1ef;
-    border-radius: 16px;
-    background: #fff;
-    box-shadow: 0 18px 50px rgba(9, 41, 108, .08);
+body.ksl-404 .ksl-miss-code {
+    position: absolute;
+    z-index: 0;
+    top: 8vh;
+    right: -0.06em;
+    margin: 0;
+    color: transparent;
+    font: 700 clamp(180px, 34vw, 460px)/.8 Poppins, sans-serif;
+    letter-spacing: -.06em;
+    -webkit-text-stroke: 1px rgba(255, 255, 255, .22);
+    pointer-events: none;
+    user-select: none;
 }
 
-body.ksl-404 .ksl-miss-code {
-    margin: 0 0 8px;
-    color: #0165FC;
-    font: 700 clamp(64px, 12vw, 92px)/.9 Poppins, sans-serif;
-    letter-spacing: -.04em;
+body.ksl-404 .ksl-miss-copy {
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
 }
 
 body.ksl-404 .ksl-miss h1 {
-    margin: 0 0 10px;
-    color: #09296C;
-    font-size: clamp(1.6rem, 3vw, 2rem);
-    line-height: 1.2;
+    margin: 0 0 12px;
+    color: #fff;
+    font-size: clamp(2rem, 4.4vw, 3.4rem);
+    line-height: 1.05;
 }
 
 body.ksl-404 .ksl-miss-note {
-    max-width: 28rem;
-    margin: 0 auto 22px;
-    color: #4a5878;
-    font-size: 1.02rem;
+    max-width: 34rem;
+    margin: 0 0 28px;
+    color: rgba(255, 255, 255, .72);
+    font-size: 1.05rem;
     line-height: 1.55;
 }
 
-body.ksl-404 .ksl-miss-actions {
+body.ksl-404 .ksl-miss-routes {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    border-top: 1px solid rgba(255, 255, 255, .22);
+}
+
+body.ksl-404 .ksl-miss-routes a {
+    display: grid;
+    grid-template-columns: 42px 1fr;
     align-items: center;
-    justify-content: center;
-    gap: 16px 22px;
+    gap: 8px;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .22);
+    color: #fff;
+    font: 600 18px/1.2 Poppins, sans-serif;
+    text-decoration: none;
+    background: none;
+    border-radius: 0;
 }
 
-body.ksl-404 .ksl-miss-quiet {
-    color: #0A3E95;
-    font: 700 15px/1 Manrope, sans-serif;
-    text-decoration: underline;
-    text-underline-offset: 4px;
+body.ksl-404 .ksl-miss-routes a span {
+    color: #C4A35A;
+    font: 700 12px/1 Manrope, sans-serif;
+    letter-spacing: .08em;
 }
 
-body.ksl-404 .ksl-miss-quiet:hover {
-    color: #09296C;
+body.ksl-404 .ksl-miss-routes a:hover {
+    color: #C4A35A;
 }
 
 @media (max-width: 575.98px) {
-    body.ksl-404 .ksl-miss-card {
-        padding: 32px 22px 26px;
+    body.ksl-404 .ksl-miss-code {
+        top: 18vh;
+        font-size: 42vw;
     }
 }
 
