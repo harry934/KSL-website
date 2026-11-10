@@ -12883,7 +12883,7 @@ body.ksl-404 .ksl-miss-code {
 }
 
 body.ksl-404 .ksl-miss-note {
-    margin: clamp(-5rem, -6vw, -2.5rem) 0 0;
+    margin: 1.75rem 0 0;
     color: rgba(11, 31, 58, .8);
     font-size: 1rem;
     line-height: 1.625;
@@ -12894,6 +12894,7 @@ body.ksl-404 .ksl-miss-actions {
     flex-wrap: wrap;
     justify-content: center;
     gap: 8px;
+    margin-top: 1.75rem;
 }
 
 body.ksl-404 .ksl-miss-btn {
