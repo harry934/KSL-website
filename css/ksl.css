@@ -12873,17 +12873,19 @@ body.ksl-404 .ksl-miss-head {
 }
 
 body.ksl-404 .ksl-miss-code {
-    margin: 0;
+    margin: 0 0 .9em;
     color: #0b1f3a;
-    font: 800 clamp(10rem, 30vw, 16rem)/.85 Poppins, sans-serif;
-    letter-spacing: -.05em;
-    -webkit-mask-image: linear-gradient(to bottom, #000 20%, transparent 80%);
-    mask-image: linear-gradient(to bottom, #000 20%, transparent 80%);
+    font: 200 clamp(7.5rem, 20vw, 12rem)/1 Poppins, sans-serif;
+    letter-spacing: .04em;
+    transform: scaleY(1.9);
+    transform-origin: center top;
+    -webkit-mask-image: linear-gradient(to bottom, #000 20%, transparent 78%);
+    mask-image: linear-gradient(to bottom, #000 20%, transparent 78%);
     user-select: none;
 }
 
 body.ksl-404 .ksl-miss-note {
-    margin: clamp(-5rem, -6vw, -2.5rem) 0 0;
+    margin: -1.25rem 0 0;
     color: rgba(11, 31, 58, .8);
     font-size: 1rem;
     line-height: 1.625;
