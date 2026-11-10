@@ -10472,6 +10472,14 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     right: calc(100% + 4px);
 }
 
+/* Nairobi HQ and Kenya Railways share the same city cluster */
+.ksl-map-pin[data-site="railways"] .ksl-map-pin-label {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 6px;
+}
+
 .ksl-map-pin:hover .ksl-map-pin-label {
     border-color: #09296C;
 }
@@ -10582,6 +10590,7 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     background: none;
     color: #0A3E95;
     font: 700 13.5px/1.2 Manrope, sans-serif;
+    text-transform: none;
     text-decoration: underline;
     text-decoration-color: rgba(10, 62, 149, .35);
     text-underline-offset: 4px;
