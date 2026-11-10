@@ -2131,8 +2131,53 @@ body {
     }
 }
 
+.about-gallery.is-single {
+    margin: 0 18px 18px 0;
+}
+
 .about-gallery.is-single::before {
-    display: none;
+    display: block;
+    inset: 18px -18px -18px 18px;
+}
+
+.about-gallery.is-single .about-frame {
+    border-radius: 2px;
+    box-shadow: 0 18px 40px rgba(9, 41, 108, .18);
+}
+
+.about-gallery.is-single .about-frame img {
+    object-position: 78% 46%;
+    filter: saturate(1.08) contrast(1.05);
+}
+
+.about-gallery.is-single .about-frame::after {
+    background: linear-gradient(180deg, rgba(9, 41, 108, 0) 42%, rgba(9, 41, 108, .72));
+}
+
+.about-gallery.is-single figcaption {
+    position: absolute;
+    z-index: 1;
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #fff;
+    pointer-events: none;
+}
+
+.about-gallery.is-single figcaption strong {
+    font-family: Poppins, sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.about-gallery.is-single figcaption span {
+    font-size: 13px;
+    letter-spacing: .03em;
+    color: rgba(255, 255, 255, .86);
 }
 
 .about-gallery.is-single .about-frame:nth-child(even) {
