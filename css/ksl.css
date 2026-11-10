@@ -2181,7 +2181,7 @@ body {
 }
 
 .about-gallery.is-single .about-frame::after {
-    background: linear-gradient(180deg, rgba(9, 41, 108, 0) 42%, rgba(9, 41, 108, .72));
+    background: none;
 }
 
 .about-gallery.is-single figcaption {
