@@ -9,6 +9,14 @@ const ALLOWED_ORIGINS = new Set([
   "https://www.kenyashipyards.co.ke",
 ]);
 
+/** Extra public-site origins from the VPS env file, comma-separated, no trailing slash. */
+function configuredOrigins() {
+  return (process.env.PUBLIC_SITE_ORIGIN || "")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/$/, ""))
+    .filter(Boolean);
+}
+
 /** Unauthenticated API routes that skip the staff session gate. `/api/public/*` is handled separately. */
 const PUBLIC_API_PATHS = new Set([
   "/api/auth/sign-in",
@@ -22,6 +30,7 @@ const PUBLIC_API_PATHS = new Set([
 function isAllowedOrigin(origin: string) {
   return (
     ALLOWED_ORIGINS.has(origin) ||
+    configuredOrigins().includes(origin) ||
     /^https:\/\/ksl-website-[a-z0-9-]+\.vercel\.app$/.test(origin) ||
     /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
   );
