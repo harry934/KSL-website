@@ -56,10 +56,11 @@ Early migrations (001–011) cover the core portal schema, gallery, events, serv
 
 ## Production target
 
-Planned go-live: **one Linux VPS** (`www.kenyashipyards.co.ke` + private portal hostname), **Supabase Cloud unchanged**. See [PRODUCTION-OVERVIEW-AND-VPS.md](./PRODUCTION-OVERVIEW-AND-VPS.md). Track regressions with [VPS-MIGRATION-CHECKLIST.md](./VPS-MIGRATION-CHECKLIST.md).
+Planned go-live: **one Linux VPS** (`www.kenyashipyards.co.ke` + private portal hostname), **Supabase Cloud unchanged**. Follow [VPS-TRANSFER-PLAN.md](./VPS-TRANSFER-PLAN.md). Background is in [PRODUCTION-OVERVIEW-AND-VPS.md](./PRODUCTION-OVERVIEW-AND-VPS.md). Track regressions with [VPS-MIGRATION-CHECKLIST.md](./VPS-MIGRATION-CHECKLIST.md).
 
 ## Related docs
 
+- [VPS-TRANSFER-PLAN.md](./VPS-TRANSFER-PLAN.md) — step-by-step move from Vercel to the Ubuntu VPS
 - [PRODUCTION-OVERVIEW-AND-VPS.md](./PRODUCTION-OVERVIEW-AND-VPS.md) — technical overview, stack, VPS migration runbook
 - [DEPLOYMENT.md](./DEPLOYMENT.md) — architecture and full deployment steps (Vercel)
 - [VERCEL-GITHUB-SETUP.md](./VERCEL-GITHUB-SETUP.md) — Vercel project settings and root-directory troubleshooting

@@ -2,7 +2,7 @@
 
 Use this when moving from Vercel to your Linux VPS **or** after any production infra change. Mark each row **Pass / Fail / N/A** and note the failure (URL, screenshot, log line).
 
-**Related:** [PRODUCTION-OVERVIEW-AND-VPS.md](./PRODUCTION-OVERVIEW-AND-VPS.md) · [DEPLOYMENT.md](./DEPLOYMENT.md)
+**Related:** [VPS-TRANSFER-PLAN.md](./VPS-TRANSFER-PLAN.md) · [PRODUCTION-OVERVIEW-AND-VPS.md](./PRODUCTION-OVERVIEW-AND-VPS.md) · [DEPLOYMENT.md](./DEPLOYMENT.md)
 
 ---
 

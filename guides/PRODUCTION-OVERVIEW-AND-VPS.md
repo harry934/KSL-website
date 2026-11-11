@@ -3,7 +3,7 @@
 **Audience:** Kenya Shipyards IT, management, and developers.  
 **Last updated:** March 2026  
 
-**Related:** [DEPLOYMENT.md](./DEPLOYMENT.md) (current Vercel setup) · [PROJECT-STATUS.md](./PROJECT-STATUS.md) · [../staff-portal/README.md](../staff-portal/README.md) · [../SECURITY_AUDIT_REPORT.md](../SECURITY_AUDIT_REPORT.md)
+**Related:** [VPS-TRANSFER-PLAN.md](./VPS-TRANSFER-PLAN.md) (follow this to move the site) · [DEPLOYMENT.md](./DEPLOYMENT.md) (current Vercel setup) · [PROJECT-STATUS.md](./PROJECT-STATUS.md) · [../staff-portal/README.md](../staff-portal/README.md) · [../SECURITY_AUDIT_REPORT.md](../SECURITY_AUDIT_REPORT.md)
 
 ---
 
@@ -278,6 +278,8 @@ For a full migration list, list files in `supabase/migrations/` on the repo. [PR
 ---
 
 ## 7. VPS production migration runbook
+
+The step-by-step to follow is [VPS-TRANSFER-PLAN.md](./VPS-TRANSFER-PLAN.md). It keeps the git clone out of the Nginx document root. The commands in this section are background; where they disagree with the transfer plan (folder layout, migrations through `041`, `TRUSTED_PROXY_HOPS`), follow the transfer plan.
 
 **Decisions for this runbook:**
 
