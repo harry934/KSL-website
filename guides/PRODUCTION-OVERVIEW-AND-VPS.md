@@ -279,7 +279,7 @@ For a full migration list, list files in `supabase/migrations/` on the repo. [PR
 
 ## 7. VPS production migration runbook
 
-The step-by-step to follow is [VPS-TRANSFER-PLAN.md](./VPS-TRANSFER-PLAN.md). It keeps the git clone out of the Nginx document root. The commands in this section are background; where they disagree with the transfer plan (folder layout, migrations through `041`, `TRUSTED_PROXY_HOPS`), follow the transfer plan.
+The step-by-step to follow is [VPS-TRANSFER-PLAN.md](./VPS-TRANSFER-PLAN.md). The live hosts today are the two Vercel projects. There is no `kenyashipyards.co.ke` site in this move. Supabase stays the database and the staff login. The commands in this section are background; where they disagree with the transfer plan, follow the transfer plan.
 
 **Decisions for this runbook:**
 

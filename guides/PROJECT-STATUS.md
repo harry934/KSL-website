@@ -56,7 +56,7 @@ Early migrations (001–011) cover the core portal schema, gallery, events, serv
 
 ## Production target
 
-Planned go-live: **one Linux VPS** (`www.kenyashipyards.co.ke` + private portal hostname), **Supabase Cloud unchanged**. Follow [VPS-TRANSFER-PLAN.md](./VPS-TRANSFER-PLAN.md). Background is in [PRODUCTION-OVERVIEW-AND-VPS.md](./PRODUCTION-OVERVIEW-AND-VPS.md). Track regressions with [VPS-MIGRATION-CHECKLIST.md](./VPS-MIGRATION-CHECKLIST.md).
+The move off Vercel is one Ubuntu VPS reached by its IP address. Supabase stays the database and the staff login. GitHub stays the source code. Follow [VPS-TRANSFER-PLAN.md](./VPS-TRANSFER-PLAN.md). There is no `kenyashipyards.co.ke` site to cut over. Background is in [PRODUCTION-OVERVIEW-AND-VPS.md](./PRODUCTION-OVERVIEW-AND-VPS.md). Track regressions with [VPS-MIGRATION-CHECKLIST.md](./VPS-MIGRATION-CHECKLIST.md).
 
 ## Related docs
 

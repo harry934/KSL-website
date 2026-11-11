@@ -1,244 +1,366 @@
-# Transfer the KSL website to an Ubuntu VPS
+# Move this project from Vercel to your VPS
 
-**Audience:** whoever is moving this site off Vercel onto one Linux server.  
-**Last updated:** 11 November 2026  
+**Last updated:** 11 November 2026
 
-**Follow this document for the move.** The older runbook in [PRODUCTION-OVERVIEW-AND-VPS.md](./PRODUCTION-OVERVIEW-AND-VPS.md) is still useful background, but its Nginx example serves the git clone as the website. Do not do that. Use the folder layout in this guide.
+You SSH in from your own computer and copy this project onto an Ubuntu server. The server replaces Vercel. It does not replace Supabase, and it does not replace GitHub.
 
-**Also use:** [VPS-MIGRATION-CHECKLIST.md](./VPS-MIGRATION-CHECKLIST.md) while testing · [DEPLOYMENT.md](./DEPLOYMENT.md) for how the site works on Vercel today.
-
-Do the work in the order below. Do not point `www.kenyashipyards.co.ke` at the VPS until section 10 passes.
+There is no `kenyashipyards.co.ke` website to move. The live addresses today are the two Vercel links below. Until you buy a domain, visitors use the VPS IP address.
 
 ---
 
-## What moves, and what stays
+## Where each part lives today
 
-The repository is two applications plus a cloud database.
-
-| Piece | Today | On the VPS |
-|-------|--------|------------|
-| Public website | Vercel `ksl-website` → https://ksl-website.vercel.app | Nginx serves static files at `https://www.kenyashipyards.co.ke` |
-| Staff portal | Vercel `ksl-website_kiza` → https://ksl-websitekiza.vercel.app | Next.js on the same VPS, private hostname, port 3000 on loopback only |
-| Database, staff accounts, uploaded files | Supabase project `envqgczfhxywkxcnsxrt` | **Stays on Supabase.** Do not install Postgres for this project. |
-
-A visitor loads HTML from Nginx. JavaScript on the page then calls the portal at `/api/public/...` for live content. If that call fails, the page uses the snapshot in `data/*.json`. The public site never holds the Supabase service role key.
+| Part | Where it is now | What you do |
+|------|-----------------|-------------|
+| Public website | Vercel project `ksl-website` → https://ksl-website.vercel.app | Move it. Nginx on the VPS serves the HTML files. |
+| Staff portal | Vercel project `ksl-website_kiza` → https://ksl-websitekiza.vercel.app/login | Move it. Node.js on the VPS runs this app. |
+| Code | GitHub → https://github.com/harry934/KSL-website | Leave it. The VPS downloads the code from GitHub with `git clone`. |
+| Database | Supabase project `envqgczfhxywkxcnsxrt` | Leave it. This stays the only database. |
+| Staff login | Supabase Authentication | Leave it. Usernames and passwords are checked by Supabase, not by the VPS. |
+| Photos and documents uploaded in the portal | Supabase Storage | Leave it. |
 
 ```text
-Browser
-  │
-  ├─ HTML, CSS, JS, images  →  Nginx  →  /var/www/ksl
-  │
-  └─ /api/public/*          →  Nginx  →  127.0.0.1:3000  →  Next.js portal
-                                                              │
-                                                              └─ Supabase (Postgres, Auth, Storage)
+Your computer
+    SSH  →  Ubuntu VPS
+                │
+                ├─ Nginx serves the public HTML
+                └─ Node serves the staff portal
+                        │
+                        └─ talks to Supabase for data, login, and files
+
+GitHub is only where the code is stored.
 ```
 
----
-
-## Decisions to make first
-
-Write these down before touching the server. Later steps use the same names.
-
-| Decision | What to choose |
-|----------|----------------|
-| OS | Ubuntu **24.04 LTS**. 22.04 LTS is acceptable. |
-| Size | **2 vCPU, 4 GB RAM**, 40 GB disk. A 2 GB machine needs a 2 GB swap file before the portal build. |
-| Region | Europe, close to the Supabase database in `eu-west-1`. |
-| Public names | `www.kenyashipyards.co.ke` for the site. `kenyashipyards.co.ke` redirects to `www`. |
-| Portal name | An unguessable hostname, for example `ksl-staff-7k3m.kenyashipyards.co.ke`. Do **not** use `admin.kenyashipyards.co.ke`, and do not link it from the public menu or sitemap. Staff bookmark `https://PORTAL_HOST/login`. |
-| Staging name | A hostname used only for the dress rehearsal, for example `staging.kenyashipyards.co.ke`. |
-| SSH | Key login for a sudo user. A separate `deploy` user runs the app. The app does not run as root. |
-
-Replacing `PORTAL_HOST` below means that hostname with no `https://` and no trailing slash. Example: `ksl-staff-7k3m.kenyashipyards.co.ke`.
-
-Passkeys registered on `ksl-websitekiza.vercel.app` will not work on the new portal hostname. Username and password still work. Each person who uses a passkey registers it again after the move. In Supabase, set the WebAuthn relying party ID to `PORTAL_HOST` with no leading dot.
+After the move, Vercel can stay up until you are sure the VPS works. Pointing people at the VPS is a separate step. You do not copy the Supabase database onto the VPS.
 
 ---
 
-## 1. Information to collect
+## What you will open in a browser
 
-From the Vercel project **`ksl-website_kiza`** (staff portal), copy the environment values into a password manager. Put them on the server in section 5. Do not commit them, and do not send the service role key in chat or email.
+One IP, two ports. The portal cannot share the public site's address, because both want paths like `/news`.
 
-You need:
+| What | Address | Port |
+|------|---------|------|
+| Public website | `https://VPS_IP/` | 443 |
+| Staff portal | `https://VPS_IP:8443/login` | 8443 |
 
-- `NEXT_PUBLIC_SUPABASE_URL` — `https://envqgczfhxywkxcnsxrt.supabase.co`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
-- `TURNSTILE_SECRET_KEY`
-- `MESSAGE_VIEW_UNLOCK_SECRET` or `SUPABASE_JWT_SECRET` (message unlock fails if both are missing)
+Replace `VPS_IP` with the real address, for example `https://203.0.113.10/`.
 
-Also confirm:
+A certificate from Let's Encrypt needs a domain name. A bare IP cannot get one here. The steps below create a certificate on the server itself. The browser will warn the first time. You choose to continue. Staff login needs that HTTPS. On plain HTTP the sign-in cookie is refused, so the login page would load and then forget you.
 
-- You can create DNS records for `kenyashipyards.co.ke`.
-- Supabase → Authentication → Email has **public sign-ups turned off**.
-- Migrations **`001` through `041`** are applied. The older notes stop at `039`. `040` and `041` add the contact-message IP and risk columns. Do not import `data/*.json` again unless a table is empty.
+When you later have a domain, you swap this certificate for a normal one and change the two addresses. Supabase does not change.
+
+The contact form's Cloudflare Turnstile check is registered for hostnames, not for a raw IP. The rest of the site works on the IP. The contact widget may not, until a domain is added.
+
+Passkeys are tied to `ksl-websitekiza.vercel.app`. On the IP, sign in with username and password.
 
 ---
 
-## 2. Prepare Ubuntu
+## What the code does
 
-Log in with your sudo user. Commands that change the system use `sudo`. Commands that build the app later run as `deploy`.
+### Public pages
+
+These files sit at the root of the repository. The file name is the page address. `about.html` is the About page. Nginx serves them as files. They do not run on Node, and they do not contain the database password.
+
+| File | Page |
+|------|------|
+| `index.html` | Home |
+| `about.html` | About |
+| `organization.html` | Organisation |
+| `board.html` | Board of directors |
+| `service.html` | Services |
+| `products.html` | Products |
+| `project.html` | Projects |
+| `sustainability.html` | Sustainability |
+| `csr.html` | Community |
+| `careers.html` | Careers |
+| `news.html` | News list |
+| `article.html` | One news story |
+| `event.html` | Events |
+| `faq.html` | Questions |
+| `downloads.html` | Downloads |
+| `videos.html` | Gallery |
+| `contact.html` | Contact |
+| `404.html` | Page not found |
+
+Each of those files has this on the `<html>` tag:
+
+```html
+data-ksl-content-api="https://ksl-websitekiza.vercel.app"
+```
+
+That is the staff portal's address. The page loads, then JavaScript asks that address for the latest news, jobs, and so on. On the VPS you change it to `https://VPS_IP:8443`.
+
+`css/` is the look of the site. `img/` and `docs/` are the pictures, video, and downloadable files shipped with the site. `data/*.json` is a saved copy of the content, used only when the portal cannot be reached. `lib/` is third-party code (jQuery, Bootstrap, the carousel). Do not edit `lib/`.
+
+`guides/`, `staff-portal/`, `supabase/`, and `tools/` must not be placed in the public folder. `guides/` includes security notes. `staff-portal/` will hold the secret keys.
+
+### Shared scripts (`js/`)
+
+`js/scripts.js` loads the scripts below, then the one script that belongs to the page you are on.
+
+| File | What it does |
+|------|----------------|
+| `js/ksl-content.js` | `apiBase()` reads `data-ksl-content-api`. `fetchJson()` asks the portal for JSON. If that fails, it reads `data/*.json`. |
+| `js/ksl-live.js` | Starts those requests while the page is still loading, and keeps the saved copy hidden until the live copy arrives. |
+| `js/gallery-live.js` | Fills the gallery as soon as the portal answers. |
+| `js/site-settings.js` | Puts the banner, phone numbers, and footer text from the portal onto every page. |
+| `js/site-images.js` | Swaps a photo when staff have replaced it in the portal. If that fails, the original file stays. |
+| `js/sanitize.js` | Cleans story text from the portal before it is shown, so visitors are not served raw HTML. |
+| `js/input-guard.js` | Blocks code-like text in the search box and the contact form. |
+| `js/main.js` | Menu, search, counters, and scroll effects on every page. Sends the contact form to the portal. |
+| `js/mobile-nav.js` | The menu shown on a phone. |
+| `js/lang.js` | English and Kiswahili switch. |
+| `js/access.js` | Text size, contrast, and motion choices, remembered in this browser. |
+| `js/intro-boot.js` | Hides the home page before paint so the opening logo can play. |
+| `js/intro.js` | The opening logo on the home page. |
+| `js/blocked-boot.js` | On the 404 page, shows the "that text was blocked" message when the contact form rejected the input. |
+| `js/event-countdown.js` | Countdown on event cards. Times are East Africa Time. |
+| `js/doodles.js` | Small decorations. |
+
+### One script per page (`js/pages/`)
+
+Each of these asks the portal for its own content and draws it into the HTML.
+
+| File | What it draws |
+|------|----------------|
+| `js/pages/home.js` | Home sections |
+| `js/pages/about.js` | The story, the values, and the path graphic |
+| `js/pages/organization.js` | Intro, leadership, and the structure chart |
+| `js/pages/board.js` | Board of directors |
+| `js/pages/services.js` | Service cards, opened in a detail dialog |
+| `js/pages/products.js` | Products |
+| `js/pages/projects.js` | Project cards |
+| `js/pages/news.js` | News list |
+| `js/pages/article.js` | One news story. A missing story shows a message on this page. It does not use `404.html`. |
+| `js/pages/event.js` | Events list. A missing event stays on this page too. |
+| `js/pages/faq.js` | Questions and answers |
+| `js/pages/careers.js` | Jobs and internships |
+| `js/pages/downloads.js` | Documents visitors can download |
+| `js/pages/csr.js` | Community programmes |
+
+The gallery page uses `js/gallery-live.js` rather than a file in `js/pages/`.
+
+### Staff portal
+
+Folder: `staff-portal/`. This is a Next.js application. `npm run build` prepares it. `npm start` runs it. Nginx forwards `https://VPS_IP:8443` to that process on `127.0.0.1:3000`. Port 3000 is not opened to the internet.
+
+The portal does not have its own user database. Sign-in works like this:
+
+1. The person submits a username and password to `/api/auth/sign-in`.
+2. The server asks Supabase Authentication if that password is correct.
+3. If it is, the server sets a cookie named `ksl_staff_session`.
+4. `judgeSession()` in `staff-portal/src/lib/staff-session.ts` accepts the cookie only when it matches the row in Supabase and the person has used the portal within the last 20 minutes.
+5. `sessionCookieOptions()` marks the cookie `secure` in production, which is why the portal must be HTTPS.
+
+`createAdminClient()` in `staff-portal/src/lib/supabase/admin.ts` opens the Supabase connection with `SUPABASE_SERVICE_ROLE_KEY`. That key stays in the env file on the VPS. It is never written into the HTML.
+
+`staff-portal/src/middleware.ts` runs before every portal request. For `/api/public/*` it allows the public website to read data (CORS). For every other page it demands the staff cookie. `ALLOWED_ORIGINS` in that file is the list of websites allowed to call the public API. Today it lists the Vercel site. You add `https://VPS_IP` when you move.
+
+Portal screens, one page each:
+
+| Address | File | What it is |
+|---------|------|------------|
+| `/login` | `src/app/login/page.tsx` | Sign-in |
+| `/signup` and `/i/[token]` | `src/app/signup/page.tsx`, `src/app/i/[token]/page.tsx` | A staff invite link |
+| `/` | `src/app/(portal)/page.tsx` | Home after sign-in |
+| `/news` | `.../news/page.tsx` | News editor |
+| `/events` | `.../events/page.tsx` | Events editor |
+| `/gallery` | `.../gallery/page.tsx` | Photos and videos |
+| `/press` | `.../press/page.tsx` | Press kit |
+| `/services` | `.../services/page.tsx` | Services |
+| `/products` | `.../products/page.tsx` | Products |
+| `/projects` | `.../projects/page.tsx` | Projects |
+| `/organization` | `.../organization/page.tsx` | Organisation chart |
+| `/board` | `.../board/page.tsx` | Board |
+| `/careers` | `.../careers/page.tsx` | Jobs |
+| `/csr` | `.../csr/page.tsx` | Community |
+| `/faq` | `.../faq/page.tsx` | Questions |
+| `/downloads` | `.../downloads/page.tsx` | Downloads |
+| `/messages` | `.../messages/page.tsx` | Contact-form inbox |
+| `/staff` | `.../staff/page.tsx` | Staff accounts and invites |
+| `/settings` | `.../settings/page.tsx` | Site settings |
+| `/banner` | `.../banner/page.tsx` | The strip under the menu |
+| `/images` | `.../images/page.tsx` | Photos used across the site |
+| `/files` | `.../files/page.tsx` | Spare uploaded files |
+| `/drafts` | `.../drafts/page.tsx` | Items not yet on the website |
+| `/recycle` | `.../recycle/page.tsx` | Deleted items |
+| `/activity` | `.../activity/page.tsx` | Who changed what |
+| `/account` | `.../account/page.tsx` | Your own profile and password |
+
+The public API is read-only. The visitor's browser calls these. They return only published rows from Supabase.
+
+| Route file | What the browser gets |
+|------------|------------------------|
+| `api/public/news/route.ts` | News |
+| `api/public/events/route.ts` | Events |
+| `api/public/gallery/route.ts` | Gallery |
+| `api/public/services/route.ts` | Services |
+| `api/public/products/route.ts` | Products |
+| `api/public/projects/route.ts` | Projects |
+| `api/public/careers/route.ts` | Jobs |
+| `api/public/faq/route.ts` | Questions |
+| `api/public/csr/route.ts` | Community |
+| `api/public/downloads/route.ts` | Downloads |
+| `api/public/organization/route.ts` | Organisation and board |
+| `api/public/press/route.ts` | Press kit |
+| `api/public/settings/route.ts` | Banner and contact details |
+| `api/public/site-images/route.ts` | Replaced photos |
+| `api/public/contact/route.ts` | Accepts the contact form (this one is a POST) |
+| `api/public/contact-token/route.ts` | Gives the page the Turnstile site key |
+
+Staff routes, after sign-in. Each `route.ts` reads or writes the matching Supabase table. The matching screen above calls it.
+
+| Route | What it does |
+|-------|----------------|
+| `api/auth/sign-in` | Checks the password with Supabase, then sets the cookie |
+| `api/auth/sign-out` | Clears the cookie |
+| `api/auth/session` | Says whether the cookie is still valid |
+| `api/auth/pulse` | Updates the "last seen" time so an open tab is not signed out at 20 minutes |
+| `api/auth/forgot-password` | Starts a password reset through Supabase |
+| `api/auth/passkey` | Passkey sign-in, still tied to the old Vercel hostname |
+| `api/auth/invite/verify`, `invite/complete`, `invite/username-check` | Checks an invite and creates the Supabase user |
+| `api/news`, `events`, `gallery`, `services`, `products`, `projects`, `careers`, `faq`, `csr`, `downloads`, `press`, `organization` | Save that section |
+| `api/organization/photos` | Photos on the organisation page |
+| `api/site-settings`, `api/site-images` | Banner, contact details, site-wide photos |
+| `api/messages`, `api/messages/unlock` | Read the inbox. Unlock needs `MESSAGE_VIEW_UNLOCK_SECRET` |
+| `api/staff`, `api/staff/invites`, `api/staff/requests` | Create staff, invites, and account requests |
+| `api/upload` | Sends a file to Supabase Storage. Images up to 8 MB, documents up to 25 MB, video up to 50 MB |
+| `api/account`, `account/password`, `account/avatar`, `account/passkey` | The signed-in person's own account |
+| `api/drafts` | Items waiting for someone who is allowed to publish |
+| `api/recycle` | Restore or remove deleted items |
+| `api/search` | Search inside the portal |
+| `api/notifications` | The bell for changes by other staff |
+| `api/activity/export` | Download the activity log |
+| `api/storage/spare`, `api/stored-file`, `api/gallery/file` | Fetch a stored file back from Supabase |
+| `api/admin/status` | The status cards on the portal home |
+
+`supabase/migrations/` is the history of the database shape, files `001` through `041`. Those already ran on Supabase. You do not run them on the VPS. You do not install Postgres on the VPS.
+
+---
+
+## Secrets the portal needs
+
+Copy these from the Vercel project **`ksl-website_kiza`**, Settings → Environment Variables. They already point at the same Supabase project. You are not creating a new database.
+
+| Name | What it is |
+|------|------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | The Supabase address, `https://envqgczfhxywkxcnsxrt.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The public Supabase key. Safe for the browser. It cannot bypass login. |
+| `SUPABASE_SERVICE_ROLE_KEY` | The private Supabase key. Server only. This is how the portal writes content. |
+| `NEXT_PUBLIC_PORTAL_URL` | `https://VPS_IP:8443` so invite links use the VPS |
+| `NEXT_PUBLIC_SITE_URL` | `https://VPS_IP` |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Contact-form widget key, if the form is used |
+| `TURNSTILE_SECRET_KEY` | Contact-form check on the server |
+| `MESSAGE_VIEW_UNLOCK_SECRET` | Any long random string. Opening a contact message requires it. `SUPABASE_JWT_SECRET` may be used instead if that is what Vercel already has. |
+| `TRUSTED_PROXY_HOPS` | `1`. Nginx sits in front of Node. This makes sign-in lockouts use the real visitor IP. |
+| `NODE_ENV` | `production` |
+
+`NEXT_PUBLIC_*` values are copied into the built files when you run `npm run build`. If you change one, build again.
+
+---
+
+## From your computer
+
+You need the VPS IP, the SSH username, and the private key. The provider shows these when the server is created.
+
+```bash
+ssh -i /path/to/your-key ubuntu@VPS_IP
+```
+
+That opens a shell on the server. Every command after this is typed in that shell, unless it says "on your computer".
+
+`ubuntu` is the usual first user on an Ubuntu VPS image. Use the username your provider gave you.
+
+---
+
+## On the server, one step at a time
+
+### 1. Update Ubuntu and install the programs
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y nginx certbot python3-certbot-nginx git ufw fail2ban
-```
-
-Install **Node.js 22 LTS** for the whole system. The portal is Next.js 15.5.29. Do not use the Node package that Ubuntu ships.
-
-```bash
+sudo apt install -y nginx git ufw
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
 node -v
-npm -v
 sudo npm install -g pm2
 ```
 
-`node -v` must print v22.x.
+`apt update` refreshes the package list. `apt upgrade` installs Ubuntu security updates. `nginx` is the web server. `git` downloads the project. `ufw` is the firewall. The `curl` line adds NodeSource so you get Node.js 22, which this portal is built with. `node -v` should print `v22`. `pm2` keeps the portal running after you close SSH, and starts it again when the server reboots.
 
-Create the app user and the two directories. `/srv/ksl` is private. `/var/www/ksl` is the only folder Nginx will serve for the public site.
-
-```bash
-sudo adduser --disabled-password --gecos "" deploy
-sudo usermod -aG sudo deploy
-sudo mkdir -p /srv/ksl /var/www/ksl
-sudo chown deploy:deploy /srv/ksl /var/www/ksl
-```
-
-Give `deploy` the same SSH key you use, then open a **second** terminal and confirm `deploy` can log in before you continue. After that, in `/etc/ssh/sshd_config`:
-
-```text
-PasswordAuthentication no
-PermitRootLogin no
-```
-
-Reload SSH (`sudo systemctl reload ssh`). Keep the working terminal open until the new login succeeds.
-
-Firewall. Port 3000 stays closed. Only Nginx on this machine talks to the portal.
+### 2. Open only the ports you use
 
 ```bash
 sudo ufw allow OpenSSH
-sudo ufw allow 'Nginx Full'
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 8443/tcp
 sudo ufw enable
 sudo ufw status
 ```
 
-On a 2 GB VPS, add swap before the first build:
+Port 22 is SSH. 80 and 443 are the public site. 8443 is the staff portal. Port 3000 is not listed, so strangers cannot reach Node directly.
+
+### 3. A user and two folders
 
 ```bash
-sudo fallocate -l 2G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
-echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+sudo adduser --disabled-password --gecos "" deploy
+sudo mkdir -p /srv/ksl /var/www/ksl
+sudo chown deploy:deploy /srv/ksl /var/www/ksl
 ```
 
----
+`deploy` is the account that will own the code. It has no password of its own. `/srv/ksl` is private. `/var/www/ksl` is the only folder the public site is allowed to serve.
 
-## 3. DNS, without cutting over www yet
+Copy your SSH key so `deploy` can log in, then use `sudo -u deploy` for the steps that follow. You can stay as the first user and prefix those commands with `sudo -u deploy`.
 
-Lower the TTL on the existing records to 300 seconds at least a day before the real cutover.
-
-Create these **A** records (and **AAAA** if the VPS has IPv6), all pointing at the VPS:
-
-| Name | When it may point at the VPS |
-|------|-------------------------------|
-| `staging.kenyashipyards.co.ke` | Now. Used for the dress rehearsal. |
-| `PORTAL_HOST` | Now. Nobody should know this name, so it can go live early. |
-| `www.kenyashipyards.co.ke` | **Last.** This is the public cutover. |
-| `kenyashipyards.co.ke` (apex) | Same moment as `www`. Nginx redirects it to `www`. |
-
-Let's Encrypt can only issue a certificate for a name that already points at this server (HTTP check), unless you use a DNS challenge. That is why `www` waits.
-
----
-
-## 4. Put the code on the server
-
-As `deploy`:
+### 4. Download the code from GitHub
 
 ```bash
-git clone https://github.com/harry934/KSL-website.git /srv/ksl/repo
+sudo -u deploy git clone https://github.com/harry934/KSL-website.git /srv/ksl/repo
 ```
 
-If the GitHub repo is private, use a read-only deploy key. Do not put GitHub passwords on the server.
+This creates `/srv/ksl/repo`. Do not point Nginx at this folder. It contains `.git`, the portal, and the guides.
 
-The clone stays in `/srv/ksl/repo`. Nginx never uses that path as its document root. A document root on the clone would publish `.git`, `staff-portal/.env.production`, `guides/` (including the security notes), `supabase/`, and `tools/`.
-
----
-
-## 5. Portal environment file
-
-As `deploy`:
+### 5. Write the env file
 
 ```bash
-install -m 600 /dev/null /srv/ksl/repo/staff-portal/.env.production
-nano /srv/ksl/repo/staff-portal/.env.production
+sudo -u deploy nano /srv/ksl/repo/staff-portal/.env.production
 ```
 
+Paste the variables from the table above. No quotes. No spaces around `=`. No slash at the end of a URL. Save and exit (`Ctrl+O`, Enter, `Ctrl+X` in nano).
+
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://envqgczfhxywkxcnsxrt.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=paste-anon-key
-SUPABASE_SERVICE_ROLE_KEY=paste-service-role-key
-NEXT_PUBLIC_PORTAL_URL=https://PORTAL_HOST
-NEXT_PUBLIC_SITE_URL=https://www.kenyashipyards.co.ke
-NEXT_PUBLIC_TURNSTILE_SITE_KEY=paste-site-key
-TURNSTILE_SECRET_KEY=paste-secret-key
-MESSAGE_VIEW_UNLOCK_SECRET=paste-long-random-secret
-TRUSTED_PROXY_HOPS=1
-NODE_ENV=production
+sudo chmod 600 /srv/ksl/repo/staff-portal/.env.production
+sudo chown deploy:deploy /srv/ksl/repo/staff-portal/.env.production
 ```
 
-Rules:
+`chmod 600` means only `deploy` can read the file.
 
-- No quotes, no spaces around `=`, no trailing slash on the URLs.
-- `TRUSTED_PROXY_HOPS=1` is required. Behind Nginx, sign-in lockouts use it to read the visitor IP. Without it, a caller can spoof `X-Forwarded-For`.
-- `MESSAGE_VIEW_UNLOCK_SECRET` can be any long random string generated on the server (`openssl rand -base64 32`). `SUPABASE_JWT_SECRET` may be used instead. One of them must be set or opening a contact message throws.
-- `NEXT_PUBLIC_*` values are copied into the JavaScript **at build time**. Change the file, then build again. Editing the file after `npm run build` does not update those public values.
-- The static website has no environment file.
+### 6. Build and start the portal
 
 ```bash
-chmod 600 /srv/ksl/repo/staff-portal/.env.production
+sudo -u deploy bash -lc 'cd /srv/ksl/repo/staff-portal && npm ci && npm run build'
+sudo -u deploy bash -lc 'cd /srv/ksl/repo/staff-portal && pm2 start npm --name ksl-portal -- start && pm2 save'
+sudo env PATH="$PATH" pm2 startup systemd -u deploy --hp /home/deploy
 ```
 
----
+`npm ci` installs the exact package versions from the lockfile. `npm run build` compiles the Next.js app and bakes in the `NEXT_PUBLIC_` values. `pm2 start` runs `npm start`, which is `next start`, on port 3000. `pm2 save` remembers that process. The last line prints and installs a boot service. Run the `sudo` line it prints if it asks you to.
 
-## 6. Build the portal and keep it running
-
-As `deploy`:
+Check:
 
 ```bash
-cd /srv/ksl/repo/staff-portal
-npm ci
-npm run build
-pm2 start npm --name ksl-portal --cwd /srv/ksl/repo/staff-portal -- start
-pm2 save
-pm2 startup
-```
-
-`pm2 startup` prints a `sudo` command. Run that command so the portal comes back after a reboot.
-
-Check that Node is listening on loopback only, and that login responds:
-
-```bash
-ss -tlnp | grep 3000
+sudo -u deploy pm2 status
 curl -sI http://127.0.0.1:3000/login
+ss -tlnp | grep 3000
 ```
 
-The address in `ss` must be `127.0.0.1:3000`, not `0.0.0.0:3000`.
+`pm2 status` should say `online`. `curl` should show `HTTP/1.1 200`. `ss` should show `127.0.0.1:3000`, not `0.0.0.0:3000`.
 
-`next start` loads `.env.production` when `NODE_ENV` is `production`.
-
----
-
-## 7. Publish only the public files
-
-Create `/srv/ksl/publish-public.sh` as `deploy`:
+### 7. Copy only the public files
 
 ```bash
-#!/bin/bash
-set -euo pipefail
-rsync -a --delete \
+sudo -u deploy rsync -a --delete \
   --include='*.html' \
   --include='css/***' \
   --include='js/***' \
@@ -250,79 +372,67 @@ rsync -a --delete \
   /srv/ksl/repo/ /var/www/ksl/
 ```
 
-```bash
-chmod 750 /srv/ksl/publish-public.sh
-/srv/ksl/publish-public.sh
-```
+`rsync` copies files. The `--include` lines are the public site. `--exclude='*'` drops everything else, including `staff-portal` and `.git`. `--delete` removes a public file that you deleted in git.
 
-That copies the 18 public HTML pages plus `css/`, `js/`, `lib/`, `img/`, `docs/`, and `data/`. It does not copy `staff-portal/`, `guides/`, `supabase/`, `tools/`, or `.git`.
-
-Confirm the web root looks like a website and nothing else:
+Then change the portal address on the published pages:
 
 ```bash
-find /var/www/ksl -maxdepth 2 -type d
-test ! -d /var/www/ksl/staff-portal
-test ! -d /var/www/ksl/.git
+sudo -u deploy sed -i 's#https://ksl-websitekiza.vercel.app#https://VPS_IP:8443#g' /var/www/ksl/*.html
 ```
 
----
+Do the same edit in git on your computer afterwards, or the next `git pull` plus `rsync` will put the Vercel address back. Use your real IP in place of `VPS_IP`.
 
-## 8. Point the public pages at the new portal
+### 8. Allow the public site to call the portal
 
-Every public HTML file has this on the `<html>` tag:
+Edit `staff-portal/src/middleware.ts`. Inside `ALLOWED_ORIGINS`, add a line:
 
-```html
-data-ksl-content-api="https://ksl-websitekiza.vercel.app"
+```ts
+"https://VPS_IP",
 ```
 
-Change it to `https://PORTAL_HOST` (no trailing slash) on all of these files, in the git clone, then run `/srv/ksl/publish-public.sh` again:
+Use the real IP. This is the public site's address, with no port, because the site is on 443. Rebuild and reload:
 
-`index.html`, `about.html`, `organization.html`, `board.html`, `service.html`, `products.html`, `project.html`, `sustainability.html`, `csr.html`, `careers.html`, `news.html`, `article.html`, `event.html`, `faq.html`, `downloads.html`, `videos.html`, `contact.html`, `404.html`.
+```bash
+sudo -u deploy bash -lc 'cd /srv/ksl/repo/staff-portal && npm run build && pm2 reload ksl-portal'
+```
 
-`js/ksl-content.js` reads that attribute. If it still names the Vercel portal, the new site will keep loading content from Vercel.
+Leave the Vercel address in that list until you stop using https://ksl-website.vercel.app.
 
-Do this in git on your workstation, commit it, and `git pull` on the server, so the next deploy does not overwrite it. Until `www` is cut over, the Vercel site can keep the old value. The files on the VPS must use `PORTAL_HOST`.
+### 9. Certificate and Nginx
 
-CORS in `staff-portal/src/middleware.ts` already allows:
+Create a certificate the browser will accept only after a warning:
 
-- `https://www.kenyashipyards.co.ke`
-- `https://kenyashipyards.co.ke`
-- `https://ksl-website.vercel.app` and its preview hosts
-- localhost, for development
+```bash
+sudo openssl req -x509 -nodes -days 825 -newkey rsa:2048 \
+  -keyout /etc/ssl/private/ksl-ip.key \
+  -out /etc/ssl/certs/ksl-ip.crt \
+  -subj "/CN=VPS_IP"
+sudo chmod 600 /etc/ssl/private/ksl-ip.key
+```
 
-Leave the Vercel origin in that list until the cutover has been quiet for a few days. Then remove it.
+`openssl req -x509` writes a self-signed certificate. `-days 825` is how long it lasts. `/CN=VPS_IP` puts the IP in the certificate name. Replace `VPS_IP` with the real address.
 
-In the Cloudflare Turnstile dashboard, add `www.kenyashipyards.co.ke` to the widget's allowed hostnames. Add `staging.kenyashipyards.co.ke` as well if you submit the contact form during the dress rehearsal.
-
----
-
-## 9. Nginx and certificates
-
-Replace `PORTAL_HOST` and, for the rehearsal, `staging.kenyashipyards.co.ke` if you use it.
-
-### Public site
-
-`/etc/nginx/sites-available/ksl-public`:
+Public site, `/etc/nginx/sites-available/ksl-public`:
 
 ```nginx
-# Apex → www. Enable this server block when the apex DNS record points here.
 server {
-    listen 80;
-    listen [::]:80;
-    server_name kenyashipyards.co.ke;
-    return 301 https://www.kenyashipyards.co.ke$request_uri;
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    return 301 https://VPS_IP$request_uri;
 }
 
 server {
-    listen 80;
-    listen [::]:80;
-    server_name www.kenyashipyards.co.ke staging.kenyashipyards.co.ke;
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    server_name _;
+
+    ssl_certificate     /etc/ssl/certs/ksl-ip.crt;
+    ssl_certificate_key /etc/ssl/private/ksl-ip.key;
 
     root /var/www/ksl;
     index index.html;
 
-    # Branded 404, including nested paths such as /foo/bar/missing.
-    # 404.html has <base href="/"> so its CSS still loads.
     error_page 404 /404.html;
     location = /404.html {
         internal;
@@ -331,46 +441,22 @@ server {
     location / {
         try_files $uri $uri/ $uri.html =404;
     }
-
-    location ~* ^/img/ {
-        expires 30d;
-        add_header Cache-Control "public, immutable";
-    }
-
-    location ~* \.(mp4|webm)$ {
-        add_header Cache-Control "public, max-age=31536000, immutable";
-    }
-
-    location /docs/ {
-        expires 7d;
-    }
-
-    # Same policy as vercel.json. PORTAL_HOST is the live portal.
-    # Keep the Vercel hosts until cutover is finished, then delete those two.
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
-    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://translate.google.com https://translate.googleapis.com https://www.gstatic.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://PORTAL_HOST https://ksl-websitekiza.vercel.app https://ksl-website.vercel.app https://www.kenyashipyards.co.ke https://kenyashipyards.co.ke https://*.supabase.co https://translate.googleapis.com https://translate.google.com https://challenges.cloudflare.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://translate.google.com https://challenges.cloudflare.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" always;
 }
 ```
 
-During the rehearsal, `server_name` can be only `staging.kenyashipyards.co.ke`. Add `www` and the apex block when those DNS records move.
+`return 301` sends `http://` visitors to `https://`. `root` is the public folder from step 7. `try_files` opens `about.html` when someone asks for `/about`. `error_page 404` shows the branded missing page. `404.html` already contains `<base href="/">`, so its CSS still loads on a long wrong address like `/foo/bar`.
 
-`add_header` on a location replaces inherited `add_header` lines. The `/img/`, video, and `/docs/` blocks above set cache headers only. If you need the security headers on those files too, repeat the `add_header` lines inside those locations, or set the security headers with a `map` / included snippet that every location adds. Check a CSS and an image response after Certbot, not only the home page.
-
-### Staff portal
-
-`/etc/nginx/sites-available/ksl-portal`:
+Staff portal, `/etc/nginx/sites-available/ksl-portal`:
 
 ```nginx
 server {
-    listen 80;
-    listen [::]:80;
-    server_name PORTAL_HOST;
+    listen 8443 ssl;
+    listen [::]:8443 ssl;
+    server_name _;
 
-    # Videos are allowed up to 50 MB, documents up to 25 MB.
+    ssl_certificate     /etc/ssl/certs/ksl-ip.crt;
+    ssl_certificate_key /etc/ssl/private/ksl-ip.key;
+
     client_max_body_size 55m;
 
     location / {
@@ -380,15 +466,13 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
     }
 }
 ```
 
-The portal process adds its own security headers and `X-Robots-Tag: noindex`. Do not add a second, conflicting Content-Security-Policy in this file.
+`proxy_pass` forwards the browser to the Node process. `client_max_body_size 55m` lets a gallery video through. `X-Forwarded-Proto` tells Node the visitor used HTTPS, which keeps the sign-in cookie working.
 
-### Enable and request certificates
+Enable both files:
 
 ```bash
 sudo rm -f /etc/nginx/sites-enabled/default
@@ -398,109 +482,63 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-Request certificates only for names whose DNS already points at this VPS:
+`nginx -t` checks the files for mistakes. `reload` applies them without dropping SSH.
+
+### 10. Look at it from your computer
+
+In the browser, open `https://VPS_IP/`. Accept the certificate warning.
+
+| Check | What you should see |
+|-------|---------------------|
+| Home page | The site, and news loaded from the portal |
+| `https://VPS_IP/news.html` | The news list |
+| `https://VPS_IP/this-page-does-not-exist` | The branded 404 |
+| `https://VPS_IP:8443/login` | The staff sign-in page |
+| Sign in | You land in the portal. The password was checked by Supabase. |
+| Edit a news item and set it On website | The public news page shows it within about a minute |
+| `https://VPS_IP/staff-portal/` | Nothing useful. It must not show source code or the env file. |
+
+On the server:
 
 ```bash
-sudo certbot --nginx -d staging.kenyashipyards.co.ke
-sudo certbot --nginx -d PORTAL_HOST
-sudo certbot renew --dry-run
+sudo reboot
 ```
 
-When `www` and the apex move, run:
+Wait a minute, SSH back in, and run `sudo -u deploy pm2 status`. `ksl-portal` should be `online` without you starting it.
+
+---
+
+## Updating later
+
+SSH in, then:
 
 ```bash
-sudo certbot --nginx -d www.kenyashipyards.co.ke -d kenyashipyards.co.ke
+sudo -u deploy bash -lc 'cd /srv/ksl/repo && git pull'
+sudo -u deploy rsync -a --delete \
+  --include='*.html' \
+  --include='css/***' \
+  --include='js/***' \
+  --include='lib/***' \
+  --include='img/***' \
+  --include='docs/***' \
+  --include='data/***' \
+  --exclude='*' \
+  /srv/ksl/repo/ /var/www/ksl/
+sudo -u deploy sed -i 's#https://ksl-websitekiza.vercel.app#https://VPS_IP:8443#g' /var/www/ksl/*.html
+sudo -u deploy bash -lc 'cd /srv/ksl/repo/staff-portal && npm ci && npm run build && pm2 reload ksl-portal'
 ```
 
-Certbot installs a systemd timer for renewal. `certbot renew --dry-run` must succeed before cutover.
+`git pull` downloads new commits from GitHub. The `rsync` publishes the public files. The `sed` line puts the VPS portal address back if the HTML in git still says Vercel. The last line rebuilds the portal. Skip the last line when you only changed HTML or CSS.
+
+If the VPS is wrong and you need the old site, keep using https://ksl-website.vercel.app and https://ksl-websitekiza.vercel.app. Supabase is the same database either way. You do not restore a database to undo the move.
 
 ---
 
-## 10. Dress rehearsal
+## What never moves onto the VPS
 
-On your own computer, you can also map a name to the VPS without changing public DNS. That does **not** get you a Let's Encrypt certificate. Prefer the real `staging` and `PORTAL_HOST` names from section 3.
+- The Supabase database
+- Staff usernames, passwords, and sessions stored by Supabase Authentication
+- Files in Supabase Storage
+- The GitHub repository
 
-Work through [VPS-MIGRATION-CHECKLIST.md](./VPS-MIGRATION-CHECKLIST.md). The minimum bar:
-
-| Check | Pass looks like |
-|-------|-----------------|
-| `https://PORTAL_HOST/login` | Sign-in page over a valid certificate. Not a Vercel access wall. |
-| `curl -s https://PORTAL_HOST/api/public/news` | JSON, not an Nginx error. |
-| Staging home page | News and events fill in. Browser console has no Content-Security-Policy errors. |
-| `/this-page-does-not-exist` | HTTP 404 and the branded page. |
-| `/foo/bar/missing` | Same branded page, with CSS loaded. |
-| `article.html?slug=not-a-real-slug` | In-page "couldn't find that story". It does not jump to `404.html`. |
-| Staff edit | Publish a small news change. The public page shows it within about a minute. |
-| Contact form | Turnstile shows, submit succeeds, the row appears in portal Messages. |
-| Gallery upload | File lands in Supabase Storage and shows on the gallery page. |
-| Hidden paths | `https://staging.../staff-portal/.env.production` and `https://staging.../guides/` are both 404. |
-| Reboot | `sudo reboot`, then `pm2 status` shows `ksl-portal` online, and login still answers. |
-
-Sign in, publish, and upload using a real staff account. A page that merely renders is not enough.
-
----
-
-## 11. Cut over www
-
-1. On the VPS, `git pull`, run `/srv/ksl/publish-public.sh`, and confirm `data-ksl-content-api` is `https://PORTAL_HOST`.
-2. Rebuild if any portal env or portal code changed: `cd /srv/ksl/repo/staff-portal && npm ci && npm run build && pm2 reload ksl-portal`.
-3. Add `www.kenyashipyards.co.ke` to the public `server_name`, and enable the apex redirect block. `sudo nginx -t && sudo systemctl reload nginx`.
-4. Point the `www` and apex A/AAAA records at the VPS.
-5. As soon as DNS answers from the VPS, `sudo certbot --nginx -d www.kenyashipyards.co.ke -d kenyashipyards.co.ke`.
-6. Repeat the checklist against `https://www.kenyashipyards.co.ke`.
-7. Watch for a day: `sudo tail -f /var/log/nginx/access.log /var/log/nginx/error.log` and `pm2 logs ksl-portal`.
-
-Leave both Vercel projects running. They are the rollback.
-
-In Supabase, set the passkey relying party ID to `PORTAL_HOST`. Tell staff that old passkeys will not work and that password sign-in will.
-
-The portal status cards still name `ksl-website.vercel.app` and `ksl-websitekiza.vercel.app` (`staff-portal/src/components/portal/service-status.tsx` and `staff-portal/src/app/api/admin/status/route.ts`). Update those to the real hosts after the hostname is final, then rebuild.
-
----
-
-## 12. If you need to go back
-
-1. Point `www` and the apex A/AAAA records back at Vercel.
-2. The public pages on Vercel must use `data-ksl-content-api="https://ksl-websitekiza.vercel.app"`.
-3. Supabase is shared. Content edited on the VPS is already in the same database, so you do not restore a database to roll the website back.
-
----
-
-## 13. Updates after go-live
-
-As `deploy`:
-
-```bash
-cd /srv/ksl/repo
-git pull
-/srv/ksl/publish-public.sh
-cd staff-portal
-npm ci
-npm run build
-pm2 reload ksl-portal
-```
-
-HTML, CSS, JS, and images are live as soon as `publish-public.sh` finishes. Portal changes need the build and `pm2 reload`.
-
-Backups:
-
-- Database and uploaded media: Supabase backups. They are not on this disk.
-- Server: the provider's snapshot. The file that must not be lost locally is `staff-portal/.env.production`.
-
-Take a snapshot before each portal upgrade.
-
----
-
-## 14. Security list before calling it done
-
-- [ ] `.env.production` is mode `600`, owner `deploy`, and is not under `/var/www`.
-- [ ] Port 3000 is not reachable from the internet (`ss` shows `127.0.0.1` only, `ufw status` has no 3000).
-- [ ] SSH password login is off.
-- [ ] Public sign-up is off in Supabase. Staff are invite-only.
-- [ ] The service role key exists only in the portal env file.
-- [ ] `TRUSTED_PROXY_HOPS=1`.
-- [ ] Turnstile is on, and `www.kenyashipyards.co.ke` is an allowed hostname.
-- [ ] The portal hostname is not in the public menu, footer, or sitemap.
-- [ ] `certbot renew --dry-run` succeeds.
-- [ ] `pm2` brings the portal back after a reboot.
-- [ ] Vercel origins removed from Nginx `connect-src` and from `ALLOWED_ORIGINS` once you no longer need them.
+The VPS only stores the code, the env file, and the public HTML. Lose the env file and the portal cannot sign anyone in, because it would no longer know how to reach Supabase. Keep a copy of that file somewhere safe that is not the website folder.

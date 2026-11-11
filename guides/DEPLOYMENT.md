@@ -5,7 +5,7 @@
 **Quick Vercel clicks:** [VERCEL-GITHUB-SETUP.md](./VERCEL-GITHUB-SETUP.md)  
 **Current status:** [PROJECT-STATUS.md](./PROJECT-STATUS.md)  
 **Production on a Linux VPS (overview):** [PRODUCTION-OVERVIEW-AND-VPS.md](./PRODUCTION-OVERVIEW-AND-VPS.md)  
-**VPS transfer plan (step by step):** [VPS-TRANSFER-PLAN.md](./VPS-TRANSFER-PLAN.md)  
+**Move from Vercel onto the VPS by SSH:** [VPS-TRANSFER-PLAN.md](./VPS-TRANSFER-PLAN.md)  
 **VPS cutover test checklist:** [VPS-MIGRATION-CHECKLIST.md](./VPS-MIGRATION-CHECKLIST.md)
 
 | Live URL | Vercel project |
