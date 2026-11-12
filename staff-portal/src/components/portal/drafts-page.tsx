@@ -182,7 +182,7 @@ export function DraftQueue({ limit }: { limit?: number }) {
   }
 
   if (!items.length) {
-    return <EmptyState>No drafts are waiting. When someone without publish rights saves, it will show up here.</EmptyState>;
+    return <EmptyState>Nothing is waiting. A hidden page, or a change that is not on the website yet, will show up here.</EmptyState>;
   }
 
   return (
@@ -265,7 +265,7 @@ export function DraftsPage() {
     <>
       <PageHeader
         title="Drafts"
-        description="Work saved by staff who can change a section but cannot publish it. Open a draft, check it, then turn on Show on website. Send it back with a reason if it needs another look."
+        description="Pages that are hidden, and changes that are not on the website yet. Open one, check it, then turn on Show on website. Send it back with a reason if it needs another look."
       />
       <DraftQueue />
       {hasChanges ? (

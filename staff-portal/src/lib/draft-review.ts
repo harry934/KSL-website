@@ -332,9 +332,9 @@ export async function listReviewDrafts(admin: Admin, actor: Actor): Promise<Revi
         const record = row as Record<string, unknown>;
         if (record.deleted_at) return [];
         const authorId = typeof record.updated_by === "string" ? record.updated_by : null;
-        if (!cannotPublish(profiles, perms, authorId, source.module)) return [];
         const id = String(record.id ?? "");
         if (!id || waiting.has(returnIdentity(source.table, id, ""))) return [];
+        const needsPublisher = cannotPublish(profiles, perms, authorId, source.module);
         return [
           {
             id: `${source.table}:${id}`,
@@ -345,7 +345,7 @@ export async function listReviewDrafts(admin: Admin, actor: Actor): Promise<Revi
             author: authorName(profiles, authorId),
             updatedAt: typeof record.updated_at === "string" ? record.updated_at : null,
             discardId: null,
-            note: "Not on the website yet.",
+            note: needsPublisher ? "Not on the website yet. Waiting for a publisher." : "Hidden. Not on the website.",
             table: source.table,
             entityId: id,
             entityKey: "",
@@ -361,7 +361,7 @@ export async function listReviewDrafts(admin: Admin, actor: Actor): Promise<Revi
     const moduleKey = row.module_key as ModuleKey;
     if (!canAccess(actor.permissions, moduleKey, "publish", actor.isSuperAdmin)) continue;
     const authorId = typeof row.submitted_by === "string" ? row.submitted_by : null;
-    if (!cannotPublish(profiles, perms, authorId, moduleKey)) continue;
+    const needsPublisher = cannotPublish(profiles, perms, authorId, moduleKey);
     const entityId = row.entity_id ? String(row.entity_id) : null;
     const entityKey = String(row.entity_key ?? "");
     if (waiting.has(returnIdentity(String(row.entity_table), entityId, entityKey))) continue;
@@ -377,7 +377,9 @@ export async function listReviewDrafts(admin: Admin, actor: Actor): Promise<Revi
       author: authorName(profiles, authorId),
       updatedAt: typeof row.updated_at === "string" ? row.updated_at : null,
       discardId: String(row.id),
-      note: "Already on the website. These changes stay hidden until you publish them.",
+      note: needsPublisher
+        ? "Already on the website. These changes stay hidden until you publish them."
+        : "Saved changes that are not on the website yet.",
       table: String(row.entity_table),
       entityId,
       entityKey,
