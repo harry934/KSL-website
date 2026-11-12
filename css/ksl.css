@@ -9010,6 +9010,44 @@ html[lang="sw"] .download-button .download::after {
     box-shadow: 0 14px 30px rgba(39, 50, 114, .12);
 }
 
+.ksl-pillar-card {
+    padding: 22px 22px 24px;
+    border-top: 4px solid #99792c;
+}
+
+.ksl-pillar-kicker {
+    margin: 0 0 12px;
+    color: #6d5420;
+    font: 700 11px/1.3 Manrope, sans-serif;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.ksl-pillar-card .ksl-sdg-pills {
+    margin-bottom: 16px;
+}
+
+.ksl-pillar-card .ksl-sdg-pills span {
+    min-width: 28px;
+    padding: 6px 8px;
+    font-size: 12px;
+    text-align: center;
+}
+
+.ksl-pillar-card h3 {
+    margin: 0 0 8px;
+    color: #273272;
+    font-size: 1.2rem;
+    line-height: 1.3;
+}
+
+.ksl-pillar-card > p:last-child {
+    margin: 0;
+    color: #4a5568;
+    font-size: 15px;
+    line-height: 1.55;
+}
+
 .ksl-impact-card-media {
     display: block;
     margin: 0;
