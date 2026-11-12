@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { canAccess } from "@/lib/modules";
-import { listReturnedDrafts, listReviewDrafts, resolveDraftReturns, returnDraft } from "@/lib/draft-review";
+import { acceptDraft, listReturnedDrafts, listReviewDrafts, previewDraft, resolveDraftReturns, returnDraft } from "@/lib/draft-review";
 import { NextRequest, NextResponse } from "next/server";
 
 function canReview(session: { permissions: Parameters<typeof canAccess>[0]; isSuperAdmin: boolean }) {
@@ -9,10 +9,24 @@ function canReview(session: { permissions: Parameters<typeof canAccess>[0]; isSu
   return session.permissions.some((row) => row.can_publish);
 }
 
-export async function GET() {
+function draftRef(req: NextRequest, body?: { table?: unknown; entityId?: unknown; entityKey?: unknown }) {
+  const params = req.nextUrl.searchParams;
+  return {
+    table: String(body?.table ?? params.get("table") ?? ""),
+    entityId: body?.entityId || params.get("entityId") ? String(body?.entityId ?? params.get("entityId")) : null,
+    entityKey: String(body?.entityKey ?? params.get("entityKey") ?? ""),
+  };
+}
+
+export async function GET(req: NextRequest) {
   const { error, session } = await requireStaff(null, "view");
   if (error || !session) return error;
   const admin = createAdminClient();
+  if (req.nextUrl.searchParams.get("preview") === "1") {
+    const result = await previewDraft(admin, session, draftRef(req));
+    if ("changes" in result) return NextResponse.json({ title: result.title, changes: result.changes });
+    return NextResponse.json({ error: result.error }, { status: result.status });
+  }
   const review = canReview(session);
   const [items, returned] = await Promise.all([
     review ? listReviewDrafts(admin, session) : Promise.resolve([]),
@@ -51,10 +65,16 @@ export async function POST(req: NextRequest) {
   if (!canReview(session)) return NextResponse.json({ error: "You are not allowed to do this." }, { status: 403 });
 
   const body = await req.json().catch(() => ({}));
+  const ref = draftRef(req, body);
+  if (body.action === "accept") {
+    const result = await acceptDraft(createAdminClient(), session, ref);
+    if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
+    return NextResponse.json({ ok: true });
+  }
   const result = await returnDraft(createAdminClient(), session, {
-    table: String(body.table ?? ""),
-    entityId: body.entityId ? String(body.entityId) : null,
-    entityKey: String(body.entityKey ?? ""),
+    table: ref.table,
+    entityId: ref.entityId,
+    entityKey: ref.entityKey,
     note: String(body.note ?? ""),
   });
   if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });

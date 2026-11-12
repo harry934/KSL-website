@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logActivity } from "@/lib/api-auth";
 import { canAccess, MODULE_LABELS, MODULE_ROUTES, type ModuleKey, type ModulePermission } from "@/lib/modules";
+import { HOME_HERO_SLOT, isImagePath, parseHeroMedia, safeImageUrl } from "@/lib/site-images";
 
 type Actor = {
   userId: string;
@@ -483,4 +484,308 @@ export async function returnDraft(
     title: saved.title,
   });
   return { error: null, status: 200 as const, author: authorId };
+}
+
+export type DraftChange = { label: string; before: string; after: string };
+
+const FIELD_LABELS: Record<string, string> = {
+  title: "Title",
+  name: "Name",
+  full_name: "Name",
+  role: "Role",
+  question: "Question",
+  answer: "Answer",
+  excerpt: "Summary",
+  summary: "Summary",
+  description: "Description",
+  details: "Details",
+  body_html: "Full text",
+  bio: "About",
+  caption: "Caption",
+  theme: "Theme",
+  subtitle: "Subtitle",
+  category: "Group",
+  category_label: "Group",
+  venue: "Venue",
+  location: "Location",
+  author: "Author",
+  event_date: "Date",
+  published_date: "Date",
+  happened_on: "Date",
+  go_live_on: "Show from",
+  time_start: "Starts",
+  time_end: "Ends",
+  image_alt: "Photo description",
+  alt_text: "Photo description",
+  image_path: "Photo",
+  image_url: "Photo",
+  public_url: "Photo",
+  photo_url: "Photo",
+  intro_kicker: "Label",
+  intro_title: "Title",
+  intro_body: "Introduction",
+  milestones_title: "Milestones heading",
+  milestones_lead: "Milestones introduction",
+  value: "Setting",
+  chart: "Organisation chart",
+  board_sections: "Board sections",
+  group_order: "Group order",
+  media: "Photos",
+  featured: "Featured",
+};
+
+const HIDDEN_FIELDS = new Set([
+  "id",
+  "updated_by",
+  "updated_at",
+  "created_at",
+  "deleted_at",
+  "published_at",
+  "slug",
+  "sort_order",
+  "storage_path",
+  "youtube_id",
+  "action",
+  "scope",
+  "type",
+  "pending_review",
+  "queued",
+  "held",
+  "key",
+  "slot_id",
+]);
+
+function clip(value: string) {
+  const text = value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  if (!text) return "Empty";
+  return text.length > 280 ? `${text.slice(0, 277)}…` : text;
+}
+
+function showValue(value: unknown) {
+  if (value == null || value === "") return "Empty";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "string") return clip(value);
+  if (Array.isArray(value)) return value.length ? `${value.length} items` : "Empty";
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const text = record.message ?? record.title ?? record.text ?? record.body;
+    if (typeof text === "string" && text.trim()) return clip(text);
+    return "Updated";
+  }
+  return String(value);
+}
+
+function sameValue(left: unknown, right: unknown) {
+  return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
+}
+
+type DraftTarget = {
+  module: ModuleKey;
+  table: string;
+  entityId: string | null;
+  entityKey: string;
+  title: string;
+  current: Record<string, unknown> | null;
+  payload: Record<string, unknown> | null;
+};
+
+async function loadCurrent(admin: Admin, table: string, entityId: string | null, entityKey: string) {
+  if (entityId) {
+    const { data } = await admin.from(table).select("*").eq("id", entityId).maybeSingle();
+    return (data ?? null) as Record<string, unknown> | null;
+  }
+  if (table === "site_settings") {
+    const { data } = await admin.from(table).select("*").eq("key", entityKey).maybeSingle();
+    return (data ?? null) as Record<string, unknown> | null;
+  }
+  if (table === "site_image_overrides") {
+    const { data } = await admin.from(table).select("*").eq("slot_id", entityKey).maybeSingle();
+    return (data ?? null) as Record<string, unknown> | null;
+  }
+  const { data } = await admin.from(table).select("*").eq("id", entityKey || "default").maybeSingle();
+  return (data ?? null) as Record<string, unknown> | null;
+}
+
+async function loadDraftTarget(
+  admin: Admin,
+  actor: Actor,
+  input: { table: string; entityId: string | null; entityKey: string }
+): Promise<{ target: DraftTarget } | { error: string; status: 400 | 403 | 404 | 500 }> {
+  const source = DRAFT_SOURCES.find((item) => item.table === input.table);
+  const place = SETTINGS_PLACES[input.table];
+  if (!source && !place) return { error: "That draft could not be found.", status: 404 };
+  const moduleKey = source?.module || place!.module;
+  if (!canAccess(actor.permissions, moduleKey, "publish", actor.isSuperAdmin)) {
+    return { error: "You are not allowed to do this.", status: 403 };
+  }
+
+  const entityId = input.entityId ? String(input.entityId) : null;
+  const entityKey = entityId ? "" : input.entityKey || "default";
+  let lookup = admin.from("content_drafts").select("id, title, payload").eq("entity_table", input.table);
+  lookup = entityId ? lookup.eq("entity_id", entityId) : lookup.is("entity_id", null).eq("entity_key", entityKey);
+  const { data: staged, error: stagedErr } = await lookup.maybeSingle();
+  if (stagedErr) return { error: "That draft could not be opened.", status: 500 };
+
+  const current = await loadCurrent(admin, input.table, entityId, entityKey);
+  if (current?.deleted_at) return { error: "That draft is no longer here.", status: 404 };
+  const payload = staged?.payload && typeof staged.payload === "object" ? (staged.payload as Record<string, unknown>) : null;
+  if (!current && !payload) return { error: "That draft is no longer here.", status: 404 };
+
+  const title = text(
+    staged?.title,
+    current && source ? source.title(current) : payload && source ? source.title(payload) : "Saved changes"
+  );
+  return {
+    target: { module: moduleKey, table: input.table, entityId, entityKey, title, current, payload },
+  };
+}
+
+function changeLines(target: DraftTarget): DraftChange[] {
+  const current = target.current ?? {};
+  const payload = target.payload;
+  const lines: DraftChange[] = [];
+
+  if (target.table === "site_image_overrides" && payload) {
+    const next = payload.publicUrl ?? payload.public_url ?? payload.items ?? payload.media;
+    lines.push({
+      label: "Photo",
+      before: showValue(current.public_url),
+      after: payload.source === "storage" ? showValue(next) : "Removed",
+    });
+    return lines;
+  }
+
+  const merged = payload ? { ...current, ...payload } : current;
+  if (current.status !== "published") {
+    lines.push({ label: "On the website", before: "Hidden", after: "Shown" });
+  }
+  const keys = Object.keys(FIELD_LABELS).filter((key) => key in merged || key in current);
+  for (const key of keys) {
+    if (HIDDEN_FIELDS.has(key)) continue;
+    const before = current[key];
+    const after = merged[key];
+    if (payload && sameValue(before, after)) continue;
+    if (!payload && (after == null || after === "" || after === false)) continue;
+    if (key === "chart" || key === "board_sections" || key === "group_order" || key === "media") {
+      lines.push({ label: FIELD_LABELS[key], before: before == null ? "Empty" : "Previous", after: "New" });
+      continue;
+    }
+    lines.push({
+      label: FIELD_LABELS[key],
+      before: payload ? showValue(before) : "—",
+      after: showValue(after),
+    });
+  }
+
+  if (!lines.length) {
+    lines.push({ label: "On the website", before: current.status === "published" ? "Shown" : "Hidden", after: "Shown" });
+  }
+  return lines.slice(0, 12);
+}
+
+function photoProblem(table: string, row: Record<string, unknown>) {
+  if ((table === "news_items" || table === "event_items") && String(row.image_path ?? "").trim() && !String(row.image_alt ?? "").trim()) {
+    return "Add a short description of the photo before accepting.";
+  }
+  if (table === "gallery_photos" && !String(row.alt_text ?? row.title ?? "").trim()) {
+    return "Add a short description of the photo before accepting.";
+  }
+  return null;
+}
+
+async function acceptSiteImage(admin: Admin, userId: string, slotId: string, payload: Record<string, unknown>) {
+  if (payload.source !== "storage") {
+    const { error } = await admin.from("site_image_overrides").delete().eq("slot_id", slotId);
+    return error ? "Could not accept this draft." : null;
+  }
+  if (slotId === HOME_HERO_SLOT && Array.isArray(payload.items)) {
+    const items = parseHeroMedia(payload.items);
+    if (!items.length) {
+      const { error } = await admin.from("site_image_overrides").delete().eq("slot_id", slotId);
+      return error ? "Could not accept this draft." : null;
+    }
+    const poster = items.find((item) => item.kind === "image") ?? null;
+    const { error } = await admin.from("site_image_overrides").upsert({
+      slot_id: slotId,
+      source: "storage",
+      public_url: poster?.public_url ?? null,
+      storage_path: poster?.storage_path ?? items[0].storage_path,
+      media: items,
+      updated_by: userId,
+    });
+    return error ? "Could not accept this draft." : null;
+  }
+  const publicUrl = safeImageUrl(typeof payload.publicUrl === "string" ? payload.publicUrl : typeof payload.public_url === "string" ? payload.public_url : "");
+  if (!publicUrl || !isImagePath(publicUrl)) return "Choose an image file before accepting.";
+  const storagePath = typeof payload.storagePath === "string" && /^[\w./-]+$/.test(payload.storagePath) ? payload.storagePath : null;
+  const { error } = await admin.from("site_image_overrides").upsert({
+    slot_id: slotId,
+    source: "storage",
+    public_url: publicUrl,
+    storage_path: storagePath,
+    updated_by: userId,
+  });
+  return error ? "Could not accept this draft." : null;
+}
+
+/** The text that changed, for the Open panel. */
+export async function previewDraft(
+  admin: Admin,
+  actor: Actor,
+  input: { table: string; entityId: string | null; entityKey: string }
+) {
+  const loaded = await loadDraftTarget(admin, actor, input);
+  if ("error" in loaded) return loaded;
+  return { error: null, status: 200 as const, title: loaded.target.title, changes: changeLines(loaded.target) };
+}
+
+/** Puts a draft on the website. */
+export async function acceptDraft(
+  admin: Admin,
+  actor: Actor,
+  input: { table: string; entityId: string | null; entityKey: string }
+) {
+  const loaded = await loadDraftTarget(admin, actor, input);
+  if ("error" in loaded) return loaded;
+  const target = loaded.target;
+  const current = target.current;
+  const payload = target.payload;
+
+  if (target.table === "site_image_overrides") {
+    const problem = await acceptSiteImage(admin, actor.userId, target.entityKey, payload ?? { source: "storage" });
+    if (problem) return { error: problem, status: 400 as const };
+  } else if (current) {
+    const patch: Record<string, unknown> = {};
+    if (payload) {
+      for (const key of Object.keys(current)) {
+        if (HIDDEN_FIELDS.has(key) || key === "status") continue;
+        if (key in payload) patch[key] = payload[key];
+      }
+    }
+    if ("status" in current) patch.status = "published";
+    if ("updated_by" in current) patch.updated_by = actor.userId;
+    if ("published_at" in current) patch.published_at = new Date().toISOString();
+    const problem = photoProblem(target.table, { ...current, ...patch });
+    if (problem) return { error: problem, status: 400 as const };
+    const idColumn = target.table === "site_settings" ? "key" : "id";
+    const idValue = target.table === "site_settings" ? target.entityKey : target.entityId || current.id;
+    const { error } = await admin.from(target.table).update(patch).eq(idColumn, idValue as string);
+    if (error) return { error: "Could not accept this draft.", status: 500 as const };
+  } else if (target.table === "site_settings" && payload && "value" in payload) {
+    const { error } = await admin.from("site_settings").upsert({
+      key: target.entityKey,
+      value: payload.value,
+      status: "published",
+      updated_by: actor.userId,
+    });
+    if (error) return { error: "Could not accept this draft.", status: 500 as const };
+  } else {
+    return { error: "That draft is no longer here.", status: 404 as const };
+  }
+
+  await clearReviewDraft(admin, target.table, target.entityId, target.entityKey);
+  await logActivity(actor.userId, target.module, "publish", ENTITY_TYPES[target.table] || target.table, target.entityId || target.entityKey, {
+    title: target.title,
+  });
+  return { error: null, status: 200 as const };
 }

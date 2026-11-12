@@ -5,9 +5,10 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/portal/page-header";
 import { Button } from "@/components/ui/button";
-import { EmptyState, Notice } from "@/components/ui/form-bits";
+import { EmptyState } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { Input } from "@/components/ui/input";
+import { NOTICES_REFRESH } from "@/lib/notification-seen";
 import { sendJson } from "@/lib/upload-client";
 
 type ReviewDraft = {
@@ -35,20 +36,27 @@ type ReturnedDraft = {
   createdAt: string;
 };
 
+type DraftChange = { label: string; before: string; after: string };
+
 export function useDraftCount(enabled: boolean) {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
     if (!enabled) return;
     let stop = false;
-    fetch("/api/drafts", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!stop && data) setCount(Array.isArray(data.items) ? data.items.length : 0);
-      })
-      .catch(() => {});
+    function load() {
+      fetch("/api/drafts", { cache: "no-store" })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!stop && data) setCount(Array.isArray(data.items) ? data.items.length : 0);
+        })
+        .catch(() => {});
+    }
+    load();
+    window.addEventListener(NOTICES_REFRESH, load);
     return () => {
       stop = true;
+      window.removeEventListener(NOTICES_REFRESH, load);
     };
   }, [enabled]);
 
@@ -109,11 +117,15 @@ export function ReturnedNotes() {
 }
 
 export function DraftQueue({ limit }: { limit?: number }) {
-  const { toast, confirm } = useFeedback();
+  const { toast } = useFeedback();
   const [items, setItems] = useState<ReviewDraft[]>([]);
   const [loading, setLoading] = useState(true);
-  const [returning, setReturning] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [changes, setChanges] = useState<Record<string, DraftChange[]>>({});
+  const [opening, setOpening] = useState<string | null>(null);
+  const [declining, setDeclining] = useState<string | null>(null);
   const [reason, setReason] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -129,45 +141,70 @@ export function DraftQueue({ limit }: { limit?: number }) {
     load();
   }, [load]);
 
-  async function discard(item: ReviewDraft) {
-    if (!item.discardId) return;
-    const ok = await confirm({
-      title: "Discard these changes?",
-      message: `"${item.title}" stays as it is on the website. The saved changes are removed.`,
-      confirmLabel: "Discard changes",
-      danger: true,
-    });
-    if (!ok) return;
+  async function openChanges(item: ReviewDraft) {
+    if (openId === item.id) {
+      setOpenId(null);
+      return;
+    }
+    setOpenId(item.id);
+    setDeclining(null);
+    if (changes[item.id]) return;
+    setOpening(item.id);
     try {
-      await sendJson(`/api/drafts?id=${encodeURIComponent(item.discardId)}`, "DELETE");
-      toast("Those changes were discarded.");
-      setReturning(null);
+      const params = new URLSearchParams({ preview: "1", table: item.table, entityKey: item.entityKey });
+      if (item.entityId) params.set("entityId", item.entityId);
+      const data = await sendJson(`/api/drafts?${params}`, "GET");
+      setChanges((current) => ({ ...current, [item.id]: data.changes ?? [] }));
+    } catch (err) {
+      toast((err as Error).message, "error");
+      setOpenId(null);
+    }
+    setOpening(null);
+  }
+
+  async function accept(item: ReviewDraft) {
+    setBusyId(item.id);
+    try {
+      await sendJson("/api/drafts", "POST", {
+        action: "accept",
+        table: item.table,
+        entityId: item.entityId,
+        entityKey: item.entityKey,
+      });
+      toast("Accepted. It is on the website.");
+      setOpenId(null);
+      setDeclining(null);
       load();
     } catch (err) {
       toast((err as Error).message, "error");
     }
+    setBusyId(null);
   }
 
-  async function sendBack(item: ReviewDraft) {
+  async function decline(item: ReviewDraft) {
     const note = reason.trim();
     if (!note) {
       toast("Write a short reason.", "error");
       return;
     }
+    setBusyId(item.id);
     try {
       await sendJson("/api/drafts", "POST", {
+        action: "decline",
         table: item.table,
         entityId: item.entityId,
         entityKey: item.entityKey,
         note,
       });
-      toast(`Sent back to ${item.author}.`);
-      setReturning(null);
+      toast(`Declined and sent back to ${item.author}.`);
+      setDeclining(null);
       setReason("");
+      setOpenId(null);
       load();
     } catch (err) {
       toast((err as Error).message, "error");
     }
+    setBusyId(null);
   }
 
   const shown = typeof limit === "number" ? items.slice(0, limit) : items;
@@ -182,57 +219,82 @@ export function DraftQueue({ limit }: { limit?: number }) {
   }
 
   if (!items.length) {
-    return <EmptyState>Nothing is waiting. A hidden page, or a change that is not on the website yet, will show up here.</EmptyState>;
+    return <EmptyState>Nothing is waiting for review.</EmptyState>;
   }
 
   return (
     <div>
       <ul className="divide-y divide-[#eef1f4] overflow-hidden rounded-[10px] border border-[#e3e8ee] bg-white">
-        {shown.map((item) => (
-          <li key={item.id} className="px-4 py-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="min-w-[200px] flex-1">
-                <p className="text-[14px] font-semibold text-[#0b1f3a]">{item.title}</p>
-                <p className="mt-0.5 text-[12.5px] text-[#6b7785]">
-                  {item.section} · {item.author}
-                  {item.updatedAt ? ` · ${formatWhen(item.updatedAt)}` : ""}
-                </p>
-                <p className="mt-1 text-[12.5px] text-[#5b6775]">{item.note}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Link href={item.href} className="inline-flex h-9 items-center rounded-[6px] bg-[#0b1f3a] px-3 text-[13px] font-semibold text-white hover:no-underline">
-                  Open
-                </Link>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setReturning((current) => (current === item.id ? null : item.id));
-                    setReason("");
-                  }}
-                >
-                  Send back
-                </Button>
-                {item.discardId ? (
-                  <Button variant="secondary" onClick={() => discard(item)}>
-                    Discard
+        {shown.map((item) => {
+          const busy = busyId === item.id;
+          return (
+            <li key={item.id} className="px-4 py-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="min-w-[200px] flex-1">
+                  <p className="text-[14px] font-semibold text-[#0b1f3a]">{item.title}</p>
+                  <p className="mt-0.5 text-[12.5px] text-[#6b7785]">
+                    {item.section} · {item.author}
+                    {item.updatedAt ? ` · ${formatWhen(item.updatedAt)}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="secondary" disabled={busy} onClick={() => openChanges(item)}>
+                    {openId === item.id ? "Close" : "Open"}
                   </Button>
-                ) : null}
+                  <Button disabled={busy} onClick={() => accept(item)}>
+                    Accept
+                  </Button>
+                  <Button
+                    variant="danger"
+                    disabled={busy}
+                    onClick={() => {
+                      setDeclining((current) => (current === item.id ? null : item.id));
+                      setReason("");
+                      setOpenId(null);
+                    }}
+                  >
+                    Decline
+                  </Button>
+                </div>
               </div>
-            </div>
-            {returning === item.id ? (
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-                <Input
-                  value={reason}
-                  maxLength={300}
-                  onChange={(event) => setReason(event.target.value)}
-                  placeholder="Reason to send back"
-                  aria-label={`Reason for ${item.title}`}
-                />
-                <Button onClick={() => sendBack(item)}>Send</Button>
-              </div>
-            ) : null}
-          </li>
-        ))}
+              {openId === item.id ? (
+                <div className="mt-3 rounded-[8px] border border-[#e3e8ee] bg-[#f8fafc] px-3 py-2">
+                  {opening === item.id ? (
+                    <p className="flex items-center gap-2 py-2 text-[13px] text-[#6b7785]">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Loading the changes…
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-[#e7edf3]">
+                      {(changes[item.id] ?? []).map((change) => (
+                        <li key={change.label} className="py-2">
+                          <p className="text-[12px] font-semibold uppercase tracking-wide text-[#6b7785]">{change.label}</p>
+                          {change.before !== "—" ? (
+                            <p className="mt-1 text-[13px] text-[#8b95a1] line-through">{change.before}</p>
+                          ) : null}
+                          <p className="mt-1 text-[13.5px] text-[#0b1f3a]">{change.after}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ) : null}
+              {declining === item.id ? (
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <Input
+                    value={reason}
+                    maxLength={300}
+                    onChange={(event) => setReason(event.target.value)}
+                    placeholder="Reason for declining"
+                    aria-label={`Reason for declining ${item.title}`}
+                  />
+                  <Button variant="danger" disabled={busy} onClick={() => decline(item)}>
+                    Decline
+                  </Button>
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
       {more > 0 ? (
         <p className="mt-2 text-[13px]">
@@ -246,33 +308,13 @@ export function DraftQueue({ limit }: { limit?: number }) {
 }
 
 export function DraftsPage() {
-  const [hasChanges, setHasChanges] = useState(false);
-
-  useEffect(() => {
-    let stop = false;
-    fetch("/api/drafts", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!stop && data?.items) setHasChanges(data.items.some((item: ReviewDraft) => item.kind === "change"));
-      })
-      .catch(() => {});
-    return () => {
-      stop = true;
-    };
-  }, []);
-
   return (
     <>
       <PageHeader
         title="Drafts"
-        description="Pages that are hidden, and changes that are not on the website yet. Open one, check it, then turn on Show on website. Send it back with a reason if it needs another look."
+        description="Accept to put it on the website, or decline with a reason. Open a draft to see what changed."
       />
       <DraftQueue />
-      {hasChanges ? (
-        <Notice kind="info">
-          Changes to something already on the website do not replace the live page until you open the draft and save it with Show on website switched on.
-        </Notice>
-      ) : null}
     </>
   );
 }
