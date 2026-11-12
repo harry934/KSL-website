@@ -34,6 +34,7 @@ export function GalleryEditor() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [edit, setEdit] = useState<PhotoEdit | null>(null);
   const [savingPhoto, setSavingPhoto] = useState(false);
+  const [returnTo, setReturnTo] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [cropQueue, setCropQueue] = useState<File[]>([]);
   const batch = useRef({ total: 0, added: 0, held: false });
@@ -66,6 +67,7 @@ export function GalleryEditor() {
     const photo = photos.find((row) => row.id === id);
     if (photo) {
       setPlace("any");
+      setPhotoView("all");
       setOpenId(photo.id);
     }
     const clip = videos.find((row) => row.id === id);
@@ -80,8 +82,29 @@ export function GalleryEditor() {
         sort_order: clip.sort_order,
       });
     }
-    window.setTimeout(() => document.getElementById(`gallery-${id}`)?.scrollIntoView({ block: "center" }), 50);
+    if (!photo) window.setTimeout(() => document.getElementById(`gallery-${id}`)?.scrollIntoView({ block: "center" }), 50);
   }, [loading, photos, videos]);
+
+  function focusEditor() {
+    window.setTimeout(() => {
+      document.getElementById("gallery-editor")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  }
+
+  useEffect(() => {
+    if (!openId) return;
+    focusEditor();
+  }, [openId]);
+
+  useEffect(() => {
+    if (!returnTo || openId) return;
+    const id = returnTo;
+    const timer = window.setTimeout(() => {
+      document.getElementById(`gallery-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setReturnTo(null);
+    }, 60);
+    return () => window.clearTimeout(timer);
+  }, [returnTo, openId]);
 
   const shown = useMemo(
     () =>
@@ -125,9 +148,11 @@ export function GalleryEditor() {
         toast(DRAFT_SAVED);
         if (saved.held) load();
       } else if (message) toast(message);
+      return true;
     } catch (e) {
       toast((e as Error).message, "error");
       load();
+      return false;
     }
   }
 
@@ -147,6 +172,17 @@ export function GalleryEditor() {
       };
     });
     if (persist) savePhoto(next, message);
+  }
+
+  function openPhotoEditor(photo: GalleryRow) {
+    setOpenId(photo.id);
+    setEdit({
+      id: photo.id,
+      title: photo.title ?? "",
+      alt_text: photo.alt_text ?? "",
+      category: photo.category || "all",
+      status: photo.status,
+    });
   }
 
   function showPhoto(row: GalleryRow, on: boolean) {
@@ -174,8 +210,15 @@ export function GalleryEditor() {
     setSavingPhoto(true);
     setPhotos((list) => list.map((photo) => (photo.id === row.id ? next : photo)));
     const hidden = next.status !== "published";
-    await savePhoto(next, hidden ? "Photo hidden from the website." : "Photo saved.");
+    const saved = await savePhoto(next, hidden ? "Photo hidden from the website." : "Photo saved.");
     setSavingPhoto(false);
+    if (!saved) return;
+    if (place !== "any" && (next.category || "all") !== place) setPlace("any");
+    if (photoView === "shown" && next.status !== "published") setPhotoView("all");
+    if (photoView === "hidden" && next.status === "published") setPhotoView("all");
+    setOpenId(null);
+    setEdit(null);
+    setReturnTo(next.id);
   }
 
   function queueUploads(files: FileList | null) {
@@ -427,7 +470,7 @@ export function GalleryEditor() {
           </div>
         </div>
         {openPhoto && edit?.id === openPhoto.id ? (
-          <form id={`gallery-${openPhoto.id}`} onSubmit={saveEdit} className="grid gap-4 rounded-[10px] border border-[#e3e8ee] bg-[#fafbfc] p-4 md:grid-cols-[220px_1fr]">
+          <form id="gallery-editor" onSubmit={saveEdit} className="grid scroll-mt-24 gap-4 rounded-[10px] border border-[#e3e8ee] bg-[#fafbfc] p-4 md:grid-cols-[220px_1fr]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={siteAssetUrl(photoSrc(openPhoto))}
@@ -512,7 +555,7 @@ export function GalleryEditor() {
               const hidden = p.status !== "published";
               const selected = openId === p.id;
               return (
-                <li key={p.id} id={selected ? undefined : `gallery-${p.id}`} className={cn("overflow-hidden rounded-[10px] border bg-white", selected ? "border-[#0b1f3a]" : "border-[#e3e8ee]")}>
+                <li key={p.id} id={`gallery-${p.id}`} className={cn("overflow-hidden rounded-[10px] border bg-white", selected ? "border-[#0b1f3a]" : "border-[#e3e8ee]")}>
                   <button
                     type="button"
                     onClick={() => {
@@ -521,14 +564,7 @@ export function GalleryEditor() {
                         setEdit(null);
                         return;
                       }
-                      setOpenId(p.id);
-                      setEdit({
-                        id: p.id,
-                        title: p.title ?? "",
-                        alt_text: p.alt_text ?? "",
-                        category: p.category || "all",
-                        status: p.status,
-                      });
+                      openPhotoEditor(p);
                     }}
                     className="relative block aspect-[4/3] w-full overflow-hidden bg-[#e7edf3]"
                     aria-label={p.alt_text || p.title || "Photo"}
@@ -556,14 +592,8 @@ export function GalleryEditor() {
                         size="sm"
                         className="flex-1"
                         onClick={() => {
-                          setOpenId(p.id);
-                          setEdit({
-                            id: p.id,
-                            title: p.title ?? "",
-                            alt_text: p.alt_text ?? "",
-                            category: p.category || "all",
-                            status: p.status,
-                          });
+                          if (openId === p.id) focusEditor();
+                          else openPhotoEditor(p);
                         }}
                       >
                         <Pencil className="h-3.5 w-3.5" /> Edit
