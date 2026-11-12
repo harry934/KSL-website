@@ -529,6 +529,8 @@ const FIELD_LABELS: Record<string, string> = {
   value: "Setting",
   chart: "Organisation chart",
   board_sections: "Board sections",
+  board_groups: "Board groups",
+  board_group: "Group",
   group_order: "Group order",
   media: "Photos",
   featured: "Featured",
@@ -666,7 +668,7 @@ function changeLines(target: DraftTarget): DraftChange[] {
     const after = merged[key];
     if (payload && sameValue(before, after)) continue;
     if (!payload && (after == null || after === "" || after === false)) continue;
-    if (key === "chart" || key === "board_sections" || key === "group_order" || key === "media") {
+    if (key === "chart" || key === "board_sections" || key === "board_groups" || key === "group_order" || key === "media") {
       lines.push({ label: FIELD_LABELS[key], before: before == null ? "Empty" : "Previous", after: "New" });
       continue;
     }

@@ -49,6 +49,17 @@ export type BoardSection = {
   showBlurb: boolean;
 };
 
+export type BoardGroup = {
+  id: string;
+  label: string;
+};
+
+export const SHIPPED_BOARD_GROUPS: BoardGroup[] = [
+  { id: "defence", label: "Defence" },
+  { id: "ps", label: "Principal Secretaries" },
+  { id: "independent", label: "Independent members" },
+];
+
 export const SHIPPED_BOARD_SECTIONS: BoardSection[] = [
   { id: "featured", name: "Leadership", title: "Leadership", blurb: "", showTitle: true, showBlurb: false },
   { id: "audit", name: "Audit", title: "Audit", blurb: "Finance, controls, and public accountability.", showTitle: true, showBlurb: true },
@@ -177,6 +188,19 @@ export function cleanBoardSections(value: unknown): BoardSection[] {
   return sections.length ? sections : SHIPPED_BOARD_SECTIONS.map((section) => ({ ...section }));
 }
 
+export function cleanBoardGroups(value: unknown): BoardGroup[] {
+  if (!Array.isArray(value) || value.length === 0) return SHIPPED_BOARD_GROUPS.map((group) => ({ ...group }));
+  const seen = new Set<string>();
+  const groups = value.slice(0, 12).map((item, index) => {
+    const row = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+    let id = /^[a-z0-9_-]{1,40}$/.test(String(row.id ?? "")) ? String(row.id) : `group-${index + 1}`;
+    if (seen.has(id)) id = `group-${index + 1}`;
+    seen.add(id);
+    return { id, label: clip(row.label ?? row.name, 80) || `Group ${index + 1}` };
+  });
+  return groups.length ? groups : SHIPPED_BOARD_GROUPS.map((group) => ({ ...group }));
+}
+
 export function cleanMilestonesHeading(value: unknown): MilestonesHeading {
   const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   return {
@@ -283,6 +307,7 @@ export function toPublicOrganization(
     intro_body?: string | null;
     chart?: unknown;
     board_sections?: unknown;
+    board_groups?: unknown;
     milestones_title?: string | null;
     milestones_lead?: string | null;
   } | null,
@@ -312,6 +337,7 @@ export function toPublicOrganization(
   const heading = cleanMilestonesHeading(settings ?? {});
   const chart = settings?.chart ? cleanOrgChart(settings.chart) : null;
   const boardSections = cleanBoardSections(settings?.board_sections);
+  const boardGroups = cleanBoardGroups(settings?.board_groups);
   const pubMilestones = milestones
     .filter((row) => row.status === "published")
     .sort((a, b) => a.sort_order - b.sort_order)
@@ -337,7 +363,9 @@ export function toPublicOrganization(
       }];
     });
   const allowed = new Set(boardSections.map((section) => section.id));
+  const allowedGroups = new Set(boardGroups.map((group) => group.id));
   const fallbackSection = boardSections[0]?.id ?? "featured";
+  const fallbackGroup = boardGroups[0]?.id ?? "independent";
   return {
     chartDownloadId: settings?.chart_download_id ?? undefined,
     intro,
@@ -346,8 +374,10 @@ export function toPublicOrganization(
     board: pubBoard.map((member) => ({
       ...member,
       section: allowed.has(member.section) ? member.section : fallbackSection,
+      group: allowedGroups.has(member.group) ? member.group : fallbackGroup,
     })),
     boardSections: boardSections.map(({ id, title, blurb, showTitle, showBlurb }) => ({ id, title, blurb, showTitle, showBlurb })),
+    boardGroups: boardGroups.map(({ id, label }) => ({ id, label })),
     milestonesTitle: heading.title,
     milestonesLead: heading.lead,
     milestones: pubMilestones,

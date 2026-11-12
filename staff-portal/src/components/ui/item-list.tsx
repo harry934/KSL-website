@@ -7,6 +7,7 @@ import { EmptyState, StatusBadge } from "@/components/ui/form-bits";
 import { DRAG_FROM, useLiveDrag } from "@/components/ui/live-drag";
 import { ListPager, SearchBox, matchesSearch } from "@/components/ui/list-tools";
 import { siteAssetUrl } from "@/lib/site-url";
+import { cn } from "@/lib/cn";
 
 export type ListItem = {
   id: string;
@@ -29,6 +30,7 @@ export function ItemList({
   showImages,
   emptyText,
   dragFrom = DRAG_FROM,
+  extra,
 }: {
   items: ListItem[];
   onEdit: (id: string) => void;
@@ -37,6 +39,7 @@ export function ItemList({
   showImages?: boolean;
   emptyText: string;
   dragFrom?: number;
+  extra?: (item: ListItem) => React.ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -95,14 +98,18 @@ export function ItemList({
               key={item.id}
               ref={drag.itemRef(index)}
               style={canDrag ? drag.itemStyle(index) : undefined}
-              className="flex flex-wrap items-center gap-3 bg-white px-4 py-3 hover:bg-[#fafbfc] sm:flex-nowrap"
+              onPointerDown={canDrag ? (event) => {
+                const target = event.target as HTMLElement | null;
+                if (target?.closest("button, a, input, select, textarea, label")) return;
+                drag.onGripPointerDown(index, event);
+              } : undefined}
+              onClickCapture={drag.eatClick}
+              className={`flex flex-wrap items-center gap-3 bg-white px-4 py-3 hover:bg-[#fafbfc] sm:flex-nowrap${canDrag ? " cursor-grab touch-none" : ""}`}
             >
               {canDrag && (
                 <span
-                  onPointerDown={(event) => drag.onGripPointerDown(index, event)}
                   className="inline-flex h-8 w-6 shrink-0 cursor-grab touch-none items-center justify-center text-[#98a3b1] active:cursor-grabbing"
-                  aria-label="Drag to reorder"
-                  title="Drag to reorder"
+                  aria-hidden="true"
                 >
                   <GripVertical className="h-4 w-4" />
                 </span>
@@ -117,10 +124,22 @@ export function ItemList({
                   )}
                 </span>
               )}
-              <button type="button" onClick={() => onEdit(item.id)} className="min-w-0 flex-1 text-left">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => onEdit(item.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onEdit(item.id);
+                  }
+                }}
+                className={cn("min-w-0 flex-1 text-left", canDrag && "cursor-grab")}
+              >
                 <p className="truncate text-[14px] font-semibold text-[#0b1f3a] hover:underline">{item.title || "Untitled"}</p>
                 {item.subtitle && <p className="truncate text-[12.5px] text-[#6b7785]">{item.subtitle}</p>}
-              </button>
+              </div>
+              {extra?.(item)}
               {item.status && <StatusBadge status={item.status} />}
               <span className="flex shrink-0 items-center gap-1">
                 {item.siteHref && (

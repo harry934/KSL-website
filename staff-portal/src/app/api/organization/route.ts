@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { clearReviewDraft, editorSavePlan, overlayDrafts, overlaySettings, saveBody } from "@/lib/draft-review";
-import { cleanBoardSections, cleanIntro, cleanMilestoneInput, cleanMilestonesHeading, cleanOrgChart } from "@/lib/organization";
+import { cleanBoardGroups, cleanBoardSections, cleanIntro, cleanMilestoneInput, cleanMilestonesHeading, cleanOrgChart } from "@/lib/organization";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { NextRequest, NextResponse } from "next/server";
@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
     const chart = cleanOrgChart(body.chart);
     const heading = cleanMilestonesHeading(body);
     const sections = Array.isArray(body.board_sections) ? cleanBoardSections(body.board_sections) : null;
+    const groups = Array.isArray(body.board_groups) ? cleanBoardGroups(body.board_groups) : null;
     const { error: upErr } = await admin.from("organization_settings").upsert({
       id: "default",
       chart_download_id: body.chart_download_id ?? null,
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
       milestones_title: heading.title,
       milestones_lead: heading.lead,
       ...(sections ? { board_sections: sections } : {}),
+      ...(groups ? { board_groups: groups } : {}),
     });
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     if (sections) {
@@ -85,7 +87,14 @@ export async function POST(req: NextRequest) {
         await admin.from("organization_board_members").update({ section: allowed[0] }).in("id", orphans.map((row) => row.id));
       }
     }
-    if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    if (groups) {
+      const allowed = groups.map((group) => group.id);
+      const { data: members } = await admin.from("organization_board_members").select("id, board_group");
+      const orphans = (members ?? []).filter((row) => !allowed.includes(String(row.board_group ?? "")));
+      if (orphans.length) {
+        await admin.from("organization_board_members").update({ board_group: allowed[0] }).in("id", orphans.map((row) => row.id));
+      }
+    }
     await logActivity(session.userId, "organization", "upsert", "organization_settings", "default");
     await clearReviewDraft(admin, "organization_settings", null, "default");
     return NextResponse.json(saveBody(session, "organization"));
@@ -127,9 +136,15 @@ export async function POST(req: NextRequest) {
     const name = String(body.full_name ?? "").trim();
     const role = String(body.role ?? "").trim();
     if (!name || !role) return NextResponse.json({ error: "A name and a role are required." }, { status: 400 });
-    const group = ["defence", "ps", "independent"].includes(body.board_group) ? body.board_group : "independent";
-    const { data: settingsRow } = await admin.from("organization_settings").select("board_sections").eq("id", "default").maybeSingle();
+    const { data: settingsRow } = await admin.from("organization_settings").select("board_sections, board_groups").eq("id", "default").maybeSingle();
     const sections = cleanBoardSections(settingsRow?.board_sections);
+    const groups = cleanBoardGroups(settingsRow?.board_groups);
+    const requested = String(body.board_group ?? "");
+    const group = groups.some((item) => item.id === requested)
+      ? requested
+      : /^[a-z0-9_-]{1,40}$/.test(requested)
+        ? requested
+        : groups[0].id;
     const section = sections.some((item) => item.id === body.section) ? String(body.section) : sections[0].id;
     const previous = await rememberFiles(admin, "organization_board_members", body.id, ["photo_url"]);
     const { data, error: upErr } = await admin

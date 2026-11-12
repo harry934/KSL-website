@@ -7,13 +7,14 @@ export const DRAG_FROM = 6;
 
 type Drag = { from: number; to: number; dy: number; stride: number };
 
-/** Rows slide apart while a handle is dragged, then the new order is saved on release. */
+/** Rows slide apart while a row is dragged, then the new order is saved on release. */
 export function useLiveDrag(onCommit: (from: number, to: number) => void) {
-  const refs = useRef(new Map<number, HTMLElement>());
+  const refs = useRef(new Set<HTMLElement>());
   const commit = useRef(onCommit);
   commit.current = onCommit;
   const dragRef = useRef<Drag | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
+  const moved = useRef(false);
 
   function publish(next: Drag | null) {
     dragRef.current = next;
@@ -31,8 +32,9 @@ export function useLiveDrag(onCommit: (from: number, to: number) => void) {
 
   function itemRef(index: number) {
     return (node: HTMLElement | null) => {
-      if (node) refs.current.set(index, node);
-      else refs.current.delete(index);
+      if (!node) return;
+      node.dataset.dragIndex = String(index);
+      refs.current.add(node);
     };
   }
 
@@ -50,37 +52,47 @@ export function useLiveDrag(onCommit: (from: number, to: number) => void) {
     };
   }
 
+  function slotsNow() {
+    const stale: HTMLElement[] = [];
+    const byIndex = new Map<number, HTMLElement>();
+    for (const el of refs.current) {
+      if (!el.isConnected) {
+        stale.push(el);
+        continue;
+      }
+      const index = Number(el.dataset.dragIndex);
+      if (Number.isInteger(index)) byIndex.set(index, el);
+    }
+    stale.forEach((el) => refs.current.delete(el));
+    return [...byIndex.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([index, el]) => {
+        const box = el.getBoundingClientRect();
+        return { i: index, top: box.top, height: box.height };
+      });
+  }
+
   function onGripPointerDown(index: number, event: React.PointerEvent<HTMLElement>) {
     if (event.button !== 0) return;
-    const row = refs.current.get(index);
+    const slots = slotsNow();
+    const row = slots.find((slot) => slot.i === index);
     if (!row) return;
-    event.preventDefault();
     event.stopPropagation();
 
     const startY = event.clientY;
-    const slots = [...refs.current.entries()]
-      .map(([i, el]) => {
-        const box = el.getBoundingClientRect();
-        return { i, top: box.top, height: box.height };
-      })
-      .sort((a, b) => a.i - b.i);
     const place = slots.findIndex((slot) => slot.i === index);
     const stride =
       place >= 0 && place < slots.length - 1
         ? slots[place + 1].top - slots[place].top
         : place > 0
           ? slots[place].top - slots[place - 1].top
-          : row.getBoundingClientRect().height;
+          : row.height;
     const mids = slots.map((slot) => ({ i: slot.i, mid: slot.top + slot.height / 2 }));
-
-    const handle = event.currentTarget;
-    handle.setPointerCapture(event.pointerId);
     const previousCursor = document.body.style.cursor;
     const previousSelect = document.body.style.userSelect;
-    document.body.style.cursor = "grabbing";
-    document.body.style.userSelect = "none";
-    publish({ from: index, to: index, dy: 0, stride });
+    moved.current = false;
     let frame = 0;
+    let dragging = false;
 
     function targetIndex(clientY: number) {
       let to = slots[0]?.i ?? index;
@@ -90,34 +102,57 @@ export function useLiveDrag(onCommit: (from: number, to: number) => void) {
       return to;
     }
 
+    function begin() {
+      dragging = true;
+      moved.current = true;
+      document.body.style.cursor = "grabbing";
+      document.body.style.userSelect = "none";
+      publish({ from: index, to: index, dy: 0, stride });
+    }
+
     function move(pointer: PointerEvent) {
+      const dy = pointer.clientY - startY;
+      if (!dragging) {
+        if (Math.abs(dy) < 4) return;
+        pointer.preventDefault();
+        begin();
+      }
       const current = dragRef.current;
       if (!current) return;
-      dragRef.current = { ...current, dy: pointer.clientY - startY, to: targetIndex(pointer.clientY) };
+      dragRef.current = { ...current, dy, to: targetIndex(pointer.clientY) };
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
         const latest = dragRef.current;
-        if (latest) setDrag(latest);
+        if (latest) setDrag({ ...latest });
       });
     }
 
-    function end() {
+    function end(pointer: PointerEvent) {
       if (frame) cancelAnimationFrame(frame);
-      handle.removeEventListener("pointermove", move);
-      handle.removeEventListener("pointerup", end);
-      handle.removeEventListener("pointercancel", end);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
       document.body.style.cursor = previousCursor;
       document.body.style.userSelect = previousSelect;
+      if (!dragging) return;
       const current = dragRef.current;
+      const to = targetIndex(pointer.clientY);
       publish(null);
-      if (current && current.from !== current.to) commit.current(current.from, current.to);
+      if (current && current.from !== to) commit.current(current.from, to);
     }
 
-    handle.addEventListener("pointermove", move);
-    handle.addEventListener("pointerup", end);
-    handle.addEventListener("pointercancel", end);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
   }
 
-  return { itemRef, itemStyle, onGripPointerDown, dragging: drag != null };
+  function eatClick(event: React.SyntheticEvent) {
+    if (!moved.current) return;
+    moved.current = false;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  return { itemRef, itemStyle, onGripPointerDown, dragging: drag != null, eatClick };
 }

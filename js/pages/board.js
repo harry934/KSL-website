@@ -3,10 +3,6 @@
     "use strict";
 
     var cards = document.querySelectorAll(".board-card");
-
-    var filters = document.querySelectorAll(".board-filter");
-    var committees = document.querySelectorAll(".board-committee");
-    var featured = document.querySelector(".board-featured");
     var empty = document.getElementById("boardEmpty");
     var lastCard = null;
 
@@ -86,14 +82,17 @@
         }
     }
 
-    filters.forEach(function (button) {
-        button.addEventListener("click", function () {
-            filters.forEach(function (item) {
+    var filterBar = document.querySelector(".board-filters");
+    if (filterBar) {
+        filterBar.addEventListener("click", function (event) {
+            var button = event.target.closest(".board-filter");
+            if (!button || !filterBar.contains(button)) return;
+            filterBar.querySelectorAll(".board-filter").forEach(function (item) {
                 item.setAttribute("aria-pressed", item === button ? "true" : "false");
             });
             applyFilter(button.getAttribute("data-filter") || "all");
         });
-    });
+    }
 
     function cardHasBiography(card) {
         var summary = card.querySelector(".board-card-body > p:not(.board-role)");
@@ -272,8 +271,18 @@
         }).join("");
     }
 
-    function memberCard(member, featured) {
-        var group = member.group === "defence" || member.group === "ps" ? member.group : "independent";
+    function memberGroup(member, groups) {
+        var id = String(member.group || "");
+        var list = groups || [];
+        for (var i = 0; i < list.length; i += 1) {
+            if (list[i].id === id) return id;
+        }
+        if (id === "defence" || id === "ps" || id === "independent") return id;
+        return (list[0] && list[0].id) || "independent";
+    }
+
+    function memberCard(member, featured, groups) {
+        var group = memberGroup(member, groups);
         var summary = String(member.summary || "").trim();
         var bio = bioHtml(member.bio);
         var readable = !!(summary || bio);
@@ -286,7 +295,21 @@
             "</div></article>";
     }
 
-    function paintBoard(members, sections) {
+    function paintFilters(groups) {
+        var bar = document.querySelector(".board-filters");
+        if (!bar || !groups || !groups.length) return;
+        var pressed = bar.querySelector(".board-filter[aria-pressed='true']");
+        var current = pressed ? pressed.getAttribute("data-filter") || "all" : "all";
+        var known = current === "all" || groups.some(function (group) { return group.id === current; });
+        if (!known) current = "all";
+        var html = '<button type="button" class="board-filter" data-filter="all" aria-pressed="' + (current === "all" ? "true" : "false") + '">All</button>';
+        groups.forEach(function (group) {
+            html += '<button type="button" class="board-filter" data-filter="' + escapeHtml(group.id) + '" aria-pressed="' + (current === group.id ? "true" : "false") + '">' + escapeHtml(group.label) + "</button>";
+        });
+        bar.innerHTML = html;
+    }
+
+    function paintBoard(members, sections, groups) {
         var root = document.getElementById("ksl-board-root");
         if (!root) return false;
         var list = sections && sections.length ? sections : [
@@ -296,6 +319,7 @@
             { id: "strategy", title: "Strategy", blurb: "Industrial growth and long term direction." }
         ];
         if (!members.length && !(sections && sections.length)) return false;
+        paintFilters(groups);
         root.innerHTML = list.map(function (section, index) {
             var key = section.id || section.key;
             var people = members.filter(function (member) { return (member.section || list[0].id || "audit") === key; });
@@ -305,7 +329,7 @@
             var heading = (showTitle ? '<h2 id="' + headingId + '" class="board-section-title">' + escapeHtml(section.title) + "</h2>" : "") +
                 (showBlurb ? '<p class="board-section-blurb">' + escapeHtml(section.blurb) + "</p>" : "");
             var cardsHtml = people.map(function (member) {
-                return '<div class="board-slot">' + memberCard(member, index === 0) + "</div>";
+                return '<div class="board-slot">' + memberCard(member, index === 0, groups) + "</div>";
             }).join("");
             var label = showTitle ? ' aria-labelledby="' + headingId + '"' : ' aria-label="Board members"';
             var rowClass = index === 0 ? "board-featured" : "board-grid";
@@ -358,7 +382,7 @@
             return;
         }
         window.KSL_CONTENT.fetchJson("/api/public/organization", "data/organization.json").then(function (data) {
-            paintBoard((data && data.board) || [], (data && data.boardSections) || null);
+            paintBoard((data && data.board) || [], (data && data.boardSections) || null, (data && data.boardGroups) || null);
             if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
         }).catch(function () {
             if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");

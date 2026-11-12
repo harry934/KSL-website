@@ -12,7 +12,7 @@ import { looksLikeCode } from "./input-guard.ts";
 import { issueMessagesUnlockToken, maskWebsiteMessage, verifyMessagesUnlockToken } from "./message-unlock.ts";
 import { IDLE_MS, judgeSession, sessionIsLive } from "./staff-session.ts";
 import { sanitizeRichHtml } from "./sanitize-html.ts";
-import { cleanBoardSections, cleanIntro, cleanMilestoneInput, cleanOrgChart, parseMilestoneWhen, toPublicOrganization, type MilestoneRow } from "./organization.ts";
+import { cleanBoardGroups, cleanBoardSections, cleanIntro, cleanMilestoneInput, cleanOrgChart, parseMilestoneWhen, toPublicOrganization, type MilestoneRow } from "./organization.ts";
 import { safeLink } from "./safe-link.ts";
 import { verifyTurnstile } from "./contact-token.ts";
 import { clientIp } from "./auth-server.ts";
@@ -138,6 +138,15 @@ test("organisation chart keeps page order and drops unsafe text", () => {
   const created = cleanBoardSections([{ id: "section-new", title: "", blurb: "" }]);
   assert.equal(created[0].name, "Section 1");
   assert.equal(created[0].title, "");
+  const groups = cleanBoardGroups([
+    { id: "defence", label: "Defence" },
+    { id: "Bad Group", label: "Audit committee" },
+    { id: "defence", label: "Duplicate" },
+  ]);
+  assert.equal(groups[0].id, "defence");
+  assert.equal(groups[1].id, "group-2");
+  assert.equal(groups[1].label, "Audit committee");
+  assert.equal(cleanBoardGroups([])[0].id, "defence");
   const cleaned = cleanMilestoneInput({
     happened_on: "2022-08-02T00:00:00.000Z",
     title: "Uhuru II floats",

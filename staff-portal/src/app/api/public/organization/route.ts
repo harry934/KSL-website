@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   const admin = createAdminClient();
   const [settingsRes, leadershipRes, boardRes, milestoneRes] = await Promise.all([
-    admin.from("organization_settings").select("chart_download_id, intro_kicker, intro_title, intro_body, chart, board_sections, milestones_title, milestones_lead").eq("id", "default").maybeSingle(),
+    admin.from("organization_settings").select("chart_download_id, intro_kicker, intro_title, intro_body, chart, board_sections, board_groups, milestones_title, milestones_lead").eq("id", "default").maybeSingle(),
     admin.from("organization_leadership").select("*").eq("status", "published").order("sort_order", { ascending: true }),
     admin.from("organization_board_members").select("*").eq("status", "published").order("sort_order", { ascending: true }),
     admin.from("organization_milestones").select("*").eq("status", "published").order("sort_order", { ascending: true }),

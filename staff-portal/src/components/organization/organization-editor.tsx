@@ -10,10 +10,10 @@ import { SearchSelect } from "@/components/ui/search-select";
 import { ItemList } from "@/components/ui/item-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
-import { reorderItem } from "@/lib/list-utils";
+import { keyFrom, reorderItem } from "@/lib/list-utils";
 import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { documentOptions, useDocuments } from "@/lib/use-documents";
-import { cleanBoardSections, cleanIntro, cleanOrgChart, milestoneDateText, parseMilestoneWhen, SHIPPED_BOARD_SECTIONS, SHIPPED_CHART, SHIPPED_INTRO, SHIPPED_MILESTONES_HEADING, type BoardMemberRow, type BoardSection, type LeadershipRow, type MilestoneRow, type MilestonesHeading, type OrgChart, type OrgIntro } from "@/lib/organization";
+import { cleanBoardGroups, cleanBoardSections, cleanIntro, cleanOrgChart, milestoneDateText, parseMilestoneWhen, SHIPPED_BOARD_GROUPS, SHIPPED_BOARD_SECTIONS, SHIPPED_CHART, SHIPPED_INTRO, SHIPPED_MILESTONES_HEADING, type BoardGroup, type BoardMemberRow, type BoardSection, type LeadershipRow, type MilestoneRow, type MilestonesHeading, type OrgChart, type OrgIntro } from "@/lib/organization";
 type Scope = "leadership" | "board" | "milestone";
 type Draft = {
   scope: Scope;
@@ -52,12 +52,6 @@ function milestoneWhenLabel(row: MilestoneRow) {
   return text;
 }
 
-const BOARD_GROUPS = [
-  { value: "defence", label: "Defence" },
-  { value: "ps", label: "Principal Secretaries" },
-  { value: "independent", label: "Independent members" },
-];
-
 export function OrganizationEditor({ view = "organisation" }: { view?: "organisation" | "board" }) {
   const { toast, confirm } = useFeedback();
   const canPublish = useCan("organization", "publish");
@@ -71,10 +65,12 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
   const [milestones, setMilestones] = useState<MilestoneRow[]>([]);
   const [milestonesHeading, setMilestonesHeading] = useState<MilestonesHeading>(SHIPPED_MILESTONES_HEADING);
   const [boardSections, setBoardSections] = useState<BoardSection[]>(SHIPPED_BOARD_SECTIONS);
+  const [boardGroups, setBoardGroups] = useState<BoardGroup[]>(SHIPPED_BOARD_GROUPS);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Draft | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const returnTo = useRef<string | null>(null);
+  const savedGroupIds = useRef<string[]>(SHIPPED_BOARD_GROUPS.map((group) => group.id));
 
   function showSection(id: string | null) {
     if (!id) return;
@@ -103,6 +99,9 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
       setIntro(data.settings?.intro_title ? cleanIntro(data.settings) : SHIPPED_INTRO);
       setChart(data.settings?.chart ? cleanOrgChart(data.settings.chart) : SHIPPED_CHART);
       setBoardSections(Array.isArray(data.settings?.board_sections) ? cleanBoardSections(data.settings.board_sections) : SHIPPED_BOARD_SECTIONS);
+      const groups = Array.isArray(data.settings?.board_groups) ? cleanBoardGroups(data.settings.board_groups) : SHIPPED_BOARD_GROUPS;
+      setBoardGroups(groups);
+      savedGroupIds.current = groups.map((group) => group.id);
       setLeadership(data.leadership ?? []);
       setBoard(data.board ?? []);
       setMilestones(data.milestones ?? []);
@@ -162,6 +161,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
       intro_body: intro.body,
       chart,
       board_sections: boardSections,
+      board_groups: boardGroups,
       milestones_title: milestonesHeading.title,
       milestones_lead: milestonesHeading.lead,
     };
@@ -188,7 +188,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
       scope,
       role: "",
       full_name: "",
-      board_group: "independent",
+      board_group: boardGroups[0]?.id ?? "independent",
       section,
       photo_url: "",
       summary: "",
@@ -300,6 +300,62 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
     }
   }
 
+  async function changeGroup(id: string, groupId: string) {
+    const row = board.find((member) => member.id === id);
+    if (!row || row.board_group === groupId) return;
+    setBoard(board.map((member) => (member.id === id ? { ...member, board_group: groupId } : member)));
+    try {
+      if (!savedGroupIds.current.includes(groupId)) {
+        const savedGroups = await sendJson("/api/organization", "POST", { ...settingsBody(), board_groups: boardGroups });
+        if (!awaitingReview(savedGroups)) savedGroupIds.current = boardGroups.map((group) => group.id);
+      }
+      const saved = await sendJson("/api/organization", "POST", { ...row, board_group: groupId, scope: "board" });
+      if (awaitingReview(saved)) toast(DRAFT_SAVED);
+    } catch (err) {
+      toast((err as Error).message, "error");
+      load();
+    }
+  }
+
+  function moveGroup(index: number, direction: -1 | 1) {
+    const next = index + direction;
+    if (next < 0 || next >= boardGroups.length) return;
+    const groups = boardGroups.slice();
+    const [group] = groups.splice(index, 1);
+    groups.splice(next, 0, group);
+    setBoardGroups(groups);
+  }
+
+  async function removeGroup(id: string) {
+    if (boardGroups.length < 2) {
+      toast("Keep at least one group.", "error");
+      return;
+    }
+    const people = board.filter((member) => member.board_group === id);
+    if (people.length) {
+      const ok = await confirm({
+        title: "Remove this group?",
+        message: `${people.length} ${people.length === 1 ? "person moves" : "people move"} into the first group that remains.`,
+        confirmLabel: "Remove",
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    const groups = boardGroups.filter((group) => group.id !== id);
+    const fallback = groups[0].id;
+    setBoardGroups(groups);
+    setBoard(board.map((member) => (member.board_group === id ? { ...member, board_group: fallback } : member)));
+    try {
+      const saved = await sendJson("/api/organization", "POST", { ...settingsBody(), board_groups: groups });
+      await Promise.all(people.map((member) => sendJson("/api/organization", "POST", { ...member, board_group: fallback, scope: "board" })));
+      if (!awaitingReview(saved)) savedGroupIds.current = groups.map((group) => group.id);
+      toast(awaitingReview(saved) ? DRAFT_SAVED : "Group removed.");
+    } catch (err) {
+      toast((err as Error).message, "error");
+      load();
+    }
+  }
+
   function moveSection(index: number, direction: -1 | 1) {
     const next = index + direction;
     if (next < 0 || next >= boardSections.length) return;
@@ -403,9 +459,9 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
                   <Input value={editing.role ?? ""} onChange={(e) => set({ role: e.target.value })} placeholder="e.g. Board member" />
                 </Field>
                 <Field label="Group">
-                  <Select value={editing.board_group ?? "independent"} onChange={(e) => set({ board_group: e.target.value })}>
-                    {BOARD_GROUPS.map((group) => (
-                      <option key={group.value} value={group.value}>
+                  <Select value={editing.board_group ?? boardGroups[0]?.id ?? "independent"} onChange={(e) => set({ board_group: e.target.value })}>
+                    {(boardGroups.some((group) => group.id === editing.board_group) ? boardGroups : [...boardGroups, { id: editing.board_group || "independent", label: editing.board_group || "Group" }]).map((group) => (
+                      <option key={group.id} value={group.id}>
                         {group.label}
                       </option>
                     ))}
@@ -470,7 +526,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
     );
   }
 
-  const groupLabel = (value: string) => BOARD_GROUPS.find((group) => group.value === value)?.label ?? value;
+  const groupLabel = (value: string) => boardGroups.find((group) => group.id === value)?.label ?? value;
   const orgNav = [
     { id: "org-intro", label: "Introduction" },
     { id: "org-leadership", label: "Leadership" },
@@ -536,7 +592,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-[15px] font-bold text-[#0b1f3a]">Board members</h2>
-            <p className="text-[13px] text-[#6b7785]">Drag a member inside their section to change the order. The top person is shown first. Save the sections after you change a name, then refresh the KSL Board page.</p>
+            <p className="text-[13px] text-[#6b7785]">Drag a member up or down inside their section. The top person is shown first. Use the group menu to move someone between groups.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -555,6 +611,46 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
             </Button>
           </div>
         </div>
+        <div id="board-groups" className="space-y-3 rounded-md border border-[#e4eaf2] p-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-[14px] font-bold text-[#0b1f3a]">Groups</h3>
+              <p className="text-[13px] text-[#6b7785]">These are the filters on the KSL Board page. Add a group, rename it, or remove it. Save the board after you change a name.</p>
+            </div>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                const id = keyFrom(`Group ${boardGroups.length + 1}`, boardGroups.map((group) => group.id));
+                setBoardGroups([...boardGroups, { id, label: `Group ${boardGroups.length + 1}` }]);
+              }}
+            >
+              <Plus className="h-4 w-4" /> Add group
+            </Button>
+          </div>
+          {boardGroups.map((group, index) => (
+            <div key={group.id} className="flex flex-wrap items-center gap-2">
+              <span className="w-6 text-[12px] font-bold text-[#99792c]">{index + 1}</span>
+              <label className="min-w-[180px] flex-1 text-[12px] font-semibold text-[#6b7785]">
+                Group name
+                <Input
+                  className="mt-1 font-normal"
+                  value={group.label}
+                  onChange={(e) => setBoardGroups(boardGroups.map((row) => (row.id === group.id ? { ...row, label: e.target.value } : row)))}
+                  aria-label={`Group ${index + 1} name`}
+                />
+              </label>
+              <Button variant="secondary" onClick={() => moveGroup(index, -1)} disabled={index === 0} aria-label="Move group up">
+                <ChevronUp className="h-4 w-4" />
+              </Button>
+              <Button variant="secondary" onClick={() => moveGroup(index, 1)} disabled={index === boardGroups.length - 1} aria-label="Move group down">
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+              <Button variant="secondary" onClick={() => removeGroup(group.id)} aria-label="Remove group">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
         {boardSections.map((section, index) => {
           const people = board.filter((row) => memberSection(row) === section.id);
           return (
@@ -566,7 +662,10 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
                   <Input
                     className="mt-1 font-normal"
                     value={section.name}
-                    onChange={(e) => setBoardSections(boardSections.map((row) => (row.id === section.id ? { ...row, name: e.target.value } : row)))}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      setBoardSections(boardSections.map((row) => (row.id === section.id ? { ...row, name, title: name, showTitle: Boolean(name.trim()) } : row)));
+                    }}
                     placeholder="Section name"
                     aria-label={`Section ${index + 1} name`}
                   />
@@ -597,13 +696,29 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
                 }}
                 onDelete={canDelete ? (id) => remove(id, "board") : undefined}
                 onReorder={(from, to) => moveBoard(section.id, from, to)}
+                extra={(item) => {
+                  const current = board.find((row) => row.id === item.id)?.board_group ?? boardGroups[0]?.id ?? "";
+                  const options = boardGroups.some((group) => group.id === current) ? boardGroups : [...boardGroups, { id: current, label: current || "Group" }];
+                  return (
+                    <select
+                      className="h-8 max-w-[190px] rounded-md border border-[#d7e0ec] bg-white px-2 text-[12.5px] font-normal text-[#0b1f3a]"
+                      value={current}
+                      onChange={(event) => changeGroup(item.id, event.target.value)}
+                      aria-label={`Group for ${item.title}`}
+                    >
+                      {options.map((group) => (
+                        <option key={group.id} value={group.id}>{group.label}</option>
+                      ))}
+                    </select>
+                  );
+                }}
                 emptyText={`No one in ${section.name.trim() || "this section"} yet.`}
               />
             </div>
           );
         })}
         <Button onClick={() => saveSettings("board-sections")} disabled={saving === "settings"}>
-          {saving === "settings" ? "Saving…" : "Save board sections"}
+          {saving === "settings" ? "Saving…" : "Save board"}
         </Button>
       </div>
       )}
