@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261112-nav";
+    var ASSET_V = "20261112-strip";
 
     var BUNDLES = {
         wow: [

@@ -1739,36 +1739,41 @@
 
         var renderGallery = function () {
             galleryRoot.innerHTML = "";
-            var visible = 0;
-            galleryPhotos.forEach(function (photo) {
+            var visible = galleryPhotos.filter(function (photo) {
                 var cat = photo.category || "all";
-                if (galleryFilter !== "all" && cat !== galleryFilter) {
-                    return;
-                }
-                visible += 1;
-                var fig = document.createElement("figure");
-                fig.className = "ksl-gallery-item";
-                fig.setAttribute("data-category", cat);
-                var link = document.createElement("a");
-                link.href = photo.src;
-                link.setAttribute("data-lightbox", "ksl-gallery");
-                link.setAttribute("data-title", photo.title || "");
-                var img = document.createElement("img");
-                img.src = photo.src;
-                img.alt = photo.alt || photo.title || "Kenya Shipyards Limited gallery";
-                img.loading = "lazy";
-                img.decoding = "async";
-                link.appendChild(img);
-                fig.appendChild(link);
-                if (photo.title) {
-                    var cap = document.createElement("figcaption");
-                    cap.textContent = photo.title;
-                    fig.appendChild(cap);
-                }
-                galleryRoot.appendChild(fig);
+                return galleryFilter === "all" || cat === galleryFilter;
             });
-            if (!visible) {
+            if (!visible.length) {
                 galleryRoot.innerHTML = '<section class="ksl-empty-state" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.5"></circle><path d="m21 16-5.2-5.2a1.2 1.2 0 0 0-1.7 0L8 17"></path></svg><h3>No photos in this category</h3><p>Try another filter or view the full gallery.</p><div class="ksl-empty-state-actions"><button class="btn btn-primary" type="button" data-gallery-all>View all photos</button></div></section>';
+                return;
+            }
+            for (var i = 0; i < visible.length; i += 6) {
+                var row = document.createElement("div");
+                row.className = "ksl-gallery-row";
+                visible.slice(i, i + 6).forEach(function (photo) {
+                    var cat = photo.category || "all";
+                    var fig = document.createElement("figure");
+                    fig.className = "ksl-gallery-item";
+                    fig.setAttribute("data-category", cat);
+                    var link = document.createElement("a");
+                    link.href = photo.src;
+                    link.setAttribute("data-lightbox", "ksl-gallery");
+                    link.setAttribute("data-title", photo.title || "");
+                    var img = document.createElement("img");
+                    img.src = photo.src;
+                    img.alt = photo.alt || photo.title || "Kenya Shipyards Limited gallery";
+                    img.loading = "lazy";
+                    img.decoding = "async";
+                    link.appendChild(img);
+                    fig.appendChild(link);
+                    if (photo.title) {
+                        var cap = document.createElement("figcaption");
+                        cap.textContent = photo.title;
+                        fig.appendChild(cap);
+                    }
+                    row.appendChild(fig);
+                });
+                galleryRoot.appendChild(row);
             }
         };
 
