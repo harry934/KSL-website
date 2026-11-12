@@ -65,7 +65,8 @@
                 '<br><a class="text-light" href="mailto:' + escapeHtml(c.email) + '">' + escapeHtml(c.email) + "</a></p></div>" +
                 '<div class="col-md-3"><h5 class="text-white">Office of the MD</h5><p>' + escapeHtml(c.mdPhone) +
                 '<br><a class="text-light" href="mailto:' + escapeHtml(c.mdEmail) + '">' + escapeHtml(c.mdEmail) + "</a></p></div>" +
-                '<div class="col-md-3"><h5 class="text-white">Address</h5><p>' + escapeHtml(c.postalAddress) + "</p></div>";
+                '<div class="col-md-3"><h5 class="text-white">Address</h5><p>' + escapeHtml(c.postalAddress) +
+                '<br><span data-ksl-address-iso><span class="ksl-address-iso-mark">ISO 9001:2015</span><span class="ksl-address-iso-note">Certified quality management system</span></span></p></div>';
         }
     }
 
@@ -105,12 +106,8 @@
         });
         if (f.qualitySystem) {
             var isoShort = f.qualitySystem.replace(/ certified quality management system$/i, " certified");
-            var isoBadge = (f.qualitySystem.match(/ISO\s*9001(?::\d{4})?/i) || ["ISO 9001:2015"])[0];
             document.querySelectorAll(".ksl-footer-iso-badge--copy[data-ksl-footer-iso]").forEach(function (el) {
                 el.textContent = isoShort;
-            });
-            document.querySelectorAll(".ksl-footer-quality-bar [data-ksl-footer-iso]").forEach(function (el) {
-                el.textContent = isoBadge;
             });
             document.querySelectorAll(".copyright .ksl-footer-iso-badge:not(.ksl-footer-iso-badge--copy)[data-ksl-footer-iso]").forEach(function (el) {
                 el.textContent = isoShort;

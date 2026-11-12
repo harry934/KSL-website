@@ -1890,8 +1890,39 @@ body {
     border-color: rgba(9, 41, 108, .22);
 }
 
-.ksl-footer-quality-bar {
-    grid-column: 1 / -1;
+[data-ksl-address-iso] {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 10px;
+    max-width: 230px;
+}
+.ksl-address-iso-mark {
+    display: inline-block;
+    padding: 5px 12px;
+    border: 1px solid rgba(201, 163, 90, .75);
+    border-radius: 999px;
+    background: rgba(201, 163, 90, .16);
+    color: #f4e6c8;
+    font: 700 11px/1.2 Manrope, sans-serif;
+    letter-spacing: .08em;
+}
+.ksl-address-iso-note {
+    color: #e4c98a;
+    font: 700 10px/1.35 Manrope, sans-serif;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+}
+.ksl-map-facts .ksl-address-iso-mark,
+.pillar-card .ksl-address-iso-mark {
+    color: #6d5420;
+    background: rgba(153, 121, 44, .12);
+    border-color: rgba(153, 121, 44, .5);
+}
+.ksl-map-facts .ksl-address-iso-note,
+.pillar-card .ksl-address-iso-note {
+    color: #6d5420;
 }
 .btn-primary, .btn-gold, .btn-outline-gold, .nav-link, .dropdown-item, .read-more, .ksl-search-btn {
     transition-duration: 280ms;
