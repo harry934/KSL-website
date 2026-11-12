@@ -2155,7 +2155,7 @@ body {
     aspect-ratio: 1;
     transform: translate(-50%, -50%);
     background: url("../img/ksl/logo-watermark.webp") center / contain no-repeat;
-    opacity: .28;
+    opacity: .12;
     pointer-events: none;
     z-index: 0;
 }
@@ -13806,6 +13806,31 @@ button.ksl-more:focus-visible .ksl-ship-flag {
     margin: 2px 0 0;
     color: #fff;
     font-size: 1.3rem;
+}
+
+.ksl-yard-sheet.is-caption-below figure {
+    aspect-ratio: auto;
+    overflow: visible;
+}
+
+.ksl-yard-sheet.is-caption-below img {
+    aspect-ratio: 16 / 9;
+}
+
+.ksl-yard-sheet.is-caption-below figcaption {
+    position: static;
+    padding: 14px 16px 2px;
+    background: transparent;
+}
+
+.ksl-yard-sheet.is-caption-below figcaption span {
+    color: #8a6d2a;
+    letter-spacing: .08em;
+}
+
+.ksl-yard-sheet.is-caption-below figcaption h3 {
+    color: #14213d;
+    font-size: 1.15rem;
 }
 
 .ksl-yard-figs {
