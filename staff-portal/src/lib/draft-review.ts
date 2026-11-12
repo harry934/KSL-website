@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logActivity } from "@/lib/api-auth";
+import { needsPublisherReview } from "@/lib/draft-access";
 import { canAccess, MODULE_LABELS, MODULE_ROUTES, type ModuleKey, type ModulePermission } from "@/lib/modules";
 import { HOME_HERO_SLOT, isImagePath, parseHeroMedia, safeImageUrl } from "@/lib/site-images";
 
@@ -295,19 +296,6 @@ export async function overlaySettings<T extends Record<string, unknown> | null>(
 
 type Profile = { id: string; display_name: string | null; username: string | null; is_super_admin: boolean };
 type Perm = { profile_id: string; module_key: string; can_publish: boolean };
-
-/** A draft exists so a publisher can review work the author cannot put on the website. */
-export function needsPublisherReview(
-  profiles: Map<string, Profile>,
-  perms: Perm[],
-  userId: string | null,
-  module: string
-) {
-  if (!userId) return false;
-  const profile = profiles.get(userId);
-  if (!profile || profile.is_super_admin) return false;
-  return !perms.some((row) => row.profile_id === userId && row.module_key === module && row.can_publish);
-}
 
 function authorName(profiles: Map<string, Profile>, userId: string | null) {
   if (!userId) return "A staff member";
