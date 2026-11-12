@@ -2111,6 +2111,29 @@ body {
     align-items: center;
 }
 
+#about .about-copy {
+    position: relative;
+}
+
+#about .about-copy::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    width: min(300px, 72%);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    background: url("../img/ksl/logo.png") center / contain no-repeat;
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+}
+
+#about .about-copy > * {
+    position: relative;
+    z-index: 1;
+}
+
 #about .about-copy p {
     font-size: 1.0625rem;
     line-height: 1.72;
