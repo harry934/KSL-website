@@ -3,6 +3,8 @@ import { toPublicPhoto, toPublicVideo } from "@/lib/gallery";
 import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const admin = createAdminClient();
   const [photosRes, videosRes] = await Promise.all([
@@ -16,6 +18,6 @@ export async function GET() {
   const videos = kept(videosRes.data);
   return NextResponse.json(
     { photos: photos.map(toPublicPhoto), videos: videos.map(toPublicVideo) },
-    { headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600" } }
+    { headers: { "Cache-Control": "no-store" } }
   );
 }

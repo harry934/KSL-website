@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GripVertical, Loader2, Pencil, Plus, Star, Trash2, Upload, X } from "lucide-react";
+import { Eye, EyeOff, GripVertical, Loader2, Pencil, Plus, Star, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState, Field, FieldGrid, FormSection, Switch, Textarea } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
-import { GALLERY_CATEGORIES, photoSrc, youtubeIdFrom, type GalleryRow, type GalleryVideoRow } from "@/lib/gallery";
+import { GALLERY_CATEGORIES, galleryPlace, photoSrc, youtubeIdFrom, type GalleryRow, type GalleryVideoRow } from "@/lib/gallery";
 import { DRAG_FROM, useLiveDrag } from "@/components/ui/live-drag";
 import { reorderItem } from "@/lib/list-utils";
 import { siteAssetUrl } from "@/lib/site-url";
@@ -16,6 +16,8 @@ import { PhotoCropDialog } from "@/components/ui/photo-crop";
 import { cn } from "@/lib/cn";
 
 type VideoDraft = { id?: string; link: string; title: string; caption: string; featured: boolean; status: string; sort_order: number };
+type PhotoEdit = { id: string; title: string; alt_text: string; category: string; status: string };
+type PhotoView = "all" | "shown" | "hidden";
 
 const EMPTY_VIDEO: VideoDraft = { link: "", title: "", caption: "", featured: false, status: "published", sort_order: 0 };
 
@@ -28,7 +30,10 @@ export function GalleryEditor() {
   const [videos, setVideos] = useState<GalleryVideoRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [place, setPlace] = useState("any");
+  const [photoView, setPhotoView] = useState<PhotoView>("all");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [edit, setEdit] = useState<PhotoEdit | null>(null);
+  const [savingPhoto, setSavingPhoto] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [cropQueue, setCropQueue] = useState<File[]>([]);
   const batch = useRef({ total: 0, added: 0, held: false });
@@ -78,7 +83,40 @@ export function GalleryEditor() {
     window.setTimeout(() => document.getElementById(`gallery-${id}`)?.scrollIntoView({ block: "center" }), 50);
   }, [loading, photos, videos]);
 
-  const shown = useMemo(() => (place === "any" ? photos : photos.filter((p) => (p.category || "all") === place)), [photos, place]);
+  const shown = useMemo(
+    () =>
+      photos.filter((photo) => {
+        if (place !== "any" && (photo.category || "all") !== place) return false;
+        if (photoView === "shown" && photo.status !== "published") return false;
+        if (photoView === "hidden" && photo.status === "published") return false;
+        return true;
+      }),
+    [photos, place, photoView]
+  );
+
+  useEffect(() => {
+    if (!openId) {
+      setEdit(null);
+      return;
+    }
+    const photo = photos.find((row) => row.id === openId);
+    if (!photo) {
+      setOpenId(null);
+      setEdit(null);
+      return;
+    }
+    setEdit((current) =>
+      current?.id === photo.id
+        ? current
+        : {
+            id: photo.id,
+            title: photo.title ?? "",
+            alt_text: photo.alt_text ?? "",
+            category: photo.category || "all",
+            status: photo.status,
+          }
+    );
+  }, [openId, photos]);
 
   async function savePhoto(row: GalleryRow, message?: string) {
     try {
@@ -98,7 +136,46 @@ export function GalleryEditor() {
     if (!row) return;
     const next = { ...row, ...patch };
     setPhotos((list) => list.map((p) => (p.id === id ? next : p)));
+    setEdit((current) => {
+      if (current?.id !== id) return current;
+      return {
+        ...current,
+        title: patch.title !== undefined ? (next.title ?? "") : current.title,
+        alt_text: patch.alt_text !== undefined ? (next.alt_text ?? "") : current.alt_text,
+        category: patch.category !== undefined ? next.category || "all" : current.category,
+        status: patch.status !== undefined ? next.status : current.status,
+      };
+    });
     if (persist) savePhoto(next, message);
+  }
+
+  function showPhoto(row: GalleryRow, on: boolean) {
+    if (!canPublish) return;
+    patchPhoto(
+      row.id,
+      { status: on ? "published" : "draft" },
+      true,
+      on ? "Photo is now on the website." : "Photo hidden from the website."
+    );
+  }
+
+  async function saveEdit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!edit) return;
+    const row = photos.find((photo) => photo.id === edit.id);
+    if (!row) return;
+    const next = {
+      ...row,
+      title: edit.title.trim(),
+      alt_text: edit.alt_text.trim(),
+      category: edit.category,
+      status: canPublish ? edit.status : row.status,
+    };
+    setSavingPhoto(true);
+    setPhotos((list) => list.map((photo) => (photo.id === row.id ? next : photo)));
+    const hidden = next.status !== "published";
+    await savePhoto(next, hidden ? "Photo hidden from the website." : "Photo saved.");
+    setSavingPhoto(false);
   }
 
   function queueUploads(files: FileList | null) {
@@ -283,7 +360,7 @@ export function GalleryEditor() {
     <div className="space-y-5">
       <FormSection
         title="Photos"
-        description={`${photos.length} photos, ${live} on the website.`}
+        description={`${live} on the website, ${photos.length - live} hidden. Hidden photos leave the Gallery page.`}
         actions={
           <>
             <label
@@ -309,110 +386,197 @@ export function GalleryEditor() {
           </>
         }
       >
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Show photos from">
-          {[{ value: "any", label: "All" }, ...GALLERY_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))].map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => setPlace(option.value)}
-              className={cn(
-                "h-8 rounded-full px-3 text-[13px] font-semibold",
-                place === option.value ? "bg-[#0b1f3a] text-white" : "bg-[#f1f4f7] text-[#3d4c5f] hover:bg-[#e7edf3]"
-              )}
-              aria-pressed={place === option.value}
-            >
-              {option.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Which photos">
+            {(
+              [
+                ["all", "All photos"],
+                ["shown", "On the website"],
+                ["hidden", "Hidden"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setPhotoView(value)}
+                className={cn(
+                  "h-8 rounded-full px-3 text-[13px] font-semibold",
+                  photoView === value ? "bg-[#0b1f3a] text-white" : "bg-[#f1f4f7] text-[#3d4c5f] hover:bg-[#e7edf3]"
+                )}
+                aria-pressed={photoView === value}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Show photos from">
+            {[{ value: "any", label: "All places" }, ...GALLERY_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setPlace(option.value)}
+                className={cn(
+                  "h-8 rounded-full px-3 text-[13px] font-semibold",
+                  place === option.value ? "bg-[#123056] text-white" : "bg-white text-[#3d4c5f] ring-1 ring-[#e3e8ee] hover:bg-[#f6f8fa]"
+                )}
+                aria-pressed={place === option.value}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
-        {openPhoto ? (
-          <div id={`gallery-${openPhoto.id}`}>
+        {openPhoto && edit?.id === openPhoto.id ? (
+          <form id={`gallery-${openPhoto.id}`} onSubmit={saveEdit} className="grid gap-4 rounded-[10px] border border-[#e3e8ee] bg-[#fafbfc] p-4 md:grid-cols-[220px_1fr]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={siteAssetUrl(photoSrc(openPhoto))}
               alt=""
-              className="mx-auto max-h-[420px] w-full bg-[#f6f8fa] object-contain"
+              className={cn("aspect-[4/3] w-full rounded-[8px] bg-[#e7edf3] object-cover", edit.status !== "published" && "opacity-60")}
             />
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Move this photo">
+            <div className="min-w-0 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-[13px] font-semibold text-[#5b6775]">
+                  {edit.status === "published" ? "On the website" : "Hidden from the website"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpenId(null);
+                    setEdit(null);
+                  }}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#5b6775] hover:bg-[#f1f4f7]"
+                  aria-label="Close photo"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <FieldGrid>
+                <Field label="Title" optional>
+                  <Input value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} placeholder="Name shown under the photo" />
+                </Field>
+                <Field label="Description" optional>
+                  <Textarea
+                    className="min-h-[42px]"
+                    rows={2}
+                    value={edit.alt_text}
+                    onChange={(e) => setEdit({ ...edit, alt_text: e.target.value })}
+                    placeholder="What the photo shows"
+                  />
+                </Field>
+              </FieldGrid>
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Place">
                 {GALLERY_CATEGORIES.map((option) => (
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => patchPhoto(openPhoto.id, { category: option.value }, true)}
+                    onClick={() => setEdit({ ...edit, category: option.value })}
                     className={cn(
                       "h-8 rounded-full px-3 text-[13px] font-semibold",
-                      (openPhoto.category || "all") === option.value ? "bg-[#0b1f3a] text-white" : "bg-[#f1f4f7] text-[#3d4c5f] hover:bg-[#e7edf3]"
+                      edit.category === option.value ? "bg-[#0b1f3a] text-white" : "bg-white text-[#3d4c5f] ring-1 ring-[#e3e8ee] hover:bg-[#f6f8fa]"
                     )}
-                    aria-pressed={(openPhoto.category || "all") === option.value}
+                    aria-pressed={edit.category === option.value}
                   >
                     {option.label}
                   </button>
                 ))}
               </div>
-              <button
-                type="button"
+              <Switch
+                checked={edit.status === "published"}
                 disabled={!canPublish}
-                onClick={() =>
-                  patchPhoto(
-                    openPhoto.id,
-                    { status: openPhoto.status === "published" ? "draft" : "published" },
-                    true,
-                    openPhoto.status === "published" ? "Photo hidden." : "Photo is now on the website."
-                  )
-                }
-                className="h-8 rounded-full bg-[#f1f4f7] px-3 text-[13px] font-semibold text-[#0b1f3a] disabled:opacity-50"
-              >
-                {openPhoto.status === "published" ? "Hide" : "Show"}
-              </button>
-              {canDelete ? (
-                <button
-                  type="button"
-                  onClick={() => removePhoto(openPhoto)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#98a3b1] hover:bg-[#fdecea] hover:text-[#b42318]"
-                  aria-label="Remove photo"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => setOpenId(null)}
-                className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-[#5b6775] hover:bg-[#f1f4f7]"
-                aria-label="Close photo"
-              >
-                <X className="h-4 w-4" />
-              </button>
+                onChange={(on) => setEdit({ ...edit, status: on ? "published" : "draft" })}
+                label={edit.status === "published" ? "Shown on the website" : "Hidden"}
+                hint="Hidden photos stay in this list and leave the public Gallery page."
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={savingPhoto}>
+                  {savingPhoto ? "Saving…" : "Save photo"}
+                </Button>
+                {canDelete ? (
+                  <Button type="button" variant="secondary" onClick={() => removePhoto(openPhoto)}>
+                    <Trash2 className="h-4 w-4" />
+                    Remove
+                  </Button>
+                ) : null}
+              </div>
             </div>
-          </div>
+          </form>
         ) : null}
         {shown.length === 0 ? (
-          <EmptyState>No photos here yet. Click Upload photos to add some.</EmptyState>
+          <EmptyState>
+            {photos.length === 0 ? "No photos here yet. Click Upload photos to add some." : "No photos in this view."}
+          </EmptyState>
         ) : (
-          <ul className="-mx-5 -mb-5 grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-[3px] bg-[#f6f8fa]">
-            {shown.map((p) => (
-              <li key={p.id} id={openPhoto?.id === p.id ? undefined : `gallery-${p.id}`}>
-                <button
-                  type="button"
-                  onClick={() => setOpenId((current) => (current === p.id ? null : p.id))}
-                  className={cn(
-                    "relative block aspect-square w-full overflow-hidden bg-[#e7edf3]",
-                    openId === p.id && "outline outline-2 outline-[#0b1f3a] outline-offset-[-2px]"
-                  )}
-                  aria-label={p.alt_text || p.title || "Photo"}
-                  aria-pressed={openId === p.id}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={siteAssetUrl(photoSrc(p))}
-                    alt=""
-                    className={cn("h-full w-full object-cover", p.status !== "published" && "opacity-45")}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </button>
-              </li>
-            ))}
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
+            {shown.map((p) => {
+              const hidden = p.status !== "published";
+              const selected = openId === p.id;
+              return (
+                <li key={p.id} id={selected ? undefined : `gallery-${p.id}`} className={cn("overflow-hidden rounded-[10px] border bg-white", selected ? "border-[#0b1f3a]" : "border-[#e3e8ee]")}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selected) {
+                        setOpenId(null);
+                        setEdit(null);
+                        return;
+                      }
+                      setOpenId(p.id);
+                      setEdit({
+                        id: p.id,
+                        title: p.title ?? "",
+                        alt_text: p.alt_text ?? "",
+                        category: p.category || "all",
+                        status: p.status,
+                      });
+                    }}
+                    className="relative block aspect-[4/3] w-full overflow-hidden bg-[#e7edf3]"
+                    aria-label={p.alt_text || p.title || "Photo"}
+                    aria-pressed={selected}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={siteAssetUrl(photoSrc(p))}
+                      alt=""
+                      className={cn("h-full w-full object-cover", hidden && "opacity-45")}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    {hidden ? (
+                      <span className="absolute left-2 top-2 rounded-full bg-white px-2 py-0.5 text-[11.5px] font-semibold text-[#0b1f3a]">Hidden</span>
+                    ) : null}
+                  </button>
+                  <div className="space-y-2 p-3">
+                    <p className="truncate text-[13.5px] font-semibold text-[#0b1f3a]">{p.title || "Untitled photo"}</p>
+                    <p className="text-[12px] text-[#6b7785]">{galleryPlace(p.category).label}</p>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          setOpenId(p.id);
+                          setEdit({
+                            id: p.id,
+                            title: p.title ?? "",
+                            alt_text: p.alt_text ?? "",
+                            category: p.category || "all",
+                            status: p.status,
+                          });
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Edit
+                      </Button>
+                      <Button type="button" variant="secondary" size="sm" className="flex-1" disabled={!canPublish} onClick={() => showPhoto(p, hidden)}>
+                        {hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                        {hidden ? "Show" : "Hide"}
+                      </Button>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </FormSection>
