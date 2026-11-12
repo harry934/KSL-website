@@ -105,7 +105,7 @@
             '</div>' +
             '<div class="ksl-intro-logo-shadow" aria-hidden="true"></div>' +
             '<div class="ksl-intro-ripples" aria-hidden="true"><span></span><span></span></div>' +
-            '<div class="ksl-intro-reflection" aria-hidden="true"><img data-ksl-image="brand.logo" src="img/ksl/logo-mark.png" alt=""></div>' +
+            '<div class="ksl-intro-reflection" aria-hidden="true"><img data-ksl-image="brand.logo" src="img/ksl/logo.png" alt=""></div>' +
             taglineMarkup();
 
         document.body.appendChild(intro);
@@ -167,7 +167,7 @@
             var flightLogo = document.createElement("img");
             flightLogo.className = "ksl-intro-flight-logo";
             flightLogo.setAttribute("data-ksl-image", "brand.logo");
-            flightLogo.src = "img/ksl/logo-mark.png";
+            flightLogo.src = "img/ksl/logo.png";
             flightLogo.alt = "";
             flightLogo.setAttribute("aria-hidden", "true");
             document.body.appendChild(flightLogo);

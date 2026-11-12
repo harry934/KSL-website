@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261112-yards";
+    var ASSET_V = "20261112-faint2";
 
     var BUNDLES = {
         wow: [

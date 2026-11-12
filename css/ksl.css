@@ -2155,7 +2155,7 @@ body {
     aspect-ratio: 1;
     transform: translate(-50%, -50%);
     background: url("../img/ksl/logo-watermark.webp") center / contain no-repeat;
-    opacity: 1;
+    opacity: .28;
     pointer-events: none;
     z-index: 0;
 }
@@ -13375,9 +13375,10 @@ main p a:not([class]):focus-visible {
 }
 
 body[data-ksl-motif="propeller"] {
-    --ksl-motif: var(--ksl-draw-board);
+    --ksl-motif: url("../img/ksl/logo-watermark.webp");
     --ksl-motif-ratio: 1;
     --ksl-motif-w: 440px;
+    --ksl-motif-opacity: .2;
 }
 
 body[data-ksl-motif="wheel"] {
