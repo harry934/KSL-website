@@ -4,12 +4,12 @@ import { Plus } from "lucide-react";
 import { getStaffSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
-import { canReviewDrafts, permissionNavLinks, usesSidebar } from "@/lib/portal-nav";
+import { permissionNavLinks, usesSidebar } from "@/lib/portal-nav";
 import { formatBytes } from "@/lib/downloads";
 import { loadStorageBreakdown, type StorageBreakdown } from "@/lib/storage-files";
 import { AccountRequestsPanel } from "@/components/portal/account-requests-panel";
 import { DashboardRefresh } from "@/components/portal/dashboard-refresh";
-import { DraftQueue, ReturnedNotes } from "@/components/portal/drafts-page";
+import { ReturnedNotes } from "@/components/portal/drafts-page";
 import { ShipyardMark } from "@/components/portal/shipyard-mark";
 import { PageHeader } from "@/components/portal/page-header";
 import { SectionCards } from "@/components/portal/section-cards";
@@ -206,7 +206,6 @@ export default async function DashboardPage() {
     : [null, null];
   const cards = !usesSidebar(session);
   const sections = cards ? permissionNavLinks(session) : [];
-  const review = canReviewDrafts(session);
   const quick = QUICK_ACTIONS.filter((action) => {
     if (session.isSuperAdmin) return true;
     return session.permissions.some((p) => p.module_key === action.module && p.can_edit);
@@ -256,12 +255,6 @@ export default async function DashboardPage() {
       )}
 
       <ReturnedNotes />
-      {review ? (
-        <section aria-label="Drafts waiting">
-          <h2 className="mb-2.5 text-[13px] font-semibold text-[#5b6775]">Drafts waiting for you</h2>
-          <DraftQueue limit={6} />
-        </section>
-      ) : null}
       {session.isSuperAdmin ? <AccountRequestsPanel /> : null}
       <ShipyardMark />
     </div>
