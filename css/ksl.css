@@ -2338,7 +2338,6 @@ body {
 
 .ksl-services-page-grid,
 .ksl-project-grid,
-.ksl-impact-grid,
 #ksl-news-grid,
 #ksl-home-news-grid {
     align-items: stretch;
@@ -8970,12 +8969,35 @@ html[lang="sw"] .download-button .download::after {
 }
 
 .ksl-impact-grid {
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+    margin: 0;
+}
+
+.ksl-impact-grid > [class*="col-"] {
+    width: auto;
+    max-width: none;
+    padding: 0;
+    display: flex;
+}
+
+@media (max-width: 991.98px) {
+    .ksl-impact-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .ksl-impact-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .ksl-impact-card {
     display: flex;
     flex-direction: column;
+    width: 100%;
     overflow: hidden;
     background: #fff;
     border: 1px solid #DDE5F0;
