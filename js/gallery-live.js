@@ -29,11 +29,17 @@
         img.decoding = "async";
         link.appendChild(img);
         fig.appendChild(link);
+        var cap = document.createElement("figcaption");
         if (photo.title) {
-            var cap = document.createElement("figcaption");
-            cap.textContent = photo.title;
-            fig.appendChild(cap);
+            var title = document.createElement("strong");
+            title.textContent = photo.title;
+            cap.appendChild(title);
         }
+        var more = document.createElement("span");
+        more.className = "ksl-gallery-more";
+        more.innerHTML = 'Show More <svg viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M8.125 1.625H11.375V4.875" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.416 7.583 11.374 1.625" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.75 7.042v3.25a1.083 1.083 0 0 1-1.083 1.083H2.708a1.083 1.083 0 0 1-1.083-1.083V4.333a1.083 1.083 0 0 1 1.083-1.083h3.25" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        cap.appendChild(more);
+        fig.appendChild(cap);
         return fig;
     }
 
@@ -47,14 +53,9 @@
             galleryRoot.innerHTML = '<section class="ksl-empty-state" role="status"><h3>No photos in this category</h3><p>Try another filter or view the full gallery.</p><div class="ksl-empty-state-actions"><button class="btn btn-primary" type="button" data-gallery-all>View all photos</button></div></section>';
             return;
         }
-        for (var i = 0; i < visible.length; i += 6) {
-            var row = document.createElement("div");
-            row.className = "ksl-gallery-row";
-            visible.slice(i, i + 6).forEach(function (photo) {
-                row.appendChild(photoFigure(photo));
-            });
-            galleryRoot.appendChild(row);
-        }
+        visible.forEach(function (photo) {
+            galleryRoot.appendChild(photoFigure(photo));
+        });
     }
 
     function mountPlayer(parent, video) {

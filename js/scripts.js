@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261112-strip";
+    var ASSET_V = "20261112-grid";
 
     var BUNDLES = {
         wow: [

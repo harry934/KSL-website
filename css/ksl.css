@@ -9115,35 +9115,21 @@ html[lang="sw"] .download-button .download::after {
 
 .ksl-gallery-grid {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.ksl-gallery-row {
-    display: flex;
-    align-items: stretch;
-    gap: 8px;
-    height: 400px;
-    width: 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
 }
 
 .ksl-gallery-item {
     position: relative;
-    flex: 1 1 0;
+    flex: 0 0 auto;
     width: 14rem;
-    min-width: 0;
-    height: 100%;
+    height: 14rem;
     overflow: hidden;
     border: 0;
     border-radius: 8px;
     background: #e7edf3;
-    transition: flex-grow 500ms ease, width 500ms ease;
-}
-
-.ksl-gallery-item:hover,
-.ksl-gallery-item:focus-within {
-    flex-grow: 8;
-    width: 100%;
 }
 
 .ksl-gallery-item.is-hidden {
@@ -9162,27 +9148,46 @@ html[lang="sw"] .download-button .download::after {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center;
+    object-position: top;
     display: block;
 }
 
 .ksl-gallery-item figcaption {
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 4px;
     margin: 0;
-    padding: 28px 16px 14px;
+    padding: 16px;
     color: #fff;
-    background: linear-gradient(transparent, rgba(0, 0, 0, .62));
-    font: 600 16px/1.3 Manrope, sans-serif;
+    background: rgba(0, 0, 0, .5);
     opacity: 0;
+    pointer-events: none;
     transition: opacity 300ms ease;
 }
 
 .ksl-gallery-item:hover figcaption,
 .ksl-gallery-item:focus-within figcaption {
     opacity: 1;
+}
+
+.ksl-gallery-item figcaption strong {
+    font: 500 20px/1.2 Manrope, sans-serif;
+}
+
+.ksl-gallery-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255, 255, 255, .7);
+    font: 400 14px/1.2 Manrope, sans-serif;
+}
+
+.ksl-gallery-more svg {
+    width: 16px;
+    height: 16px;
 }
 
 .ksl-gallery-loading {
@@ -9250,31 +9255,13 @@ html[lang="sw"] .download-button .download::after {
     }
 
     .ksl-gallery-grid {
-        gap: 6px;
+        gap: 12px;
     }
 
-    .ksl-gallery-row {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    .ksl-gallery-item {
+        width: min(14rem, calc(50% - 8px));
         height: auto;
-        gap: 6px;
-    }
-
-    .ksl-gallery-item,
-    .ksl-gallery-item:hover,
-    .ksl-gallery-item:focus-within {
-        width: auto;
-        height: auto;
-        flex: none;
-    }
-
-    .ksl-gallery-item a {
-        aspect-ratio: 1 / 1;
-        height: auto;
-    }
-
-    .ksl-gallery-item figcaption {
-        display: none;
+        aspect-ratio: 1;
     }
 }
 
