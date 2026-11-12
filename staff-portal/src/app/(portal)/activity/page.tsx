@@ -69,7 +69,9 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
   const from = params.from && DATE.test(params.from) ? params.from : "";
   const to = params.to && DATE.test(params.to) ? params.to : "";
   const entryId = params.entry && UUID.test(params.entry) ? params.entry : "";
-  const filtered = Boolean(moduleFilter || what || from || to);
+  const seeEveryone = session.isSuperAdmin;
+  const who = seeEveryone && params.who && UUID.test(params.who) ? params.who : "";
+  const filtered = Boolean(moduleFilter || who || what || from || to);
 
   const admin = createAdminClient();
   const cutoff = new Date();
@@ -80,42 +82,59 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
     .select("id, module_key, action, entity_type, entity_id, metadata, created_at, admin_profiles(display_name, username)", {
       count: "exact",
     })
-    .eq("actor_id", session.userId)
     .order("created_at", { ascending: false })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+  if (!seeEveryone) query = query.eq("actor_id", session.userId);
+  else if (who) query = query.eq("actor_id", who);
   if (moduleFilter) query = query.eq("module_key", moduleFilter);
   if (what) query = query.in("action", ACTION_GROUPS[what].actions);
   if (from) query = query.gte("created_at", `${from}T00:00:00+03:00`);
   if (to) query = query.lte("created_at", `${to}T23:59:59.999+03:00`);
 
-  const entryQuery = entryId
+  let entryQuery = entryId
     ? admin
         .from("activity_log")
         .select("id, module_key, action, entity_type, entity_id, metadata, created_at, admin_profiles(display_name, username)")
         .eq("id", entryId)
-        .eq("actor_id", session.userId)
-        .maybeSingle()
-    : Promise.resolve({ data: null });
+    : null;
+  if (entryQuery && !seeEveryone) entryQuery = entryQuery.eq("actor_id", session.userId);
 
-  const [{ data, count }, { data: entryRow }] = await Promise.all([query, entryQuery]);
+  const [{ data, count }, entryResult, peopleResult] = await Promise.all([
+    query,
+    entryQuery ? entryQuery.maybeSingle() : Promise.resolve({ data: null }),
+    seeEveryone
+      ? admin.from("admin_profiles").select("id, display_name, username").order("display_name")
+      : Promise.resolve({ data: [] as { id: string; display_name: string | null; username: string | null }[] }),
+  ]);
   const rows = (data ?? []) as unknown as Row[];
-  const featured = (entryRow ?? null) as Row | null;
+  const featured = ((entryResult as { data: Row | null }).data ?? null) as Row | null;
+  const people = peopleResult.data ?? [];
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
   const href = (p: number, m: string | null = moduleFilter) => {
     const qs = new URLSearchParams({ page: String(p) });
     if (m) qs.set("module", m);
+    if (who) qs.set("who", who);
     if (what) qs.set("what", what);
     if (from) qs.set("from", from);
     if (to) qs.set("to", to);
     if (entryId) qs.set("entry", entryId);
     return `/activity?${qs}`;
   };
+  const exportQuery = new URLSearchParams();
+  if (who) exportQuery.set("who", who);
+  if (from) exportQuery.set("from", from);
+  if (to) exportQuery.set("to", to);
+  const exportHref = `/api/activity/export${exportQuery.size ? `?${exportQuery}` : ""}`;
 
   return (
     <div className="flex flex-col gap-[14px]">
       <PageHeader
         title="Audit log"
-        description="Your sign-ins and the changes you made, newest first. You only see your own entries. They are kept for 24 months, then removed."
+        description={
+          seeEveryone
+            ? "Sign-ins and changes by everyone on the staff portal, newest first. Choose a person to see only their entries. They are kept for 24 months, then removed."
+            : "Your sign-ins and the changes you made, newest first. You only see your own entries. They are kept for 24 months, then removed."
+        }
       />
 
       {entryId && (
@@ -141,7 +160,21 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
         </section>
       )}
 
-      <form method="get" action="/activity" className="ksl-card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto_auto_auto]">
+      <form method="get" action="/activity" className="ksl-card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto_auto_auto]">
+        {seeEveryone ? (
+          <label className="text-[12.5px] font-semibold text-[#5b6775]">
+            Person
+            <select name="who" defaultValue={who} className={filterControl}>
+              <option value="">Everyone</option>
+              {people.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.display_name || person.username || "Staff member"}
+                  {person.username ? ` (@${person.username})` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <label className="text-[12.5px] font-semibold text-[#5b6775]">
           Section
           <select name="module" defaultValue={moduleFilter ?? ""} className={filterControl}>
@@ -176,7 +209,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
           <button type="submit" className={applyClass}>
             Apply
           </button>
-          <a className={pagerClass} href={`/api/activity/export${from || to ? `?from=${from}&to=${to}` : ""}`}>
+          <a className={pagerClass} href={exportHref}>
             Download spreadsheet
           </a>
           {filtered && (

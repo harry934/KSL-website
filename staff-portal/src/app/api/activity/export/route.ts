@@ -18,13 +18,16 @@ export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   const from = params.get("from") ?? "";
   const to = params.get("to") ?? "";
+  const who = params.get("who") ?? "";
+  const seeEveryone = session.isSuperAdmin;
   const admin = createAdminClient();
   let query = admin
     .from("activity_log")
     .select("module_key, action, entity_type, metadata, created_at, admin_profiles(display_name, username)")
-    .eq("actor_id", session.userId)
     .order("created_at", { ascending: false })
     .limit(5000);
+  if (!seeEveryone) query = query.eq("actor_id", session.userId);
+  else if (/^[0-9a-f-]{36}$/i.test(who)) query = query.eq("actor_id", who);
   if (DATE.test(from)) query = query.gte("created_at", `${from}T00:00:00+03:00`);
   if (DATE.test(to)) query = query.lte("created_at", `${to}T23:59:59.999+03:00`);
 
