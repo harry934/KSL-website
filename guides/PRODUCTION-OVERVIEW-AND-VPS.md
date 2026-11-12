@@ -177,7 +177,7 @@ Responses are cached for roughly **60 seconds** at the edge on Vercel; on VPS, r
 | Public data layer | Vanilla JS (`ksl-content.js`, `js/pages/*`) |
 | Admin UI | Next.js 15, React 19, TypeScript 5, Tailwind CSS 4 |
 | Rich text editors | TipTap 3 |
-| Database / auth / files | Supabase (managed Postgres, Auth, Storage) |
+| Database / auth / files | Postgres, password hashes, and files on the VPS. Supabase Cloud is left after the copy is checked |
 | Spam protection | Cloudflare Turnstile (API v0) |
 | Version control | Git → https://github.com/harry934/KSL-website |
 | Pre-production hosting | Two Vercel projects (see [DEPLOYMENT.md](./DEPLOYMENT.md)) |
@@ -509,13 +509,12 @@ pm2 reload ksl-portal
 
 **Backups:**
 
-- Supabase: use project backups / PITR per your plan.  
-- VPS: provider snapshots; optionally rsync `/var/www/ksl/img` and `/var/www/ksl/docs` if large local assets matter.
+- VPS: a daily Postgres dump stored off the server, plus a provider snapshot. Restore one dump onto a second database before relying on it.
+- Until cutover, Supabase still holds the live copy. After cutover it is closed.
 
 **What does not move to the VPS:**
 
-- Postgres, Supabase Auth, Storage buckets (remain Supabase Cloud).  
-- `staff-portal/vercel.json` region settings (Vercel-only).
+- `staff-portal/vercel.json` region settings (Vercel-only). The database, passwords, and uploaded files do move.
 
 ---
 

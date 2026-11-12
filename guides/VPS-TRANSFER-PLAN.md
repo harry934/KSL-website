@@ -1,8 +1,8 @@
 # Move this project from Vercel to your VPS
 
-**Last updated:** 11 November 2026
+**Last updated:** 12 November 2026
 
-You SSH in from your own computer and copy this project onto an Ubuntu server. The server replaces Vercel. It does not replace Supabase, and it does not replace GitHub.
+You SSH in from your own computer and copy this project onto an Ubuntu server. The server replaces Vercel and it replaces Supabase. GitHub stays the place the code is stored.
 
 There is no `kenyashipyards.co.ke` website to move. The live addresses today are the two Vercel links below. Until you buy a domain, visitors use the VPS IP address.
 
@@ -28,23 +28,44 @@ The three lines that stay empty until you paste them from the Vercel project `ks
 | Public website | Vercel project `ksl-website` → https://ksl-website.vercel.app | Move it. Nginx on the VPS serves the HTML files. |
 | Staff portal | Vercel project `ksl-website_kiza` → https://ksl-websitekiza.vercel.app/login | Move it. Node.js on the VPS runs this app. |
 | Code | GitHub → https://github.com/harry934/KSL-website | Leave it. The VPS downloads the code from GitHub with `git clone`. |
-| Database | Supabase project `envqgczfhxywkxcnsxrt` | Leave it. This stays the only database. |
-| Staff login | Supabase Authentication | Leave it. Usernames and passwords are checked by Supabase, not by the VPS. |
-| Photos and documents uploaded in the portal | Supabase Storage | Leave it. |
+| Database | Supabase project `envqgczfhxywkxcnsxrt` | Copy the whole database onto Postgres on the VPS, then leave Supabase. |
+| Staff login | Supabase Authentication | Copy each password hash with the database. The portal on the VPS checks it. |
+| Photos and documents uploaded in the portal | Supabase Storage | Copy the files onto the VPS disk. Nginx serves them. |
 
 ```text
 Your computer
     SSH  →  Ubuntu VPS
                 │
-                ├─ Nginx serves the public HTML
-                └─ Node serves the staff portal
-                        │
-                        └─ talks to Supabase for data, login, and files
+                ├─ Nginx serves the public HTML and the uploaded files
+                ├─ Postgres holds the whole database, on this server only
+                └─ Node serves the staff portal and checks passwords itself
 
 GitHub is only where the code is stored.
+Supabase is emptied after the VPS copy has been checked, then closed.
 ```
 
-After the move, Vercel can stay up until you are sure the VPS works. Pointing people at the VPS is a separate step. You do not copy the Supabase database onto the VPS.
+After the move, Vercel can stay up until you are sure the VPS works. Pointing people at the VPS is a separate step.
+
+## Leave Supabase
+
+Supabase Cloud is the part that runs out of download allowance, and the portal cannot keep calling it. The copy has to include three things or staff cannot sign in and the photos disappear:
+
+1. **Every table.** Postgres on the VPS, listening only on `127.0.0.1`. Restore a full dump of project `envqgczfhxywkxcnsxrt`, including `public` and `auth.users`. `admin_profiles.id` matches `auth.users.id`, so those ids have to stay the same.
+2. **Passwords.** They live in `auth.users.encrypted_password`, not in the staff profile. Copy that hash onto the profile and make `/api/auth/sign-in` check it on the VPS. Staff keep the same username and password. Invites still create the account. Public sign-up stays closed.
+3. **Files.** Download the `media-public`, `downloads`, and `avatars` buckets onto the VPS disk. Rewrite every stored link that still says `supabase.co` so the public site loads the VPS copy.
+
+The portal code today uses the Supabase client for all three. That client is removed as part of this move. Postgres is reached with a normal database connection string, `DATABASE_URL`, which stays in the server env file and is never put in the HTML.
+
+Do the trial on the VPS while the live portal still uses Supabase. Switch the portal only after this passes:
+
+- A current staff username and password signs in. The session cookie is HTTPS-only and ends after 20 minutes away.
+- A new account can still be created only from an invite.
+- Publishing a news item and hiding a gallery photo change the public site.
+- A photo, a document, and an account picture open from the VPS address, with no request to `supabase.co`.
+- From outside the server, port 5432 is closed. Only 22, 80, 443, and 8443 answer.
+- A backup restored onto a second database brings one deleted row back.
+
+Then point the portal at `DATABASE_URL`, keep the Supabase project read-only for a few days, and close it. MySaas is a different project in the same Supabase organisation. Closing the Kenya Shipyards project does not delete MySaas. MySaas keeps using that organisation's allowance until it is moved on its own.
 
 ---
 
@@ -249,13 +270,13 @@ Staff routes, after sign-in. Each `route.ts` reads or writes the matching Supaba
 | `api/storage/spare`, `api/stored-file`, `api/gallery/file` | Fetch a stored file back from Supabase |
 | `api/admin/status` | The status cards on the portal home |
 
-`supabase/migrations/` is the history of the database shape, files `001` through `041`. Those already ran on Supabase. You do not run them on the VPS. You do not install Postgres on the VPS.
+`supabase/migrations/` is the history of the database shape, files `001` through `042`. They already ran on Supabase. The VPS copy is a restore of that database, then Postgres is installed on the VPS and is not reachable from the internet.
 
 ---
 
 ## Secrets the portal needs
 
-Copy these from the Vercel project **`ksl-website_kiza`**, Settings → Environment Variables. They already point at the same Supabase project. You are not creating a new database.
+Copy these from the Vercel project **`ksl-website_kiza`**, Settings → Environment Variables, for the trial period while the live portal still reads Supabase. After the cutover, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are removed and replaced by `DATABASE_URL`.
 
 | Name | What it is |
 |------|------------|

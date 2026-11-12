@@ -93,13 +93,17 @@ Use this when moving from Vercel to your Linux VPS **or** after any production i
 | F0b | Anon PostgREST `GET /rest/v1/news_items` with anon key | **Denied** (no grants) | |
 | F0c | Turnstile on production portal | Contact POST fails without token | |
 
-## G. Supabase (unchanged host, verify anyway)
+## G. Database on the VPS (Supabase left behind)
 
 | # | Check | Expected | Pass |
 |---|--------|----------|------|
-| G1 | Migrations **001–039** applied | No missing tables in portal | |
+| G1 | Migrations **001–042** present in the restored database | No missing tables in the portal | |
 | G2 | Public sign-ups disabled | Invite-only staff | |
-| G3 | Service role | Not in repo; only portal server env | |
+| G3 | `DATABASE_URL` | On the server only, file mode `600`. No Supabase service-role key in the portal env | |
+| G4 | Postgres port 5432 | Closed from outside the VPS | |
+| G5 | Password check | Existing username and password signs in against the copied hash | |
+| G6 | Uploaded files | Photo, document, and account picture load from the VPS. Browser makes no request to `supabase.co` | |
+| G7 | Backup restore | A dump restored onto a second database brings one deleted row back | |
 
 ---
 
