@@ -54,27 +54,14 @@
             (body ? "<p>" + esc(body) + "</p>" : "");
     }
 
-    function paintChart(data, esc) {
-        if (!data || !data.chart) return;
-        var chart = data.chart;
-        var departments = chart.departments || [];
-        var html = '<div class="org-tree"><div class="org-tree-top">' +
-            '<div class="org-node org-node-board"><span>' + esc(chart.boardCaption) + "</span><strong>" + esc(chart.boardTitle) + "</strong></div>" +
-            '<span class="org-connector" aria-hidden="true"></span>' +
-            '<div class="org-node org-node-md"><span>' + esc(chart.executiveCaption) + "</span><strong>" + esc(chart.executiveTitle) + "</strong></div>" +
-            '<span class="org-connector" aria-hidden="true"></span>' +
-            '</div><div class="org-tree-branches">';
-        departments.forEach(function (dept) {
-            html += '<div class="org-branch"><article class="org-office' + (dept.office ? " is-staff" : "") + '"><h3>' + esc(dept.title) + "</h3></article>";
-            if (dept.units && dept.units.length) {
-                html += '<ul class="org-divisions">' + dept.units.map(function (unit) {
-                    return "<li>" + esc(unit) + "</li>";
-                }).join("") + "</ul>";
-            }
-            html += "</div>";
-        });
-        html += "</div></div>";
-        chartEl.innerHTML = html;
+    function paintChart() {
+        chartEl.innerHTML = '<div class="org-tree"><img class="org-chart-image" src="img/ksl/organogram.png" alt="Organisation structure, from the Board and the Managing Director through the departments"></div>';
+        var img = chartEl.querySelector("img");
+        if (img) {
+            img.addEventListener("load", function () {
+                if (!modal.hidden) fitChart();
+            });
+        }
     }
 
     function applyZoom(next, keepCenter) {
@@ -238,7 +225,7 @@
             var esc = window.KSL_ESCAPE || function (value) { return String(value == null ? "" : value); };
             if (data) {
                 paintIntro(data, esc);
-                paintChart(data, esc);
+                paintChart();
             }
             if (!data || !dl) {
                 return;

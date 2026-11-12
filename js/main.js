@@ -1909,7 +1909,7 @@
         { title: "Sustainability", href: "sustainability.html", type: "Page", keys: "environment green" },
         { title: "Contact Us", href: "contact.html", type: "Page", keys: "email phone address quote mombasa kisumu nairobi herufi house head office" },
         { title: "Our yards", href: "index.html#yards", type: "Page", keys: "map location directions mombasa mtongwe kisumu nairobi herufi house headquarters" },
-        { title: "Shipyard Specifications", href: "about.html#yards", type: "Page", keys: "slipway dry dock graving dock cranes quay capacity tonnes" }
+        { title: "Shipyard/Workshop Specifications", href: "about.html#yards", type: "Page", keys: "slipway dry dock graving dock cranes quay capacity tonnes kenya railways workshop" }
     ];
 
     function escapeHtml(text) {
