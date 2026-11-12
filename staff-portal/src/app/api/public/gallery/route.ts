@@ -12,7 +12,7 @@ export async function GET() {
 
   if (photosRes.error || videosRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
-  const photos = kept(photosRes.data).filter((row) => String(row.alt_text || row.title || "").trim());
+  const photos = kept(photosRes.data);
   const videos = kept(videosRes.data);
   return NextResponse.json(
     { photos: photos.map(toPublicPhoto), videos: videos.map(toPublicVideo) },

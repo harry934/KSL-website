@@ -689,9 +689,6 @@ function photoProblem(table: string, row: Record<string, unknown>) {
   if ((table === "news_items" || table === "event_items") && String(row.image_path ?? "").trim() && !String(row.image_alt ?? "").trim()) {
     return "Add a short description of the photo before accepting.";
   }
-  if (table === "gallery_photos" && !String(row.alt_text ?? row.title ?? "").trim()) {
-    return "Add a short description of the photo before accepting.";
-  }
   return null;
 }
 

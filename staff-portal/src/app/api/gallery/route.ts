@@ -78,12 +78,6 @@ export async function POST(req: NextRequest) {
 
   const title = String(body.title ?? "").trim();
   const alt = String(body.alt_text ?? "").trim() || title;
-  if (status === "published" && !alt) {
-    return NextResponse.json(
-      { error: "Write what the photo shows before it can go on the website." },
-      { status: 400 }
-    );
-  }
 
   const row = {
     ...(body.id ? { id: body.id } : {}),
