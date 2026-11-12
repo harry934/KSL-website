@@ -30,7 +30,7 @@ function canSee(access: PortalAccess, key: ModuleKey) {
   return access.permissions.some((permission) => permission.module_key === key && permission.can_view);
 }
 
-/** Someone who can put work on the website can review drafts from people who cannot. */
+/** Drafts are for people who can publish, including full access. Super admins can publish every section. */
 export function canReviewDrafts(access: PortalAccess) {
   if (access.isSuperAdmin) return true;
   return access.permissions.some((permission) => permission.can_publish);

@@ -190,7 +190,7 @@ const INCLUDED_WITH: Partial<Record<ModuleKey, string[]>> = {
 };
 
 const ALWAYS_SECTIONS = [
-  { label: "Drafts", note: "Included when they can publish" },
+  { label: "Drafts", note: "Included for Can publish and Full access" },
   { label: "Recycle bin", note: "Included when they can open a section" },
   { label: "Audit log", note: "Always on, their own changes only" },
 ];

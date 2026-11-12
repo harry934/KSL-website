@@ -296,11 +296,16 @@ export async function overlaySettings<T extends Record<string, unknown> | null>(
 type Profile = { id: string; display_name: string | null; username: string | null; is_super_admin: boolean };
 type Perm = { profile_id: string; module_key: string; can_publish: boolean };
 
-function cannotPublish(profiles: Map<string, Profile>, perms: Perm[], userId: string | null, module: string) {
-  if (!userId) return true;
+/** A draft exists so a publisher can review work the author cannot put on the website. */
+export function needsPublisherReview(
+  profiles: Map<string, Profile>,
+  perms: Perm[],
+  userId: string | null,
+  module: string
+) {
+  if (!userId) return false;
   const profile = profiles.get(userId);
-  if (!profile) return true;
-  if (profile.is_super_admin) return false;
+  if (!profile || profile.is_super_admin) return false;
   return !perms.some((row) => row.profile_id === userId && row.module_key === module && row.can_publish);
 }
 
@@ -335,7 +340,7 @@ export async function listReviewDrafts(admin: Admin, actor: Actor): Promise<Revi
         const authorId = typeof record.updated_by === "string" ? record.updated_by : null;
         const id = String(record.id ?? "");
         if (!id || waiting.has(returnIdentity(source.table, id, ""))) return [];
-        const needsPublisher = cannotPublish(profiles, perms, authorId, source.module);
+        if (!needsPublisherReview(profiles, perms, authorId, source.module)) return [];
         return [
           {
             id: `${source.table}:${id}`,
@@ -346,7 +351,7 @@ export async function listReviewDrafts(admin: Admin, actor: Actor): Promise<Revi
             author: authorName(profiles, authorId),
             updatedAt: typeof record.updated_at === "string" ? record.updated_at : null,
             discardId: null,
-            note: needsPublisher ? "Not on the website yet. Waiting for a publisher." : "Hidden. Not on the website.",
+            note: "Not on the website yet. Waiting for someone who can publish.",
             table: source.table,
             entityId: id,
             entityKey: "",
@@ -362,7 +367,7 @@ export async function listReviewDrafts(admin: Admin, actor: Actor): Promise<Revi
     const moduleKey = row.module_key as ModuleKey;
     if (!canAccess(actor.permissions, moduleKey, "publish", actor.isSuperAdmin)) continue;
     const authorId = typeof row.submitted_by === "string" ? row.submitted_by : null;
-    const needsPublisher = cannotPublish(profiles, perms, authorId, moduleKey);
+    if (!needsPublisherReview(profiles, perms, authorId, moduleKey)) continue;
     const entityId = row.entity_id ? String(row.entity_id) : null;
     const entityKey = String(row.entity_key ?? "");
     if (waiting.has(returnIdentity(String(row.entity_table), entityId, entityKey))) continue;
@@ -378,9 +383,7 @@ export async function listReviewDrafts(admin: Admin, actor: Actor): Promise<Revi
       author: authorName(profiles, authorId),
       updatedAt: typeof row.updated_at === "string" ? row.updated_at : null,
       discardId: String(row.id),
-      note: needsPublisher
-        ? "Already on the website. These changes stay hidden until you publish them."
-        : "Saved changes that are not on the website yet.",
+      note: "Already on the website. These changes stay hidden until you publish them.",
       table: String(row.entity_table),
       entityId,
       entityKey,

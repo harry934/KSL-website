@@ -530,7 +530,7 @@ export function DraftsPage() {
     <>
       <PageHeader
         title="Drafts"
-        description="Drafts are grouped by section. Tick a section to select all of that kind, then accept them or send them back with one reason."
+        description="Unpublished changes from people who can change a section but cannot publish it. Accept them to put them on the website, or send them back with a reason."
       />
       <DraftQueue />
     </>
