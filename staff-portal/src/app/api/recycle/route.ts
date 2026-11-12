@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { canAccess } from "@/lib/modules";
-import { applyBinDelete, purgeStaffAccount, restoreRow, restoreStaffAccount, type RecycleTable } from "@/lib/recycle";
+import { applyBinDelete, listBinItems, purgeStaffAccount, restoreRow, restoreStaffAccount, type RecycleTable } from "@/lib/recycle";
 import { RECYCLE_SOURCES } from "@/lib/recycle-sources";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -11,44 +11,9 @@ export async function GET() {
   const { error, session } = await requireStaff(null, "view");
   if (error || !session) return error;
 
-  const admin = createAdminClient();
-  const items: {
-    id: string;
-    title: string;
-    section: string;
-    table: string;
-    deletedAt: string;
-    canRestore: boolean;
-    canDelete: boolean;
-  }[] = [];
-
-  for (const source of RECYCLE_SOURCES) {
-    const canView = canAccess(session.permissions, source.module, "view", session.isSuperAdmin);
-    const canDelete = canAccess(session.permissions, source.module, "delete", session.isSuperAdmin);
-    if (!canView && !canDelete) continue;
-    const { data, error: loadErr } = await admin
-      .from(source.table as RecycleTable)
-      .select(source.select)
-      .not("deleted_at", "is", null)
-      .order("deleted_at", { ascending: false })
-      .limit(100);
-    if (loadErr) return NextResponse.json({ error: dbError(loadErr) }, { status: 500 });
-    const canRestore = canAccess(session.permissions, source.module, source.restore, session.isSuperAdmin);
-    for (const row of (data ?? []) as unknown as Record<string, unknown>[]) {
-      const record = row;
-      items.push({
-        id: String(record.id ?? ""),
-        title: source.title(record),
-        section: source.section,
-        table: source.table,
-        deletedAt: String(record.deleted_at ?? ""),
-        canRestore,
-        canDelete,
-      });
-    }
-  }
-
-  return NextResponse.json({ items });
+  const bin = await listBinItems(session);
+  if (bin.error) return NextResponse.json({ error: bin.error }, { status: 500 });
+  return NextResponse.json({ items: bin.items });
 }
 
 export async function POST(req: NextRequest) {

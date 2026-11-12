@@ -1,5 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { canAccess, type ModulePermission } from "@/lib/modules";
+import { RECYCLE_SOURCES } from "@/lib/recycle-sources";
 import { releaseUnusedValues } from "@/lib/storage-files";
 
 type Admin = ReturnType<typeof createAdminClient>;
@@ -38,6 +40,53 @@ export function splitRemoved<T extends { deleted_at?: string | null }>(rows: T[]
     items: rows.filter((row) => !row.deleted_at),
     removed: rows.filter((row) => row.deleted_at),
   };
+}
+
+export type BinItem = {
+  id: string;
+  title: string;
+  section: string;
+  table: string;
+  deletedAt: string;
+  canRestore: boolean;
+  canDelete: boolean;
+};
+
+/** Rows currently in the bin. A table that cannot be read is reported so the page does not look empty by mistake. */
+export async function listBinItems(viewer: { permissions: ModulePermission[]; isSuperAdmin: boolean }): Promise<{ items: BinItem[]; error: string | null }> {
+  const admin = createAdminClient();
+  const items: BinItem[] = [];
+  let errorMessage: string | null = null;
+  for (const source of RECYCLE_SOURCES) {
+    const canView = canAccess(viewer.permissions, source.module, "view", viewer.isSuperAdmin);
+    const canDelete = canAccess(viewer.permissions, source.module, "delete", viewer.isSuperAdmin);
+    if (!canView && !canDelete) continue;
+    const { data, error } = await admin
+      .from(source.table as RecycleTable)
+      .select(source.select)
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false })
+      .limit(100);
+    if (error) {
+      errorMessage ??= "The recycle bin could not be loaded.";
+      continue;
+    }
+    const canRestore = canAccess(viewer.permissions, source.module, source.restore, viewer.isSuperAdmin);
+    for (const row of (data ?? []) as unknown as Record<string, unknown>[]) {
+      const id = String(row.id ?? "");
+      if (!id) continue;
+      items.push({
+        id,
+        title: source.title(row),
+        section: source.section,
+        table: source.table,
+        deletedAt: String(row.deleted_at ?? ""),
+        canRestore,
+        canDelete,
+      });
+    }
+  }
+  return { items, error: errorMessage };
 }
 
 export async function softDelete(admin: Admin, table: RecycleTable, id: string) {

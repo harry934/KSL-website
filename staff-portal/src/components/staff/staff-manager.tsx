@@ -184,6 +184,17 @@ function LevelSelect({
   );
 }
 
+const INCLUDED_WITH: Partial<Record<ModuleKey, string[]>> = {
+  organization: ["Board"],
+  site_settings: ["Banner", "Website images"],
+};
+
+const ALWAYS_SECTIONS = [
+  { label: "Drafts", note: "Included when they can publish" },
+  { label: "Recycle bin", note: "Included when they can open a section" },
+  { label: "Audit log", note: "Always on, their own changes only" },
+];
+
 function AccessEditor({
   permissions,
   onChange,
@@ -225,17 +236,36 @@ function AccessEditor({
               const row = permissions.find((item) => item.module_key === key);
               if (!row) return null;
               return (
-                <div key={key} className="flex items-center justify-between gap-3 border-t border-[#eef1f4] px-3 py-2 pl-6">
-                  <p className="text-[13.5px] text-[#0b1f3a]">{MODULE_LABELS[key]}</p>
-                  <LevelSelect value={levelOf(row)} label={`Access for ${MODULE_LABELS[key]}`} onChange={(level) => applyTo([key], level)} />
+                <div key={key}>
+                  <div className="flex items-center justify-between gap-3 border-t border-[#eef1f4] px-3 py-2 pl-6">
+                    <p className="text-[13.5px] text-[#0b1f3a]">{MODULE_LABELS[key]}</p>
+                    <LevelSelect value={levelOf(row)} label={`Access for ${MODULE_LABELS[key]}`} onChange={(level) => applyTo([key], level)} />
+                  </div>
+                  {(INCLUDED_WITH[key] ?? []).map((label) => (
+                    <div key={label} className="flex items-center justify-between gap-3 border-t border-[#eef1f4] px-3 py-2 pl-10">
+                      <p className="text-[13.5px] text-[#0b1f3a]">{label}</p>
+                      <p className="text-[12.5px] text-[#6b7785]">Included with {MODULE_LABELS[key]}</p>
+                    </div>
+                  ))}
                 </div>
               );
             })}
           </div>
         );
       })}
+      <div>
+        <div className="border-t border-[#e3e8ee] bg-[#f8fafc] px-3 py-2">
+          <p className="text-[13px] font-semibold text-[#0b1f3a]">Also on the menu</p>
+        </div>
+        {ALWAYS_SECTIONS.map((section) => (
+          <div key={section.label} className="flex items-center justify-between gap-3 border-t border-[#eef1f4] px-3 py-2 pl-6">
+            <p className="text-[13.5px] text-[#0b1f3a]">{section.label}</p>
+            <p className="text-[12.5px] text-[#6b7785]">{section.note}</p>
+          </div>
+        ))}
+      </div>
       <p className="border-t border-[#eef1f4] px-3 py-2 text-[12.5px] text-[#6b7785]">
-        Pick one level. Can change includes opening. Can publish includes changing. Full access can also remove items.
+        Pick one level. Can change includes opening. Can publish includes changing. Full access can also remove items. Board follows Organisation. Banner and Website images follow Site settings.
       </p>
     </div>
   );

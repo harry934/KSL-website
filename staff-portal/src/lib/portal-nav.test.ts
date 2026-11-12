@@ -19,20 +19,27 @@ function access(keys: ModuleKey[], flags: Partial<ModulePermission> = {}): Porta
 }
 
 test("a sidebar is used only when there are more than six destinations", () => {
-  const five = access(["news", "events", "gallery", "press", "services"]);
-  assert.equal(permissionNavLinks(five).length, 6);
-  assert.equal(usesSidebar(five), false);
+  const four = access(["news", "events", "gallery", "press"]);
+  assert.equal(permissionNavLinks(four).length, 6);
+  assert.equal(usesSidebar(four), false);
 
-  const six = access(["news", "events", "gallery", "press", "services", "products"]);
-  assert.equal(permissionNavLinks(six).length, 7);
-  assert.equal(usesSidebar(six), true);
+  const five = access(["news", "events", "gallery", "press", "services"]);
+  assert.equal(permissionNavLinks(five).length, 7);
+  assert.equal(usesSidebar(five), true);
+});
+
+test("every account can open its own audit log", () => {
+  assert.deepEqual(
+    permissionNavLinks(access([])).map((link) => link.href),
+    ["/activity"]
+  );
 });
 
 test("organisation access adds a Board destination", () => {
   const links = permissionNavLinks(access(["organization"]));
   assert.deepEqual(
     links.map((link) => link.href),
-    ["/organization", "/board", "/recycle"]
+    ["/organization", "/board", "/recycle", "/activity"]
   );
 });
 
@@ -40,7 +47,7 @@ test("site settings adds banner and website images", () => {
   const links = permissionNavLinks(access(["site_settings"]));
   assert.deepEqual(
     links.map((link) => link.label),
-    ["Site settings", "Banner", "Website images"]
+    ["Site settings", "Banner", "Website images", "Audit log"]
   );
   assert.equal(usesSidebar(access(["site_settings"])), false);
 });
@@ -49,7 +56,7 @@ test("staff is not a sidebar item for an agent", () => {
   const links = permissionNavLinks(access(["staff", "news"]));
   assert.deepEqual(
     links.map((link) => link.href),
-    ["/news", "/recycle"]
+    ["/news", "/recycle", "/activity"]
   );
 });
 

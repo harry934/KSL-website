@@ -95,9 +95,7 @@ export function portalNavGroups(access: PortalAccess): PortalNavGroup[] {
   if (canOpenBin(access)) {
     systemLinks.push({ href: "/recycle", label: "Recycle bin", kind: "recycle", group: "System" });
   }
-  if (access.isSuperAdmin) {
-    systemLinks.push({ href: "/activity", label: "Audit log", kind: "audit", group: "System" });
-  }
+  systemLinks.push({ href: "/activity", label: "Audit log", kind: "audit", group: "System" });
   if (systemLinks.length) {
     groups.push({ label: "System", links: systemLinks });
   }

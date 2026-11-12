@@ -14,7 +14,6 @@ function cell(value: string) {
 export async function GET(req: NextRequest) {
   const session = await getStaffSession();
   if (!session) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
-  if (!session.isSuperAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const params = req.nextUrl.searchParams;
   const from = params.get("from") ?? "";
@@ -23,6 +22,7 @@ export async function GET(req: NextRequest) {
   let query = admin
     .from("activity_log")
     .select("module_key, action, entity_type, metadata, created_at, admin_profiles(display_name, username)")
+    .eq("actor_id", session.userId)
     .order("created_at", { ascending: false })
     .limit(5000);
   if (DATE.test(from)) query = query.gte("created_at", `${from}T00:00:00+03:00`);

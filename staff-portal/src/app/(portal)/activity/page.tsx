@@ -60,17 +60,16 @@ type Params = { page?: string; module?: string; who?: string; what?: string; fro
 
 export default async function ActivityPage({ searchParams }: { searchParams: Promise<Params> }) {
   const session = await getStaffSession();
-  if (!session?.isSuperAdmin) redirect("/");
+  if (!session) redirect("/login");
 
   const params = await searchParams;
   const page = Math.max(1, Number(params.page) || 1);
   const moduleFilter = params.module && params.module in MODULE_LABELS ? (params.module as ModuleKey) : null;
-  const who = params.who && UUID.test(params.who) ? params.who : "";
   const what = params.what && params.what in ACTION_GROUPS ? params.what : "";
   const from = params.from && DATE.test(params.from) ? params.from : "";
   const to = params.to && DATE.test(params.to) ? params.to : "";
   const entryId = params.entry && UUID.test(params.entry) ? params.entry : "";
-  const filtered = Boolean(moduleFilter || who || what || from || to);
+  const filtered = Boolean(moduleFilter || what || from || to);
 
   const admin = createAdminClient();
   const cutoff = new Date();
@@ -81,10 +80,10 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
     .select("id, module_key, action, entity_type, entity_id, metadata, created_at, admin_profiles(display_name, username)", {
       count: "exact",
     })
+    .eq("actor_id", session.userId)
     .order("created_at", { ascending: false })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
   if (moduleFilter) query = query.eq("module_key", moduleFilter);
-  if (who) query = query.eq("actor_id", who);
   if (what) query = query.in("action", ACTION_GROUPS[what].actions);
   if (from) query = query.gte("created_at", `${from}T00:00:00+03:00`);
   if (to) query = query.lte("created_at", `${to}T23:59:59.999+03:00`);
@@ -94,21 +93,17 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
         .from("activity_log")
         .select("id, module_key, action, entity_type, entity_id, metadata, created_at, admin_profiles(display_name, username)")
         .eq("id", entryId)
+        .eq("actor_id", session.userId)
         .maybeSingle()
     : Promise.resolve({ data: null });
 
-  const [{ data, count }, { data: people }, { data: entryRow }] = await Promise.all([
-    query,
-    admin.from("admin_profiles").select("id, display_name, username").is("deleted_at", null).order("display_name"),
-    entryQuery,
-  ]);
+  const [{ data, count }, { data: entryRow }] = await Promise.all([query, entryQuery]);
   const rows = (data ?? []) as unknown as Row[];
   const featured = (entryRow ?? null) as Row | null;
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
   const href = (p: number, m: string | null = moduleFilter) => {
     const qs = new URLSearchParams({ page: String(p) });
     if (m) qs.set("module", m);
-    if (who) qs.set("who", who);
     if (what) qs.set("what", what);
     if (from) qs.set("from", from);
     if (to) qs.set("to", to);
@@ -120,7 +115,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
     <div className="flex flex-col gap-[14px]">
       <PageHeader
         title="Audit log"
-        description="Every sign-in and every change made in this portal, newest first. Entries are kept for 24 months, then removed."
+        description="Your sign-ins and the changes you made, newest first. You only see your own entries. They are kept for 24 months, then removed."
       />
 
       {entryId && (
@@ -146,18 +141,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
         </section>
       )}
 
-      <form method="get" action="/activity" className="ksl-card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto_auto_auto]">
-        <label className="text-[12.5px] font-semibold text-[#5b6775]">
-          Person
-          <select name="who" defaultValue={who} className={filterControl}>
-            <option value="">Everyone</option>
-            {(people ?? []).map((person) => (
-              <option key={person.id} value={person.id}>
-                {person.display_name || person.username}
-              </option>
-            ))}
-          </select>
-        </label>
+      <form method="get" action="/activity" className="ksl-card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto_auto_auto]">
         <label className="text-[12.5px] font-semibold text-[#5b6775]">
           Section
           <select name="module" defaultValue={moduleFilter ?? ""} className={filterControl}>

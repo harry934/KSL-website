@@ -238,6 +238,7 @@ async function loadWatches(session: StaffSession): Promise<NoticeItem[]> {
     const key = moduleKey(row.module_key);
     if (!key || !canSeeModule(session, key)) continue;
     const removed = row.action === "delete" || row.action === "purge";
+    const inBin = row.action === "delete";
     notices.push({
       id: `watch:${row.id}`,
       kind: "watch",
@@ -245,12 +246,12 @@ async function loadWatches(session: StaffSession): Promise<NoticeItem[]> {
       who: personName(row),
       text: sentence(describeActivity({ action: row.action, entity_type: row.entity_type, metadata: row.metadata })),
       area: MODULE_LABELS[key],
-      href: removed ? "/recycle" : activityPlace(row),
+      href: inBin ? "/recycle" : activityPlace(row),
       createdAt: row.created_at,
       icon: removed ? "attention" : row.action === "publish" ? "scheduled" : "bell",
       tone: removed ? "danger" : row.action === "publish" ? "success" : "default",
       source: removed ? (row.action === "purge" ? "Deleted permanently" : "Deleted") : MODULE_LABELS[key],
-      pin: removed ? "recycle" : undefined,
+      pin: inBin ? "recycle" : undefined,
     });
   }
   return notices;
