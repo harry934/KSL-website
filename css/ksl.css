@@ -2150,12 +2150,12 @@ body {
     content: "";
     position: absolute;
     left: 50%;
-    top: 46%;
-    width: min(400px, 88%);
+    top: 50%;
+    width: min(280px, 62%);
     aspect-ratio: 1;
     transform: translate(-50%, -50%);
     background: url("../img/ksl/logo-watermark.webp") center / contain no-repeat;
-    opacity: .12;
+    opacity: .05;
     pointer-events: none;
     z-index: 0;
 }
@@ -13051,6 +13051,14 @@ html.ksl-blocked .ksl-miss-blocked-copy { display: block; }
         width: 240px;
     }
 
+    body[data-ksl-page="board"] main::before {
+        top: 30%;
+        left: 50%;
+        right: auto;
+        width: min(260px, 72%);
+        transform: translate(-50%, -50%);
+    }
+
     .about-gallery.is-single {
         height: auto;
     }
@@ -13377,8 +13385,16 @@ main p a:not([class]):focus-visible {
 body[data-ksl-motif="propeller"] {
     --ksl-motif: url("../img/ksl/logo-watermark.webp");
     --ksl-motif-ratio: 1;
-    --ksl-motif-w: 440px;
-    --ksl-motif-opacity: .2;
+    --ksl-motif-w: min(520px, 72%);
+    --ksl-motif-opacity: .08;
+    --ksl-motif-top: 38%;
+    --ksl-motif-right: auto;
+}
+
+body[data-ksl-page="board"] main::before {
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -50%);
 }
 
 body[data-ksl-motif="wheel"] {
@@ -13806,31 +13822,6 @@ button.ksl-more:focus-visible .ksl-ship-flag {
     margin: 2px 0 0;
     color: #fff;
     font-size: 1.3rem;
-}
-
-.ksl-yard-sheet.is-caption-below figure {
-    aspect-ratio: auto;
-    overflow: visible;
-}
-
-.ksl-yard-sheet.is-caption-below img {
-    aspect-ratio: 16 / 9;
-}
-
-.ksl-yard-sheet.is-caption-below figcaption {
-    position: static;
-    padding: 14px 16px 2px;
-    background: transparent;
-}
-
-.ksl-yard-sheet.is-caption-below figcaption span {
-    color: #8a6d2a;
-    letter-spacing: .08em;
-}
-
-.ksl-yard-sheet.is-caption-below figcaption h3 {
-    color: #14213d;
-    font-size: 1.15rem;
 }
 
 .ksl-yard-figs {
