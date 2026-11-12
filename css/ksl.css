@@ -13788,8 +13788,9 @@ button.ksl-more:focus-visible .ksl-ship-flag {
 .ksl-yard-sheet figcaption {
     position: absolute;
     left: 0;
+    right: 0;
     bottom: 0;
-    padding: 14px 22px 12px;
+    padding: 12px 18px 11px;
     background: #14213d;
 }
 

@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261112-faint2";
+    var ASSET_V = "20261112-caption";
 
     var BUNDLES = {
         wow: [
