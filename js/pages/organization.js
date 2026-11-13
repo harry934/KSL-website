@@ -15,6 +15,7 @@
     var MIN_ZOOM = 0.35;
     var MAX_ZOOM = 1.8;
     var ZOOM_STEP = 0.12;
+    var BASE_IMG_WIDTH = 954;
     var lastFocus = null;
     var dragging = false;
     var dragMoved = false;
@@ -64,11 +65,52 @@
         }
     }
 
+    function chartImage() {
+        return chartEl.querySelector(".org-chart-image");
+    }
+
+    function chartChromeSize(imgWidth, imgHeight) {
+        var style = window.getComputedStyle(chartEl);
+        var extraX =
+            parseFloat(style.paddingLeft) +
+            parseFloat(style.paddingRight) +
+            parseFloat(style.borderLeftWidth) +
+            parseFloat(style.borderRightWidth);
+        var extraY =
+            parseFloat(style.paddingTop) +
+            parseFloat(style.paddingBottom) +
+            parseFloat(style.borderTopWidth) +
+            parseFloat(style.borderBottomWidth);
+        return {
+            width: imgWidth + extraX,
+            height: imgHeight + extraY,
+        };
+    }
+
+    function setImageZoom(level) {
+        var img = chartImage();
+        if (!img) return;
+        chartEl.style.transform = "";
+        chartEl.style.transformOrigin = "";
+        img.style.width = Math.round(BASE_IMG_WIDTH * level) + "px";
+        img.style.height = "auto";
+        img.style.maxWidth = "none";
+    }
+
+    function centerChart() {
+        if (!stage) return;
+        window.requestAnimationFrame(function () {
+            var w = chartEl.scrollWidth;
+            var h = chartEl.scrollHeight;
+            stage.scrollLeft = Math.max(0, (w - stage.clientWidth) / 2);
+            stage.scrollTop = Math.max(0, (h - stage.clientHeight) / 2);
+        });
+    }
+
     function applyZoom(next, keepCenter) {
         var prev = zoom;
         zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(next * 100) / 100));
-        chartEl.style.transform = "scale(" + zoom + ")";
-        chartEl.style.transformOrigin = "top left";
+        setImageZoom(zoom);
         if (zoomLabel) zoomLabel.textContent = Math.round(zoom * 100) + "%";
         if (!stage || !keepCenter || !prev) return;
         var rect = stage.getBoundingClientRect();
@@ -80,22 +122,21 @@
     }
 
     function fitChart() {
+        var img = chartImage();
+        var naturalW = (img && img.naturalWidth) || BASE_IMG_WIDTH;
+        var naturalH = (img && img.naturalHeight) || 512;
         if (!stage) {
             applyZoom(1);
             return;
         }
-        chartEl.style.transform = "scale(1)";
-        chartEl.style.transformOrigin = "top left";
-        var tree = chartEl.querySelector(".org-tree");
-        var width = (tree && tree.scrollWidth) || chartEl.scrollWidth || 1;
-        var height = (tree && tree.scrollHeight) || chartEl.scrollHeight || 1;
-        var pad = 32;
+        setImageZoom(1);
+        var at100 = chartChromeSize(naturalW, naturalH);
+        var pad = 8;
         var availW = Math.max(stage.clientWidth - pad, 120);
         var availH = Math.max(stage.clientHeight - pad, 120);
-        var next = Math.min(availW / width, availH / height, 1);
-        applyZoom(Math.max(MIN_ZOOM, next));
-        stage.scrollLeft = 0;
-        stage.scrollTop = 0;
+        var next = Math.min(availW / at100.width, availH / at100.height, 1);
+        applyZoom(Math.max(MIN_ZOOM, next), false);
+        centerChart();
     }
 
     function openModal() {

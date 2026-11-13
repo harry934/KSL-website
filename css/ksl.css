@@ -3468,9 +3468,10 @@ body {
     border: 1px solid #DDE5F0;
     border-radius: 4px;
     width: max-content;
+    max-width: none;
     margin: 0;
     overflow: visible;
-    will-change: transform;
+    flex: 0 0 auto;
 }
 
 .org-chart-image {
@@ -3483,6 +3484,7 @@ body {
 .org-tree {
     width: max-content;
     margin: 0 auto;
+    line-height: 0;
 }
 
 .org-tree-top {
