@@ -119,8 +119,7 @@
             orgNode(esc, "org-node-board", chart.boardCaption, chart.boardTitle || "Board") +
             '<span class="org-connector" aria-hidden="true"></span>' +
             orgNode(esc, "org-node-md", chart.executiveCaption, chart.executiveTitle || "Managing Director") +
-            '<span class="org-connector" aria-hidden="true"></span>' +
-            '</div><div class="org-tree-branches">';
+            '</div><span class="org-connector org-connector--spine" aria-hidden="true"></span><div class="org-tree-branches">';
         departments.forEach(function (dept) {
             var divisions = dept.divisions || [];
             if (!divisions.length && dept.units && dept.units.length) {

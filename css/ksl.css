@@ -3476,6 +3476,9 @@ body {
 }
 
 .org-tree {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     width: max-content;
     margin: 0 auto;
 }
@@ -3490,7 +3493,13 @@ body {
     width: 2px;
     height: 20px;
     display: block;
+    flex-shrink: 0;
     background: var(--org-line);
+}
+
+.org-connector--spine {
+    height: 22px;
+    margin: 0 auto;
 }
 
 .org-node {
@@ -3528,11 +3537,23 @@ body {
 }
 
 .org-tree-branches {
+    position: relative;
     display: flex;
     justify-content: center;
     align-items: flex-start;
     gap: 8px;
-    padding-top: 0;
+    padding-top: 22px;
+    width: 100%;
+}
+
+.org-tree-branches::before {
+    position: absolute;
+    content: "";
+    top: 0;
+    left: calc(142px / 2);
+    right: calc(142px / 2);
+    height: 2px;
+    background: var(--org-line);
 }
 
 .org-branch {
@@ -3541,39 +3562,21 @@ body {
     flex-direction: column;
     align-items: stretch;
     width: 142px;
-    padding-top: 16px;
+    padding-top: 0;
 }
 
 .org-branch::before {
     position: absolute;
     content: "";
-    top: 0;
+    top: -22px;
     left: 50%;
-    width: 1px;
-    height: 16px;
+    width: 2px;
+    height: 22px;
     background: var(--org-line);
     transform: translateX(-50%);
 }
 
 .org-branch::after {
-    position: absolute;
-    content: "";
-    top: 0;
-    left: -6px;
-    right: -6px;
-    height: 1px;
-    background: var(--org-line);
-}
-
-.org-branch:first-child::after {
-    left: 50%;
-}
-
-.org-branch:last-child::after {
-    right: 50%;
-}
-
-.org-branch:only-child::after {
     display: none;
 }
 
@@ -3613,13 +3616,26 @@ body {
 
 .org-division-list,
 .org-divisions {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     width: 100%;
     margin: 0;
-    padding: 0;
+    padding: 12px 0 0;
     list-style: none;
+}
+
+.org-division-list::before,
+.org-divisions::before {
+    position: absolute;
+    content: "";
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 12px;
+    background: var(--org-line);
+    transform: translateX(-50%);
 }
 
 .org-division,
@@ -3628,6 +3644,11 @@ body {
     margin-top: 10px;
     padding: 0;
     list-style: none;
+}
+
+.org-division:first-child,
+.org-divisions li:first-child {
+    margin-top: 0;
 }
 
 .org-division::before,
@@ -3642,6 +3663,11 @@ body {
     transform: translateX(-50%);
 }
 
+.org-division:first-child::before,
+.org-divisions li:first-child::before {
+    display: none;
+}
+
 .org-division p {
     margin: 0;
     padding: 9px 7px;
@@ -3654,16 +3680,29 @@ body {
 }
 
 .org-unit-list {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 8px;
     margin: 0;
-    padding: 0;
+    padding: 10px 0 0;
     list-style: none;
 }
 
+.org-unit-list::before {
+    position: absolute;
+    content: "";
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 10px;
+    background: var(--org-line);
+    transform: translateX(-50%);
+}
+
 .org-unit-list--dept {
-    margin-top: 10px;
+    margin-top: 0;
+    padding-top: 12px;
 }
 
 .org-unit {
@@ -3679,8 +3718,8 @@ body {
     list-style: none;
 }
 
-.org-unit-list .org-unit::before,
-.org-unit-list--dept .org-unit::before {
+.org-unit-list .org-unit + .org-unit::before,
+.org-unit-list--dept .org-unit + .org-unit::before {
     position: absolute;
     content: "";
     top: -8px;
@@ -3689,11 +3728,6 @@ body {
     height: 8px;
     background: var(--org-line);
     transform: translateX(-50%);
-}
-
-.org-division .org-unit-list .org-unit:first-child::before {
-    top: -8px;
-    height: 8px;
 }
 
 .about-page-hero h2 {
@@ -4339,7 +4373,17 @@ html.board-motion .board-card.is-in .board-card-body {
         flex-direction: column;
         align-items: stretch;
         gap: 14px;
+        padding-top: 0;
         padding-left: 22px;
+    }
+
+    .org-tree-branches::before {
+        display: none;
+    }
+
+    .org-connector--spine {
+        align-self: flex-start;
+        margin-left: 0;
     }
 
     .org-branch {
@@ -4356,12 +4400,14 @@ html.board-motion .board-card.is-in .board-card-body {
     }
 
     .org-branch::after {
+        display: block;
         top: 0;
         bottom: -14px;
         left: -22px;
         right: auto;
-        width: 1px;
+        width: 2px;
         height: auto;
+        background: var(--org-line);
     }
 
     .org-branch:first-child::after {
