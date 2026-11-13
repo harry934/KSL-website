@@ -25,9 +25,15 @@ export type OrgIntro = {
   body: string;
 };
 
+export type OrgDivision = {
+  title: string;
+  units: string[];
+};
+
 export type OrgDepartment = {
   id: string;
   title: string;
+  divisions: OrgDivision[];
   units: string[];
   office: boolean;
 };
@@ -101,24 +107,109 @@ export const SHIPPED_INTRO: OrgIntro = {
   body: "",
 };
 
+const SHIPPED_DEPARTMENTS: OrgDepartment[] = [
+  {
+    id: "secretary",
+    title: "Corporation Secretary & Legal Services Dept",
+    office: false,
+    divisions: [{ title: "Legal Services Div", units: ["Board Secretariat Unit", "Compliance & Ethics Unit"] }],
+    units: [],
+  },
+  {
+    id: "production",
+    title: "Production Dept",
+    office: false,
+    divisions: [
+      { title: "Engineering Design & Work Preparation Div", units: [] },
+      { title: "New Build, Refit & Conversion Div", units: [] },
+      { title: "Civil & Modular Works Div", units: [] },
+      { title: "Yard Management Div", units: [] },
+    ],
+    units: [],
+  },
+  {
+    id: "mro",
+    title: "Maintenance, Repair & Overhaul Dept",
+    office: false,
+    divisions: [
+      { title: "Work Planning & Preparation Div", units: [] },
+      { title: "MRO Project Management Div", units: [] },
+    ],
+    units: [],
+  },
+  {
+    id: "commercial",
+    title: "Commercial Services Dept",
+    office: false,
+    divisions: [
+      { title: "Business Development Div", units: [] },
+      { title: "Marketing & Sales Div", units: [] },
+    ],
+    units: [],
+  },
+  {
+    id: "standards-qa",
+    title: "Standards & Quality Assurance Dept",
+    office: false,
+    divisions: [
+      { title: "Strategy, Planning & Performance Div", units: [] },
+      { title: "QMS & Risk Coordination Div", units: [] },
+      { title: "Inspection Div", units: [] },
+      { title: "Measurement Div", units: [] },
+      { title: "Commissioning Div", units: [] },
+    ],
+    units: ["Non Destructive Testing Unit"],
+  },
+  {
+    id: "supply",
+    title: "Supply Chain Management Dept",
+    office: false,
+    divisions: [
+      { title: "Technical Procurement Div", units: [] },
+      { title: "Logistics & Transport Div", units: [] },
+      { title: "Warehousing Div", units: [] },
+    ],
+    units: ["Administration Procurement Unit"],
+  },
+  {
+    id: "finance-it",
+    title: "Finance, Accounts & IT Dept",
+    office: false,
+    divisions: [
+      { title: "Financial Planning, Budgeting & Reporting Div", units: [] },
+      { title: "Accounting Div", units: [] },
+      { title: "Financial Controls Div", units: [] },
+      { title: "Information Technology Div", units: [] },
+    ],
+    units: ["Project Financing Unit"],
+  },
+  {
+    id: "corporate-services",
+    title: "Corporate Services Dept",
+    office: false,
+    divisions: [
+      { title: "Administration & Security Div", units: [] },
+      { title: "Corporate Communication Div", units: [] },
+      { title: "Human Resources Div", units: [] },
+      { title: "Occupational Health, Safety & Environment Div", units: [] },
+    ],
+    units: [],
+  },
+  {
+    id: "audit",
+    title: "Internal Audit & Risk Assurance Dept",
+    office: false,
+    divisions: [],
+    units: [],
+  },
+];
+
 export const SHIPPED_CHART: OrgChart = {
-  boardCaption: "Governance",
+  boardCaption: "",
   boardTitle: "Board",
-  executiveCaption: "Executive leadership",
+  executiveCaption: "",
   executiveTitle: "Managing Director",
-  departments: [
-    { id: "design", title: "Design & Production", office: false, units: ["Engineering Design & Dev Div", "New Build, Refit & Conversion Div", "Civil and Modular works Div"] },
-    { id: "mro", title: "Maintenance Repair & Overhaul", office: false, units: ["Maintenance Planning Div", "MRO & Project Mgt Div", "Precision Machining Div"] },
-    { id: "qa", title: "Quality Assurance & Standards", office: false, units: ["QA & Compliance Div", "Research, Innovation & Advisory Div", "Commissioning & Acceptance Div", "Environment & Safety Div"] },
-    { id: "supply", title: "Supply Chain Management", office: false, units: ["Warehousing Div", "Procurement Div"] },
-    { id: "commercial", title: "Commercial Services", office: false, units: ["Partnerships & Linkages Div", "Business Development Div"] },
-    { id: "finance", title: "Finance and Accounts", office: false, units: ["Finance Div", "Accounts Div", "Project Financing Div"] },
-    { id: "hr", title: "Human Resource & Admin", office: false, units: ["Human Resource Mgt Div", "Administration & Security Div", "Corporate Communication Div", "ICT Div"] },
-    { id: "special", title: "Special Projects", office: false, units: [] },
-    { id: "secretary", title: "Company Secretary & Legal Services", office: false, units: [] },
-    { id: "planning", title: "Corporate Planning", office: true, units: [] },
-    { id: "audit-office", title: "Internal Audit & Risk Assurance", office: false, units: [] },
-  ],
+  departments: SHIPPED_DEPARTMENTS,
 };
 
 function clip(value: unknown, max: number) {
@@ -134,20 +225,39 @@ export function cleanIntro(value: unknown): OrgIntro {
   };
 }
 
+function cleanOrgDivision(value: unknown, index: number): OrgDivision | null {
+  const row = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const title = clip(row.title, 160);
+  if (!title) return null;
+  const units = Array.isArray(row.units) ? row.units : [];
+  return {
+    title,
+    units: units.map((unit) => clip(unit, 160)).filter(Boolean).slice(0, 12),
+  };
+}
+
+function legacyUnitsToDivisions(units: string[]): OrgDivision[] {
+  return units.map((title) => ({ title, units: [] }));
+}
+
 export function cleanOrgChart(value: unknown): OrgChart {
   const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   const departments = Array.isArray(record.departments) ? record.departments : SHIPPED_CHART.departments;
   const seen = new Set<string>();
   return {
-    boardCaption: clip(record.boardCaption, 80) || SHIPPED_CHART.boardCaption,
+    boardCaption: clip(record.boardCaption, 80),
     boardTitle: clip(record.boardTitle, 120) || SHIPPED_CHART.boardTitle,
-    executiveCaption: clip(record.executiveCaption, 80) || SHIPPED_CHART.executiveCaption,
+    executiveCaption: clip(record.executiveCaption, 80),
     executiveTitle: clip(record.executiveTitle, 120) || SHIPPED_CHART.executiveTitle,
     departments: departments
       .slice(0, 18)
       .map((item, index) => {
         const row = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
-        const units = Array.isArray(row.units) ? row.units : [];
+        const flatUnits = Array.isArray(row.units) ? row.units.map((unit) => clip(unit, 160)).filter(Boolean).slice(0, 24) : [];
+        const parsedDivisions = Array.isArray(row.divisions)
+          ? row.divisions.map(cleanOrgDivision).filter((div): div is OrgDivision => Boolean(div)).slice(0, 16)
+          : legacyUnitsToDivisions(flatUnits);
+        const deptUnits = Array.isArray(row.divisions) && row.divisions.length ? flatUnits : [];
         let id = /^[a-zA-Z0-9_-]{1,80}$/.test(String(row.id ?? "")) ? String(row.id) : `dept-${index + 1}`;
         if (seen.has(id)) id = `dept-${index + 1}-${seen.size}`;
         seen.add(id);
@@ -155,7 +265,8 @@ export function cleanOrgChart(value: unknown): OrgChart {
           id,
           title: clip(row.title, 160),
           office: row.office === true,
-          units: units.map((unit) => clip(unit, 160)).filter(Boolean).slice(0, 24),
+          divisions: parsedDivisions,
+          units: deptUnits,
         };
       })
       .filter((dept) => dept.title),

@@ -6,22 +6,104 @@
     "body": ""
   },
   "chart": {
-    "boardCaption": "Governance",
+    "boardCaption": "",
     "boardTitle": "Board",
-    "executiveCaption": "Executive leadership",
+    "executiveCaption": "",
     "executiveTitle": "Managing Director",
     "departments": [
-      { "id": "design", "title": "Design & Production", "office": false, "units": ["Engineering Design & Dev Div", "New Build, Refit & Conversion Div", "Civil and Modular works Div"] },
-      { "id": "mro", "title": "Maintenance Repair & Overhaul", "office": false, "units": ["Maintenance Planning Div", "MRO & Project Mgt Div", "Precision Machining Div"] },
-      { "id": "qa", "title": "Quality Assurance & Standards", "office": false, "units": ["QA & Compliance Div", "Research, Innovation & Advisory Div", "Commissioning & Acceptance Div", "Environment & Safety Div"] },
-      { "id": "supply", "title": "Supply Chain Management", "office": false, "units": ["Warehousing Div", "Procurement Div"] },
-      { "id": "commercial", "title": "Commercial Services", "office": false, "units": ["Partnerships & Linkages Div", "Business Development Div"] },
-      { "id": "finance", "title": "Finance and Accounts", "office": false, "units": ["Finance Div", "Accounts Div", "Project Financing Div"] },
-      { "id": "hr", "title": "Human Resource & Admin", "office": false, "units": ["Human Resource Mgt Div", "Administration & Security Div", "Corporate Communication Div", "ICT Div"] },
-      { "id": "special", "title": "Special Projects", "office": false, "units": [] },
-      { "id": "secretary", "title": "Company Secretary & Legal Services", "office": false, "units": [] },
-      { "id": "planning", "title": "Corporate Planning", "office": true, "units": [] },
-      { "id": "audit-office", "title": "Internal Audit & Risk Assurance", "office": false, "units": [] }
+      {
+        "id": "secretary",
+        "title": "Corporation Secretary & Legal Services Dept",
+        "office": false,
+        "divisions": [
+          {
+            "title": "Legal Services Div",
+            "units": ["Board Secretariat Unit", "Compliance & Ethics Unit"]
+          }
+        ]
+      },
+      {
+        "id": "production",
+        "title": "Production Dept",
+        "office": false,
+        "divisions": [
+          { "title": "Engineering Design & Work Preparation Div" },
+          { "title": "New Build, Refit & Conversion Div" },
+          { "title": "Civil & Modular Works Div" },
+          { "title": "Yard Management Div" }
+        ]
+      },
+      {
+        "id": "mro",
+        "title": "Maintenance, Repair & Overhaul Dept",
+        "office": false,
+        "divisions": [
+          { "title": "Work Planning & Preparation Div" },
+          { "title": "MRO Project Management Div" }
+        ]
+      },
+      {
+        "id": "commercial",
+        "title": "Commercial Services Dept",
+        "office": false,
+        "divisions": [
+          { "title": "Business Development Div" },
+          { "title": "Marketing & Sales Div" }
+        ]
+      },
+      {
+        "id": "standards-qa",
+        "title": "Standards & Quality Assurance Dept",
+        "office": false,
+        "divisions": [
+          { "title": "Strategy, Planning & Performance Div" },
+          { "title": "QMS & Risk Coordination Div" },
+          { "title": "Inspection Div" },
+          { "title": "Measurement Div" },
+          { "title": "Commissioning Div" }
+        ],
+        "units": ["Non Destructive Testing Unit"]
+      },
+      {
+        "id": "supply",
+        "title": "Supply Chain Management Dept",
+        "office": false,
+        "divisions": [
+          { "title": "Technical Procurement Div" },
+          { "title": "Logistics & Transport Div" },
+          { "title": "Warehousing Div" }
+        ],
+        "units": ["Administration Procurement Unit"]
+      },
+      {
+        "id": "finance-it",
+        "title": "Finance, Accounts & IT Dept",
+        "office": false,
+        "divisions": [
+          { "title": "Financial Planning, Budgeting & Reporting Div" },
+          { "title": "Accounting Div" },
+          { "title": "Financial Controls Div" },
+          { "title": "Information Technology Div" }
+        ],
+        "units": ["Project Financing Unit"]
+      },
+      {
+        "id": "corporate-services",
+        "title": "Corporate Services Dept",
+        "office": false,
+        "divisions": [
+          { "title": "Administration & Security Div" },
+          { "title": "Corporate Communication Div" },
+          { "title": "Human Resources Div" },
+          { "title": "Occupational Health, Safety & Environment Div" }
+        ]
+      },
+      {
+        "id": "audit",
+        "title": "Internal Audit & Risk Assurance Dept",
+        "office": false,
+        "divisions": []
+      }
     ]
   },
   "leadership": [

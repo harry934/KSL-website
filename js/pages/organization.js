@@ -54,42 +54,57 @@
             (body ? "<p>" + esc(body) + "</p>" : "");
     }
 
+    function orgNode(className, caption, title) {
+        var cap = caption ? "<span>" + esc(caption) + "</span>" : "";
+        return '<div class="org-node ' + className + '">' + cap + "<strong>" + esc(title) + "</strong></div>";
+    }
+
     function paintChart(data, esc) {
         if (!data || !data.chart) return;
         var chart = data.chart;
         var departments = chart.departments || [];
         var html =
-            '<div class="org-tree" role="img" aria-label="Organisation structure, from the Board and Managing Director through departments and divisions">' +
+            '<div class="org-tree" role="img" aria-label="Organisation structure, from the Board and Managing Director through departments, divisions, and units">' +
             '<div class="org-tree-top">' +
-            '<div class="org-node org-node-board"><span>' +
-            esc(chart.boardCaption) +
-            "</span><strong>" +
-            esc(chart.boardTitle) +
-            "</strong></div>" +
+            orgNode("org-node-board", chart.boardCaption, chart.boardTitle || "Board") +
             '<span class="org-connector" aria-hidden="true"></span>' +
-            '<div class="org-node org-node-md"><span>' +
-            esc(chart.executiveCaption) +
-            "</span><strong>" +
-            esc(chart.executiveTitle) +
-            "</strong></div>" +
+            orgNode("org-node-md", chart.executiveCaption, chart.executiveTitle || "Managing Director") +
             '<span class="org-connector" aria-hidden="true"></span>' +
             '</div><div class="org-tree-branches">';
         departments.forEach(function (dept) {
+            var divisions = dept.divisions || [];
+            if (!divisions.length && dept.units && dept.units.length) {
+                divisions = dept.units.map(function (unit) {
+                    return { title: unit, units: [] };
+                });
+            }
             html +=
-                '<div class="org-branch"><article class="org-office' +
-                (dept.office ? " is-staff" : "") +
+                '<div class="org-branch"><article class="org-dept' +
+                (dept.office ? " org-dept--staff" : "") +
                 '"><h3>' +
                 esc(dept.title) +
                 "</h3></article>";
-            if (dept.units && dept.units.length) {
-                html +=
-                    '<ul class="org-divisions">' +
-                    dept.units
-                        .map(function (unit) {
-                            return "<li>" + esc(unit) + "</li>";
-                        })
-                        .join("") +
-                    "</ul>";
+            if (divisions.length) {
+                html += '<ul class="org-division-list">';
+                divisions.forEach(function (division) {
+                    html += '<li class="org-division"><p>' + esc(division.title) + "</p>";
+                    if (division.units && division.units.length) {
+                        html += '<ul class="org-unit-list">';
+                        division.units.forEach(function (unit) {
+                            html += '<li class="org-unit">' + esc(unit) + "</li>";
+                        });
+                        html += "</ul>";
+                    }
+                    html += "</li>";
+                });
+                html += "</ul>";
+            }
+            if (dept.units && dept.units.length && dept.divisions && dept.divisions.length) {
+                html += '<ul class="org-unit-list org-unit-list--dept">';
+                dept.units.forEach(function (unit) {
+                    html += '<li class="org-unit">' + esc(unit) + "</li>";
+                });
+                html += "</ul>";
             }
             html += "</div>";
         });
