@@ -3462,29 +3462,21 @@ body {
 }
 
 .org-chart {
-    --org-line: #C2CCD8;
-    padding: 28px 18px 22px;
+    --org-line: #9AADCA;
+    padding: 32px 24px 28px;
     background: #fff;
     border: 1px solid #DDE5F0;
-    border-radius: 4px;
+    border-radius: 6px;
     width: max-content;
     max-width: none;
     margin: 0;
     overflow: visible;
-    flex: 0 0 auto;
-}
-
-.org-chart-image {
-    display: block;
-    width: 954px;
-    max-width: none;
-    height: auto;
+    will-change: transform;
 }
 
 .org-tree {
     width: max-content;
     margin: 0 auto;
-    line-height: 0;
 }
 
 .org-tree-top {
@@ -3501,12 +3493,12 @@ body {
 }
 
 .org-node {
-    width: min(100%, 280px);
-    padding: 14px 20px;
+    width: min(100%, 320px);
+    padding: 16px 22px;
     color: #fff;
     text-align: center;
-    border-radius: 4px;
-    box-shadow: 0 4px 14px rgba(39, 50, 114, .1);
+    border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(39, 50, 114, .12);
 }
 
 .org-node span {
@@ -3520,7 +3512,7 @@ body {
 
 .org-node strong {
     display: block;
-    font: 700 18px/1.3 Poppins, sans-serif;
+    font: 700 20px/1.3 Poppins, sans-serif;
 }
 
 .org-node-board {
@@ -3535,7 +3527,8 @@ body {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
+    padding-top: 2px;
 }
 
 .org-branch {
@@ -3543,7 +3536,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    width: 168px;
+    width: 154px;
     padding-top: 16px;
 }
 
@@ -3585,21 +3578,20 @@ body {
     align-items: center;
     justify-content: center;
     width: 100%;
-    min-height: 74px;
+    min-height: 78px;
     padding: 12px 10px;
-    background: #273272;
+    background: linear-gradient(180deg, #2f3b8a 0%, #273272 100%);
     border: 1px solid #273272;
-    border-radius: 4px;
-    box-shadow: 0 3px 10px rgba(39, 50, 114, .08);
+    border-radius: 5px;
+    box-shadow: 0 3px 10px rgba(39, 50, 114, .1);
 }
 
 .org-office h3 {
     margin: 0;
     color: #fff;
-    font-size: 13px;
-    line-height: 1.35;
+    font: 700 12.5px/1.4 Manrope, sans-serif;
     text-align: center;
-    font-weight: 700;
+    letter-spacing: 0.01em;
 }
 
 .org-office.is-staff {
@@ -3624,14 +3616,13 @@ body {
 
 .org-divisions li {
     position: relative;
-    margin-top: 14px;
-    padding: 9px 8px;
-    background: #fff;
-    border: 1px solid #D7E0EC;
+    margin-top: 12px;
+    padding: 10px 8px;
+    background: #F8FAFD;
+    border: 1px solid #C8D4E4;
     border-radius: 4px;
-    color: #273272;
-    font-size: 12px;
-    line-height: 1.35;
+    color: #1e285f;
+    font: 600 11.5px/1.4 Manrope, sans-serif;
     text-align: center;
 }
 

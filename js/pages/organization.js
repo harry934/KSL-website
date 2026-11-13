@@ -15,7 +15,6 @@
     var MIN_ZOOM = 0.35;
     var MAX_ZOOM = 1.8;
     var ZOOM_STEP = 0.12;
-    var BASE_IMG_WIDTH = 954;
     var lastFocus = null;
     var dragging = false;
     var dragMoved = false;
@@ -55,53 +54,57 @@
             (body ? "<p>" + esc(body) + "</p>" : "");
     }
 
-    function paintChart() {
-        chartEl.innerHTML = '<div class="org-tree"><img class="org-chart-image" src="img/ksl/organogram.png" alt="Organisation structure, from the Board and the Managing Director through the departments"></div>';
-        var img = chartEl.querySelector("img");
-        if (img) {
-            img.addEventListener("load", function () {
-                if (!modal.hidden) fitChart();
-            });
+    function paintChart(data, esc) {
+        if (!data || !data.chart) return;
+        var chart = data.chart;
+        var departments = chart.departments || [];
+        var html =
+            '<div class="org-tree" role="img" aria-label="Organisation structure, from the Board and Managing Director through departments and divisions">' +
+            '<div class="org-tree-top">' +
+            '<div class="org-node org-node-board"><span>' +
+            esc(chart.boardCaption) +
+            "</span><strong>" +
+            esc(chart.boardTitle) +
+            "</strong></div>" +
+            '<span class="org-connector" aria-hidden="true"></span>' +
+            '<div class="org-node org-node-md"><span>' +
+            esc(chart.executiveCaption) +
+            "</span><strong>" +
+            esc(chart.executiveTitle) +
+            "</strong></div>" +
+            '<span class="org-connector" aria-hidden="true"></span>' +
+            '</div><div class="org-tree-branches">';
+        departments.forEach(function (dept) {
+            html +=
+                '<div class="org-branch"><article class="org-office' +
+                (dept.office ? " is-staff" : "") +
+                '"><h3>' +
+                esc(dept.title) +
+                "</h3></article>";
+            if (dept.units && dept.units.length) {
+                html +=
+                    '<ul class="org-divisions">' +
+                    dept.units
+                        .map(function (unit) {
+                            return "<li>" + esc(unit) + "</li>";
+                        })
+                        .join("") +
+                    "</ul>";
+            }
+            html += "</div>";
+        });
+        html += "</div></div>";
+        chartEl.innerHTML = html;
+        if (!modal.hidden) {
+            window.requestAnimationFrame(fitChart);
         }
-    }
-
-    function chartImage() {
-        return chartEl.querySelector(".org-chart-image");
-    }
-
-    function chartChromeSize(imgWidth, imgHeight) {
-        var style = window.getComputedStyle(chartEl);
-        var extraX =
-            parseFloat(style.paddingLeft) +
-            parseFloat(style.paddingRight) +
-            parseFloat(style.borderLeftWidth) +
-            parseFloat(style.borderRightWidth);
-        var extraY =
-            parseFloat(style.paddingTop) +
-            parseFloat(style.paddingBottom) +
-            parseFloat(style.borderTopWidth) +
-            parseFloat(style.borderBottomWidth);
-        return {
-            width: imgWidth + extraX,
-            height: imgHeight + extraY,
-        };
-    }
-
-    function setImageZoom(level) {
-        var img = chartImage();
-        if (!img) return;
-        chartEl.style.transform = "";
-        chartEl.style.transformOrigin = "";
-        img.style.width = Math.round(BASE_IMG_WIDTH * level) + "px";
-        img.style.height = "auto";
-        img.style.maxWidth = "none";
     }
 
     function centerChart() {
         if (!stage) return;
         window.requestAnimationFrame(function () {
-            var w = chartEl.scrollWidth;
-            var h = chartEl.scrollHeight;
+            var w = chartEl.scrollWidth * zoom;
+            var h = chartEl.scrollHeight * zoom;
             stage.scrollLeft = Math.max(0, (w - stage.clientWidth) / 2);
             stage.scrollTop = Math.max(0, (h - stage.clientHeight) / 2);
         });
@@ -110,7 +113,8 @@
     function applyZoom(next, keepCenter) {
         var prev = zoom;
         zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(next * 100) / 100));
-        setImageZoom(zoom);
+        chartEl.style.transform = "scale(" + zoom + ")";
+        chartEl.style.transformOrigin = "top left";
         if (zoomLabel) zoomLabel.textContent = Math.round(zoom * 100) + "%";
         if (!stage || !keepCenter || !prev) return;
         var rect = stage.getBoundingClientRect();
@@ -122,19 +126,18 @@
     }
 
     function fitChart() {
-        var img = chartImage();
-        var naturalW = (img && img.naturalWidth) || BASE_IMG_WIDTH;
-        var naturalH = (img && img.naturalHeight) || 512;
         if (!stage) {
             applyZoom(1);
             return;
         }
-        setImageZoom(1);
-        var at100 = chartChromeSize(naturalW, naturalH);
-        var pad = 8;
+        chartEl.style.transform = "scale(1)";
+        chartEl.style.transformOrigin = "top left";
+        var width = chartEl.scrollWidth || 1;
+        var height = chartEl.scrollHeight || 1;
+        var pad = 24;
         var availW = Math.max(stage.clientWidth - pad, 120);
         var availH = Math.max(stage.clientHeight - pad, 120);
-        var next = Math.min(availW / at100.width, availH / at100.height, 1);
+        var next = Math.min(availW / width, availH / height, 1);
         applyZoom(Math.max(MIN_ZOOM, next), false);
         centerChart();
     }
@@ -266,7 +269,7 @@
             var esc = window.KSL_ESCAPE || function (value) { return String(value == null ? "" : value); };
             if (data) {
                 paintIntro(data, esc);
-                paintChart();
+                paintChart(data, esc);
             }
             if (!data || !dl) {
                 return;
