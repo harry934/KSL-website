@@ -106,7 +106,7 @@ test("organisation chart keeps page order and drops unsafe text", () => {
   });
   assert.equal(chart.boardTitle, "Board <script>");
   assert.equal(chart.departments[0].id, "dept-02");
-  assert.deepEqual(chart.departments[0].units, ["Yard Management Division"]);
+  assert.equal(chart.departments[0].divisions[0].title, "Yard Management Division");
   assert.equal(chart.departments[1].id, "dept-2");
   assert.equal(chart.departments[0].office, false);
   assert.equal(cleanOrgChart({ departments: [{ id: "planning", title: "Corporate Planning", office: true, units: [] }] }).departments[0].office, true);

@@ -16,6 +16,8 @@
     var MAX_ZOOM = 1.8;
     var ZOOM_STEP = 0.12;
     var lastFocus = null;
+    var orgPayload = null;
+    var orgEsc = null;
     var dragging = false;
     var dragMoved = false;
     var startX = 0;
@@ -54,7 +56,7 @@
             (body ? "<p>" + esc(body) + "</p>" : "");
     }
 
-    function orgNode(className, caption, title) {
+    function orgNode(esc, className, caption, title) {
         var cap = caption ? "<span>" + esc(caption) + "</span>" : "";
         return '<div class="org-node ' + className + '">' + cap + "<strong>" + esc(title) + "</strong></div>";
     }
@@ -66,9 +68,9 @@
         var html =
             '<div class="org-tree" role="img" aria-label="Organisation structure, from the Board and Managing Director through departments, divisions, and units">' +
             '<div class="org-tree-top">' +
-            orgNode("org-node-board", chart.boardCaption, chart.boardTitle || "Board") +
+            orgNode(esc, "org-node-board", chart.boardCaption, chart.boardTitle || "Board") +
             '<span class="org-connector" aria-hidden="true"></span>' +
-            orgNode("org-node-md", chart.executiveCaption, chart.executiveTitle || "Managing Director") +
+            orgNode(esc, "org-node-md", chart.executiveCaption, chart.executiveTitle || "Managing Director") +
             '<span class="org-connector" aria-hidden="true"></span>' +
             '</div><div class="org-tree-branches">';
         departments.forEach(function (dept) {
@@ -99,12 +101,20 @@
                 });
                 html += "</ul>";
             }
-            if (dept.units && dept.units.length && dept.divisions && dept.divisions.length) {
-                html += '<ul class="org-unit-list org-unit-list--dept">';
-                dept.units.forEach(function (unit) {
-                    html += '<li class="org-unit">' + esc(unit) + "</li>";
-                });
-                html += "</ul>";
+            if (dept.units && dept.units.length) {
+                if (dept.divisions && dept.divisions.length) {
+                    html += '<ul class="org-unit-list org-unit-list--dept">';
+                    dept.units.forEach(function (unit) {
+                        html += '<li class="org-unit">' + esc(unit) + "</li>";
+                    });
+                    html += "</ul>";
+                } else {
+                    html += '<ul class="org-division-list">';
+                    dept.units.forEach(function (unit) {
+                        html += '<li class="org-division"><p>' + esc(unit) + "</p></li>";
+                    });
+                    html += "</ul>";
+                }
             }
             html += "</div>";
         });
@@ -159,6 +169,9 @@
 
     function openModal() {
         if (modal.classList.contains("is-open")) return;
+        if (!chartEl.children.length && orgPayload && orgEsc) {
+            paintChart(orgPayload, orgEsc);
+        }
         lastFocus = document.activeElement;
         modal.hidden = false;
         document.documentElement.style.overflow = "hidden";
@@ -282,7 +295,9 @@
             var data = pair[0];
             var dl = pair[1];
             var esc = window.KSL_ESCAPE || function (value) { return String(value == null ? "" : value); };
+            orgEsc = esc;
             if (data) {
+                orgPayload = data;
                 paintIntro(data, esc);
                 paintChart(data, esc);
             }
