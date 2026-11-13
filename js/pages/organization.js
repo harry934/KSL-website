@@ -119,7 +119,7 @@
             orgNode(esc, "org-node-board", chart.boardCaption, chart.boardTitle || "Board") +
             '<span class="org-connector" aria-hidden="true"></span>' +
             orgNode(esc, "org-node-md", chart.executiveCaption, chart.executiveTitle || "Managing Director") +
-            '</div><span class="org-connector org-connector--spine" aria-hidden="true"></span><div class="org-tree-branches">';
+            '</div><div class="org-tree-hub"><span class="org-connector org-connector--spine" aria-hidden="true"></span><div class="org-tree-branches">';
         departments.forEach(function (dept) {
             var divisions = dept.divisions || [];
             if (!divisions.length && dept.units && dept.units.length) {
@@ -165,7 +165,7 @@
             }
             html += "</div>";
         });
-        html += "</div></div>";
+        html += "</div></div></div>";
         chartEl.innerHTML = html;
         if (!modal.hidden) {
             window.requestAnimationFrame(fitChart);
