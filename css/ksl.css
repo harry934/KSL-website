@@ -3448,7 +3448,9 @@ body {
     min-height: 0;
     overflow: auto;
     padding: 18px;
-    background: #0a0a0c;
+    background:
+        radial-gradient(ellipse 70% 40% at 50% 0%, rgba(1, 101, 252, 0.06), transparent 60%),
+        #F4F7FB;
     cursor: grab;
     -webkit-overflow-scrolling: touch;
     touch-action: none;
@@ -3460,11 +3462,12 @@ body {
 }
 
 .org-chart {
-    --org-line: #d8d8de;
-    padding: 28px 22px 32px;
-    background: #0a0a0c;
-    border: 0;
-    border-radius: 0;
+    --org-line: #9AADCA;
+    padding: 32px 24px 28px;
+    background: #fff;
+    border: 1px solid #DDE5F0;
+    border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(11, 31, 58, 0.08);
     width: max-content;
     max-width: none;
     margin: 0;

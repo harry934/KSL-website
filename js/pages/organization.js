@@ -57,8 +57,56 @@
     }
 
     function orgNode(esc, className, caption, title) {
-        var cap = caption ? "<span>" + esc(caption) + "</span>" : "";
+        var cap = caption && String(caption).trim() ? "<span>" + esc(caption) + "</span>" : "";
         return '<div class="org-node ' + className + '">' + cap + "<strong>" + esc(title) + "</strong></div>";
+    }
+
+    function fetchChartFallback() {
+        return fetch("data/organization.json")
+            .then(function (res) {
+                return res.ok ? res.json() : null;
+            })
+            .catch(function () {
+                return null;
+            });
+    }
+
+    function mergeOrgChart(live, fallback) {
+        if (!live) return fallback;
+        if (!fallback || !fallback.chart) return live;
+        var liveChart = live.chart || {};
+        var fbChart = fallback.chart;
+        var fbById = {};
+        (fbChart.departments || []).forEach(function (dept) {
+            if (dept && dept.id) fbById[dept.id] = dept;
+        });
+        var departments = (liveChart.departments || fbChart.departments || []).map(function (dept) {
+            var fb = fbById[dept.id];
+            var divisions = dept.divisions && dept.divisions.length ? dept.divisions : (fb && fb.divisions) || [];
+            var units = dept.units && dept.units.length ? dept.units : (fb && fb.units) || [];
+            if (fb && (!divisions.length || divisions.length < (fb.divisions || []).length)) {
+                divisions = fb.divisions || divisions;
+            }
+            if (fb && !units.length && fb.units && fb.units.length) {
+                units = fb.units;
+            }
+            return {
+                id: dept.id,
+                title: dept.title || (fb && fb.title) || "",
+                office: dept.office === true,
+                divisions: divisions,
+                units: units,
+            };
+        });
+        return Object.assign({}, live, {
+            chart: {
+                boardCaption: "",
+                boardTitle: liveChart.boardTitle || fbChart.boardTitle || "Board",
+                executiveCaption: "",
+                executiveTitle: liveChart.executiveTitle || fbChart.executiveTitle || "Managing Director",
+                departments: departments.length ? departments : fbChart.departments || [],
+            },
+        });
     }
 
     function paintChart(data, esc) {
@@ -290,15 +338,15 @@
         if (!modal.hidden) fitChart();
     });
 
-    Promise.all([fetchOrg(), fetchDownloads()])
+    Promise.all([fetchOrg(), fetchDownloads(), fetchChartFallback()])
         .then(function (pair) {
-            var data = pair[0];
+            var data = mergeOrgChart(pair[0], pair[2]);
             var dl = pair[1];
             var esc = window.KSL_ESCAPE || function (value) { return String(value == null ? "" : value); };
             orgEsc = esc;
             if (data) {
                 orgPayload = data;
-                paintIntro(data, esc);
+                paintIntro(pair[0] || data, esc);
                 paintChart(data, esc);
             }
             if (!data || !dl) {
