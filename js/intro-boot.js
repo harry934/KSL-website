@@ -1,5 +1,6 @@
 /* Runs before paint so the home intro can hide the page without an inline script. */
 (function () {
+    if (document.documentElement.classList.contains("ksl-maint-hold") || document.documentElement.classList.contains("ksl-maint-on")) return;
     var path = (location.pathname || "").split("/").pop();
     var home = !path || path === "index.html";
     var force = /[?&]ksl-intro=1(?:&|$)/.test(location.search || "");

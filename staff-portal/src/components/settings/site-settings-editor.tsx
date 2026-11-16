@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, FieldGrid, FormSection, Notice, Switch } from "@/components/ui/form-bits";
+import { Field, FieldGrid, FormSection, Notice, Switch, Textarea } from "@/components/ui/form-bits";
 import { RowList } from "@/components/ui/row-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
@@ -95,6 +95,17 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
           label="Show the maintenance page"
           hint="Turn this on before the domain is connected, so the site is not browsable from the server address."
         />
+        <Field
+          label="Message"
+          optional
+          hint="Shown under the heading. Leave it empty to use the standard sentence."
+        >
+          <Textarea
+            value={settings.maintenance.message || ""}
+            maxLength={400}
+            onChange={(e) => set("maintenance", { message: e.target.value })}
+          />
+        </Field>
         <Field
           label="Back online"
           optional

@@ -1,6 +1,33 @@
 <!DOCTYPE html>
 <html lang="en" data-ksl-content-api="https://ksl-websitekiza.vercel.app">
 <head>
+    <script>
+    (function () {
+        var host = String(location.hostname || "").replace(/^\[|\]$/g, "");
+        var ip = /^(?:\d{1,3}\.){3}\d{1,3}$/.test(host) || host.indexOf(":") !== -1;
+        var preview = /(?:\?|&)ksl-maint=1(?:&|$)/.test(location.search || "");
+        if (!ip && !preview) return;
+        var saved = null;
+        try { saved = JSON.parse(localStorage.getItem("ksl-maint-v1") || "null"); } catch (e) {}
+        var style = document.createElement("style");
+        style.textContent = "html.ksl-maint-hold,html.ksl-maint-on{background:#f4f6f8!important}html.ksl-maint-hold body,html.ksl-maint-hold body *,html.ksl-maint-on body,html.ksl-maint-on body *{visibility:hidden!important}html.ksl-maint-hold .ksl-maint,html.ksl-maint-on .ksl-maint{visibility:visible!important}";
+        document.documentElement.appendChild(style);
+        document.documentElement.classList.add("ksl-maint-hold");
+        if (saved && saved.active === false && !preview) return;
+        var message = (saved && saved.message) || "We're currently performing scheduled maintenance. We should be back shortly. Thank you for your patience.";
+        var panel = document.createElement("div");
+        panel.id = "ksl-maint";
+        panel.className = "ksl-maint";
+        panel.setAttribute("role", "dialog");
+        panel.setAttribute("aria-modal", "true");
+        panel.setAttribute("aria-labelledby", "ksl-maint-title");
+        panel.innerHTML = '<div class="ksl-maint-card"><img class="ksl-maint-art" alt="" src="img/ksl/maintenance.svg"><h1 id="ksl-maint-title">Under Maintenance</h1><p id="ksl-maint-copy" class="ksl-maint-copy"></p><div id="ksl-maint-clock" class="ksl-maint-clock" hidden></div></div>';
+        panel.querySelector("#ksl-maint-copy").textContent = message;
+        document.documentElement.appendChild(panel);
+    })();
+    </script>
+    <link rel="stylesheet" href="css/maintenance.css?v=20261116-4">
+
     <meta charset="utf-8">
     <title>Sustainability | Kenya Shipyards Limited</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
@@ -18,7 +45,7 @@
     <link href="css/ksl.css?v=20261112-noline" rel="stylesheet">
     <script src="js/intro.js?v=20261116-1"></script>
     <script src="js/portal-host.js?v=20261111-1"></script>
-    <script src="js/maintenance.js?v=20261116-3"></script>
+    <script src="js/maintenance.js?v=20261116-5"></script>
     <script src="js/ksl-live.js?v=20261105-8"></script>
 </head>
 <body data-ksl-scripts="core wow" data-ksl-motif="keel" data-ksl-motif-2="buoy">

@@ -55,6 +55,7 @@ html.ksl-maint-on body * {
     color: #5b6775;
     font-size: 14px;
     line-height: 1.6;
+    white-space: pre-wrap;
 }
 
 .ksl-maint-clock {

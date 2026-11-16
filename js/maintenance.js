@@ -13,12 +13,15 @@
     var preview = /(?:\?|&)ksl-maint=1(?:&|$)/.test(window.location.search || "");
     if (!isIp(window.location.hostname) && !preview) return;
 
-    var style = document.createElement("link");
-    style.rel = "stylesheet";
-    style.href = new URL("css/maintenance.css?v=20261116-3", document.baseURI).href;
-    document.head.appendChild(style);
+    var DEFAULT_MESSAGE = "We're currently performing scheduled maintenance. We should be back shortly. Thank you for your patience.";
 
-    if (!preview) document.documentElement.classList.add("ksl-maint-hold");
+    if (!document.querySelector("link[data-ksl-maint-css]")) {
+        var style = document.createElement("link");
+        style.rel = "stylesheet";
+        style.setAttribute("data-ksl-maint-css", "");
+        style.href = new URL("css/maintenance.css?v=20261116-4", document.baseURI).href;
+        document.head.appendChild(style);
+    }
 
     var root = null;
     var tick = null;
@@ -94,11 +97,39 @@
         releaseHold();
     }
 
-    function show(nextEndsAt) {
+    function messageText(value) {
+        var text = String(value || "").replace(/[^\S\n]+/g, " ").trim();
+        return text || DEFAULT_MESSAGE;
+    }
+
+    function remember(active, message, nextEndsAt) {
+        try {
+            localStorage.setItem("ksl-maint-v1", JSON.stringify({
+                active: !!active,
+                message: active ? String(message || "") : "",
+                endsAt: active ? String(nextEndsAt || "") : ""
+            }));
+        } catch (err) {
+            /* ignore */
+        }
+    }
+
+    function savedState() {
+        try {
+            return JSON.parse(localStorage.getItem("ksl-maint-v1") || "null");
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function show(nextEndsAt, message) {
         endsAt = nextEndsAt || "";
+        root = document.getElementById("ksl-maint");
         if (!root) {
             units = [];
+            clockEl = null;
             root = document.createElement("div");
+            root.id = "ksl-maint";
             root.className = "ksl-maint";
             root.setAttribute("role", "dialog");
             root.setAttribute("aria-modal", "true");
@@ -117,12 +148,12 @@
             title.textContent = "Under Maintenance";
 
             var copy = document.createElement("p");
+            copy.id = "ksl-maint-copy";
             copy.className = "ksl-maint-copy";
-            copy.textContent = "We're currently performing scheduled maintenance. We should be back shortly. Thank you for your patience.";
 
             var clock = document.createElement("div");
+            clock.id = "ksl-maint-clock";
             clock.className = "ksl-maint-clock";
-            clockEl = clock;
             ["Days", "Hours", "Minutes", "Seconds"].forEach(function (label) {
                 var unit = document.createElement("div");
                 unit.className = "ksl-maint-unit";
@@ -133,7 +164,6 @@
                 unit.appendChild(strong);
                 unit.appendChild(caption);
                 clock.appendChild(unit);
-                units.push(strong);
             });
 
             card.appendChild(art);
@@ -143,6 +173,25 @@
             root.appendChild(card);
             document.documentElement.appendChild(root);
         }
+        clockEl = root.querySelector("#ksl-maint-clock");
+        if (clockEl && !clockEl.querySelector(".ksl-maint-unit")) {
+            ["Days", "Hours", "Minutes", "Seconds"].forEach(function (label) {
+                var unit = document.createElement("div");
+                unit.className = "ksl-maint-unit";
+                var strong = document.createElement("strong");
+                strong.textContent = "00";
+                var caption = document.createElement("span");
+                caption.textContent = label;
+                unit.appendChild(strong);
+                unit.appendChild(caption);
+                clockEl.appendChild(unit);
+            });
+        }
+        units = [];
+        var figures = root.querySelectorAll(".ksl-maint-unit strong");
+        for (var i = 0; i < figures.length; i += 1) units.push(figures[i]);
+        var copyNode = root.querySelector("#ksl-maint-copy");
+        if (copyNode) copyNode.textContent = messageText(message);
         document.documentElement.classList.add("ksl-maint-on");
         document.documentElement.classList.remove("ksl-maint-hold");
         quietIntro();
@@ -165,16 +214,19 @@
     }
 
     function apply(data) {
-        if (shouldShow(data)) {
-            show(data.endsAt || "");
+        if (data && shouldShow(data)) {
+            show(data.endsAt || "", data.message);
+            remember(true, data.message, data.endsAt);
             return;
         }
-        if (preview && !opened) {
-            show(demoEndsAt());
+        if (data) {
+            remember(false, "", "");
+            if (opened) openSite();
+            else releaseHold();
             return;
         }
-        if (opened) openSite();
-        else releaseHold();
+        if (preview && !opened) show(demoEndsAt(), "");
+        else if (!opened) releaseHold();
     }
 
     function load() {
@@ -196,6 +248,11 @@
     document.addEventListener("DOMContentLoaded", function () {
         if (document.documentElement.classList.contains("ksl-maint-on")) quietIntro();
     });
+
+    var cached = savedState();
+    if (document.getElementById("ksl-maint") || (cached && cached.active) || preview) {
+        show((cached && cached.endsAt) || (preview ? demoEndsAt() : ""), cached && cached.message);
+    }
 
     load();
 })();

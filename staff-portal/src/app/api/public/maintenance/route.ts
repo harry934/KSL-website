@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { maintenanceIsActive, normalizeMaintenance } from "@/lib/site-settings";
 import { NextResponse } from "next/server";
 
-const closed = { enabled: false, endsAt: "", active: false };
+const closed = { enabled: false, endsAt: "", message: "", active: false };
 
 export async function GET() {
   try {

@@ -138,6 +138,8 @@ export type MaintenanceSettings = {
   enabled: boolean;
   /** Nairobi wall clock, YYYY-MM-DDTHH:mm. Empty stays up until the switch is turned off. */
   endsAt: string;
+  /** Replaces the standard sentence. Empty keeps the standard sentence. */
+  message: string;
 };
 
 export type YardPhotos = {
@@ -347,6 +349,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   maintenance: {
     enabled: false,
     endsAt: "",
+    message: "",
   },
 };
 
@@ -360,10 +363,19 @@ export function cleanMaintenanceEndsAt(value: unknown) {
   return Number.isNaN(ms) ? "" : wall;
 }
 
+export function cleanMaintenanceMessage(value: unknown) {
+  return String(value ?? "")
+    .replace(/\r\n/g, "\n")
+    .replace(/[^\S\n]+/g, " ")
+    .trim()
+    .slice(0, 400);
+}
+
 export function normalizeMaintenance(input?: Partial<MaintenanceSettings> | null): MaintenanceSettings {
   return {
     enabled: Boolean(input?.enabled),
     endsAt: cleanMaintenanceEndsAt(input?.endsAt),
+    message: cleanMaintenanceMessage(input?.message),
   };
 }
 
