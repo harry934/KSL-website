@@ -15,7 +15,7 @@
 
     var style = document.createElement("link");
     style.rel = "stylesheet";
-    style.href = new URL("css/maintenance.css?v=20261116-2", document.baseURI).href;
+    style.href = new URL("css/maintenance.css?v=20261116-3", document.baseURI).href;
     document.head.appendChild(style);
 
     if (!preview) document.documentElement.classList.add("ksl-maint-hold");
@@ -23,7 +23,6 @@
     var root = null;
     var tick = null;
     var endsAt = "";
-    var note = null;
     var clockEl = null;
     var units = [];
     var opened = false;
@@ -137,30 +136,10 @@
                 units.push(strong);
             });
 
-            var actions = document.createElement("div");
-            actions.className = "ksl-maint-actions";
-            var check = document.createElement("button");
-            check.type = "button";
-            check.className = "ksl-maint-outline";
-            check.textContent = "Check Status";
-            check.addEventListener("click", checkStatus);
-            var refresh = document.createElement("button");
-            refresh.type = "button";
-            refresh.className = "ksl-maint-primary";
-            refresh.textContent = "Refresh Page";
-            refresh.addEventListener("click", function () { window.location.reload(); });
-            actions.appendChild(check);
-            actions.appendChild(refresh);
-
-            note = document.createElement("p");
-            note.className = "ksl-maint-note";
-
             card.appendChild(art);
             card.appendChild(title);
             card.appendChild(copy);
             card.appendChild(clock);
-            card.appendChild(actions);
-            card.appendChild(note);
             root.appendChild(card);
             document.documentElement.appendChild(root);
         }
@@ -208,33 +187,6 @@
             .then(function (response) { return response.ok ? response.json() : null; })
             .then(apply)
             .catch(function () { apply(null); });
-    }
-
-    function checkStatus() {
-        if (note) note.textContent = "Checking…";
-        var base = apiBase();
-        if (!base) {
-            if (note) note.textContent = "Could not reach the server. Try again in a moment.";
-            return;
-        }
-        fetch(base + "/api/public/maintenance", { cache: "no-store" })
-            .then(function (response) { return response.ok ? response.json() : null; })
-            .then(function (data) {
-                if (!data) {
-                    if (note) note.textContent = "Could not reach the server. Try again in a moment.";
-                    return;
-                }
-                if (!shouldShow(data)) {
-                    openSite();
-                    return;
-                }
-                endsAt = data.endsAt || "";
-                paint();
-                if (note) note.textContent = "Still under maintenance.";
-            })
-            .catch(function () {
-                if (note) note.textContent = "Could not reach the server. Try again in a moment.";
-            });
     }
 
     window.setTimeout(function () {

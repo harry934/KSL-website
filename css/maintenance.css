@@ -89,38 +89,3 @@ html.ksl-maint-on body * {
     text-transform: uppercase;
 }
 
-.ksl-maint-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-}
-
-.ksl-maint-actions button {
-    height: 32px;
-    padding: 0 12px;
-    border-radius: 6px;
-    font: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.ksl-maint-outline {
-    border: 1px solid #d5dce4;
-    background: #fff;
-    color: #0b1f3a;
-}
-
-.ksl-maint-primary {
-    border: 1px solid #0b1f3a;
-    background: #0b1f3a;
-    color: #fff;
-}
-
-.ksl-maint-note {
-    min-height: 1.2em;
-    margin: 0;
-    color: #6b7785;
-    font-size: 13px;
-}

@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
 const UNITS = [
   { key: "days", label: "Days" },
@@ -29,17 +28,7 @@ function pad(value: number) {
   return String(value).padStart(2, "0");
 }
 
-export function MaintenanceScreen({
-  endsAt,
-  onCheck,
-  onRefresh,
-  note,
-}: {
-  endsAt: string;
-  onCheck?: () => void;
-  onRefresh?: () => void;
-  note?: string;
-}) {
+export function MaintenanceScreen({ endsAt }: { endsAt: string }) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -70,15 +59,6 @@ export function MaintenanceScreen({
           ))}
         </div>
       )}
-      <EmptyContent className="flex-row flex-wrap justify-center gap-2">
-        <Button size="sm" variant="outline" onClick={onCheck}>
-          Check Status
-        </Button>
-        <Button size="sm" onClick={onRefresh}>
-          Refresh Page
-        </Button>
-      </EmptyContent>
-      {note ? <p className="m-0 text-[13px] text-[#6b7785]">{note}</p> : null}
     </Empty>
   );
 }
