@@ -1,7 +1,14 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { clearReviewDraft, editorSavePlan, saveBody } from "@/lib/draft-review";
-import { mergeSiteSettings, normalizeAnnouncement, SITE_SETTING_KEYS, type AnnouncementSettings, type SiteSettingKey } from "@/lib/site-settings";
+import {
+  mergeSiteSettings,
+  normalizeAnnouncement,
+  normalizeMaintenance,
+  SITE_SETTING_KEYS,
+  type AnnouncementSettings,
+  type SiteSettingKey,
+} from "@/lib/site-settings";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -34,12 +41,17 @@ export async function POST(req: NextRequest) {
   }
 
   const hasQueue = key === "announcement" && Array.isArray((body.value as AnnouncementSettings).queue);
-  const value = key === "announcement" ? normalizeAnnouncement(body.value as AnnouncementSettings, hasQueue) : body.value;
+  const value =
+    key === "announcement"
+      ? normalizeAnnouncement(body.value as AnnouncementSettings, hasQueue)
+      : key === "maintenance"
+        ? normalizeMaintenance(body.value)
+        : body.value;
   const admin = createAdminClient();
   const plan = await editorSavePlan(admin, session, "site_settings", "site_settings", {
     settings: true,
     key,
-    title: key === "announcement" ? "Banner" : "Site settings",
+    title: key === "announcement" ? "Banner" : key === "maintenance" ? "Maintenance" : "Site settings",
     payload: { key, value },
   });
   if (plan.held) return plan.held;

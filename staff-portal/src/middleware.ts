@@ -39,8 +39,9 @@ function isAllowedOrigin(origin: string) {
 function publicApi(request: NextRequest) {
   const origin = request.headers.get("origin") ?? "";
   const contactPost = request.nextUrl.pathname === "/api/public/contact";
+  const maintenanceGet = request.nextUrl.pathname === "/api/public/maintenance";
   const headers = new Headers({ Vary: "Origin" });
-  if (origin && isAllowedOrigin(origin)) {
+  if (origin && (isAllowedOrigin(origin) || maintenanceGet)) {
     headers.set("Access-Control-Allow-Origin", origin);
     headers.set("Access-Control-Allow-Methods", contactPost ? "POST, OPTIONS" : "GET, OPTIONS");
     headers.set("Access-Control-Allow-Headers", "Content-Type");

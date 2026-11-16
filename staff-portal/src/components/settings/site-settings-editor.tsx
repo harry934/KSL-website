@@ -4,11 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, FieldGrid, FormSection, Notice } from "@/components/ui/form-bits";
+import { Field, FieldGrid, FormSection, Notice, Switch } from "@/components/ui/form-bits";
+import { MaintenanceScreen } from "@/components/ui/maintenance-screen";
 import { RowList } from "@/components/ui/row-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
-import { DEFAULT_SITE_SETTINGS, type SiteSettingKey, type SiteSettings } from "@/lib/site-settings";
+import { DEFAULT_SITE_SETTINGS, maintenanceIsActive, type SiteSettingKey, type SiteSettings } from "@/lib/site-settings";
 
 export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
   const { toast } = useFeedback();
@@ -16,6 +17,7 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState<SiteSettingKey | null>(null);
+  const [previewNote, setPreviewNote] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -44,7 +46,13 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
     setSaving(key);
     try {
       const saved = await sendJson("/api/site-settings", "POST", { key, value });
-      toast(awaitingReview(saved) ? DRAFT_SAVED : "Saved. The website updates within about a minute.");
+      toast(
+        awaitingReview(saved)
+          ? DRAFT_SAVED
+          : key === "maintenance"
+            ? "Saved. Anyone opening the site by its IP address will see this on the next visit."
+            : "Saved. The website updates within about a minute."
+      );
     } catch (err) {
       toast((err as Error).message, "error");
     }
@@ -78,6 +86,42 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
       {!canEdit && (
         <Notice kind="info">You can look at these settings. Only an administrator can change them.</Notice>
       )}
+
+      <FormSection
+        title="Maintenance page"
+        description="Hides the public website when someone opens it by the server IP address. A real domain name, and the staff portal, stay open."
+      >
+        <Switch
+          checked={settings.maintenance.enabled}
+          onChange={(enabled) => set("maintenance", { enabled })}
+          label="Show the maintenance page"
+          hint="Turn this on before the domain is connected, so the site is not browsable from the server address."
+        />
+        <Field
+          label="Back online"
+          optional
+          hint="East Africa Time. The countdown on the page counts down to this moment. Leave it empty to keep the page up until you switch it off."
+        >
+          <Input
+            type="datetime-local"
+            value={settings.maintenance.endsAt}
+            onChange={(e) => set("maintenance", { endsAt: e.target.value })}
+          />
+        </Field>
+        {settings.maintenance.enabled && settings.maintenance.endsAt && !maintenanceIsActive(settings.maintenance) && (
+          <Notice kind="info">That time has already passed, so visitors still see the website.</Notice>
+        )}
+        <div className="rounded-lg bg-[#f4f6f8] p-4">
+          <p className="mb-3 text-center text-[12.5px] text-[#6b7785]">What visitors on the server address see</p>
+          <MaintenanceScreen
+            endsAt={settings.maintenance.endsAt}
+            note={previewNote}
+            onCheck={() => setPreviewNote("On the website, this asks the server if the site is open again.")}
+            onRefresh={() => setPreviewNote("On the website, this reloads the page.")}
+          />
+        </div>
+        {saveButton("maintenance")}
+      </FormSection>
 
       <FormSection title="Contact details" description="Shown at the top of every page and in the footer.">
         <FieldGrid>

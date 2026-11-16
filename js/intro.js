@@ -317,6 +317,11 @@
     }
 
     function boot() {
+        if (document.documentElement.classList.contains("ksl-maint-hold")) {
+            document.addEventListener("ksl-maintenance-clear", boot, { once: true });
+            return;
+        }
+        if (document.documentElement.classList.contains("ksl-maint-on")) return;
         bindLogoBrand();
         maybeAutoIntroOnHome();
     }

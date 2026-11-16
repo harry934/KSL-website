@@ -133,6 +133,13 @@ export type AppearanceSettings = {
   menuStyle: MenuStyle;
 };
 
+export type MaintenanceSettings = {
+  /** Visitors who open the public site by an IP address see the maintenance page. */
+  enabled: boolean;
+  /** Nairobi wall clock, YYYY-MM-DDTHH:mm. Empty stays up until the switch is turned off. */
+  endsAt: string;
+};
+
 export type YardPhotos = {
   quay: string;
   berth: string;
@@ -292,9 +299,10 @@ export type SiteSettings = {
   footer: FooterSettings;
   announcement: AnnouncementSettings;
   appearance: AppearanceSettings;
+  maintenance: MaintenanceSettings;
 };
 
-export const SITE_SETTING_KEYS = ["contact", "social", "footer", "announcement", "appearance"] as const;
+export const SITE_SETTING_KEYS = ["contact", "social", "footer", "announcement", "appearance", "maintenance"] as const;
 export type SiteSettingKey = (typeof SITE_SETTING_KEYS)[number];
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
@@ -336,7 +344,36 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   appearance: {
     menuStyle: "classic",
   },
+  maintenance: {
+    enabled: false,
+    endsAt: "",
+  },
 };
+
+/** Keep a datetime-local value as Nairobi wall time, or blank when it is not a real moment. */
+export function cleanMaintenanceEndsAt(value: unknown) {
+  const raw = String(value ?? "").trim();
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/);
+  if (!match) return "";
+  const wall = `${match[1]}T${match[2]}`;
+  const ms = Date.parse(`${wall}:00+03:00`);
+  return Number.isNaN(ms) ? "" : wall;
+}
+
+export function normalizeMaintenance(input?: Partial<MaintenanceSettings> | null): MaintenanceSettings {
+  return {
+    enabled: Boolean(input?.enabled),
+    endsAt: cleanMaintenanceEndsAt(input?.endsAt),
+  };
+}
+
+/** True while the switch is on and the Nairobi end time, if set, is still ahead. */
+export function maintenanceIsActive(settings: MaintenanceSettings, now = Date.now()) {
+  if (!settings.enabled) return false;
+  if (!settings.endsAt) return true;
+  const ends = Date.parse(`${settings.endsAt}:00+03:00`);
+  return !Number.isNaN(ends) && ends > now;
+}
 
 export function mergeSiteSettings(rows: { key: string; value: unknown }[]): SiteSettings {
   const merged: SiteSettings = structuredClone(DEFAULT_SITE_SETTINGS);
@@ -351,5 +388,6 @@ export function mergeSiteSettings(rows: { key: string; value: unknown }[]): Site
     { ...DEFAULT_SITE_SETTINGS.announcement, ...(rawAnnouncement && typeof rawAnnouncement === "object" ? rawAnnouncement : {}) },
     hasQueue
   );
+  merged.maintenance = normalizeMaintenance(merged.maintenance);
   return merged;
 }
