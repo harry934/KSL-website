@@ -5,7 +5,6 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldGrid, FormSection, Notice, Switch } from "@/components/ui/form-bits";
-import { MaintenanceScreen } from "@/components/ui/maintenance-screen";
 import { RowList } from "@/components/ui/row-list";
 import { useFeedback } from "@/components/ui/feedback";
 import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
@@ -17,7 +16,6 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState<SiteSettingKey | null>(null);
-  const [previewNote, setPreviewNote] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -111,15 +109,6 @@ export function SiteSettingsEditor({ canEdit }: { canEdit: boolean }) {
         {settings.maintenance.enabled && settings.maintenance.endsAt && !maintenanceIsActive(settings.maintenance) && (
           <Notice kind="info">That time has already passed, so visitors still see the website.</Notice>
         )}
-        <div className="rounded-lg bg-[#f4f6f8] p-4">
-          <p className="mb-3 text-center text-[12.5px] text-[#6b7785]">What visitors on the server address see</p>
-          <MaintenanceScreen
-            endsAt={settings.maintenance.endsAt}
-            note={previewNote}
-            onCheck={() => setPreviewNote("On the website, this asks the server if the site is open again.")}
-            onRefresh={() => setPreviewNote("On the website, this reloads the page.")}
-          />
-        </div>
         {saveButton("maintenance")}
       </FormSection>
 
