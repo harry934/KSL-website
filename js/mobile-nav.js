@@ -89,7 +89,7 @@
                 title: "Media",
                 links: [
                     { href: "news.html", label: "News and Events", match: ["news.html", "article.html", "event.html"] },
-                    { href: "videos.html", label: "Gallery" },
+
                     { href: "downloads.html", label: "Downloads" }
                 ]
             },

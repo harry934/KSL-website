@@ -870,10 +870,10 @@
             "about.html": "About KSL",
             "board.html": "About KSL",
             "organization.html": "About KSL",
-            "news.html": "Media Center",
-            "article.html": "Media Center",
-            "event.html": "Media Center",
-            "videos.html": "Media Center",
+            "news.html": "News and Events",
+            "article.html": "News and Events",
+            "event.html": "News and Events",
+            "videos.html": "News and Events",
             "downloads.html": "Downloads"
         };
         var activeSection = sectionByPage[currentPage];
@@ -1907,7 +1907,7 @@
         { title: "Products", href: "products.html", type: "Page", keys: "boats vessels grp patrol ferry" },
         { title: "Projects", href: "project.html", type: "Page", keys: "vessels delivered builds" },
         { title: "News and Events", href: "news.html", type: "Page", keys: "media press updates" },
-        { title: "Gallery", href: "videos.html", type: "Page", keys: "photos videos media" },
+
         { title: "Downloads", href: "downloads.html", type: "Page", keys: "documents forms charter tender" },
         { title: "Careers", href: "careers.html", type: "Page", keys: "jobs vacancies internship attachment" },
         { title: "FAQ", href: "faq.html", type: "Page", keys: "questions help" },
