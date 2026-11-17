@@ -151,24 +151,6 @@ export function GalleryEditor() {
     }
   }
 
-  function patchPhoto(id: string, patch: Partial<GalleryRow>, persist = true, message?: string) {
-    const row = photos.find((p) => p.id === id);
-    if (!row) return;
-    const next = { ...row, ...patch };
-    setPhotos((list) => list.map((p) => (p.id === id ? next : p)));
-    setEdit((current) => {
-      if (current?.id !== id) return current;
-      return {
-        ...current,
-        title: patch.title !== undefined ? (next.title ?? "") : current.title,
-        alt_text: patch.alt_text !== undefined ? (next.alt_text ?? "") : current.alt_text,
-        category: patch.category !== undefined ? next.category || "all" : current.category,
-        status: patch.status !== undefined ? next.status : current.status,
-      };
-    });
-    if (persist) savePhoto(next, message);
-  }
-
   function openPhotoEditor(photo: GalleryRow) {
     setOpenId(photo.id);
     setEdit({
@@ -367,7 +349,6 @@ export function GalleryEditor() {
     );
   }
 
-  const live = photos.length;
   const openPhoto = photos.find((p) => p.id === openId) ?? null;
 
   return (
@@ -494,7 +475,6 @@ export function GalleryEditor() {
         ) : (
           <ul className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
             {shown.map((p) => {
-              const hidden = p.status !== "published";
               const selected = openId === p.id;
               return (
                 <li key={p.id} id={`gallery-${p.id}`} className={cn("overflow-hidden rounded-[10px] border bg-white", selected ? "border-[#0b1f3a]" : "border-[#e3e8ee]")}>
