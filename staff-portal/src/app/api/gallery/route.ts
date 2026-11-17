@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff, logActivity } from "@/lib/api-auth";
-import { clearReviewDraft, editorSavePlan, overlayDrafts, saveBody } from "@/lib/draft-review";
+import { clearReviewDraft } from "@/lib/draft-review";
 import { youtubeIdFrom } from "@/lib/gallery";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
@@ -22,8 +22,8 @@ export async function GET() {
   const photos = splitRemoved(photosRes.data ?? []);
   const videos = splitRemoved(videosRes.data ?? []);
   return NextResponse.json({
-    photos: await overlayDrafts(admin, "gallery_photos", photos.items),
-    videos: await overlayDrafts(admin, "gallery_videos", videos.items),
+    photos: photos.items,
+    videos: videos.items,
     removedPhotos: photos.removed,
     removedVideos: videos.removed,
   });
@@ -42,14 +42,10 @@ export async function POST(req: NextRequest) {
     await logActivity(session.userId, "gallery", "restore", table === "gallery_videos" ? "gallery_video" : "gallery_photo", String(body.id ?? ""));
     return NextResponse.json({ ok: true });
   }
-  const plan = await editorSavePlan(admin, session, "gallery", body.type === "video" ? "gallery_videos" : "gallery_photos", {
-    id: body.id,
-    requestedStatus: body.status ?? "published",
-    title: String(body.title || body.alt_text || (body.type === "video" ? "Untitled video" : "Untitled photo")),
-    payload: body,
-  });
-  if (plan.held) return plan.held;
-  const status = plan.status;
+
+  // Gallery content is managed internally only; publishing/visibility is not configurable.
+  // Keep the database status valid while the public gallery endpoint remains disabled.
+  const status = "published";
 
   if (body.type === "video") {
     const youtubeId = youtubeIdFrom(String(body.youtube_id ?? ""));
@@ -73,7 +69,7 @@ export async function POST(req: NextRequest) {
     if (upErr) return NextResponse.json({ error: "Could not save the video." }, { status: 500 });
     await clearReviewDraft(admin, "gallery_videos", data.id);
     await logActivity(session.userId, "gallery", "upsert", "gallery_video", data.id);
-    return NextResponse.json(saveBody(session, "gallery", { id: data.id }));
+    return NextResponse.json({ ok: true, queued: false, id: data.id });
   }
 
   const title = String(body.title ?? "").trim();
@@ -98,7 +94,7 @@ export async function POST(req: NextRequest) {
   await releaseUnusedValues(admin, previous);
   await clearReviewDraft(admin, "gallery_photos", data.id);
   await logActivity(session.userId, "gallery", "upsert", "gallery_photo", data.id);
-  return NextResponse.json(saveBody(session, "gallery", { id: data.id }));
+  return NextResponse.json({ ok: true, queued: false, id: data.id });
 }
 
 export async function DELETE(req: NextRequest) {
