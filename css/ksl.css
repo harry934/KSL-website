@@ -5193,6 +5193,10 @@ body {
     background: radial-gradient(circle at 30% 110%, #feda75 0%, #fa7e1e 28%, #d62976 58%, #962fbf 78%, #4f5bd5 100%);
 }
 
+.topbar-util .top-social.is-youtube {
+    background: #FF0000;
+}
+
 .topbar-util .top-social:hover {
     transform: translateY(-1px);
     filter: brightness(1.08);

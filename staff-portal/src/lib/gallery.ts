@@ -21,10 +21,10 @@ export type GalleryVideoRow = {
 };
 
 export const GALLERY_CATEGORIES = [
-  { value: "all", label: "General", where: "Shown on the Gallery page in All only." },
-  { value: "kisumu", label: "Kisumu", where: "Shown on the Gallery page under Kisumu, and also in All." },
-  { value: "mombasa", label: "Mombasa", where: "Shown on the Gallery page under Mombasa, and also in All." },
-  { value: "krc", label: "Kenya Railways", where: "Shown on the Gallery page under Kenya Railways, and also in All." },
+  { value: "all", label: "General", where: "Shown under All." },
+  { value: "kisumu", label: "Kisumu", where: "Shown under Kisumu, and also in All." },
+  { value: "mombasa", label: "Mombasa", where: "Shown under Mombasa, and also in All." },
+  { value: "krc", label: "Kenya Railways", where: "Shown under Kenya Railways, and also in All." },
 ];
 
 export function galleryPlace(value: string | null | undefined) {

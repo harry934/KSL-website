@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Eye, EyeOff, GripVertical, Loader2, Pencil, Plus, Star, Trash2, Upload, X } from "lucide-react";
+import { GripVertical, Loader2, Pencil, Plus, Star, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState, Field, FieldGrid, FormSection, Switch, Textarea } from "@/components/ui/form-bits";
@@ -17,7 +17,6 @@ import { cn } from "@/lib/cn";
 
 type VideoDraft = { id?: string; link: string; title: string; caption: string; featured: boolean; status: string; sort_order: number };
 type PhotoEdit = { id: string; title: string; alt_text: string; category: string; status: string };
-type PhotoView = "all" | "shown" | "hidden";
 
 const EMPTY_VIDEO: VideoDraft = { link: "", title: "", caption: "", featured: false, status: "published", sort_order: 0 };
 
@@ -30,7 +29,6 @@ export function GalleryEditor() {
   const [videos, setVideos] = useState<GalleryVideoRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [place, setPlace] = useState("any");
-  const [photoView, setPhotoView] = useState<PhotoView>("all");
   const [openId, setOpenId] = useState<string | null>(null);
   const [edit, setEdit] = useState<PhotoEdit | null>(null);
   const [savingPhoto, setSavingPhoto] = useState(false);
@@ -67,7 +65,6 @@ export function GalleryEditor() {
     const photo = photos.find((row) => row.id === id);
     if (photo) {
       setPlace("any");
-      setPhotoView("all");
       setOpenId(photo.id);
     }
     const clip = videos.find((row) => row.id === id);
@@ -110,11 +107,9 @@ export function GalleryEditor() {
     () =>
       photos.filter((photo) => {
         if (place !== "any" && (photo.category || "all") !== place) return false;
-        if (photoView === "shown" && photo.status !== "published") return false;
-        if (photoView === "hidden" && photo.status === "published") return false;
         return true;
       }),
-    [photos, place, photoView]
+    [photos, place]
   );
 
   useEffect(() => {
@@ -185,16 +180,6 @@ export function GalleryEditor() {
     });
   }
 
-  function showPhoto(row: GalleryRow, on: boolean) {
-    if (!canPublish) return;
-    patchPhoto(
-      row.id,
-      { status: on ? "published" : "draft" },
-      true,
-      on ? "Photo is now on the website." : "Photo hidden from the website."
-    );
-  }
-
   async function saveEdit(event: React.FormEvent) {
     event.preventDefault();
     if (!edit) return;
@@ -209,13 +194,10 @@ export function GalleryEditor() {
     };
     setSavingPhoto(true);
     setPhotos((list) => list.map((photo) => (photo.id === row.id ? next : photo)));
-    const hidden = next.status !== "published";
-    const saved = await savePhoto(next, hidden ? "Photo hidden from the website." : "Photo saved.");
+    const saved = await savePhoto(next, "Photo saved.");
     setSavingPhoto(false);
     if (!saved) return;
     if (place !== "any" && (next.category || "all") !== place) setPlace("any");
-    if (photoView === "shown" && next.status !== "published") setPhotoView("all");
-    if (photoView === "hidden" && next.status === "published") setPhotoView("all");
     setOpenId(null);
     setEdit(null);
     setReturnTo(next.id);
@@ -276,7 +258,7 @@ export function GalleryEditor() {
   async function removePhoto(row: GalleryRow) {
     const ok = await confirm({
       title: "Remove this photo?",
-      message: "It leaves the Gallery page and goes to the recycle bin.",
+      message: "It will be removed from the gallery and go to the recycle bin.",
       confirmLabel: "Remove photo",
       danger: true,
     });
@@ -304,7 +286,7 @@ export function GalleryEditor() {
             status: row.status,
             sort_order: row.sort_order,
           }
-        : { ...EMPTY_VIDEO, status: canPublish ? "published" : "draft", sort_order: videos.length }
+        : { ...EMPTY_VIDEO, status: "published", sort_order: videos.length }
     );
   }
 
@@ -346,17 +328,6 @@ export function GalleryEditor() {
     await sendJson("/api/gallery", "POST", { ...row, type: "video" });
   }
 
-  async function toggleVideo(row: GalleryVideoRow, status: string) {
-    setVideos((list) => list.map((v) => (v.id === row.id ? { ...v, status } : v)));
-    try {
-      await saveVideoRow({ ...row, status });
-      toast(status === "published" ? "Video is now on the website." : "Video hidden from the website.");
-    } catch (e) {
-      toast((e as Error).message, "error");
-      load();
-    }
-  }
-
   async function moveVideo(from: number, to: number) {
     const next = reorderItem(videos, from, to).map((v, i) => ({ ...v, sort_order: i }));
     setVideos(next);
@@ -373,7 +344,7 @@ export function GalleryEditor() {
   async function removeVideo(row: GalleryVideoRow) {
     const ok = await confirm({
       title: "Remove this video?",
-      message: `"${row.title}" leaves the website and goes to the recycle bin. The film stays on YouTube.`,
+      message: `"${row.title}" will be removed from the gallery and go to the recycle bin. The film stays on YouTube.`,
       confirmLabel: "Remove video",
       danger: true,
     });
@@ -396,14 +367,14 @@ export function GalleryEditor() {
     );
   }
 
-  const live = photos.filter((p) => p.status === "published").length;
+  const live = photos.length;
   const openPhoto = photos.find((p) => p.id === openId) ?? null;
 
   return (
     <div className="space-y-5">
       <FormSection
         title="Photos"
-        description={`${live} on the website, ${photos.length - live} hidden. Hidden photos leave the Gallery page.`}
+        description={`${photos.length} photos in the gallery.`}
         actions={
           <>
             <label
@@ -430,28 +401,6 @@ export function GalleryEditor() {
         }
       >
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Which photos">
-            {(
-              [
-                ["all", "All photos"],
-                ["shown", "On the website"],
-                ["hidden", "Hidden"],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setPhotoView(value)}
-                className={cn(
-                  "h-8 rounded-full px-3 text-[13px] font-semibold",
-                  photoView === value ? "bg-[#0b1f3a] text-white" : "bg-[#f1f4f7] text-[#3d4c5f] hover:bg-[#e7edf3]"
-                )}
-                aria-pressed={photoView === value}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="Show photos from">
             {[{ value: "any", label: "All places" }, ...GALLERY_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))].map((option) => (
               <button
@@ -475,12 +424,12 @@ export function GalleryEditor() {
             <img
               src={siteAssetUrl(photoSrc(openPhoto))}
               alt=""
-              className={cn("aspect-[4/3] w-full rounded-[8px] bg-[#e7edf3] object-cover", edit.status !== "published" && "opacity-60")}
+              className={cn("aspect-[4/3] w-full rounded-[8px] bg-[#e7edf3] object-cover")}
             />
             <div className="min-w-0 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <p className="text-[13px] font-semibold text-[#5b6775]">
-                  {edit.status === "published" ? "On the website" : "Hidden from the website"}
+                  Edit photo
                 </p>
                 <button
                   type="button"
@@ -524,13 +473,6 @@ export function GalleryEditor() {
                   </button>
                 ))}
               </div>
-              <Switch
-                checked={edit.status === "published"}
-                disabled={!canPublish}
-                onChange={(on) => setEdit({ ...edit, status: on ? "published" : "draft" })}
-                label={edit.status === "published" ? "Shown on the website" : "Hidden"}
-                hint="Hidden photos stay in this list and leave the public Gallery page."
-              />
               <div className="flex flex-wrap gap-2">
                 <Button type="submit" disabled={savingPhoto}>
                   {savingPhoto ? "Saving…" : "Save photo"}
@@ -574,13 +516,10 @@ export function GalleryEditor() {
                     <img
                       src={siteAssetUrl(photoSrc(p))}
                       alt=""
-                      className={cn("h-full w-full object-cover", hidden && "opacity-45")}
+                      className="h-full w-full object-cover"
                       loading="lazy"
                       decoding="async"
                     />
-                    {hidden ? (
-                      <span className="absolute left-2 top-2 rounded-full bg-white px-2 py-0.5 text-[11.5px] font-semibold text-[#0b1f3a]">Hidden</span>
-                    ) : null}
                   </button>
                   <div className="space-y-2 p-3">
                     <p className="truncate text-[13.5px] font-semibold text-[#0b1f3a]">{p.title || "Untitled photo"}</p>
@@ -598,10 +537,6 @@ export function GalleryEditor() {
                       >
                         <Pencil className="h-3.5 w-3.5" /> Edit
                       </Button>
-                      <Button type="button" variant="secondary" size="sm" className="flex-1" disabled={!canPublish} onClick={() => showPhoto(p, hidden)}>
-                        {hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                        {hidden ? "Show" : "Hide"}
-                      </Button>
                     </div>
                   </div>
                 </li>
@@ -613,7 +548,7 @@ export function GalleryEditor() {
 
       <FormSection
         title="Videos"
-        description="YouTube videos shown on the Gallery page. Drag a video to change the order. The featured video is also shown on the home page."
+        description="YouTube videos in the gallery. Drag a video to change the order. The featured video is also shown on the home page."
         actions={
           !video && (
             <Button onClick={() => startVideo()}>
@@ -660,12 +595,6 @@ export function GalleryEditor() {
                 onChange={(featured) => setVideo({ ...video, featured })}
                 label="Featured video"
                 hint="Shown first. Only one video can be featured."
-              />
-              <Switch
-                checked={video.status === "published"}
-                disabled={!canPublish}
-                onChange={(on) => setVideo({ ...video, status: on ? "published" : "draft" })}
-                label={video.status === "published" ? "Shown on website" : "Hidden (draft)"}
               />
             </div>
             <div className="flex gap-2">
@@ -720,12 +649,6 @@ export function GalleryEditor() {
                   {v.caption && <p className="mt-0.5 line-clamp-2 text-[13px] text-[#6b7785]">{v.caption}</p>}
                 </div>
                 <div className="flex items-center gap-3">
-                  <Switch
-                    checked={v.status === "published"}
-                    disabled={!canPublish}
-                    onChange={(on) => toggleVideo(v, on ? "published" : "draft")}
-                    label={<span className="text-[13px]">On website</span>}
-                  />
                   <Button variant="secondary" size="sm" onClick={() => startVideo(v)}>
                     <Pencil className="h-3.5 w-3.5" /> Edit
                   </Button>
