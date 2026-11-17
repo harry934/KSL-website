@@ -72,6 +72,7 @@
                 links: [
                     { href: "index.html", label: "Home" },
                     { href: "about.html", label: "Who We Are" },
+                    { href: "products.html", label: "Products" },
                     { href: "board.html", label: "KSL Board" },
                     { href: "organization.html", label: "Organization Structure" }
                 ]
