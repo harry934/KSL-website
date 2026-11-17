@@ -28,8 +28,8 @@
         }, 1);
     };
     spinner();
-    
-    
+
+
     // Initiate the wowjs
     if (!window.matchMedia("(max-width: 991.98px)").matches) {
         new WOW().init();
@@ -93,8 +93,8 @@
     }, { passive: true });
     window.addEventListener("resize", measureTopbar);
     window.addEventListener("load", measureTopbar);
-    
-    
+
+
     // Facts counter
     document.querySelectorAll("[data-ksl-since]").forEach(function (el) {
         var since = new Date(el.getAttribute("data-ksl-since"));
@@ -474,16 +474,16 @@
                 try {
                     if (bounds) clip.currentTime = bounds.start;
                     else if (clip.ended) clip.currentTime = 0;
-                } catch (e) {}
+                } catch (e) { }
                 clip.loop = count === 1 && !bounds;
                 if (clip._kslCrop) placeFramedClip(clip);
                 var playPromise = clip.play();
-                if (playPromise && typeof playPromise.catch === "function") playPromise.catch(function () {});
+                if (playPromise && typeof playPromise.catch === "function") playPromise.catch(function () { });
                 clip.ontimeupdate = function () {
                     var live = trimBounds();
                     if (!live || customIndex !== shown || clip.currentTime < live.end - 0.08) return;
                     if (count === 1) {
-                        try { clip.currentTime = live.start; } catch (err) {}
+                        try { clip.currentTime = live.start; } catch (err) { }
                         return;
                     }
                     clip.ontimeupdate = null;
@@ -630,7 +630,7 @@
             attachHeroVideo();
             var playPromise = heroVideo.play();
             if (playPromise && typeof playPromise.catch === "function") {
-                playPromise.catch(function () {});
+                playPromise.catch(function () { });
             }
         };
 
@@ -2369,7 +2369,7 @@
                 })
             }).then(function (res) {
                 return res.json().catch(function () { return {}; }).then(function (data) {
-                        if (!res.ok) {
+                    if (!res.ok) {
                         if (data.code === "blocked") {
                             window.location.replace("404.html?blocked=1");
                             return;

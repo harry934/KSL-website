@@ -65,14 +65,6 @@
       "variable": "--ksl-photo-page-header"
     },
     {
-      "id": "header.gallery",
-      "page": "Gallery",
-      "label": "Page header",
-      "src": "img/ksl/yard.jpg",
-      "kind": "css",
-      "variable": "--ksl-photo-page-header"
-    },
-    {
       "id": "header.downloads",
       "page": "Downloads",
       "label": "Page header",

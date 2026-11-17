@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GripVertical, Loader2, Pencil, Plus, Star, Trash2, Upload, X } from "lucide-react";
+import { GripVertical, Loader2, Pencil, Plus, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { EmptyState, Field, FieldGrid, FormSection, Switch, Textarea } from "@/components/ui/form-bits";
+import { EmptyState, Field, FieldGrid, FormSection, Textarea } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import { GALLERY_CATEGORIES, galleryPlace, photoSrc, youtubeIdFrom, type GalleryRow, type GalleryVideoRow } from "@/lib/gallery";
@@ -355,7 +355,7 @@ export function GalleryEditor() {
     <div className="space-y-5">
       <FormSection
         title="Photos"
-        description={`${photos.length} photos in the gallery.`}
+        description={`${photos.length} photos for staff. These stay in the portal and are not shown on the website.`}
         actions={
           <>
             <label
@@ -528,7 +528,7 @@ export function GalleryEditor() {
 
       <FormSection
         title="Videos"
-        description="YouTube videos in the gallery. Drag a video to change the order. The featured video is also shown on the home page."
+        description="YouTube videos for staff. Drag a video to change the order. Videos are not shown on the website."
         actions={
           !video && (
             <Button onClick={() => startVideo()}>
@@ -569,14 +569,6 @@ export function GalleryEditor() {
                 />
               </Field>
             </FieldGrid>
-            <div className="flex flex-wrap gap-6">
-              <Switch
-                checked={video.featured}
-                onChange={(featured) => setVideo({ ...video, featured })}
-                label="Featured video"
-                hint="Shown first. Only one video can be featured."
-              />
-            </div>
             <div className="flex gap-2">
               <Button type="submit" disabled={savingVideo}>
                 {savingVideo ? "Saving…" : video.id ? "Save video" : "Add video"}
@@ -620,11 +612,6 @@ export function GalleryEditor() {
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-2 text-[14px] font-semibold text-[#0b1f3a]">
                     {v.title || "Untitled video"}
-                    {v.featured && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#c5a028]/15 px-2 py-0.5 text-[11.5px] font-semibold text-[#8a6d12]">
-                        <Star className="h-3 w-3" /> Featured
-                      </span>
-                    )}
                   </p>
                   {v.caption && <p className="mt-0.5 line-clamp-2 text-[13px] text-[#6b7785]">{v.caption}</p>}
                 </div>

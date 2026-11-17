@@ -9,11 +9,6 @@
       "type": "Image"
     },
     {
-      "title": "Photo gallery",
-      "href": "videos.html#photos",
-      "type": "Gallery"
-    },
-    {
       "title": "KSL Brochure",
       "downloadId": "brochure",
       "type": "PDF"

@@ -12,7 +12,7 @@ export default async function GalleryPage() {
 
   return (
     <>
-      <PageHeader title="Gallery" description="General media and photo gallery for administrators." />
+      <PageHeader title="Gallery" description="Staff photo and video library. Nothing here is shown on the public website." />
       <GalleryEditor />
     </>
   );
