@@ -248,6 +248,13 @@
       "kind": "img"
     },
     {
+      "id": "about.16-kenya-railways-workshop",
+      "page": "About",
+      "label": "Kenya Railways",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
       "id": "index.1-aerial-view-of-mombasa-shipyard-at-mtongwe",
       "page": "Home",
       "label": "Who we are photo",
@@ -370,6 +377,13 @@
       "id": "index.17-nairobi-hq",
       "page": "Home",
       "label": "Nairobi HQ",
+      "src": "img/ksl/yard.jpg",
+      "kind": "img"
+    },
+    {
+      "id": "index.18-kenya-railways-workshop",
+      "page": "Home",
+      "label": "Kenya Railways",
       "src": "img/ksl/yard.jpg",
       "kind": "img"
     },
