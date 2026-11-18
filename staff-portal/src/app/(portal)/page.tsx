@@ -2,7 +2,7 @@ import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { Plus } from "lucide-react";
 import { getStaffSession } from "@/lib/session";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import { permissionNavLinks, usesSidebar } from "@/lib/portal-nav";
 import { formatBytes } from "@/lib/downloads";
@@ -23,8 +23,7 @@ const QUICK_ACTIONS: { module: ModuleKey; label: string }[] = [
   { module: "downloads", label: "Add a document" },
 ];
 
-const STORAGE_QUOTA = 1024 * 1024 * 1024;
-const DATABASE_QUOTA = 500 * 1024 * 1024;
+const GIBIBYTE = 1024 * 1024 * 1024;
 
 const BUCKETS = [
   { id: "media-public", label: "Photos", tone: "photos" },
@@ -34,8 +33,8 @@ const BUCKETS = [
 
 function storageLabel(bytes: number) {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
-  if (bytes >= STORAGE_QUOTA) {
-    const gb = bytes / STORAGE_QUOTA;
+  if (bytes >= GIBIBYTE) {
+    const gb = bytes / GIBIBYTE;
     const rounded = Math.round(gb * 10) / 10;
     return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)} GB`;
   }
@@ -45,7 +44,7 @@ function storageLabel(bytes: number) {
 
 async function loadStorageUsage(): Promise<StorageBreakdown | null> {
   noStore();
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const breakdown = await loadStorageBreakdown(admin);
   if (breakdown) return breakdown;
   const { data, error } = await admin.rpc("storage_usage");
@@ -65,7 +64,7 @@ function StorageMeter({ usage }: { usage: StorageBreakdown | null }) {
     return (
       <article className="storage-meter">
         <h2>Storage</h2>
-        <p className="storage-wait">Run supabase/migrations/022_storage_usage.sql in Supabase to show used and free space.</p>
+        <p className="storage-wait">Stored-file usage is currently unavailable.</p>
       </article>
     );
   }
@@ -79,17 +78,15 @@ function StorageMeter({ usage }: { usage: StorageBreakdown | null }) {
     .reduce((sum, row) => sum + row.bytes, 0);
   const used = slices.reduce((sum, row) => sum + row.bytes, 0) + other;
   const stored = used + usage.bin + usage.spare;
-  const free = Math.max(0, STORAGE_QUOTA - stored);
-  const scale = Math.max(stored, STORAGE_QUOTA, 1);
+  const scale = Math.max(stored, 1);
   const width = (bytes: number) => `${(bytes / scale) * 100}%`;
-  const high = stored / STORAGE_QUOTA >= 0.8;
 
   return (
-    <article className={high ? "storage-meter is-tight" : "storage-meter"} aria-label={`Storage, ${storageLabel(used)} in use, ${storageLabel(free)} free of 1 GB`}>
+    <article className="storage-meter" aria-label={`Storage, ${storageLabel(used)} in use on the VPS`}>
       <div className="storage-head">
         <div>
           <h2>Storage</h2>
-          {high ? <p>More than 80% of the 1 GB allowance is in use.</p> : null}
+          <p>Uploads use the VPS filesystem; monitor available disk capacity on the host.</p>
         </div>
         <p className="storage-figure">
           <strong>{storageLabel(used)}</strong>
@@ -133,18 +130,13 @@ function StorageMeter({ usage }: { usage: StorageBreakdown | null }) {
             <strong>{storageLabel(usage.spare)}</strong>
           </li>
         ) : null}
-        <li>
-          <span className="storage-swatch is-free" />
-          <span>Free</span>
-          <strong>{storageLabel(free)}</strong>
-        </li>
       </ul>
     </article>
   );
 }
 
 async function loadDatabaseSize() {
-  const { data, error } = await createAdminClient().rpc("database_size_bytes");
+  const { data, error } = await createDatabaseClient().rpc("database_size_bytes");
   if (error || data == null) return null;
   const bytes = Number(data);
   return Number.isFinite(bytes) ? bytes : null;
@@ -155,21 +147,19 @@ function DatabaseMeter({ bytes }: { bytes: number | null }) {
     return (
       <article className="storage-meter">
         <h2>Database</h2>
-        <p className="storage-wait">Run supabase/migrations/023_database_size.sql in Supabase to show used and free space.</p>
+        <p className="storage-wait">PostgreSQL database size is currently unavailable.</p>
       </article>
     );
   }
 
-  const free = Math.max(0, DATABASE_QUOTA - bytes);
-  const scale = Math.max(bytes, DATABASE_QUOTA, 1);
-  const high = bytes / DATABASE_QUOTA >= 0.8;
+  const scale = Math.max(bytes, 1);
 
   return (
-    <article className={high ? "storage-meter is-tight" : "storage-meter"} aria-label={`Database, ${storageLabel(bytes)} used, ${storageLabel(free)} free of 500 MB`}>
+    <article className="storage-meter" aria-label={`PostgreSQL database, ${storageLabel(bytes)} current size`}>
       <div className="storage-head">
         <div>
           <h2>Database</h2>
-          <p>{high ? "More than 80% of the 500 MB allowance is in use." : "Supabase database, of the 500 MB allowance"}</p>
+          <p>Current PostgreSQL database size; no application quota is configured.</p>
         </div>
         <p className="storage-figure">
           <strong>{storageLabel(bytes)}</strong>
@@ -182,13 +172,8 @@ function DatabaseMeter({ bytes }: { bytes: number | null }) {
       <ul className="storage-legend">
         <li>
           <span className="storage-swatch is-database" />
-          <span>Used</span>
+          <span>Current size</span>
           <strong>{storageLabel(bytes)}</strong>
-        </li>
-        <li>
-          <span className="storage-swatch is-free" />
-          <span>Free</span>
-          <strong>{storageLabel(free)}</strong>
         </li>
       </ul>
     </article>
@@ -248,7 +233,7 @@ export default async function DashboardPage() {
       )}
 
       {session.isSuperAdmin && (
-        <section className="grid gap-3 lg:grid-cols-2" aria-label="Supabase usage">
+        <section className="grid gap-3 lg:grid-cols-2" aria-label="Database and storage usage">
           <StorageMeter usage={storage} />
           <DatabaseMeter bytes={database} />
         </section>

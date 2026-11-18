@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { logActivity, requireStaff } from "@/lib/api-auth";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { maskWebsiteMessage, MESSAGES_UNLOCK_MS } from "@/lib/message-unlock";
@@ -13,7 +13,7 @@ export async function GET() {
 
   const unlocked = await messagesViewUnlocked(session.userId);
 
-  const { data, error: loadErr } = await createAdminClient()
+  const { data, error: loadErr } = await createDatabaseClient()
     .from("website_messages")
     .select(
       "id, first_name, other_name, surname, email, subject, message, preferred_contact, submitter_ip, risk_score, risk_flags, created_at, read_at, deleted_at"
@@ -43,7 +43,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const now = new Date().toISOString();
 
   if (body.all) {
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   if (body.action !== "restore" || !MESSAGE_ID.test(id)) {
     return NextResponse.json({ error: "That message was not found." }, { status: 400 });
   }
-  const { error: restoreErr } = await restoreRow(createAdminClient(), "website_messages", id);
+  const { error: restoreErr } = await restoreRow(createDatabaseClient(), "website_messages", id);
   if (restoreErr) return NextResponse.json({ error: "Could not restore the message." }, { status: 500 });
   await logActivity(session.userId, "messages", "restore", "website_message", id);
   return NextResponse.json({ ok: true });
@@ -81,7 +81,7 @@ export async function DELETE(req: NextRequest) {
   if (!MESSAGE_ID.test(id)) return NextResponse.json({ error: "That message was not found." }, { status: 400 });
 
   const permanent = new URL(req.url).searchParams.get("permanent") === "1";
-  const { error: deleteErr } = await applyBinDelete(createAdminClient(), "website_messages", id, permanent);
+  const { error: deleteErr } = await applyBinDelete(createDatabaseClient(), "website_messages", id, permanent);
   if (deleteErr?.code === "bin") return NextResponse.json({ error: deleteErr.message }, { status: 400 });
   if (deleteErr) return NextResponse.json({ error: "Could not delete the message." }, { status: 500 });
 

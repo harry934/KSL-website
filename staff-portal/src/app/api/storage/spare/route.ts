@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStaff } from "@/lib/api-auth";
 import { listSpareFiles, removeSpareFile } from "@/lib/storage-files";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 
 async function superAdmin() {
   const { error, session } = await requireStaff(null, "view");
@@ -15,7 +15,7 @@ async function superAdmin() {
 export async function GET() {
   const { error } = await superAdmin();
   if (error) return error;
-  const files = await listSpareFiles(createAdminClient());
+  const files = await listSpareFiles(createDatabaseClient());
   if (!files) return NextResponse.json({ error: "Could not load unlinked files." }, { status: 500 });
   return NextResponse.json({
     files: files.map((file) => ({
@@ -31,7 +31,7 @@ export async function DELETE(req: NextRequest) {
   const { error } = await superAdmin();
   if (error) return error;
   const body = await req.json().catch(() => ({}));
-  const result = await removeSpareFile(createAdminClient(), String(body.bucket ?? ""), String(body.path ?? ""));
+  const result = await removeSpareFile(createDatabaseClient(), String(body.bucket ?? ""), String(body.path ?? ""));
   if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json({ ok: true });
 }

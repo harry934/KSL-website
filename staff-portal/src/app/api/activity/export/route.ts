@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStaffSession } from "@/lib/session";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 import { describeActivity } from "@/lib/activity-words";
 
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   const to = params.get("to") ?? "";
   const who = params.get("who") ?? "";
   const seeEveryone = session.isSuperAdmin;
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   let query = admin
     .from("activity_log")
     .select("module_key, action, entity_type, metadata, created_at, admin_profiles(display_name, username)")

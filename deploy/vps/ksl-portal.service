@@ -1,0 +1,23 @@
+[Unit]
+Description=Kenya Shipyards staff portal
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=ksl-portal
+Group=ksl-portal
+WorkingDirectory=/opt/ksl-website/staff-portal
+EnvironmentFile=/etc/ksl-portal.env
+ExecStart=/usr/bin/npm run start -- --hostname 127.0.0.1 --port 3000
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/ksl-portal /opt/ksl-website/staff-portal/.next/cache
+
+[Install]
+WantedBy=multi-user.target

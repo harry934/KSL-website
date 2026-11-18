@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { credentialsCurrent } from "@/lib/api-auth";
 import { getStaffSession } from "@/lib/session";
 import { hrefForDraft } from "@/lib/draft-review";
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   if (q.length < 2) return NextResponse.json({ results: [] });
 
   const like = safeLike(q);
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const can = (key: ModuleKey) => canAccess(session.permissions, key, "view", session.isSuperAdmin);
   const jobs: PromiseLike<Hit[]>[] = [];
 

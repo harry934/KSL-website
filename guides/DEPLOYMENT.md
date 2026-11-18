@@ -1,5 +1,7 @@
 # KSL website + admin portal — deployment guide
 
+> **Historical Vercel/Supabase instructions.** They do not describe the `vps-postgres` branch. For standalone PostgreSQL and VPS setup, follow [the current operations guide](../postgres/README.md).
+
 **GitHub repo:** https://github.com/harry934/KSL-website  
 
 **Quick Vercel clicks:** [VERCEL-GITHUB-SETUP.md](./VERCEL-GITHUB-SETUP.md)  

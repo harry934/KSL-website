@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { canAccess } from "@/lib/modules";
 import { applyBinDelete, listBinItems, purgeStaffAccount, restoreRow, restoreStaffAccount, type RecycleTable } from "@/lib/recycle";
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   if (!targets.length) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   for (const target of targets) {
     if (action === "restore") {
       const { error: restoreErr } =

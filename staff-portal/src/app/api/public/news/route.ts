@@ -1,10 +1,11 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { toPublicNewsItem } from "@/lib/news";
 import { nairobiToday } from "@/lib/dates";
+import { signPayload } from "@/lib/stored-file";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const today = nairobiToday();
   let { data, error } = await admin
     .from("news_items")
@@ -31,7 +32,7 @@ export async function GET() {
     (row) => !row.deleted_at && (!row.go_live_on || String(row.go_live_on).slice(0, 10) <= today)
   );
   return NextResponse.json(
-    { items: live.map(toPublicNewsItem) },
+    await signPayload({ items: live.map(toPublicNewsItem) }),
     { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } }
   );
 }

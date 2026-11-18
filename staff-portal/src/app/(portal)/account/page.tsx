@@ -6,13 +6,13 @@ import { ProfileForm } from "@/components/account/profile-form";
 import { PageHeader } from "@/components/portal/page-header";
 import { FormSection } from "@/components/ui/form-bits";
 import { getStaffSession } from "@/lib/session";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 
 export default async function AccountPage() {
   const session = await getStaffSession();
   if (!session) return null;
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data, error } = session.isSuperAdmin
     ? await admin.from("staff_sessions").select("seen_at").eq("user_id", session.userId).maybeSingle()
     : { data: null, error: null };

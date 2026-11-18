@@ -1,10 +1,11 @@
 import { revalidatePath } from "next/cache";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { canAccess, type ModulePermission } from "@/lib/modules";
 import { RECYCLE_SOURCES } from "@/lib/recycle-sources";
 import { releaseUnusedValues } from "@/lib/storage-files";
+import { removeStoredFile } from "@/lib/storage";
 
-type Admin = ReturnType<typeof createAdminClient>;
+type Admin = ReturnType<typeof createDatabaseClient>;
 
 export const RECYCLE_TABLES = [
   "news_items",
@@ -54,7 +55,7 @@ export type BinItem = {
 
 /** Rows currently in the bin. A table that cannot be read is reported so the page does not look empty by mistake. */
 export async function listBinItems(viewer: { permissions: ModulePermission[]; isSuperAdmin: boolean }): Promise<{ items: BinItem[]; error: string | null }> {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const items: BinItem[] = [];
   let errorMessage: string | null = null;
   for (const source of RECYCLE_SOURCES) {
@@ -124,8 +125,6 @@ export async function restoreStaffAccount(admin: Admin, id: string) {
     .select("id");
   if (error) return { error: error as BinError };
   if (!data?.length) return { error: { message: "That item is not in the recycle bin.", code: "bin" } };
-  const { error: banErr } = await admin.auth.admin.updateUserById(id, { ban_duration: "none" });
-  if (banErr) return { error: { message: "Could not restore this account.", code: "restore" } };
   revalidatePath("/");
   return { error: null };
 }
@@ -141,16 +140,6 @@ export async function purgeStaffAccount(admin: Admin, id: string) {
   if (!data?.deleted_at) {
     return { error: { message: "That item is not in the recycle bin.", code: "bin" } };
   }
-  if (data.avatar_path) {
-    await admin.storage.from("avatars").remove([data.avatar_path]);
-    await admin.storage.from("media-public").remove([data.avatar_path]);
-  }
-  const { error: deleteErr } = await admin.auth.admin.deleteUser(id);
-  if (!deleteErr) {
-    revalidatePath("/");
-    return { error: null };
-  }
-  // Auth user may already be gone; still clear the profile row so the bin can empty.
   const { data: removed, error: profileErr } = await admin
     .from("admin_profiles")
     .delete()
@@ -159,6 +148,10 @@ export async function purgeStaffAccount(admin: Admin, id: string) {
     .select("id");
   if (profileErr) return { error: { message: "Could not delete this account.", code: "delete" } };
   if (!removed?.length) return { error: { message: "That item is not in the recycle bin.", code: "bin" } };
+  if (data.avatar_path) {
+    await removeStoredFile("avatars", data.avatar_path);
+    await removeStoredFile("media-public", data.avatar_path);
+  }
   revalidatePath("/");
   return { error: null };
 }

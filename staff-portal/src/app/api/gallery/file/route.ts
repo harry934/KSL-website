@@ -1,5 +1,6 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { requireStaff } from "@/lib/api-auth";
+import { loadStoredFile } from "@/lib/storage";
 import { NextRequest, NextResponse } from "next/server";
 
 function galleryPath(value: string | null | undefined) {
@@ -30,18 +31,16 @@ export async function GET(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id") || "";
   if (!id) return NextResponse.json({ error: "Nothing selected." }, { status: 400 });
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data: row } = await admin.from("gallery_photos").select("storage_path, public_url").eq("id", id).maybeSingle();
   const path = galleryPath(row?.storage_path) || pathFromPublicUrl(row?.public_url);
   if (!path) return NextResponse.json({ error: "That photo could not be opened for trimming." }, { status: 404 });
 
-  const { data, error: downErr } = await admin.storage.from("media-public").download(path);
-  if (downErr || !data) return NextResponse.json({ error: "That photo could not be opened for trimming." }, { status: 404 });
-
-  const bytes = await data.arrayBuffer();
-  return new NextResponse(bytes, {
+  const data = await loadStoredFile("media-public", path);
+  if (!data) return NextResponse.json({ error: "That photo could not be opened for trimming." }, { status: 404 });
+  return new NextResponse(data.bytes, {
     headers: {
-      "Content-Type": data.type || "image/jpeg",
+      "Content-Type": data.contentType || "image/jpeg",
       "Cache-Control": "private, no-store",
     },
   });

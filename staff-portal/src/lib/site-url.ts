@@ -1,4 +1,9 @@
-export const PUBLIC_SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://ksl-website.vercel.app").replace(/\/$/, "");
+const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+if (process.env.NODE_ENV === "production" && !configuredSiteUrl) {
+  throw new Error("NEXT_PUBLIC_SITE_URL is required in production");
+}
+
+export const PUBLIC_SITE_URL = (configuredSiteUrl || "http://localhost:3000").replace(/\/$/, "");
 
 /** Site images are stored as paths like img/ksl/x.jpg; the portal needs a full address to preview them. */
 export function siteAssetUrl(path: string | null | undefined) {

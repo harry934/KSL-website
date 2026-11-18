@@ -1,11 +1,11 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { toPublicServicesPayload, type ServiceRow, type ServicesSettings } from "@/lib/services";
-import { signPayload } from "@/lib/stored-file";
+import { openStoredUrl, signPayload } from "@/lib/stored-file";
 import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const [settingsRes, itemsRes] = await Promise.all([
     admin.from("services_settings").select("intro, download_catalog, group_order").eq("id", "default").maybeSingle(),
     admin.from("service_items").select("*").eq("status", "published").order("sort_order", { ascending: true }),
@@ -14,12 +14,23 @@ export async function GET() {
   if (settingsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
   if (itemsRes.error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
-  const payload = await signPayload(
-    admin,
-    toPublicServicesPayload(settingsRes.data as ServicesSettings | null, kept((itemsRes.data ?? []) as Array<ServiceRow & { deleted_at?: string | null }>))
+  const payload = toPublicServicesPayload(
+    settingsRes.data as ServicesSettings | null,
+    kept((itemsRes.data ?? []) as Array<ServiceRow & { deleted_at?: string | null }>)
   );
+  await Promise.all(payload.items.map(async (item) => {
+    if (Array.isArray(item.downloads)) {
+      item.downloads = await Promise.all(item.downloads.map((href) =>
+        typeof href === "string" ? openStoredUrl(href) : href
+      ));
+    }
+  }));
+  for (const item of Object.values(payload.downloadCatalog)) {
+    item.href = await openStoredUrl(item.href) || "";
+  }
+  const safePayload = await signPayload(payload);
 
-  return NextResponse.json(payload, {
+  return NextResponse.json(safePayload, {
     headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
   });
 }

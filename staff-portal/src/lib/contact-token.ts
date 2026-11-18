@@ -4,8 +4,10 @@ const MIN_AGE_MS = 2_000;
 const MAX_AGE_MS = 20 * 60 * 1000;
 
 function signingKey() {
-  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!secret) throw new Error("Missing Supabase admin environment variables");
+  const secret = process.env.CONTACT_TOKEN_SECRET?.trim();
+  if (!secret || Buffer.byteLength(secret) < 32) {
+    throw new Error("CONTACT_TOKEN_SECRET must contain at least 32 bytes");
+  }
   return createHash("sha256").update(`ksl-contact-v1:${secret}`).digest();
 }
 
@@ -49,7 +51,7 @@ export function verifyContactToken(token: unknown): "ok" | "invalid" | "too_fast
 }
 
 function turnstileRequired() {
-  return process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production";
+  return process.env.NODE_ENV === "production";
 }
 
 export async function verifyTurnstile(token: unknown, ip: string) {

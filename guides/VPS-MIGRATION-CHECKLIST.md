@@ -1,5 +1,7 @@
 # VPS migration — regression checklist
 
+> Use [the standalone PostgreSQL/VPS operations guide](../postgres/README.md) for current deployment steps. This checklist is a legacy Vercel-to-VPS checklist and its Supabase-specific rows must not be used for this branch.
+
 Use this when moving from Vercel to your Linux VPS **or** after any production infra change. Mark each row **Pass / Fail / N/A** and note the failure (URL, screenshot, log line).
 
 **Related:** [VPS-TRANSFER-PLAN.md](./VPS-TRANSFER-PLAN.md) · [PRODUCTION-OVERVIEW-AND-VPS.md](./PRODUCTION-OVERVIEW-AND-VPS.md) · [DEPLOYMENT.md](./DEPLOYMENT.md)

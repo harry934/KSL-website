@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { normalizeUsername, validateUsername } from "@/lib/accounts";
 import { loadOpenInvite } from "@/lib/staff-invites";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ available: false, reason: formatError });
   }
 
-  const { data: taken } = await createAdminClient()
+  const { data: taken } = await createDatabaseClient()
     .from("admin_profiles")
     .select("id")
     .eq("username", username)

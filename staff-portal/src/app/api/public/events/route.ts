@@ -1,10 +1,11 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { splitEventsByDate, type EventRow } from "@/lib/events";
 import { nairobiToday } from "@/lib/dates";
+import { signPayload } from "@/lib/stored-file";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const today = nairobiToday();
   let { data, error } = await admin.from("event_items").select("*").eq("status", "published").is("deleted_at", null);
   if (error) {
@@ -21,7 +22,7 @@ export async function GET() {
   const split = splitEventsByDate(live, today);
   const payload = { upcoming: split.upcoming, past: [] };
 
-  return NextResponse.json(payload, {
+  return NextResponse.json(await signPayload(payload), {
     headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
   });
 }

@@ -1,10 +1,10 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { toPublicCareersPayload, type CareerListingRow, type CareersSettings } from "@/lib/careers";
 import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const [settingsRes, listingsRes] = await Promise.all([
     admin.from("careers_settings").select("apply_email, apply_note").eq("id", "default").maybeSingle(),
     admin.from("career_listings").select("*").eq("status", "published").order("sort_order", { ascending: true }),

@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { liveStaffSession } from "@/lib/staff-session-server";
+import { liveStaffSession, sessionUserIdForToken } from "@/lib/staff-session-server";
+import { STAFF_SESSION_COOKIE } from "@/lib/staff-session";
+import { cookies } from "next/headers";
 
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  const token = (await cookies()).get(STAFF_SESSION_COOKIE)?.value ?? "";
+  const userId = await sessionUserIdForToken(token);
+  if (!userId) {
     return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
   }
-  const live = await liveStaffSession(user.id, false);
+  const live = await liveStaffSession(userId, false);
   if (!live.ok) {
     return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
   }

@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { requireStaff, dbError } from "@/lib/api-auth";
 import { photoSrc } from "@/lib/gallery";
 import { kept } from "@/lib/recycle";
@@ -9,7 +9,7 @@ export async function GET() {
   const { error } = await requireStaff(null, "view");
   if (error) return error;
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data, error: loadErr } = await admin
     .from("gallery_photos")
     .select("title, public_url, storage_path, deleted_at")

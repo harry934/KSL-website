@@ -21,38 +21,20 @@ async function uploadError(res: Response) {
   return "The upload did not work. Please try again.";
 }
 
-/** Home-hero films go straight to storage. The admin request only asks for the address. */
+/** Home-hero films use the same validated, server-side filesystem upload as other files. */
 async function uploadHeroVideo(module: ModuleKey, file: File) {
-  const header = new Uint8Array(await file.slice(0, 256).arrayBuffer());
+  const body = new FormData();
+  body.append("file", file);
   const res = await fetch("/api/upload", {
     method: "POST",
     headers: {
-      "content-type": "application/json",
       "x-ksl-module": module,
       "x-ksl-hero": "1",
     },
-    body: JSON.stringify({
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      prefix: Array.from(header),
-    }),
+    body,
   });
   if (!res.ok) throw new Error(await uploadError(res));
-  const data = await res.json();
-  const typed = new File([file], file.name, { type: data.content_type || file.type || "video/mp4" });
-  const body = new FormData();
-  body.append("cacheControl", "31536000");
-  body.append("", typed);
-  const put = await fetch(data.signed_url, { method: "PUT", headers: { "x-upsert": "false" }, body });
-  if (!put.ok) {
-    const detail = await put.json().catch(() => ({}));
-    const message = typeof detail.message === "string" ? detail.message : "";
-    if (/mime/i.test(message)) throw new Error("That video type is not allowed. Use an MP4 or WebM file.");
-    if (/size|large|exceed/i.test(message)) throw new Error("Video is too large (max 50 MB).");
-    throw new Error("The video could not be saved. Please try again.");
-  }
-  return { public_url: data.public_url as string, storage_path: data.storage_path as string, preview_url: data.public_url as string };
+  return res.json();
 }
 
 export async function uploadFile(

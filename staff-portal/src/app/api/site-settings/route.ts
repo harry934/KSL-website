@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { clearReviewDraft, editorSavePlan, saveBody } from "@/lib/draft-review";
 import {
@@ -15,7 +15,7 @@ export async function GET() {
   const { error } = await requireStaff("site_settings", "view");
   if (error) return error;
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data, error: loadErr } = await admin.from("site_settings").select("key, value, updated_at");
   if (loadErr) return NextResponse.json({ error: dbError(loadErr) }, { status: 500 });
   const { data: drafts } = await admin.from("content_drafts").select("entity_key, payload").eq("entity_table", "site_settings").is("entity_id", null);
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       : key === "maintenance"
         ? normalizeMaintenance(body.value)
         : body.value;
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const plan = await editorSavePlan(admin, session, "site_settings", "site_settings", {
     settings: true,
     key,

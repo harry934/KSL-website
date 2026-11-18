@@ -1,6 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { normalizeUsername, validateUsername } from "@/lib/accounts";
-import { authEmailFor } from "@/lib/auth-server";
 import { logActivity } from "@/lib/api-auth";
 import { createStaffInvite } from "@/lib/staff-invites";
 
@@ -18,7 +17,7 @@ type RequestRow = {
 };
 
 export async function usernameTaken(username: string, exceptUserId: string) {
-  const { data } = await createAdminClient()
+  const { data } = await createDatabaseClient()
     .from("admin_profiles")
     .select("id")
     .eq("username", username)
@@ -36,7 +35,7 @@ export async function saveUsernameRequest(userId: string, currentUsername: strin
   }
   if (await usernameTaken(name, userId)) return { error: USERNAME_TAKEN, status: 409 as const };
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data: pending } = await admin
     .from("staff_account_requests")
     .select("id")
@@ -69,7 +68,7 @@ export async function saveUsernameRequest(userId: string, currentUsername: strin
 export async function savePasswordRequest(username: string): Promise<{ error: string | null }> {
   const name = normalizeUsername(username);
   if (!name) return { error: null };
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data: profile } = await admin
     .from("admin_profiles")
     .select("id")
@@ -106,7 +105,7 @@ export async function savePasswordRequest(username: string): Promise<{ error: st
 }
 
 async function pendingRequest(id: string) {
-  const { data } = await createAdminClient()
+  const { data } = await createDatabaseClient()
     .from("staff_account_requests")
     .select("id, user_id, kind, requested_username, status, reason")
     .eq("id", id)
@@ -122,7 +121,7 @@ export async function rejectAccountRequest(actorId: string, id: string, reason: 
   const row = await pendingRequest(id);
   if (!row) return { error: "That request is no longer waiting.", status: 404 as const };
 
-  const { error } = await createAdminClient()
+  const { error } = await createDatabaseClient()
     .from("staff_account_requests")
     .update({
       status: "rejected",
@@ -144,7 +143,7 @@ export async function approveUsernameRequest(actorId: string, id: string) {
     return { error: "That request is no longer waiting.", status: 404 as const };
   }
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   if (await usernameTaken(row.requested_username, row.user_id)) {
     await admin
       .from("staff_account_requests")
@@ -165,17 +164,6 @@ export async function approveUsernameRequest(actorId: string, id: string) {
     .eq("id", row.user_id)
     .maybeSingle();
   if (!profile) return { error: "That account could not be found.", status: 404 as const };
-
-  const { error: authErr } = await admin.auth.admin.updateUserById(profile.id, {
-    email: authEmailFor(row.requested_username, profile.contact_email),
-    email_confirm: true,
-  });
-  if (authErr) {
-    const message = /already/i.test(authErr.message)
-      ? "That contact email is already used by another account."
-      : "Could not change the username. Please try again.";
-    return { error: message, status: 400 as const };
-  }
 
   const { error: profileErr } = await admin
     .from("admin_profiles")
@@ -198,7 +186,7 @@ export async function approvePasswordRequest(actorId: string, id: string) {
   const row = await pendingRequest(id);
   if (!row || row.kind !== "password") return { error: "That request is no longer waiting.", status: 404 as const };
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data: profile } = await admin
     .from("admin_profiles")
     .select("id, username, contact_email, is_active, deleted_at")

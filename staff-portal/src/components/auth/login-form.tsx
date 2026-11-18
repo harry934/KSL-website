@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { fieldLabel, Notice } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
-import { createClient } from "@/lib/supabase/client";
+import { startAuthentication } from "@simplewebauthn/browser";
 import { passkeyError } from "@/lib/passkey";
 
 export function LoginForm({ notice }: { notice?: string | null }) {
@@ -44,30 +44,36 @@ export function LoginForm({ notice }: { notice?: string | null }) {
   async function onPasskey() {
     setError(null);
     setPasskeyLoading(true);
-    const supabase = createClient();
-    const { data, error: signInError } = await supabase.auth.signInWithPasskey();
-    const message = passkeyError(signInError);
-    if (signInError || !data?.session) {
-      if (signInError) await supabase.auth.signOut().catch(() => null);
+    try {
+      const optionsResponse = await fetch("/api/auth/passkey", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "authentication-options" }),
+      });
+      const options = await optionsResponse.json().catch(() => ({}));
+      if (!optionsResponse.ok) throw new Error(options.error ?? "Passkey sign-in is unavailable.");
+      const credential = await startAuthentication({ optionsJSON: options });
+      const verifyResponse = await fetch("/api/auth/passkey", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "authentication-verify",
+          challenge: options.challenge,
+          response: credential,
+        }),
+      });
+      const result = await verifyResponse.json().catch(() => ({}));
+      if (!verifyResponse.ok) throw new Error(result.error ?? "The passkey was not accepted.");
+      toast("Signed in.");
+      window.location.href = "/";
+    } catch (caught) {
       setPasskeyLoading(false);
+      const message = passkeyError(caught);
       if (message) {
         setError(message);
         toast(message, "error");
       }
-      return;
     }
-    const res = await fetch("/api/auth/passkey", { method: "POST" }).catch(() => null);
-    const json = res ? await res.json().catch(() => ({})) : {};
-    if (!res || !res.ok) {
-      await supabase.auth.signOut().catch(() => null);
-      setPasskeyLoading(false);
-      const fail = json.error ?? "This passkey is not linked to an active staff account.";
-      setError(fail);
-      toast(fail, "error");
-      return;
-    }
-    toast("Signed in.");
-    window.location.href = "/";
   }
 
   async function onForgot() {

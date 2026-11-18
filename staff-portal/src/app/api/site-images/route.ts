@@ -1,28 +1,36 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { clearReviewDraft, editorSavePlan, saveBody } from "@/lib/draft-review";
 import { HOME_HERO_SLOT, isImagePath, isSiteImageSlot, parseHeroMedia, safeImageUrl, SITE_IMAGE_SLOTS } from "@/lib/site-images";
 import { siteAssetUrl } from "@/lib/site-url";
+import { signedStoredFileUrl, storedFileUrl } from "@/lib/storage";
+import { storageObjectFrom } from "@/lib/storage-path";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { NextRequest, NextResponse } from "next/server";
 
 function galleryFileUrl(
-  admin: ReturnType<typeof createAdminClient>,
   publicUrl: string | null | undefined,
   storagePath: string | null | undefined
 ) {
-  const published = (publicUrl || "").trim();
-  if (/^https?:/i.test(published)) return published;
-  const path = (storagePath || published).trim();
+  const path = (storagePath || publicUrl || "").trim();
   if (!path) return "";
-  if (/^https?:/i.test(path)) return path;
+  if (/^https?:/i.test(path)) {
+    const object = storageObjectFrom(path);
+    if (!object) return path;
+    return object.bucket === "media-public"
+      ? storedFileUrl(object.bucket, object.path)
+      : signedStoredFileUrl(object.bucket, object.path);
+  }
   if (path.startsWith("img/") || path.startsWith("/img/")) return siteAssetUrl(path);
-  const { data } = admin.storage.from("media-public").getPublicUrl(path.replace(/^\/+/, ""));
-  return data.publicUrl;
+  const object = storageObjectFrom(path.replace(/^\/+/, ""));
+  if (!object) return "";
+  return object.bucket === "media-public"
+    ? storedFileUrl(object.bucket, object.path)
+    : signedStoredFileUrl(object.bucket, object.path);
 }
 
 async function addGalleryPhoto(
-  admin: ReturnType<typeof createAdminClient>,
+  admin: ReturnType<typeof createDatabaseClient>,
   userId: string,
   publicUrl: string,
   storagePath: string | null,
@@ -48,7 +56,7 @@ async function addGalleryPhoto(
 }
 
 async function storedImages() {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const found = new Map<string, { url: string; storagePath: string | null; label: string }>();
 
   function add(url: string | null | undefined, storagePath: string | null, label: string) {
@@ -64,7 +72,7 @@ async function storedImages() {
     .order("sort_order");
 
   for (const row of gallery ?? []) {
-    add(galleryFileUrl(admin, row.public_url, row.storage_path), row.storage_path, row.title || "Gallery photo");
+    add(galleryFileUrl(row.public_url, row.storage_path), row.storage_path, row.title || "Gallery photo");
   }
 
   return Array.from(found.values());
@@ -74,7 +82,7 @@ export async function GET() {
   const { error } = await requireStaff("site_settings", "view");
   if (error) return error;
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data, error: loadErr } = await admin.from("site_image_overrides").select("slot_id, source, public_url, storage_path, media");
   if (loadErr) return NextResponse.json({ error: dbError(loadErr) }, { status: 500 });
 
@@ -118,7 +126,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "That photo is not on the website." }, { status: 400 });
   }
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const plan = await editorSavePlan(admin, session, "site_settings", "site_image_overrides", {
     settings: true,
     key: slotId,

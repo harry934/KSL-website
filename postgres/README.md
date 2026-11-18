@@ -1,42 +1,82 @@
-# PostgreSQL migration workspace (in progress)
+# Standalone PostgreSQL and VPS operations
 
-The self-hosted application migration is not complete. Do not deploy the portal from this branch as a Supabase-independent replacement yet, and do not run the old `supabase/migrations/*.sql` files against the VPS database.
+This branch replaces the staff portal's Supabase database, authentication, and object storage with PostgreSQL, local authentication, and private filesystem storage. The Docker-free setup below is documentation only; no VPS or production service has been contacted or changed.
 
-## Source of truth and progress
+## Migration status and source coverage
 
-The existing schema history remains under `../supabase/migrations/`, ordered `001` through `043`. Those migrations contain the business schema and historical Supabase-specific auth, storage, policy, and grant definitions. They are source history only; ordinary PostgreSQL on the VPS does not provide Supabase's `auth` or `storage` schemas, roles, or API/RLS behavior.
+`migrations/001_standalone_schema.sql` is the consolidated initial schema for a new PostgreSQL database. The ordered, checksum-verified runner is `staff-portal/scripts/migrate.mjs` (`npm run db:migrate`). It serializes concurrent runs with a PostgreSQL advisory lock and applies each migration transactionally. Never run the historical `../supabase/migrations/*.sql` files against ordinary PostgreSQL: they include Supabase `auth`, `storage`, roles, APIs, and RLS.
 
-A complete port must audit each migration and every application query, then create an ordered standalone migration set here. No converted migration set or migration runner is present yet. The initial schema conversion is therefore outstanding. Keep this warning until coverage, migration tests, and application query conversion are complete.
+| Historical migration | Standalone replacement in `001_standalone_schema.sql` |
+|---|---|
+| 001 | Profiles/password hashes, content modules, permissions, activity, FAQ/news, updated timestamps |
+| 002–006 | Gallery, events/services, careers/downloads, organization/press, products/CSR, settings |
+| 007–010 | Username/lockout fields, videos, profile photos, board/first-login fields |
+| 011–018 | Messages, image overrides, projects, scheduled publication, password expiry, hero media |
+| 019–023 | Sessions, portal support/status history, storage metadata and database-size reporting |
+| 024–029 | Recycle metadata, staff references, account requests, role titles, invites |
+| 030–035 | Organization chart, board sections/groups, milestones, date precision and ordering |
+| 036–043 | Drafts/returns, security follow-up, project details, message IP/risk metadata, organogram |
 
-## Required coverage inventory
+Supabase Auth and Storage services are replaced by the portal's Argon2id/session and local-file implementations. Supabase-only RLS, grants, RPCs, and service roles are intentionally not copied; authorization is enforced in the application and the runtime database role has no schema-creation privilege. The schema seeds module/settings rows but does not create staff accounts.
 
-Before declaring the schema port complete, account for every migration listed below in order. For each file, document the objects changed, the standalone PostgreSQL replacement, any intentionally omitted Supabase-only behavior, and the test that validates it.
+**Verification is still required before production.** This environment has no `psql`, `postgres`, or `pg_ctl`; Docker is intentionally not used. The migration SQL, transaction behavior, PostgreSQL CRUD/auth/storage integration, and backup restore have therefore not been executed against a real local PostgreSQL server. Do not treat schema coverage as database-test coverage or deploy until those checks pass.
 
-| Source migrations | Area | Status |
-|---|---|---|
-| 001 | Core staff profiles, permissions, activity, FAQ, news, updated-at function; Supabase Auth/Storage/RLS/grants | Not ported |
-| 002–006 | Gallery, events/services, careers/downloads, organization/press, products/CSR/settings and dashboard counts | Not ported |
-| 007–013 | Usernames, lockout, videos, profile photos, first login, messages, file/settings/security | Not ported |
-| 014–018 | Projects/board seeds, scheduled news, API grants, one-time password expiry, hero media | Not ported |
-| 019–023 | Sessions, portal support, session client, storage usage, database size | Not ported |
-| 024–029 | Recycle bin, staff recycle/FK semantics, account requests, role title, storage metadata, invites | Not ported |
-| 030–035 | Organization chart, board sections/groups, milestones, chart/ordering | Not ported |
-| 036–043 | Drafts, draft returns, security follow-up, project details, message risk/IP, board groups, organogram | Not ported |
+## Database provisioning (Ubuntu, no Docker)
 
-This grouped inventory is only a tracking aid. Inspect each source file individually; do not treat grouping as proof of full coverage.
+1. Install a supported PostgreSQL server and its `pgcrypto` extension package using the VPS operating system's package manager. Keep PostgreSQL bound to loopback when the portal runs on the same host; do not expose port 5432 to the internet.
+2. Review and run `bootstrap/roles.sql` as the local PostgreSQL administrator. It creates the `ksl` database and dedicated `ksl_migrator` and `ksl_runtime` logins, and intentionally refuses to reuse those role names.
+3. Set both role passwords interactively with `\password`; do not put passwords in shell history or command arguments. Store the migrator URL separately from the runtime URL. The portal must use only `ksl_runtime`.
+4. Put the schema migrator URL (and its SSL mode) in a separate protected file such as `/etc/ksl-portal-migrator.env`, readable only to the operator/portal service account. Run the runner from `staff-portal` with `MIGRATOR_ENV_FILE` pointing to that file:
 
-## Standalone PostgreSQL design constraints
+   ```sh
+   MIGRATOR_ENV_FILE=/etc/ksl-portal-migrator.env npm run db:migrate
+   ```
 
-- Use local UUID `admin_profiles.id` primary keys, `password_hash`, and the existing profile flags; do not import Supabase `auth.users.encrypted_password` or use Supabase Auth hashes.
-- Keep content UUIDs, relationships, and storage paths where valid so import mapping remains stable.
-- Preserve the existing `ON DELETE SET NULL` history references and `ON DELETE CASCADE` account-owned permission/invite relations as established by the source history.
-- Use app-side authorization and least-privilege PostgreSQL roles. Do not create fake `anon`, `authenticated`, `service_role`, Supabase `auth`/`storage` schemas, or blindly copy RLS policies.
-- Preserve published/draft/go-live/deleted filters in public APIs. Gallery public endpoint stays empty.
-- Filesystem media is not stored in PostgreSQL. Private files must be authorization-checked by the app.
-- Seed content module rows, but create no staff accounts through SQL. The separate one-time bootstrap must refuse to replace any existing super-admin.
+The runner verifies that the connected role is `ksl_migrator`, refuses changed checksums and missing historical migration files, and applies each migration inside its own transaction. Schema changes after this initial schema must be new, ordered SQL files; never edit a migration after it has been applied.
 
-## VPS database roles bootstrap
+## Application environment
 
-`bootstrap/roles.sql` provisions the empty `ksl` database and two dedicated roles on an already-installed local PostgreSQL server. Review it before execution. It does not configure PostgreSQL networking, install packages, migrate content, or create an admin. It refuses to reuse pre-existing role names, to avoid taking ownership of unrelated database identities. It requires execution as the local PostgreSQL administrator and leaves role passwords unset for interactive `\password` setup.
+Copy `staff-portal/.env.example` to a root-protected production environment file, fill every secret independently, and set permissions to `600`. The file includes:
 
-Once an audited, tested migration runner exists, the migrator role will own the application schema and the runtime role will receive only the privileges needed by the app. Do not use the migrator credentials in the running Next.js service.
+- `DATABASE_URL`: runtime login only; use `127.0.0.1` for the local database.
+- `DATABASE_POOL_MAX`: runtime connection pool cap.
+- `DATABASE_SSL`: `disable` only for loopback/local PostgreSQL, otherwise `verify-full` with a trusted CA and a hostname matching the server certificate.
+- `STORAGE_DIR`: writable persistent directory outside the application tree and all public web roots.
+- `STORED_FILE_SIGNING_SECRET`, `CONTACT_TOKEN_SECRET`, `MESSAGE_VIEW_UNLOCK_SECRET`: independent random values, at least 32 bytes each.
+- `NEXT_PUBLIC_PORTAL_URL`, `NEXT_PUBLIC_SITE_URL`, `PUBLIC_SITE_ORIGIN`: actual HTTPS origins; the CORS value may be comma-separated.
+- Turnstile keys and `TRUSTED_PROXY_HOPS`, configured for the actual reverse-proxy topology.
+
+Do not expose database credentials, signing secrets, or `STORAGE_DIR` through `NEXT_PUBLIC_*` variables. Use HTTPS at the reverse proxy. Configure the public static pages' `data-ksl-content-api` attribute to the portal origin and allow only the public website origin in `PUBLIC_SITE_ORIGIN`.
+
+## Files, accounts, and application deployment
+
+- Create a dedicated `ksl-portal` OS user. Give it write access only to `STORAGE_DIR` and the Next.js runtime cache; keep uploaded files outside the static website document root.
+- Review `../deploy/vps/ksl-portal.service`, adjust its application path and Node/npm paths to the installed layout, then install it as a systemd unit. It binds Next.js to `127.0.0.1:3000`; configure the existing reverse proxy and TLS separately.
+- `../deploy/vps/publish-public.sh` uses `rsync --delete` with `/var/www/ksl` as its default destination. Before running it, verify that this is a dedicated KSL document root, separate from the company's WordPress and osTicket paths; never point `DEST` at an existing site or shared web root.
+- Build from a reviewed checkout with `npm ci`; provide the public build-time origins and Turnstile site key to `npm run build` because Next.js embeds `NEXT_PUBLIC_*` values into the build. Do not pass server secrets on the command line. Then start/restart the service with systemd. The unit is a template and is not installed or enabled by this repository.
+- Create the initial local super-admin with `npm run bootstrap:admin`. It prompts for a hidden password, stores an Argon2id hash, and refuses to replace an existing super-admin.
+- The `staff-portal/scripts/import-*-from-json.mjs` scripts load public seed content from the repository JSON files. They are not a Supabase export tool.
+- No production database rows, staff accounts, or file bodies have been exported or imported. Before cutover, export authorized business data and storage files to encrypted offline media, map/validate those exports in a staging database, and copy files while preserving referenced paths. Do not migrate Supabase password hashes; issue local password resets/invites instead.
+
+## Backup, restore, rollback
+
+Back up both PostgreSQL and `STORAGE_DIR`; a database dump does not contain file bodies. Store encrypted backups outside the web root and VPS, with access controls and a tested retention policy.
+
+Example local PostgreSQL custom-format dump (run as the local database administrator):
+
+```sh
+sudo -u postgres pg_dump --format=custom --file=/secure-backups/ksl-YYYYMMDD.dump ksl
+```
+
+Restore into a separate empty database first, then verify the application and media paths before cutover:
+
+```sh
+sudo -u postgres createdb --owner=ksl_migrator ksl_restore
+sudo -u postgres pg_restore --no-owner --role=ksl_migrator --dbname=ksl_restore /secure-backups/ksl-YYYYMMDD.dump
+```
+
+Restore the matching filesystem backup with ownership and permissions preserved. For rollback, stop the portal, restore the previous application release and its matching database/filesystem backups, validate, then restart. There are no automatic down-migrations; schema rollback is by restoring a tested backup, not by deleting migration records. Test this procedure before production cutover.
+
+## Validation gate
+
+Run the portal unit tests, TypeScript, lint, production build, dependency audit, and database-backed migration/API/auth/storage tests against a disposable local PostgreSQL database. Exercise a backup restore and verify uploaded public and private files. A deployment archive must not be made until all available checks have passed; exclude `.env*` secrets, `node_modules`, Git history, and local data.

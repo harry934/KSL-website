@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStaffSession } from "@/lib/session";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 
-const WEBSITE = "https://ksl-website.vercel.app";
-const PORTAL = "https://ksl-websitekiza.vercel.app/robots.txt";
 const SLOW_MS = 1800;
 
 export type ServiceState = "up" | "slow" | "down";
@@ -43,19 +41,24 @@ export async function GET() {
   const session = await getStaffSession();
   if (!session) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
   if (!session.isSuperAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const websiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "");
+  const portalUrl = process.env.NEXT_PUBLIC_PORTAL_URL?.trim().replace(/\/+$/, "");
+  if (!websiteUrl || !portalUrl) {
+    return NextResponse.json({ error: "Public site and portal origins must be configured." }, { status: 500 });
+  }
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const [database, website, portal] = await Promise.all([
     probe(async () => {
       const { error } = await admin.from("admin_profiles").select("id").limit(1);
       return !error;
     }),
     probe(async () => {
-      const res = await fetch(WEBSITE, { method: "GET", cache: "no-store", signal: AbortSignal.timeout(8000) });
+      const res = await fetch(websiteUrl, { method: "GET", cache: "no-store", signal: AbortSignal.timeout(8000) });
       return res.ok;
     }),
     probe(async () => {
-      const res = await fetch(PORTAL, { method: "GET", cache: "no-store", signal: AbortSignal.timeout(8000) });
+      const res = await fetch(`${portalUrl}/api/auth/session`, { method: "GET", cache: "no-store", signal: AbortSignal.timeout(8000) });
       return res.ok;
     }),
   ]);

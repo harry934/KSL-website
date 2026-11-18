@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { describeActivity } from "@/lib/activity-words";
 import { activityPlace } from "@/lib/activity-place";
 import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
@@ -44,7 +44,7 @@ function canSeeMessages(session: StaffSession) {
 async function loadMessages(session: StaffSession, messagesUnlocked: boolean): Promise<NoticeItem[]> {
   if (!canSeeMessages(session)) return [];
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data } = await admin
     .from("website_messages")
     .select("id, first_name, surname, subject, risk_score, created_at, read_at, deleted_at")
@@ -83,14 +83,14 @@ type RequestRow = {
 
 /** Pending username and password requests. Only administrators are told. */
 async function loadAccountRequests(): Promise<NoticeItem[]> {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data } = await admin
     .from("staff_account_requests")
     .select("id, user_id, kind, requested_username, created_at")
     .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(40);
-  const rows = (data ?? []) as RequestRow[];
+  const rows: RequestRow[] = data ?? [];
   if (!rows.length) return [];
 
   const ids = [...new Set(rows.map((row) => row.user_id))];
@@ -179,7 +179,7 @@ function sentence(text: string) {
 
 /** Admin changes for the bell. Deletes are also pinned to the recycle bin. */
 async function loadWatches(session: StaffSession): Promise<NoticeItem[]> {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const since = new Date();
   since.setDate(since.getDate() - 21);
   const columns = "id, actor_id, module_key, action, entity_type, entity_id, metadata, created_at, admin_profiles(display_name, username)";

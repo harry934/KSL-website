@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/form-bits";
-import { createClient } from "@/lib/supabase/client";
+import { startRegistration } from "@simplewebauthn/browser";
 import { passkeyError } from "@/lib/passkey";
 
 type SavedPasskey = {
@@ -26,34 +26,36 @@ export function PasskeysField() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
-    const { data, error: listError } = await createClient().auth.passkey.list();
-    if (listError) {
-      setError(passkeyError(listError) ?? "Passkeys could not be loaded.");
-      setItems([]);
+  async function load(shouldUpdate: () => boolean = () => true) {
+    const response = await fetch("/api/auth/passkey", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "list" }),
+    }).catch(() => null);
+    const result = response ? await response.json().catch(() => ({})) : {};
+    if (!response?.ok) {
+      if (shouldUpdate()) {
+        setError(result.error ?? "Passkeys could not be loaded.");
+        setItems([]);
+      }
       return;
     }
-    setError(null);
-    setItems(data ?? []);
+    if (shouldUpdate()) {
+      setError(null);
+      setItems(result.items ?? []);
+    }
   }
 
   useEffect(() => {
     let active = true;
-    createClient()
-      .auth.passkey.list()
-      .then(({ data, error: listError }) => {
-        if (!active) return;
-        if (listError) {
-          setError(passkeyError(listError) ?? "Passkeys could not be loaded.");
-          setItems([]);
-        } else {
-          setItems(data ?? []);
-        }
-        setLoading(false);
-      })
+    load(() => active)
       .catch(() => {
         if (!active) return;
         setError("Passkeys could not be loaded.");
+        setItems([]);
+      })
+      .finally(() => {
+        if (!active) return;
         setLoading(false);
       });
     return () => {
@@ -64,39 +66,51 @@ export function PasskeysField() {
   async function addPasskey() {
     setBusy(true);
     setError(null);
-    const { error: registerError } = await createClient().auth.registerPasskey();
-    const message = passkeyError(registerError);
-    if (registerError) {
-      if (message) setError(message);
+    try {
+      const optionsResponse = await fetch("/api/auth/passkey", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "registration-options" }),
+      });
+      const options = await optionsResponse.json().catch(() => ({}));
+      if (!optionsResponse.ok) throw new Error(options.error ?? "Passkey registration is unavailable.");
+      const credential = await startRegistration({ optionsJSON: options });
+      const verifyResponse = await fetch("/api/auth/passkey", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "registration-verify",
+          challenge: options.challenge,
+          response: credential,
+        }),
+      });
+      const result = await verifyResponse.json().catch(() => ({}));
+      if (!verifyResponse.ok) throw new Error(result.error ?? "The passkey could not be saved.");
+      await load();
+    } catch (caught) {
+      setError(passkeyError(caught) ?? "The passkey was not added.");
+    } finally {
       setBusy(false);
-      return;
     }
-    await fetch("/api/account/passkey", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "registered" }),
-    }).catch(() => null);
-    await load();
-    setBusy(false);
   }
 
   async function removePasskey(id: string) {
     setBusy(true);
     setError(null);
-    const { error: deleteError } = await createClient().auth.passkey.delete({ passkeyId: id });
-    const message = passkeyError(deleteError);
-    if (deleteError) {
-      if (message) setError(message);
+    try {
+      const response = await fetch("/api/auth/passkey", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "remove", credentialId: id }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error ?? "The passkey could not be removed.");
+      await load();
+    } catch (caught) {
+      setError(passkeyError(caught) ?? "The passkey was not removed.");
+    } finally {
       setBusy(false);
-      return;
     }
-    await fetch("/api/account/passkey", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "removed" }),
-    }).catch(() => null);
-    await load();
-    setBusy(false);
   }
 
   return (

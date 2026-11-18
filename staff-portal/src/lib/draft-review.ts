@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createDatabaseClient } from "@/lib/db-client";
 import { logActivity } from "@/lib/api-auth";
 import { needsPublisherReview } from "@/lib/draft-access";
 import { canAccess, MODULE_LABELS, MODULE_ROUTES, type ModuleKey, type ModulePermission } from "@/lib/modules";
@@ -11,7 +11,7 @@ type Actor = {
   permissions: ModulePermission[];
 };
 
-type Admin = SupabaseClient;
+type Admin = ReturnType<typeof createDatabaseClient>;
 
 export type DraftSource = {
   table: string;
@@ -314,7 +314,7 @@ export async function listReviewDrafts(admin: Admin, actor: Actor): Promise<Revi
     (sentBack ?? []).map((row) => returnIdentity(String(row.entity_table), row.entity_id ? String(row.entity_id) : null, String(row.entity_key ?? "")))
   );
   const profiles = new Map((profileRows ?? []).map((row) => [row.id as string, row as Profile]));
-  const perms = (permRows ?? []) as Perm[];
+  const perms: Perm[] = permRows ?? [];
   const items: ReviewDraft[] = [];
 
   const tables = await Promise.all(

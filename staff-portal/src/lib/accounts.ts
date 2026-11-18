@@ -1,4 +1,4 @@
-/** Supabase Auth needs an email; accounts created without one get an address on this domain that is never shown. */
+/** Accounts without contact email use a private synthetic address for internal compatibility. */
 export const INTERNAL_EMAIL_DOMAIN = "staff.ksl.internal";
 
 export const USERNAME_PATTERN = /^[a-z0-9][a-z0-9._-]{0,9}$/;

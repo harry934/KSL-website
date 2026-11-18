@@ -1,22 +1,14 @@
 import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { cookies } from "next/headers";
+import { createDatabaseClient } from "@/lib/db-client";
 import type { ModulePermission } from "@/lib/modules";
-import { isInternalEmail } from "@/lib/accounts";
-import { liveStaffSession } from "@/lib/staff-session-server";
+import { liveStaffSession, sessionUserIdForToken } from "@/lib/staff-session-server";
 import type { SessionStop } from "@/lib/staff-session";
+import { signedStoredFileUrl } from "@/lib/storage";
+import { STAFF_SESSION_COOKIE } from "@/lib/staff-session";
 
 export async function avatarUrl(path: string) {
-  const admin = createAdminClient();
-  const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
-  const name = path.slice(folder.length + (folder ? 1 : 0));
-  const { data: listed, error } = await admin.storage.from("avatars").list(folder, { search: name, limit: 10 });
-  const stored = !error && listed?.some((item) => item.name === name);
-  if (stored) {
-    const { data } = await admin.storage.from("avatars").createSignedUrl(path, 60 * 60);
-    if (data?.signedUrl) return data.signedUrl;
-  }
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media-public/${path}`;
+  return signedStoredFileUrl("avatars", path, 60 * 60);
 }
 
 export type StaffSession = {
@@ -53,36 +45,35 @@ export type StaffGate =
   | { state: "out"; reason: SessionStop };
 
 export const staffGate = cache(async (): Promise<StaffGate> => {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { state: "out", reason: "missing" };
+  const jar = await cookies();
+  const token = jar.get(STAFF_SESSION_COOKIE)?.value ?? "";
+  const userId = await sessionUserIdForToken(token);
+  if (!userId) return { state: "out", reason: "missing" };
 
-  const live = await liveStaffSession(user.id, true);
+  const live = await liveStaffSession(userId, true);
   if (!live.ok) {
     if (live.reason === "suspended") return { state: "suspended" };
     return { state: "out", reason: live.reason };
   }
 
-  const { data } = await createAdminClient()
+  const { data, error } = await createDatabaseClient()
     .from("admin_profiles")
     .select(
       "display_name, username, contact_email, role_title, is_super_admin, is_active, deleted_at, must_change_password, must_change_username, avatar_path, admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
     )
-    .eq("id", user.id)
+    .eq("id", userId)
     .maybeSingle();
 
+  if (error) throw new Error("Could not load the staff profile");
   const profile = data as ProfileRow | null;
   if (!profile || !profile.is_active || profile.deleted_at) return { state: "suspended" };
 
-  const authEmail = user.email ?? "";
-  const email = profile.contact_email || (isInternalEmail(authEmail) ? "" : authEmail);
+  const email = profile.contact_email || "";
 
   return {
     state: "ok",
     session: {
-      userId: user.id,
+      userId,
       username: profile.username ?? "",
       email,
       displayName: profile.display_name || profile.username || email || "Staff",

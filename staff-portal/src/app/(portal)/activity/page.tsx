@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getStaffSession } from "@/lib/session";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 import { PageHeader } from "@/components/portal/page-header";
 import { describeActivity } from "@/lib/activity-words";
@@ -73,7 +73,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
   const who = seeEveryone && params.who && UUID.test(params.who) ? params.who : "";
   const filtered = Boolean(moduleFilter || who || what || from || to);
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - 24);
   await admin.from("activity_log").delete().lt("created_at", cutoff.toISOString());

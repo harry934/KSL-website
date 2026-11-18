@@ -371,11 +371,12 @@ export function cleanMaintenanceMessage(value: unknown) {
     .slice(0, 400);
 }
 
-export function normalizeMaintenance(input?: Partial<MaintenanceSettings> | null): MaintenanceSettings {
+export function normalizeMaintenance(input?: unknown): MaintenanceSettings {
+  const raw = input && typeof input === "object" ? input as Partial<MaintenanceSettings> : null;
   return {
-    enabled: Boolean(input?.enabled),
-    endsAt: cleanMaintenanceEndsAt(input?.endsAt),
-    message: cleanMaintenanceMessage(input?.message),
+    enabled: Boolean(raw?.enabled),
+    endsAt: cleanMaintenanceEndsAt(raw?.endsAt),
+    message: cleanMaintenanceMessage(raw?.message),
   };
 }
 

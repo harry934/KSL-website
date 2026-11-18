@@ -1,7 +1,6 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { requireStaff, logActivity } from "@/lib/api-auth";
 import { normalizeUsername, validateEmail, validateUsername } from "@/lib/accounts";
-import { authEmailFor } from "@/lib/auth-server";
 import { createStaffInvite, permissionRows } from "@/lib/staff-invites";
 import { avatarUrl } from "@/lib/session";
 import { parseRoleTitle } from "@/lib/staff-role";
@@ -19,7 +18,7 @@ export async function GET() {
   const { error } = await requireSuperAdmin("view");
   if (error) return error;
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const [{ data, error: dbError }, { data: sessions }] = await Promise.all([
     admin
       .from("admin_profiles")
@@ -81,7 +80,7 @@ export async function PATCH(req: NextRequest) {
   const action = String(body.action ?? "");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data: target } = await admin
     .from("admin_profiles")
     .select("id, username, is_super_admin, deleted_at")
@@ -141,14 +140,6 @@ export async function PATCH(req: NextRequest) {
       const { data: taken } = await admin.from("admin_profiles").select("id").eq("username", username).neq("id", id).maybeSingle();
       if (taken) return NextResponse.json({ error: "This username isn't available. Please try another." }, { status: 409 });
     }
-    const { error: authErr } = await admin.auth.admin.updateUserById(id, {
-      email: authEmailFor(username, contactEmail),
-      email_confirm: true,
-    });
-    if (authErr) {
-      const message = /already/i.test(authErr.message) ? "That contact email is already used by another account." : "Could not save the changes.";
-      return NextResponse.json({ error: message }, { status: 400 });
-    }
     await admin
       .from("admin_profiles")
       .update({ username, display_name: displayName, contact_email: contactEmail, role_title: role.title })
@@ -196,7 +187,7 @@ export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data: target } = await admin
     .from("admin_profiles")
     .select("id, username, is_super_admin, deleted_at, must_change_password")
@@ -224,7 +215,6 @@ export async function DELETE(req: NextRequest) {
   if (binErr) return NextResponse.json({ error: "Could not delete the account. Please try again." }, { status: 500 });
 
   await admin.from("staff_sessions").delete().eq("user_id", id);
-  await admin.auth.admin.updateUserById(id, { ban_duration: "876000h" });
 
   await logActivity(session.userId, "staff", "delete", "admin_profile", id, { username: target.username });
   return NextResponse.json({ ok: true });

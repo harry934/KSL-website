@@ -4,8 +4,10 @@ export const MESSAGES_UNLOCK_COOKIE = "ksl_messages_unlock";
 export const MESSAGES_UNLOCK_MS = 15 * 60 * 1000;
 
 function unlockSecret() {
-  const value = process.env.MESSAGE_VIEW_UNLOCK_SECRET?.trim() || process.env.SUPABASE_JWT_SECRET?.trim();
-  if (!value) throw new Error("MESSAGE_VIEW_UNLOCK_SECRET or SUPABASE_JWT_SECRET is required for message unlock.");
+  const value = process.env.MESSAGE_VIEW_UNLOCK_SECRET?.trim();
+  if (!value || Buffer.byteLength(value) < 32) {
+    throw new Error("MESSAGE_VIEW_UNLOCK_SECRET must contain at least 32 bytes");
+  }
   return value;
 }
 

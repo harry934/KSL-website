@@ -1,10 +1,11 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { toPublicOrganization, type BoardMemberRow, type LeadershipRow, type MilestoneRow } from "@/lib/organization";
 import { kept } from "@/lib/recycle";
+import { signPayload } from "@/lib/stored-file";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const [settingsRes, leadershipRes, boardRes, milestoneRes] = await Promise.all([
     admin.from("organization_settings").select("chart_download_id, intro_kicker, intro_title, intro_body, chart, board_sections, board_groups, milestones_title, milestones_lead").eq("id", "default").maybeSingle(),
     admin.from("organization_leadership").select("*").eq("status", "published").order("sort_order", { ascending: true }),
@@ -24,7 +25,7 @@ export async function GET() {
     kept((milestoneRes.data ?? []) as Array<MilestoneRow & { deleted_at?: string | null }>)
   );
 
-  return NextResponse.json(payload, {
+  return NextResponse.json(await signPayload(payload), {
     headers: { "Cache-Control": "no-store" },
   });
 }

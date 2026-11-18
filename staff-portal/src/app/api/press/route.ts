@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { clearReviewDraft, editorSavePlan, overlayDrafts, overlaySettings, saveBody } from "@/lib/draft-review";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
@@ -10,7 +10,7 @@ export async function GET() {
   const { error } = await requireStaff("press", "view");
   if (error) return error;
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const [settingsRes, assetsRes] = await Promise.all([
     admin.from("press_settings").select("*").eq("id", "default").maybeSingle(),
     admin.from("press_assets").select("*").order("sort_order", { ascending: true }),
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (error || !session) return error;
 
   const body = await req.json();
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   if (body.action === "restore") {
     const { error: restoreErr } = await restoreRow(admin, "press_assets", String(body.id ?? ""));
     if (restoreErr) return NextResponse.json({ error: dbError(restoreErr) }, { status: 500 });
@@ -101,7 +101,7 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
   const permanent = new URL(req.url).searchParams.get("permanent") === "1";
-  const { error: delErr } = await applyBinDelete(createAdminClient(), "press_assets", id, permanent);
+  const { error: delErr } = await applyBinDelete(createDatabaseClient(), "press_assets", id, permanent);
   if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
   await logActivity(session.userId, "press", permanent ? "purge" : "delete", "press_asset", id);

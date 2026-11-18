@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { maintenanceIsActive, normalizeMaintenance } from "@/lib/site-settings";
 import { NextResponse } from "next/server";
 
@@ -6,7 +6,7 @@ const closed = { enabled: false, endsAt: "", message: "", active: false };
 
 export async function GET() {
   try {
-    const { data, error } = await createAdminClient()
+    const { data, error } = await createDatabaseClient()
       .from("site_settings")
       .select("value")
       .eq("key", "maintenance")

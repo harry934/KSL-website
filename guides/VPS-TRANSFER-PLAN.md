@@ -1,5 +1,7 @@
 # Move this project from Vercel to your VPS
 
+> **Superseded for the `vps-postgres` branch:** this historical plan assumes Supabase Auth, Supabase Storage, and Vercel production settings. Do not follow its data/password-hash instructions. Use [the standalone PostgreSQL and VPS operations guide](../postgres/README.md) instead.
+
 **Last updated:** 12 November 2026
 
 You SSH in from your own computer and copy this project onto an Ubuntu server. The server replaces Vercel and it replaces Supabase. GitHub stays the place the code is stored.

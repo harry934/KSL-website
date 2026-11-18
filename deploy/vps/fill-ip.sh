@@ -55,4 +55,5 @@ PY
 
 echo "Portal address set to $PORTAL"
 echo "Public site address set to $SITE"
-echo "Next: paste any empty secret keys in staff-portal/.env.production, then copy that file to the server."
+echo "Next: configure DATABASE_URL, STORAGE_DIR, signing secrets, Turnstile keys, and proxy settings in staff-portal/.env.production."
+echo "Keep the env file private; never commit or copy it into the public website directory."

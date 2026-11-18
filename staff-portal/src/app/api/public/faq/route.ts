@@ -1,10 +1,11 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
+import { signPayload } from "@/lib/stored-file";
 
 /** Public read-only FAQ feed (same shape as data/faq.json groups). */
 export async function GET() {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data: groups } = await admin
     .from("faq_groups")
     .select("id, title, sort_order, deleted_at")
@@ -17,8 +18,8 @@ export async function GET() {
     .eq("status", "published")
     .order("sort_order");
 
-  const liveGroups = kept((groups ?? []) as Array<{ id: string; title: string; sort_order: number; deleted_at?: string | null }>);
-  const liveItems = kept((items ?? []) as Array<{ group_id: string; question: string; answer: string; sort_order: number; deleted_at?: string | null }>);
+  const liveGroups = kept(groups ?? []);
+  const liveItems = kept(items ?? []);
   const byGroup = new Map<string, { q: string; a: string }[]>();
   for (const item of liveItems) {
     const list = byGroup.get(item.group_id) ?? [];
@@ -34,7 +35,7 @@ export async function GET() {
     })),
   };
 
-  return NextResponse.json(payload, {
+  return NextResponse.json(await signPayload(payload), {
     headers: {
       "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
     },

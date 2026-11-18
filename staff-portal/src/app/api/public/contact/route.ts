@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { clientIp } from "@/lib/auth-server";
 import { verifyContactToken, verifyTurnstile } from "@/lib/contact-token";
 import { assessContactRisk } from "@/lib/contact-risk";
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Refresh the page, then send the message again." }, { status: 400 });
   }
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const ip = clientIp(req).slice(0, 80);
   if (!(await verifyTurnstile(body.turnstileToken, ip))) {
     return NextResponse.json({ error: "The security check failed. Refresh the page and try again." }, { status: 400 });

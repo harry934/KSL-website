@@ -1,8 +1,9 @@
 import { revalidatePath } from "next/cache";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
+import { listStoredFiles, removeStoredFile } from "@/lib/storage";
 import { storageObjectFrom, type StorageObject } from "@/lib/storage-path";
 
-type Admin = ReturnType<typeof createAdminClient>;
+type Admin = ReturnType<typeof createDatabaseClient>;
 
 type Hunt = { table: string; columns: string[]; deleted: boolean };
 
@@ -71,12 +72,10 @@ export async function releaseUnusedValues(admin: Admin, value: unknown) {
   let removed = false;
   for (const object of objects) {
     if (await stillUsed(admin, object)) continue;
-    const { error } = await admin.storage.from(object.bucket).remove([object.path]);
-    if (!error) removed = true;
+    removed = (await removeStoredFile(object.bucket, object.path)) || removed;
     if (object.path.startsWith("avatars/")) {
       const other = object.bucket === "avatars" ? "media-public" : "avatars";
-      const extra = await admin.storage.from(other).remove([object.path]);
-      if (!extra.error) removed = true;
+      removed = (await removeStoredFile(other, object.path)) || removed;
     }
   }
   if (removed) revalidatePath("/");
@@ -118,15 +117,19 @@ function sparePathOk(path: string) {
 
 /** Files in storage that no page and no recycle-bin row points at. */
 export async function listSpareFiles(admin: Admin): Promise<SpareFile[] | null> {
-  const { data, error } = await admin.rpc("storage_objects");
-  if (error || !Array.isArray(data)) return null;
+  let data;
+  try {
+    data = await listStoredFiles();
+  } catch {
+    return null;
+  }
   const refs = await loadFileRefs(admin);
   if (!refs) return null;
   const files: SpareFile[] = [];
-  for (const row of data as { bucket_id?: string; name?: string; bytes?: number | string }[]) {
-    const bucket = String(row.bucket_id ?? "");
-    const path = String(row.name ?? "");
-    const bytes = Number(row.bytes) || 0;
+  for (const row of data) {
+    const bucket = String(row.bucket_id);
+    const path = String(row.name);
+    const bytes = Number(row.size_bytes) || 0;
     if (!SPARE_BUCKETS.has(bucket) || !sparePathOk(path)) continue;
     if (refs.some((ref) => ref.bucket === bucket && ref.path === path)) continue;
     files.push({ bucket, path, bytes });
@@ -143,25 +146,32 @@ export async function removeSpareFile(admin: Admin, bucket: string, path: string
   if (!files.some((file) => file.bucket === bucket && file.path === path)) {
     return { error: "That file is still used, so it was left in place.", status: 409 as const };
   }
-  const { error } = await admin.storage.from(bucket).remove([path]);
-  if (error) return { error: "Could not delete that file.", status: 500 as const };
+  try {
+    await removeStoredFile(bucket, path);
+  } catch {
+    return { error: "Could not delete that file.", status: 500 as const };
+  }
   return { error: null, status: 200 as const };
 }
 
 /** Live files by bucket, plus bytes held only by the recycle bin or by nothing. */
 export async function loadStorageBreakdown(admin: Admin): Promise<StorageBreakdown | null> {
-  const { data, error } = await admin.rpc("storage_objects");
-  if (error || !Array.isArray(data)) return null;
+  let data;
+  try {
+    data = await listStoredFiles();
+  } catch {
+    return null;
+  }
   const refs = await loadFileRefs(admin);
   if (!refs) return null;
 
   const live = new Map<string, number>();
   let bin = 0;
   let spare = 0;
-  for (const row of data as { bucket_id?: string; name?: string; bytes?: number | string }[]) {
-    const bucket = String(row.bucket_id ?? "");
-    const name = String(row.name ?? "");
-    const bytes = Number(row.bytes) || 0;
+  for (const row of data) {
+    const bucket = String(row.bucket_id);
+    const name = String(row.name);
+    const bytes = Number(row.size_bytes) || 0;
     if (!bucket || !name || bytes < 0) continue;
     const matches = refs.filter((ref) => ref.bucket === bucket && ref.path === name);
     if (matches.some((ref) => !ref.deleted)) live.set(bucket, (live.get(bucket) ?? 0) + bytes);

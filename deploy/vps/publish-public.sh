@@ -1,5 +1,7 @@
 #!/bin/bash
 # Copy only the public website out of the git clone.
+# WARNING: rsync --delete removes destination files. Confirm DEST is a dedicated
+# KSL document root, not the company WordPress, osTicket, or a shared web root.
 # Usage on the VPS, after git clone:
 #   bash /srv/ksl/repo/deploy/vps/publish-public.sh
 set -euo pipefail

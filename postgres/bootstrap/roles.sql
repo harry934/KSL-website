@@ -19,15 +19,16 @@ BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname IN ('ksl_migrator', 'ksl_runtime')) THEN
     RAISE EXCEPTION 'A role named ksl_migrator or ksl_runtime already exists; inspect it and provision manually rather than reusing it.';
   END IF;
+  IF EXISTS (SELECT 1 FROM pg_database WHERE datname = 'ksl') THEN
+    RAISE EXCEPTION 'Database ksl already exists; inspect it and provision manually rather than modifying it.';
+  END IF;
 END
 $bootstrap$;
 
 CREATE ROLE ksl_migrator LOGIN;
 CREATE ROLE ksl_runtime LOGIN;
 
-SELECT 'CREATE DATABASE ksl OWNER ksl_migrator ENCODING ''UTF8'''
-WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'ksl')
-\gexec
+CREATE DATABASE ksl OWNER ksl_migrator ENCODING 'UTF8';
 
 -- Runtime may connect but cannot create schemas, roles, or databases. Schema/table
 -- grants are installed by the reviewed application migrations, not guessed here.

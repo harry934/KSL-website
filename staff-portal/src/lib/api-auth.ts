@@ -66,7 +66,7 @@ export async function logActivity(
   entityId?: string,
   metadata?: Record<string, unknown>
 ) {
-  const admin = await import("@/lib/supabase/admin").then((m) => m.createAdminClient());
+  const admin = await import("@/lib/db-client").then((m) => m.createDatabaseClient());
   await admin.from("activity_log").insert({
     actor_id: actorId,
     module_key: moduleKey,

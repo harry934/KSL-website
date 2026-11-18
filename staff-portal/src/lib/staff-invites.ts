@@ -1,5 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { withTransaction } from "@/lib/db";
+import { createDatabaseClient } from "@/lib/db-client";
 import { logActivity } from "@/lib/api-auth";
 import {
   normalizeUsername,
@@ -7,7 +8,7 @@ import {
   validatePassword,
   validateUsername,
 } from "@/lib/accounts";
-import { authEmailFor, generateNumericPasscode, oneTimePasswordExpiry } from "@/lib/auth-server";
+import { generateNumericPasscode, hashPassword, oneTimePasswordExpiry } from "@/lib/auth-server";
 import { MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 import { parseRoleTitle } from "@/lib/staff-role";
 
@@ -82,13 +83,10 @@ export function permissionRows(profileId: string, input: unknown) {
 export function portalBaseUrl() {
   const fromEnv = (process.env.NEXT_PUBLIC_PORTAL_URL || "").replace(/\/$/, "");
   if (fromEnv) return fromEnv;
-  if (process.env.VERCEL_ENV === "production" || process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    const prod = (process.env.VERCEL_PROJECT_PRODUCTION_URL || "").replace(/\/$/, "");
-    if (prod) return `https://${prod.replace(/^https?:\/\//, "")}`;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("NEXT_PUBLIC_PORTAL_URL is required in production");
   }
-  const vercel = (process.env.VERCEL_URL || "").replace(/\/$/, "");
-  if (vercel) return `https://${vercel.replace(/^https?:\/\//, "")}`;
-  return "https://ksl-websitekiza.vercel.app";
+  return "http://localhost:3000";
 }
 
 /** Short invite link, e.g. https://host/i/aB3xY9k2?code=123456 */
@@ -105,7 +103,7 @@ function newToken() {
 }
 
 async function cancelOpenInvites(filter: { kind: InviteKind; targetProfileId?: string; email?: string | null; phone?: string | null }) {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   // Remove superseded open rows so Resend/Create does not leave cancelled duplicates in the list.
   let query = admin
     .from("staff_invites")
@@ -135,7 +133,7 @@ export async function createStaffInvite(input: {
   if (contactProblem) return { error: contactProblem, status: 400 as const };
 
   await purgeExpiredInvites();
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   let targetProfileId: string | null = null;
   let isSuperAdmin = input.superAdmin === true;
   let roleTitle: string | null = null;
@@ -229,7 +227,7 @@ export type InviteListStatus = "waiting" | "expired" | "completed" | "cancelled"
 
 /** Removes unused invites whose passcode window has ended. */
 export async function purgeExpiredInvites() {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   await admin
     .from("staff_invites")
     .delete()
@@ -238,7 +236,7 @@ export async function purgeExpiredInvites() {
 }
 
 export async function listOpenInvites() {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   await purgeExpiredInvites();
 
   const since = new Date(Date.now() - 60 * 24 * 60 * 60_000).toISOString();
@@ -315,7 +313,7 @@ export async function listOpenInvites() {
 }
 
 export async function cancelInvite(actorId: string, id: string) {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data, error } = await admin
     .from("staff_invites")
     .update({ used_at: new Date().toISOString() })
@@ -335,7 +333,7 @@ export async function cancelInvite(actorId: string, id: string) {
 
 /** Permanently remove an invite from the list (any status). */
 export async function deleteInvite(actorId: string, id: string) {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data, error } = await admin
     .from("staff_invites")
     .delete()
@@ -355,7 +353,7 @@ export async function deleteInvite(actorId: string, id: string) {
 /** Fresh passcode + link on the same invite row (no duplicate list entry). */
 export async function resendStaffInvite(actorId: string, id: string) {
   await purgeExpiredInvites();
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data: existing, error: loadError } = await admin
     .from("staff_invites")
     .select(
@@ -436,7 +434,7 @@ export async function resendStaffInvite(actorId: string, id: string) {
 export async function loadOpenInvite(token: string) {
   const value = String(token ?? "").trim();
   if (!value || value.length < 6 || value.length > 32) return null;
-  const { data } = await createAdminClient()
+  const { data } = await createDatabaseClient()
     .from("staff_invites")
     .select(
       "id, token, passcode_hash, kind, contact_email, phone, is_super_admin, role_title, permissions, target_profile_id, expires_at, used_at, created_by"
@@ -477,7 +475,8 @@ export async function completeInvite(input: {
   if (passwordProblem) return { error: passwordProblem, status: 400 as const };
 
   const invite = verified.invite;
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
+  const passwordHash = await hashPassword(input.password);
 
   if (invite.kind === "password_reset") {
     const profileId = invite.target_profile_id!;
@@ -489,22 +488,25 @@ export async function completeInvite(input: {
     if (!profile || profile.deleted_at || !profile.is_active) {
       return { error: "That account is not active.", status: 400 as const };
     }
-    const { error: authErr } = await admin.auth.admin.updateUserById(profileId, { password: input.password });
-    if (authErr) return { error: "Could not save the new password. Please try again.", status: 400 as const };
-
-    await admin
-      .from("admin_profiles")
-      .update({ must_change_password: false, must_change_username: false, one_time_password_expires_at: null })
-      .eq("id", profileId);
-
-    const { data: consumed } = await admin
-      .from("staff_invites")
-      .update({ used_at: new Date().toISOString() })
-      .eq("id", invite.id)
-      .is("used_at", null)
-      .select("id")
-      .maybeSingle();
-    if (!consumed) return { error: "That invite was already used.", status: 409 as const };
+    try {
+      await withTransaction(async (client) => {
+        const consumed = await client.query(
+          "UPDATE staff_invites SET used_at = now() WHERE id = $1 AND used_at IS NULL AND expires_at > now() RETURNING id",
+          [invite.id],
+        );
+        if (!consumed.rowCount) throw Object.assign(new Error("invite already used"), { code: "INVITE_USED" });
+        const saved = await client.query(
+          "UPDATE admin_profiles SET password_hash = $1, must_change_password = false, must_change_username = false, one_time_password_expires_at = NULL WHERE id = $2 AND is_active AND deleted_at IS NULL RETURNING username",
+          [passwordHash, profileId],
+        );
+        if (!saved.rowCount) throw Object.assign(new Error("inactive account"), { code: "INACTIVE_ACCOUNT" });
+      });
+    } catch (error) {
+      const code = (error as { code?: string }).code;
+      if (code === "INVITE_USED") return { error: "That invite was already used.", status: 409 as const };
+      console.error("Password-reset invite could not be completed", code ?? "database error");
+      return { error: "Could not save the new password. Please try again.", status: 500 as const };
+    }
 
     await logActivity(profileId, "staff", "change password", "admin_profile", profileId);
     return { error: null, status: 200 as const, kind: invite.kind as InviteKind, username: profile.username as string };
@@ -527,53 +529,47 @@ export async function completeInvite(input: {
     if (emailTaken) return { error: "That contact email is already used by another account.", status: 400 as const };
   }
 
-  const { data: created, error: createError } = await admin.auth.admin.createUser({
-    email: authEmailFor(username, invite.contact_email),
-    password: input.password,
-    email_confirm: true,
-  });
-  if (createError || !created.user) {
-    const message = /already/i.test(createError?.message ?? "")
-      ? "That contact email is already used by another account."
-      : "Could not create the account. Please try again.";
-    return { error: message, status: 400 as const };
-  }
-
-  const userId = created.user.id;
-  const { error: profileError } = await admin.from("admin_profiles").insert({
-    id: userId,
-    username,
-    contact_email: invite.contact_email,
-    display_name: username,
-    role_title: invite.role_title,
-    is_super_admin: invite.is_super_admin,
-    is_active: true,
-    must_change_password: false,
-    must_change_username: false,
-    one_time_password_expires_at: null,
-    created_by: invite.created_by,
-  });
-
-  if (profileError) {
-    await admin.auth.admin.deleteUser(userId);
+  let userId = "";
+  try {
+    userId = await withTransaction(async (client) => {
+      const consumed = await client.query(
+        "UPDATE staff_invites SET used_at = now() WHERE id = $1 AND used_at IS NULL AND expires_at > now() RETURNING id",
+        [invite.id],
+      );
+      if (!consumed.rowCount) throw Object.assign(new Error("invite already used"), { code: "INVITE_USED" });
+      const created = await client.query<{ id: string }>(
+        `INSERT INTO admin_profiles
+          (username, contact_email, display_name, role_title, is_super_admin, is_active,
+           must_change_password, must_change_username, one_time_password_expires_at, created_by, password_hash)
+         VALUES ($1, $2, $3, $4, $5, true, false, false, NULL, $6, $7)
+         RETURNING id`,
+        [username, invite.contact_email, username, invite.role_title, invite.is_super_admin, invite.created_by, passwordHash],
+      );
+      const id = created.rows[0]?.id;
+      if (!id) throw new Error("account insert returned no id");
+      if (!invite.is_super_admin) {
+        for (const permission of permissionRows(id, invite.permissions)) {
+          await client.query(
+            `INSERT INTO admin_module_permissions
+              (profile_id, module_key, can_view, can_edit, can_publish, can_delete)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [permission.profile_id, permission.module_key, permission.can_view, permission.can_edit, permission.can_publish, permission.can_delete],
+          );
+        }
+      }
+      return id;
+    });
+  } catch (error) {
+    const failure = error as { code?: string; constraint?: string };
+    if (failure.code === "INVITE_USED") return { error: "That invite was already used.", status: 409 as const };
+    if (failure.code === "23505" && failure.constraint?.includes("username")) {
+      return { error: "This username isn't available. Please try another.", status: 409 as const };
+    }
+    if (failure.code === "23505" && failure.constraint?.includes("contact_email")) {
+      return { error: "That contact email is already used by another account.", status: 400 as const };
+    }
+    console.error("Staff invite could not create an account", failure.code ?? "database error");
     return { error: "Could not create the account. Please try again.", status: 500 as const };
-  }
-
-  if (!invite.is_super_admin) {
-    const rows = permissionRows(userId, invite.permissions);
-    if (rows.length) await admin.from("admin_module_permissions").insert(rows);
-  }
-
-  const { data: consumed } = await admin
-    .from("staff_invites")
-    .update({ used_at: new Date().toISOString() })
-    .eq("id", invite.id)
-    .is("used_at", null)
-    .select("id")
-    .maybeSingle();
-  if (!consumed) {
-    await admin.auth.admin.deleteUser(userId);
-    return { error: "That invite was already used.", status: 409 as const };
   }
 
   await logActivity(userId, "staff", "create", "admin_profile", userId, { username, via: "invite" });

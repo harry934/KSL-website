@@ -1,9 +1,10 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { HOME_HERO_SLOT, isImagePath, parseHeroMedia, safeImageUrl } from "@/lib/site-images";
 import { NextResponse } from "next/server";
+import { signPayload } from "@/lib/stored-file";
 
 export async function GET() {
-  const { data, error } = await createAdminClient()
+  const { data, error } = await createDatabaseClient()
     .from("site_image_overrides")
     .select("slot_id, public_url, media")
     .eq("source", "storage");
@@ -44,7 +45,7 @@ export async function GET() {
   }
 
   return NextResponse.json(
-    { images, hero },
+    await signPayload({ images, hero }),
     { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } }
   );
 }

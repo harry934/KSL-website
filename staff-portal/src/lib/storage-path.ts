@@ -19,12 +19,23 @@ export function storageObjectFrom(value: unknown): StorageObject | null {
 
   if (raw.startsWith("private:")) {
     const path = raw.slice("private:".length);
-    return safePath(path) ? { bucket: "downloads", path } : null;
+    return path.startsWith("downloads/") && safePath(path) ? { bucket: "downloads", path } : null;
   }
 
   if (/^https?:/i.test(raw)) {
     try {
-      const pathname = decodeURIComponent(new URL(raw).pathname);
+      const url = new URL(raw);
+      if (url.pathname === "/api/stored-file") {
+        const bucket = url.searchParams.get("bucket");
+        const path = url.searchParams.get("path") ?? "";
+        if (
+          (bucket === "media-public" || bucket === "downloads" || bucket === "avatars") &&
+          safePath(path)
+        ) {
+          return { bucket, path };
+        }
+      }
+      const pathname = decodeURIComponent(url.pathname);
       const match = pathname.match(
         /\/storage\/v1\/object\/(?:public|sign|authenticated)\/(media-public|downloads|avatars)\/(.+)$/
       );

@@ -1,7 +1,7 @@
 import { randomInt } from "node:crypto";
-import { createClient as createStatelessClient } from "@supabase/supabase-js";
+import argon2 from "argon2";
 import type { NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { USERNAME_PATTERN, internalEmailFor } from "@/lib/accounts";
 
 const WINDOW_MINUTES = 15;
@@ -31,7 +31,7 @@ export function clientIp(req: NextRequest) {
 
 /** When sign-in is blocked, the time it opens again; null when not blocked. */
 export async function lockedUntil(identifier: string, ip: string): Promise<Date | null> {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const since = new Date(Date.now() - WINDOW_MINUTES * 60_000).toISOString();
   const recentFailures = (column: "identifier" | "ip", value: string, limit: number) =>
     admin
@@ -121,7 +121,7 @@ export function generateNumericPasscode() {
 }
 
 export async function recordAttempt(identifier: string, ip: string, succeeded: boolean) {
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   await admin.from("login_attempts").insert({ identifier, ip, succeeded });
   if (succeeded) {
     const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60_000).toISOString();
@@ -134,12 +134,21 @@ export function authEmailFor(username: string, contactEmail: string | null) {
   return contactEmail ? contactEmail.toLowerCase() : internalEmailFor(username);
 }
 
-export async function verifyPassword(email: string, password: string) {
-  const client = createStatelessClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-  const { error } = await client.auth.signInWithPassword({ email, password });
-  return !error;
+export async function hashPassword(password: string) {
+  return argon2.hash(password, {
+    type: argon2.argon2id,
+    memoryCost: 19_456,
+    timeCost: 2,
+    parallelism: 1,
+  });
+}
+
+export async function verifyPassword(passwordHash: string | null | undefined, password: string) {
+  if (!passwordHash || !password) return false;
+  try {
+    return await argon2.verify(passwordHash, password);
+  } catch {
+    console.error("Stored password hash could not be verified");
+    return false;
+  }
 }

@@ -1,7 +1,5 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { STAFF_SESSION_COOKIE, judgeSession, sessionCookieOptions } from "@/lib/staff-session";
-import { clearStaffSession, readStaffSession } from "@/lib/staff-session-server";
+import { STAFF_SESSION_COOKIE } from "@/lib/staff-session";
 
 const ALLOWED_ORIGINS = new Set([
   "https://ksl-website.vercel.app",
@@ -21,6 +19,9 @@ function configuredOrigins() {
 const PUBLIC_API_PATHS = new Set([
   "/api/auth/sign-in",
   "/api/auth/passkey",
+  "/api/auth/session",
+  "/api/auth/pulse",
+  "/api/auth/sign-out",
   "/api/auth/forgot-password",
   "/api/auth/invite/verify",
   "/api/auth/invite/complete",
@@ -68,6 +69,23 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/api/public/")) {
     return publicApi(request);
   }
+  const hasSessionCookie = Boolean(request.cookies.get(STAFF_SESSION_COOKIE)?.value);
+  const isMutation = !["GET", "HEAD", "OPTIONS"].includes(request.method);
+  if (hasSessionCookie && isMutation) {
+    const origin = request.headers.get("origin");
+    const referer = request.headers.get("referer");
+    let requestOrigin = origin;
+    if (!requestOrigin && referer) {
+      try {
+        requestOrigin = new URL(referer).origin;
+      } catch {
+        requestOrigin = null;
+      }
+    }
+    if (requestOrigin !== request.nextUrl.origin) {
+      return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
+    }
+  }
   if (pathname === "/login" && request.nextUrl.searchParams.has("reason")) {
     const url = request.nextUrl.clone();
     url.search = "";
@@ -77,47 +95,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  let response = NextResponse.next({
-    request: { headers: request.headers },
-  });
-  const issued: { name: string; value: string; options?: Parameters<NextResponse["cookies"]["set"]>[2] }[] = [];
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request: { headers: request.headers } });
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-            issued.push({ name, value, options });
-          });
-        },
-      },
-    }
-  );
-
-  function endBrowserSession(target: NextResponse) {
-    issued.forEach(({ name, value, options }) => target.cookies.set(name, value, options));
-    target.cookies.set(STAFF_SESSION_COOKIE, "", sessionCookieOptions(0));
-    return target;
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const isLogin = pathname === "/login";
   const isSignup = pathname === "/signup" || pathname.startsWith("/i/");
   const publicPage = isLogin || isSignup;
-  const quietPath = pathname === "/api/auth/session" || pathname === "/api/auth/sign-out";
-
-  if (!user && !publicPage) {
+  if (!hasSessionCookie && !publicPage) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
     }
@@ -126,43 +107,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && !quietPath) {
-    const row = await readStaffSession(user.id).catch(() => null);
-    const reason = !row || !row.active
-      ? row && !row.active
-        ? "suspended"
-        : "missing"
-      : judgeSession({
-          cookieKey: request.cookies.get(STAFF_SESSION_COOKIE)?.value,
-          storedKey: row.key,
-          seenAt: row.seenAt,
-          now: Date.now(),
-        });
-
-    if (reason) {
-      // Idle sessions must leave the table so the staff list stops showing them as online.
-      if (reason === "idle") {
-        await clearStaffSession(user.id).catch(() => null);
-      }
-      await supabase.auth.signOut();
-      if (pathname.startsWith("/api/")) {
-        return endBrowserSession(NextResponse.json({ error: "Please sign in again." }, { status: 401 }));
-      }
-      if (publicPage) return endBrowserSession(response);
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      url.search = "";
-      return endBrowserSession(NextResponse.redirect(url));
-    }
-  }
-
-  if (user && publicPage) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    url.search = "";
-    return NextResponse.redirect(url);
-  }
-
+  const response = NextResponse.next({ request: { headers: request.headers } });
   response.headers.set("X-Robots-Tag", "noindex, nofollow");
   return response;
 }

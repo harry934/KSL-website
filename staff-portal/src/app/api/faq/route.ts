@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { clearReviewDraft, editorSavePlan, overlayDrafts, saveBody } from "@/lib/draft-review";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
@@ -8,7 +8,7 @@ export async function GET() {
   const { error } = await requireStaff("faq", "view");
   if (error) return error;
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data: groupRows, error: gErr } = await admin.from("faq_groups").select("*").order("sort_order");
   if (gErr) return NextResponse.json({ error: dbError(gErr) }, { status: 500 });
 
@@ -33,7 +33,7 @@ export async function PUT(req: NextRequest) {
   if (error || !session) return error;
 
   const body = await req.json();
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   if (body.action === "restore") {
     const table = body.type === "group" ? "faq_groups" : "faq_items";
     const { error: restoreErr } = await restoreRow(admin, table, String(body.id ?? ""));
@@ -97,7 +97,7 @@ export async function DELETE(req: NextRequest) {
 
   const permanent = params.get("permanent") === "1";
   const table = type === "group" ? "faq_groups" : "faq_items";
-  const { error: delErr } = await applyBinDelete(createAdminClient(), table, id, permanent);
+  const { error: delErr } = await applyBinDelete(createDatabaseClient(), table, id, permanent);
   if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
   await logActivity(session.userId, "faq", permanent ? "purge" : "delete", type === "group" ? "faq_group" : "faq_item", id);

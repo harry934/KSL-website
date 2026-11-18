@@ -1041,7 +1041,7 @@ body {
   z-index: 1;
   width: 42px;
   margin: 0;
-  background: url("https://ksl-website.vercel.app/img/ksl/kenya-flag-strip.png") center / cover no-repeat;
+  background: var(--ksl-flag-strip) center / cover no-repeat;
   box-shadow: none;
 }
 .kb-preview.is-flag::after { content: none; }
@@ -1093,7 +1093,7 @@ body {
 .kb-preview.is-quay {
   color: #fff;
   background: #09296C;
-  --ksl-banner-photo: url("https://ksl-website.vercel.app/img/ksl/mombasa.webp");
+  --ksl-banner-photo: var(--ksl-public-banner-photo);
 }
 .kb-preview.is-quay::before {
   content: "";
@@ -1112,7 +1112,7 @@ body {
 .kb-preview.is-berth {
   color: #fff;
   background: #09296C;
-  --ksl-banner-photo: url("https://ksl-website.vercel.app/img/ksl/mombasa.webp");
+  --ksl-banner-photo: var(--ksl-public-banner-photo);
 }
 .kb-preview.is-berth::before {
   content: "";
@@ -1130,7 +1130,7 @@ body {
 .kb-preview.is-berth .kb-preview-cta { padding: 0 0 1px; color: #e6c56a; border-bottom: 1px solid #e6c56a; }
 .kb-preview.is-channel {
   color: #fff;
-  --ksl-banner-photo: url("https://ksl-website.vercel.app/img/ksl/mombasa.webp");
+  --ksl-banner-photo: var(--ksl-public-banner-photo);
   background: var(--ksl-banner-photo) center 40% / cover no-repeat;
 }
 .kb-preview.is-channel::before {

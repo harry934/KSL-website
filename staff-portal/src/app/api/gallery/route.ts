@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { requireStaff, logActivity } from "@/lib/api-auth";
 import { clearReviewDraft, editorSavePlan, overlayDrafts, saveBody } from "@/lib/draft-review";
 import { youtubeIdFrom } from "@/lib/gallery";
@@ -10,7 +10,7 @@ export async function GET() {
   const { error } = await requireStaff("gallery", "view");
   if (error) return error;
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const [photosRes, videosRes] = await Promise.all([
     admin.from("gallery_photos").select("*").order("sort_order"),
     admin.from("gallery_videos").select("*").order("sort_order"),
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   if (error || !session) return error;
 
   const body = await req.json();
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   if (body.action === "restore") {
     const table = body.type === "video" ? "gallery_videos" : "gallery_photos";
     const { error: restoreErr } = await restoreRow(admin, table, String(body.id ?? ""));
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       await admin.from("gallery_videos").update({ featured: false }).neq("youtube_id", youtubeId);
     }
     const { data, error: upErr } = await admin.from("gallery_videos").upsert(row).select("id").single();
-    if (upErr) return NextResponse.json({ error: "Could not save the video." }, { status: 500 });
+    if (upErr || !data) return NextResponse.json({ error: "Could not save the video." }, { status: 500 });
     await clearReviewDraft(admin, "gallery_videos", data.id);
     await logActivity(session.userId, "gallery", "upsert", "gallery_video", data.id);
     return NextResponse.json(saveBody(session, "gallery", { id: data.id }));
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
 
   const previous = await rememberFiles(admin, "gallery_photos", body.id, ["storage_path", "public_url"]);
   const { data, error: upErr } = await admin.from("gallery_photos").upsert(row).select("id").single();
-  if (upErr) return NextResponse.json({ error: "Could not save the photo." }, { status: 500 });
+  if (upErr || !data) return NextResponse.json({ error: "Could not save the photo." }, { status: 500 });
   await releaseUnusedValues(admin, previous);
   await clearReviewDraft(admin, "gallery_photos", data.id);
   await logActivity(session.userId, "gallery", "upsert", "gallery_photo", data.id);
@@ -111,7 +111,7 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ error: "Nothing selected." }, { status: 400 });
 
   const permanent = params.get("permanent") === "1";
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const table = isVideo ? "gallery_videos" : "gallery_photos";
   const { error: delErr } = await applyBinDelete(admin, table, id, permanent);
   if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });

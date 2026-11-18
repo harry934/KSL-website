@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { credentialsCurrent } from "@/lib/api-auth";
 import { matchesDeclaredType } from "@/lib/file-bytes";
 import { avatarUrl, getStaffSession } from "@/lib/session";
+import { removeStoredFile, saveStoredFile } from "@/lib/storage";
 
 const MAX_BYTES = 3 * 1024 * 1024;
 const TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
 async function currentPath(userId: string) {
-  const { data } = await createAdminClient().from("admin_profiles").select("avatar_path").eq("id", userId).maybeSingle();
+  const { data, error } = await createDatabaseClient().from("admin_profiles").select("avatar_path").eq("id", userId).maybeSingle();
+  if (error) throw new Error("Could not load the current avatar");
   return (data?.avatar_path as string | null) ?? null;
 }
 
@@ -26,33 +28,27 @@ export async function POST(req: NextRequest) {
   if (!ext) return NextResponse.json({ error: "Use a JPG, PNG or WebP photo." }, { status: 400 });
   if (file.size > MAX_BYTES) return NextResponse.json({ error: "The photo is too large (max 3 MB)." }, { status: 400 });
 
-  const admin = createAdminClient();
   const previous = await currentPath(session.userId);
-  const path = `avatars/${session.userId}-${Date.now()}.${ext}`;
+  const path = `avatars/${session.userId}-${crypto.randomUUID()}.${ext}`;
   const bytes = Buffer.from(await file.arrayBuffer());
   if (!matchesDeclaredType(bytes, ext)) {
     return NextResponse.json({ error: "That file is not a JPG, PNG or WebP photo." }, { status: 400 });
   }
-  const { error: upErr } = await admin.storage.from("avatars").upload(path, bytes, {
-    contentType: file.type,
-    cacheControl: "3600",
-  });
-  if (upErr) {
-    const fallback = `avatars/${session.userId}-${Date.now()}.${ext}`;
-    const legacy = await admin.storage.from("media-public").upload(fallback, bytes, {
-      contentType: file.type,
-      cacheControl: "31536000",
-    });
-    if (legacy.error) return NextResponse.json({ error: "The upload did not work. Please try again." }, { status: 500 });
-    await admin.from("admin_profiles").update({ avatar_path: fallback }).eq("id", session.userId);
-    if (previous) await admin.storage.from("media-public").remove([previous]);
-    return NextResponse.json({ avatarUrl: await avatarUrl(fallback) });
+  const admin = createDatabaseClient();
+  try {
+    await saveStoredFile("avatars", path, bytes, file.type);
+  } catch (error) {
+    console.error("Could not save staff avatar", error);
+    return NextResponse.json({ error: "The upload did not work. Please try again." }, { status: 500 });
   }
-
-  await admin.from("admin_profiles").update({ avatar_path: path }).eq("id", session.userId);
+  const { error: updateError } = await admin.from("admin_profiles").update({ avatar_path: path }).eq("id", session.userId);
+  if (updateError) {
+    await removeStoredFile("avatars", path);
+    return NextResponse.json({ error: "The upload did not work. Please try again." }, { status: 500 });
+  }
   if (previous) {
-    await admin.storage.from("avatars").remove([previous]);
-    await admin.storage.from("media-public").remove([previous]);
+    await removeStoredFile("avatars", previous);
+    await removeStoredFile("media-public", previous);
   }
   return NextResponse.json({ avatarUrl: await avatarUrl(path) });
 }
@@ -63,12 +59,13 @@ export async function DELETE() {
   const blocked = credentialsCurrent(session);
   if (blocked) return blocked;
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const previous = await currentPath(session.userId);
-  await admin.from("admin_profiles").update({ avatar_path: null }).eq("id", session.userId);
+  const { error } = await admin.from("admin_profiles").update({ avatar_path: null }).eq("id", session.userId);
+  if (error) return NextResponse.json({ error: "Could not remove the avatar. Please try again." }, { status: 500 });
   if (previous) {
-    await admin.storage.from("avatars").remove([previous]);
-    await admin.storage.from("media-public").remove([previous]);
+    await removeStoredFile("avatars", previous);
+    await removeStoredFile("media-public", previous);
   }
   return NextResponse.json({ ok: true });
 }

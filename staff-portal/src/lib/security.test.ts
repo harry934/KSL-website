@@ -254,7 +254,7 @@ test("a staff session stays open for one browser and 20 minutes of use", () => {
 });
 
 test("contact tokens expire into use and reject tampering", () => {
-  process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role";
+  process.env.CONTACT_TOKEN_SECRET = "test-contact-token-secret-with-at-least-32-bytes";
   const token = issueContactToken();
   assert.equal(verifyContactToken(token), "too_fast");
   assert.equal(verifyContactToken(token + "x"), "invalid");
@@ -328,10 +328,8 @@ test("published press drops unsafe asset links and bad contact emails", async ()
 test("Turnstile fails closed in production without a secret", async () => {
   const prevSecret = process.env.TURNSTILE_SECRET_KEY;
   const prevNode = process.env.NODE_ENV;
-  const prevVercel = process.env.VERCEL_ENV;
   delete process.env.TURNSTILE_SECRET_KEY;
   process.env.NODE_ENV = "production";
-  delete process.env.VERCEL_ENV;
   assert.equal(await verifyTurnstile("token", "1.2.3.4"), false);
   process.env.NODE_ENV = "development";
   assert.equal(await verifyTurnstile("token", "1.2.3.4"), true);
@@ -339,8 +337,6 @@ test("Turnstile fails closed in production without a secret", async () => {
   else process.env.TURNSTILE_SECRET_KEY = prevSecret;
   if (prevNode === undefined) delete process.env.NODE_ENV;
   else process.env.NODE_ENV = prevNode;
-  if (prevVercel === undefined) delete process.env.VERCEL_ENV;
-  else process.env.VERCEL_ENV = prevVercel;
 });
 
 test("contact payload scan decodes obfuscation layers before blocking", () => {
@@ -408,14 +404,14 @@ test("masked website messages hide PII until unlock", () => {
 });
 
 test("messages unlock token is bound to user and expires", () => {
-  const prev = process.env.SUPABASE_JWT_SECRET;
-  process.env.SUPABASE_JWT_SECRET = "test-secret-for-unlock";
+  const prev = process.env.MESSAGE_VIEW_UNLOCK_SECRET;
+  process.env.MESSAGE_VIEW_UNLOCK_SECRET = "test-secret-for-unlock-with-at-least-32-bytes";
   const token = issueMessagesUnlockToken("user-1", 1_000_000);
   assert.equal(verifyMessagesUnlockToken(token, "user-1", 1_000_000), true);
   assert.equal(verifyMessagesUnlockToken(token, "user-2", 1_000_000), false);
   assert.equal(verifyMessagesUnlockToken(token, "user-1", 2_000_000), false);
-  if (prev === undefined) delete process.env.SUPABASE_JWT_SECRET;
-  else process.env.SUPABASE_JWT_SECRET = prev;
+  if (prev === undefined) delete process.env.MESSAGE_VIEW_UNLOCK_SECRET;
+  else process.env.MESSAGE_VIEW_UNLOCK_SECRET = prev;
 });
 
 test("client IP prefers Vercel and x-real-ip; ignores spoofed XFF prefix", () => {

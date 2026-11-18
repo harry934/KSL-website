@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { clearReviewDraft, editorSavePlan, overlayDrafts, overlaySettings, saveBody } from "@/lib/draft-review";
 import { cleanBoardGroups, cleanBoardSections, cleanIntro, cleanMilestoneInput, cleanMilestonesHeading, cleanOrgChart } from "@/lib/organization";
@@ -10,7 +10,7 @@ export async function GET() {
   const { error } = await requireStaff("organization", "view");
   if (error) return error;
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const [settingsRes, leadershipRes, boardRes, milestoneRes] = await Promise.all([
     admin.from("organization_settings").select("*").eq("id", "default").maybeSingle(),
     admin.from("organization_leadership").select("*").order("sort_order", { ascending: true }),
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   if (error || !session) return error;
 
   const body = await req.json();
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   if (body.action === "restore") {
     const table = body.scope === "board" ? "organization_board_members" : body.scope === "milestone" ? "organization_milestones" : "organization_leadership";
     const { error: restoreErr } = await restoreRow(admin, table, String(body.id ?? ""));
@@ -199,10 +199,10 @@ export async function DELETE(req: NextRequest) {
 
   const permanent = new URL(req.url).searchParams.get("permanent") === "1";
   const table = scope === "board" ? "organization_board_members" : scope === "milestone" ? "organization_milestones" : "organization_leadership";
-  const { error: delErr } = await applyBinDelete(createAdminClient(), table, id, permanent);
+  const { error: delErr } = await applyBinDelete(createDatabaseClient(), table, id, permanent);
   if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
-  await clearReviewDraft(createAdminClient(), table, id);
+  await clearReviewDraft(createDatabaseClient(), table, id);
   await logActivity(session.userId, "organization", permanent ? "purge" : "delete", table, id);
   return NextResponse.json({ ok: true });
 }

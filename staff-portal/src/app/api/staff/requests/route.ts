@@ -5,7 +5,7 @@ import {
   rejectAccountRequest,
 } from "@/lib/account-requests";
 import { requireStaff } from "@/lib/api-auth";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDatabaseClient } from "@/lib/db-client";
 
 async function requireSuperAdmin() {
   const { error, session } = await requireStaff("staff", "edit");
@@ -19,7 +19,7 @@ export async function GET() {
   const { error } = await requireSuperAdmin();
   if (error) return error;
 
-  const admin = createAdminClient();
+  const admin = createDatabaseClient();
   const { data, error: dbError } = await admin
     .from("staff_account_requests")
     .select("id, user_id, kind, requested_username, created_at")
