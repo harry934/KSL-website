@@ -141,14 +141,14 @@ export function DownloadsEditor() {
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
       title: "Remove this document?",
-      message: item ? `"${item.title}" leaves the website and goes to the recycle bin.` : "It goes to the recycle bin. You can restore it from there.",
+      message: item ? `"${item.title}" leaves the website and is permanently deleted from the website.` : "It is permanently deleted from the website. You can restore it from there.",
       confirmLabel: "Delete document",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/downloads?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Document moved to the recycle bin.");
+      toast("Document deleted.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");

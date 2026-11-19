@@ -297,8 +297,8 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
     const ok = await confirm({
       title: "Delete this message?",
       message: unlocked
-        ? `"${row.subject}" from ${fullName(row)} goes to the recycle bin.`
-        : "This message goes to the recycle bin.",
+        ? `"${row.subject}" from ${fullName(row)} is moved out of the inbox.`
+        : "This message is moved out of the inbox.",
       confirmLabel: "Delete message",
       danger: true,
     });
@@ -317,7 +317,7 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
     const url = new URL(window.location.href);
     url.searchParams.delete("id");
     window.history.replaceState(null, "", url.pathname + url.search);
-    toast("Message moved to the recycle bin.");
+    toast("Message deleted.");
   }
 
   const openRow = messages.find((row) => row.id === openId) ?? null;

@@ -153,14 +153,14 @@ export function PressEditor() {
     const item = assets.find((a) => a.id === id);
     const ok = await confirm({
       title: "Remove this item?",
-      message: item ? `"${item.title}" leaves the press kit and goes to the recycle bin.` : "It goes to the recycle bin.",
+      message: item ? `"${item.title}" leaves the press kit and is permanently deleted from the website.` : "It is permanently deleted from the website.",
       confirmLabel: "Remove",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/press?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Moved to the recycle bin.");
+      toast("Deleted.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");

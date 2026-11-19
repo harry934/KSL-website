@@ -178,14 +178,14 @@ export function ServicesEditor() {
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
       title: "Delete this service?",
-      message: item ? `"${item.title}" leaves the website and goes to the recycle bin.` : "It goes to the recycle bin.",
+      message: item ? `"${item.title}" leaves the website and is permanently deleted from the website.` : "It is permanently deleted from the website.",
       confirmLabel: "Delete service",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/services?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Service moved to the recycle bin.");
+      toast("Service deleted.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");

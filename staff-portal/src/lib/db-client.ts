@@ -311,19 +311,18 @@ class TableQuery<T = DbRow[]> implements PromiseLike<DbResult<T>> {
     return this;
   }
 
+  /** Native Postgres array columns (not jsonb). */
+  private static readonly PG_ARRAY_COLUMNS = new Set(["tags", "risk_flags"]);
+
   /**
-   * node-pg treats JS arrays as Postgres arrays. Columns like `media` / `payload` /
-   * `chart` are jsonb and need JSON text when the value is an array of objects.
-   * Plain string arrays (e.g. tags text[]) stay as real Postgres arrays.
+   * node-pg treats JS arrays as Postgres arrays. jsonb columns (`media`, `permissions`,
+   * `payload`, …) must receive JSON text — including empty arrays `[]`.
+   * text[] columns keep real Postgres arrays.
    */
-  private encodeValue(value: unknown) {
+  private encodeValue(column: string, value: unknown) {
     if (value == null) return null;
-    if (Array.isArray(value)) {
-      if (value.some((item) => item !== null && typeof item === "object")) {
-        return JSON.stringify(value);
-      }
-      return value;
-    }
+    if (TableQuery.PG_ARRAY_COLUMNS.has(column)) return value;
+    if (Array.isArray(value)) return JSON.stringify(value);
     if (typeof value === "object" && !(value instanceof Date) && !Buffer.isBuffer(value)) {
       return JSON.stringify(value);
     }
@@ -387,7 +386,7 @@ class TableQuery<T = DbRow[]> implements PromiseLike<DbResult<T>> {
           const valuesSql = sourceRows.map((row) => {
             const placeholders = columns.map((column) => {
               identifier(column);
-              params.push(this.encodeValue(row[column] ?? null));
+              params.push(this.encodeValue(column, row[column] ?? null));
               return `$${params.length}`;
             });
             return `(${placeholders.join(", ")})`;
@@ -407,7 +406,7 @@ class TableQuery<T = DbRow[]> implements PromiseLike<DbResult<T>> {
           const updates = Object.entries(this.values as Record<string, unknown>);
           if (!updates.length) throw new Error("Cannot update an empty row");
           const set = updates.map(([column, value]) => {
-            params.push(this.encodeValue(value));
+            params.push(this.encodeValue(column, value));
             return `${identifier(column)} = $${params.length}`;
           }).join(", ");
           const where = this.buildWhere(params);

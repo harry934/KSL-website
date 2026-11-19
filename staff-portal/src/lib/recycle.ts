@@ -90,6 +90,9 @@ export async function listBinItems(viewer: { permissions: ModulePermission[]; is
   return { items, error: errorMessage };
 }
 
+/** Staff accounts and inbox messages stay soft-deleted so they can be restored. */
+const SOFT_DELETE_TABLES = new Set<RecycleTable>(["admin_profiles", "website_messages"]);
+
 export async function softDelete(admin: Admin, table: RecycleTable, id: string) {
   return admin.from(table).update({ deleted_at: new Date().toISOString() }).eq("id", id).is("deleted_at", null);
 }
@@ -100,16 +103,22 @@ export async function restoreRow(admin: Admin, table: RecycleTable, id: string) 
   return result;
 }
 
-/** Removes a row that is already in the recycle bin. A permanent delete also frees its file. */
+/**
+ * Deletes a content row from PostgreSQL.
+ * Content modules are hard-deleted (row removed). Staff/messages stay soft-deleted unless `permanent`.
+ * Unused media files are released when nothing else references them.
+ */
 export async function applyBinDelete(admin: Admin, table: RecycleTable, id: string, permanent: boolean) {
-  if (!permanent) {
+  if (!permanent && SOFT_DELETE_TABLES.has(table)) {
     const { error } = await softDelete(admin, table, id);
     if (!error) revalidatePath("/");
     return { error: error as BinError };
   }
-  const { data, error } = await admin.from(table).delete().eq("id", id).not("deleted_at", "is", null).select("*");
+
+  // Hard-delete the live or already-binned row.
+  const { data, error } = await admin.from(table).delete().eq("id", id).select("*");
   if (error) return { error: error as BinError };
-  if (!data?.length) return { error: { message: "That item is not in the recycle bin.", code: "bin" } };
+  if (!data?.length) return { error: { message: "That item was not found.", code: "bin" } };
   await releaseUnusedValues(admin, data[0]);
   revalidatePath("/");
   return { error: null };

@@ -199,14 +199,14 @@ export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean;
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
       title: "Delete this product?",
-      message: item ? `"${item.name}" leaves the website and goes to the recycle bin.` : "It goes to the recycle bin.",
+      message: item ? `"${item.name}" leaves the website and is permanently deleted from the website.` : "It is permanently deleted from the website.",
       confirmLabel: "Delete product",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/products?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Product moved to the recycle bin.");
+      toast("Product deleted.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");

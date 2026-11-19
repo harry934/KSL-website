@@ -191,15 +191,15 @@ export function FaqEditor() {
       title: "Delete this group?",
       message:
         count > 0
-          ? `"${group.title}" and its ${count} question${count === 1 ? "" : "s"} go to the recycle bin.`
-          : `"${group.title}" goes to the recycle bin.`,
+          ? `"${group.title}" and its ${count} question${count === 1 ? "" : "s"} are permanently deleted.`
+          : `"${group.title}" is permanently deleted.`,
       confirmLabel: "Delete group",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/faq?type=group&id=${encodeURIComponent(group.id)}`, "DELETE");
-      toast("Group moved to the recycle bin.");
+      toast("Group deleted.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");
@@ -210,14 +210,14 @@ export function FaqEditor() {
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
       title: "Delete this question?",
-      message: item ? `"${shorten(item.question, 80)}" goes to the recycle bin.` : "It goes to the recycle bin.",
+      message: item ? `"${shorten(item.question, 80)}" is permanently deleted from the website.` : "It is permanently deleted from the website.",
       confirmLabel: "Delete",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/faq?type=item&id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Question moved to the recycle bin.");
+      toast("Question deleted.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");

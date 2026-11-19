@@ -201,7 +201,15 @@ export async function createStaffInvite(input: {
     .select("id, expires_at")
     .single();
 
-  if (error || !data) return { error: "Could not create the invite. Please try again.", status: 500 as const };
+  if (error || !data) {
+    console.error("staff invite insert failed", error);
+    return {
+      error: error?.message?.includes("format") || error?.code === "22P02"
+        ? "Could not create the invite because of a data format problem. Ask an administrator to redeploy the portal build."
+        : "Could not create the invite. Please try again.",
+      status: 500 as const,
+    };
+  }
 
   await logActivity(input.actorId, "staff", input.kind === "create" ? "invite" : "reset password", "staff_invite", data.id, {
     kind: input.kind,

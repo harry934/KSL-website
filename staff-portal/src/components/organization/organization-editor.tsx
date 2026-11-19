@@ -390,14 +390,14 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
   async function remove(id: string, scope: Scope) {
     const ok = await confirm({
       title: "Delete this entry?",
-      message: "It leaves the website and goes to the recycle bin.",
+      message: "It leaves the website and is permanently deleted from the website.",
       confirmLabel: "Delete",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/organization?id=${encodeURIComponent(id)}&scope=${scope}`, "DELETE");
-      toast("Moved to the recycle bin.");
+      toast("Deleted.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");

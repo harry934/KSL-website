@@ -875,14 +875,14 @@ export function StaffManager() {
       title: `Delete ${row.display_name || row.username}?`,
       message: row.must_change_password
         ? "This account never finished sign-up. It will be removed and they will not be able to sign in."
-        : "The account goes to the recycle bin. They cannot sign in until you restore it.",
+        : "The account is removed from the active staff list. They cannot sign in until you restore it from the recycle bin.",
       confirmLabel: "Delete account",
       danger: true,
     });
     if (!ok) return;
     const done = await run(() => sendJson(`/api/staff?id=${encodeURIComponent(row.id)}`, "DELETE"));
     if (done) {
-      toast(`${row.username} was moved to the recycle bin.`);
+      toast(`${row.username} was deleted.`);
       load();
     }
   }

@@ -116,15 +116,15 @@ export function NewsEditor() {
     const ok = await confirm({
       title: "Remove this article?",
       message: item
-        ? `"${item.title}" leaves the website and goes to the recycle bin.`
-        : "It goes to the recycle bin. You can restore it from there.",
+        ? `"${item.title}" leaves the website and is permanently deleted from the website.`
+        : "It is permanently deleted from the website. You can restore it from there.",
       confirmLabel: "Delete article",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/news?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Article moved to the recycle bin.");
+      toast("Article deleted.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");
