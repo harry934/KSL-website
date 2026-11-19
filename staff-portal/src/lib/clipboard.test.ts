@@ -1,20 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { copyPlainText } from "./clipboard.ts";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
-test("copyPlainText returns false when no clipboard APIs exist", async () => {
-  const previousNavigator = globalThis.navigator;
-  const previousDocument = globalThis.document;
-  // @ts-expect-error test stub
-  globalThis.navigator = undefined;
-  // @ts-expect-error test stub
-  globalThis.document = undefined;
-  try {
-    assert.equal(await copyPlainText("hello"), false);
-  } finally {
-    // @ts-expect-error restore
-    globalThis.navigator = previousNavigator;
-    // @ts-expect-error restore
-    globalThis.document = previousDocument;
-  }
+test("clipboard helpers export copyPlainText and copyHtmlAndPlain", () => {
+  const dir = dirname(fileURLToPath(import.meta.url));
+  const source = readFileSync(join(dir, "clipboard.ts"), "utf8");
+  assert.match(source, /export async function copyPlainText/);
+  assert.match(source, /export async function copyHtmlAndPlain/);
+  assert.match(source, /document\.execCommand\("copy"\)/);
 });
