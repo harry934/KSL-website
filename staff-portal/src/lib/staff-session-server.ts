@@ -47,12 +47,15 @@ export async function openStaffSession(userId: string, userAgent?: string | null
   const key = randomBytes(32).toString("base64url");
   const seenAt = new Date().toISOString();
   const admin = createDatabaseClient();
-  const { error } = await admin.from("staff_sessions").upsert({
-    user_id: userId,
-    session_key: hashSessionToken(key),
-    seen_at: seenAt,
-    expires_at: new Date(Date.now() + SESSION_TTL_MS).toISOString(),
-  });
+  const { error } = await admin.from("staff_sessions").upsert(
+    {
+      user_id: userId,
+      session_key: hashSessionToken(key),
+      seen_at: seenAt,
+      expires_at: new Date(Date.now() + SESSION_TTL_MS).toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
   if (error) throw new Error(error.message);
   const label = browserLabel(userAgent);
   if (label) {

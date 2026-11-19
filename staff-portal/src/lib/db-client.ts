@@ -352,7 +352,8 @@ class TableQuery<T = DbRow[]> implements PromiseLike<DbResult<T>> {
         rows = result.rows;
         rowCount = this.countMode || this.headOnly ? Number(rows[0]?.__db_count ?? 0) : result.rowCount ?? rows.length;
       } else {
-        if (this.operation !== "insert" && !this.filters.length) {
+        // insert/upsert are row writes (ON CONFLICT for upsert); only update/delete need a WHERE.
+        if ((this.operation === "update" || this.operation === "delete") && !this.filters.length) {
           throw new Error("Refusing to run an unfiltered database mutation");
         }
         const sourceRows = Array.isArray(this.values) ? this.values : [this.values];
