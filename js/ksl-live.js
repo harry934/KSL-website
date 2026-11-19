@@ -34,6 +34,7 @@
         "/api/public/news": "data/news.json",
         "/api/public/events": "data/events.json",
         "/api/public/press": "data/press.json",
+        "/api/public/gallery": "data/gallery.json",
         "/api/public/products": "data/products.json",
         "/api/public/services": "data/services.json",
         "/api/public/projects": "data/projects.json",

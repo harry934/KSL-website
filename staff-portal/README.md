@@ -1,6 +1,6 @@
 # KSL staff portal
 
-The portal is a Next.js application using standalone PostgreSQL, local bcrypt password authentication (cost 12), database-backed sessions, and filesystem storage. It no longer requires Supabase services or Docker.
+The portal is a Next.js application using standalone PostgreSQL, local bcrypt password authentication (cost 12), WebAuthn passkeys, database-backed sessions, and filesystem storage. It no longer requires Supabase services or Docker. Passkeys use `NEXT_PUBLIC_PORTAL_URL` as the relying-party origin (HTTPS required in production).
 
 ## Local development
 

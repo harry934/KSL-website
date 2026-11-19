@@ -1849,8 +1849,8 @@
         });
 
         (window.KSL_CONTENT
-            ? window.KSL_CONTENT.fetchJson("/api/public/gallery", null)
-            : Promise.resolve(null))
+            ? window.KSL_CONTENT.fetchJson("/api/public/gallery", "data/gallery.json")
+            : fetch("data/gallery.json").then(function (res) { return res.json(); }).catch(function () { return null; }))
             .then(function (data) {
                 if (!data) {
                     galleryRoot.innerHTML = '<section class="ksl-empty-state" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.5"></circle><path d="m21 16-5.2-5.2a1.2 1.2 0 0 0-1.7 0L8 17"></path></svg><h3>Gallery is unavailable</h3><p>Check your connection, then refresh the page.</p><div class="ksl-empty-state-actions"><button class="btn btn-primary" type="button" data-ksl-reload>Try again</button></div></section>';

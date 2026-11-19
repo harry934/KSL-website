@@ -120,7 +120,7 @@
         });
     });
 
-    window.KSL_CONTENT.fetchJson("/api/public/gallery", null).then(function (data) {
+    window.KSL_CONTENT.fetchJson("/api/public/gallery", "data/gallery.json").then(function (data) {
         galleryPhotos = (data && data.photos) || [];
         renderGallery();
         renderVideos((data && data.videos) || []);

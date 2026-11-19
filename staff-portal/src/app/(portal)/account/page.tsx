@@ -1,6 +1,7 @@
 import { AvatarField } from "@/components/account/avatar-field";
 import { ChangePasswordForm } from "@/components/account/change-password-form";
 import { PasswordRequest } from "@/components/account/password-request";
+import { PasskeysField } from "@/components/account/passkeys-field";
 import { ProfileForm } from "@/components/account/profile-form";
 import { PageHeader } from "@/components/portal/page-header";
 import { FormSection } from "@/components/ui/form-bits";
@@ -43,7 +44,7 @@ export default async function AccountPage() {
 
   return (
     <>
-      <PageHeader title="My account" description="Your photo, name, contact email, and password." />
+      <PageHeader title="My account" description="Your photo, name, contact email, password and passkey." />
       {session.isSuperAdmin && (
         <FormSection
           title="This sign-in"
@@ -97,6 +98,13 @@ export default async function AccountPage() {
           ) : (
             <PasswordRequest request={passwordRequest} />
           )}
+        </FormSection>
+        <FormSection
+          title="Passkey"
+          description="Sign in on this browser with a passkey saved for your existing staff account."
+          className="lg:col-span-2"
+        >
+          <PasskeysField />
         </FormSection>
       </div>
     </>

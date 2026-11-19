@@ -33,7 +33,7 @@ Implemented on `vps-postgres` (not deployed):
 - `postgres/migrations/001_standalone_schema.sql`, role bootstrap SQL, a checksum-verified/advisory-lock migration runner, and [per-source migration coverage](../postgres/MIGRATION-COVERAGE.md).
 - Server-only PostgreSQL runtime access using `DATABASE_URL`, dedicated migrator/runtime roles, local bcrypt cost-12 password hashes, SHA-256-hashed random session tokens, single live session records, and staff/invite/reset flows.
 - Filesystem-only object storage under `STORAGE_DIR`, with controlled public media delivery and authorization/signed links for avatars/downloads.
-- Supabase SDK packages, environment keys, runtime clients, and passkey UI/routes/schema were removed. Historical Supabase migrations/docs remain as source history only.
+- Supabase SDK packages, environment keys, and runtime clients were removed. Local bcrypt password auth, database sessions, and WebAuthn passkeys (PostgreSQL `webauthn_*` tables via migration `002`) remain. Historical Supabase migrations/docs remain as source history only.
 
 Local verification completed from the `vps-postgres` worktree on 18 November 2026:
 

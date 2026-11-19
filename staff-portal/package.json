@@ -19,6 +19,8 @@
     "test:pg": "node scripts/local-pg-test.mjs"
   },
   "dependencies": {
+    "@simplewebauthn/browser": "^14.0.0",
+    "@simplewebauthn/server": "^14.1.0",
     "@tiptap/extensions": "^3.32.0",
     "@tiptap/pm": "^3.32.0",
     "@tiptap/react": "^3.32.0",

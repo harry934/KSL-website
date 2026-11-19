@@ -1,48 +1,116 @@
-# KSL VPS deployment (`vps-postgres`)
+# KSL VPS deployment guide (`vps-postgres`)
 
-Project-specific steps for deploying this repository on a Linux VPS with local PostgreSQL. This branch does **not** use Supabase for database, auth, or storage.
+Project-specific procedure for deploying this repository on a Linux VPS with **PostgreSQL only** (no Supabase database/auth/storage for this cutover).
 
-Deep database notes: [postgres/README.md](postgres/README.md)  
-Historical Vercel/Supabase guide (archive only): [guides/DEPLOYMENT.md](guides/DEPLOYMENT.md)
+Related docs:
 
-**Naming note:** This project uses database `ksl`, migrator role `ksl_migrator`, and runtime role `ksl_runtime`. That is the equivalent of a generic `website_db` / `website_user` pair; do not invent a second set of roles.
+- Database deep-dive: [postgres/README.md](postgres/README.md)
+- Historical Vercel/Supabase notes (archive): [guides/DEPLOYMENT.md](guides/DEPLOYMENT.md)
 
-Suggested layout used below:
+**Actual names used by this project**
 
-| Path | Purpose |
-|------|---------|
-| `/opt/ksl-website` | Git clone of this repository |
-| `/etc/ksl-portal.env` | Runtime environment (mode `600`) |
-| `/etc/ksl-portal-migrator.env` | Migrator-only `DATABASE_URL` (mode `600`) |
-| `/var/lib/ksl-portal/files` | `STORAGE_DIR` (media-public, downloads, avatars) |
-| `/var/www/ksl` | Published static public site |
+| Resource | Name |
+|----------|------|
+| Database | `ksl` |
+| Migrator role | `ksl_migrator` |
+| Runtime role | `ksl_runtime` |
+| App listen address | `127.0.0.1:3000` |
+| Storage root | `/var/lib/ksl-portal/files` (`STORAGE_DIR`) |
+| App clone path (suggested) | `/opt/ksl-website` |
+| Public static root (suggested) | `/var/www/ksl` |
+
+Do **not** invent alternate database/role names. Do **not** apply `supabase/migrations/*.sql` to this database.
+
+**Safety legend**
+
+- `[verify]` — read-only / status checks; safe to run anytime.
+- `[change]` — creates or modifies databases, files, services, or configs. Review impact first.
+- Never run destructive reset/drop commands against production data unless you intentionally restore from backup.
 
 ---
 
-## 1. Verify PostgreSQL
+## Stage 1: VPS preparation
+
+### 1.1 Verify PostgreSQL `[verify]`
 
 ```sh
 systemctl status postgresql --no-pager
 psql --version
 sudo -u postgres psql -c 'SELECT version();'
 sudo -u postgres psql -Atc 'SHOW listen_addresses;'
+sudo -u postgres psql -Atc "SELECT datname FROM pg_database WHERE datistemplate = false ORDER BY 1;"
+sudo -u postgres psql -Atc "SELECT rolname FROM pg_roles ORDER BY 1;"
 sudo ss -lntp | grep -E ':(5432)\b' || true
 ```
 
-Keep PostgreSQL on loopback (`listen_addresses = 'localhost'` or `127.0.0.1`). Do not expose `5432` to the internet.
+**Purpose:** Confirm PostgreSQL is installed and running, and see existing databases/roles before creating `ksl`.  
+**Expect:** Active service; `listen_addresses` loopback-only (`localhost` / `127.0.0.1`).  
+**Precaution:** If `ksl`, `ksl_migrator`, or `ksl_runtime` already exist, stop and inspect them — `postgres/bootstrap/roles.sql` refuses to reuse those names.
 
-Install the `pgcrypto` extension package if your distro splits it out (Ubuntu usually includes it with `postgresql-contrib`).
+### 1.2 Verify Node.js and npm `[verify]`
 
-## 2–4. Create database, roles, and permissions
+```sh
+node -v
+npm -v
+```
 
-From the repository root on the VPS (after clone, or copy the SQL file over first):
+**Purpose:** Portal requires Node.js **20+** (22 LTS is fine).  
+**Expect:** Version numbers print without error.
+
+### 1.3 Verify web server / Nginx `[verify]`
+
+```sh
+command -v nginx || echo 'nginx not installed'
+systemctl status nginx --no-pager 2>/dev/null || true
+ls /etc/nginx/sites-enabled 2>/dev/null || true
+```
+
+**Purpose:** See whether Nginx already serves other sites (WordPress, osTicket, etc.).  
+**Precaution:** Do not overwrite an existing site’s document root. This project’s public publisher uses `rsync --delete` to `/var/www/ksl` by default — only use that path if it is dedicated to KSL.
+
+### 1.4 Choose deployment directories `[change]` (dirs only)
+
+```sh
+sudo mkdir -p /opt/ksl-website /var/www/ksl /var/lib/ksl-portal/files
+sudo useradd --system --home /var/lib/ksl-portal --shell /usr/sbin/nologin ksl-portal 2>/dev/null || true
+sudo chown -R ksl-portal:ksl-portal /var/lib/ksl-portal
+sudo chown "$USER":"$USER" /opt/ksl-website
+```
+
+**Purpose:** Create app, public web, and storage locations plus the portal OS user.  
+**Expect:** Directories exist; `ksl-portal` owns storage.
+
+### 1.5 System packages `[change]`
+
+Install only what is missing (examples for Ubuntu):
+
+```sh
+sudo apt-get update
+sudo apt-get install -y postgresql postgresql-contrib nginx
+# Node: use your preferred Node 20+ install method, then re-check node -v
+```
+
+**Purpose:** Ensure PostgreSQL client/server tools, `pgcrypto` contrib, and Nginx are available.  
+**Precaution:** Installing packages can restart services. Prefer verifying first (1.1–1.3) so you do not duplicate an existing Postgres install.
+
+---
+
+## Stage 2: PostgreSQL configuration
+
+### 2.1 Create database and roles `[change]`
+
+From a checkout of this repo (Stage 3 clone, or copy `postgres/bootstrap/roles.sql` temporarily):
 
 ```sh
 cd /opt/ksl-website
 sudo -u postgres psql -v ON_ERROR_STOP=1 -f postgres/bootstrap/roles.sql
 ```
 
-Set passwords interactively (do not put passwords on the command line):
+**Purpose:** Creates `ksl_migrator`, `ksl_runtime`, database `ksl` owned by the migrator; grants CONNECT/USAGE to runtime; revokes public create.  
+**Expect:** Message that `ksl` was provisioned.  
+**Precaution:** Fails if those names already exist — inspect manually rather than dropping anything.
+
+### 2.2 Set passwords `[change]`
 
 ```sh
 sudo -u postgres psql
@@ -51,60 +119,70 @@ sudo -u postgres psql
 \q
 ```
 
-`roles.sql` creates `ksl`, `ksl_migrator`, and `ksl_runtime`, grants connect/usage to the runtime role, and refuses to reuse existing names. Table grants are applied by migrations, not by the bootstrap script.
+**Purpose:** Set strong passwords without putting them in shell history.  
+**Expect:** Interactive prompts succeed.
 
-### Verify local connectivity
+### 2.3 Verify connectivity `[verify]`
 
 ```sh
-sudo -u postgres psql -d ksl -c '\conninfo'
 psql "postgresql://ksl_runtime@127.0.0.1:5432/ksl" -c 'SELECT current_user, current_database();'
+psql "postgresql://ksl_migrator@127.0.0.1:5432/ksl" -c 'SELECT current_user, current_database();'
 ```
 
-You will be prompted for the runtime password.
+**Purpose:** Confirm both roles can connect locally.  
+**Expect:** `ksl_runtime` / `ksl_migrator` and database `ksl`.
 
-## 5. Install Node.js and OS dependencies
+### 2.4 Connection strings for later env files
 
-Use Node.js **20+** (22 LTS is fine). Example with NodeSource or your preferred method:
+Runtime (portal process):
 
-```sh
-node -v
-npm -v
-```
+`postgresql://ksl_runtime:RUNTIME_PASSWORD@127.0.0.1:5432/ksl`
 
-Also install Nginx when you are ready for Stage 2 reverse proxy / TLS (optional for SSH-tunnel-only Stage 1).
+Migrator (migrations only):
 
-Create the portal OS user and storage directory:
+`postgresql://ksl_migrator:MIGRATOR_PASSWORD@127.0.0.1:5432/ksl`
 
-```sh
-sudo useradd --system --home /var/lib/ksl-portal --shell /usr/sbin/nologin ksl-portal || true
-sudo mkdir -p /var/lib/ksl-portal/files /opt/ksl-website
-sudo chown -R ksl-portal:ksl-portal /var/lib/ksl-portal
-```
+Use `DATABASE_SSL=disable` only for loopback. Never expose `5432` publicly.
 
-## 6. Clone the `vps-postgres` branch
+---
+
+## Stage 3: Application deployment
+
+### 3.1 Clone `vps-postgres` `[change]`
 
 ```sh
-sudo mkdir -p /opt/ksl-website
-sudo chown "$USER":"$USER" /opt/ksl-website
 git clone -b vps-postgres https://github.com/harry934/KSL-website.git /opt/ksl-website
 cd /opt/ksl-website
 git rev-parse --abbrev-ref HEAD
 git log -1 --oneline
 ```
 
-## 7. Configure production environment
+**Purpose:** Get the PostgreSQL deployment branch.  
+**Expect:** Branch `vps-postgres` and a recent commit hash.
+
+### 3.2 Install dependencies `[change]`
+
+```sh
+cd /opt/ksl-website/staff-portal
+npm ci
+```
+
+**Purpose:** Install exact lockfile dependencies for the staff portal.  
+**Expect:** Install completes without missing peer errors.
+
+### 3.3 Production environment files `[change]`
 
 ```sh
 sudo cp /opt/ksl-website/staff-portal/.env.example /etc/ksl-portal.env
-sudo install -m 600 /dev/null /etc/ksl-portal-migrator.env
 sudo chown root:ksl-portal /etc/ksl-portal.env
 sudo chmod 640 /etc/ksl-portal.env
+sudo install -m 600 /dev/null /etc/ksl-portal-migrator.env
 ```
 
-Edit `/etc/ksl-portal.env` and set at least:
+Edit `/etc/ksl-portal.env` (runtime — **no migrator password**):
 
 ```env
-DATABASE_URL=postgresql://ksl_runtime:REPLACE_WITH_RUNTIME_PASSWORD@127.0.0.1:5432/ksl
+DATABASE_URL=postgresql://ksl_runtime:RUNTIME_PASSWORD@127.0.0.1:5432/ksl
 DATABASE_POOL_MAX=10
 DATABASE_SSL=disable
 STORAGE_DIR=/var/lib/ksl-portal/files
@@ -120,74 +198,61 @@ TRUSTED_PROXY_HOPS=1
 NODE_ENV=production
 ```
 
-Generate secrets independently:
+Generate secrets:
 
 ```sh
 openssl rand -base64 48
 ```
 
-Migrator env (separate file; migrator role only):
+Migrator file `/etc/ksl-portal-migrator.env`:
+
+```env
+DATABASE_URL=postgresql://ksl_migrator:MIGRATOR_PASSWORD@127.0.0.1:5432/ksl
+DATABASE_SSL=disable
+```
 
 ```sh
-sudo tee /etc/ksl-portal-migrator.env >/dev/null <<'EOF'
-DATABASE_URL=postgresql://ksl_migrator:REPLACE_WITH_MIGRATOR_PASSWORD@127.0.0.1:5432/ksl
-DATABASE_SSL=disable
-EOF
 sudo chmod 600 /etc/ksl-portal-migrator.env
 ```
 
-Never commit populated env files. Never put migrator credentials in the runtime env.
+**Purpose:** Separate runtime vs schema-change credentials.  
+**Precaution:** Never commit populated env files. Passkeys use `NEXT_PUBLIC_PORTAL_URL` as WebAuthn RP ID/origin — set the real HTTPS portal hostname before staff register passkeys.
 
-Symlink or copy the runtime env where Next.js expects it if you prefer a file inside the app tree:
-
-```sh
-sudo ln -sf /etc/ksl-portal.env /opt/ksl-website/staff-portal/.env.production
-```
-
-The systemd unit below loads `/etc/ksl-portal.env` via `EnvironmentFile=`.
-
-## 8. Install production dependencies
+### 3.4 Filesystem storage permissions `[change]`
 
 ```sh
-cd /opt/ksl-website/staff-portal
-npm ci
+sudo mkdir -p /var/lib/ksl-portal/files/media-public \
+  /var/lib/ksl-portal/files/downloads \
+  /var/lib/ksl-portal/files/avatars
+sudo chown -R ksl-portal:ksl-portal /var/lib/ksl-portal
+sudo chmod 700 /var/lib/ksl-portal /var/lib/ksl-portal/files
 ```
 
-## 9. Execute database migrations
+**Purpose:** Buckets for new uploads; metadata lives in PostgreSQL `stored_files`.  
+**Note:** Existing public website images ship from the repo under `img/ksl/` (static defaults). Historical Supabase Storage migration is a later, separate task.
+
+### 3.5 Apply migrations `[change]`
 
 ```sh
 cd /opt/ksl-website/staff-portal
 MIGRATOR_ENV_FILE=/etc/ksl-portal-migrator.env npm run db:migrate
 ```
 
-The runner:
+**Purpose:** Applies pending files in `postgres/migrations/` (`001_standalone_schema`, `002_webauthn_passkeys`, …) with checksums in `schema_migrations`.  
+**Expect:** Each new version prints `Applied …`; re-run prints `Database is current`.  
+**Precaution:** Does not drop data. Failed migrations roll back that file and do not record it. Never edit an already-applied migration — add a new numbered file.
 
-- requires the connected role to be `ksl_migrator`
-- records versions/checksums in `public.schema_migrations`
-- applies only pending files under `postgres/migrations/`
-- refuses changed checksums for already-applied migrations
-
-**Do not** run `supabase/migrations/*.sql` against this database.
-
-Rollback is by restoring a tested `pg_dump` backup, not by automatic down-migrations.
-
-## 10. Verify expected tables
+Verify `[verify]`:
 
 ```sh
 psql "postgresql://ksl_runtime@127.0.0.1:5432/ksl" -c \
   "SELECT version, applied_at FROM public.schema_migrations ORDER BY version;"
-
 psql "postgresql://ksl_runtime@127.0.0.1:5432/ksl" -c \
-  "SELECT table_name FROM information_schema.tables
-   WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
-   ORDER BY table_name;"
+  "SELECT to_regclass('public.webauthn_credentials') AS passkeys,
+          to_regclass('public.admin_profiles') AS profiles;"
 ```
 
-You should see `001_standalone_schema` and application tables such as `admin_profiles`, `staff_sessions`, `news_items`, `gallery_photos`, `stored_files`, and others (about 40+ public tables including `schema_migrations`).
-
-## 11. Build the application
-
-`NEXT_PUBLIC_*` values are embedded at build time:
+### 3.6 Build `[change]`
 
 ```sh
 cd /opt/ksl-website/staff-portal
@@ -198,9 +263,10 @@ set +a
 npm run build
 ```
 
-Do not pass secrets on the command line beyond what is already in the env file.
+**Purpose:** Production Next.js build; embeds `NEXT_PUBLIC_*` values.  
+**Expect:** Build succeeds and lists routes including `/api/health` and `/api/auth/passkey`.
 
-Create the first super-admin (interactive password prompt):
+### 3.7 Initial administrator `[change]`
 
 ```sh
 cd /opt/ksl-website/staff-portal
@@ -208,40 +274,71 @@ set -a; . /etc/ksl-portal.env; set +a
 npm run bootstrap:admin
 ```
 
-## 12. Process manager (systemd)
+**Purpose:** Creates the first local super-admin (bcrypt cost 12); forces password change on first login.  
+**Expect:** Interactive prompts; refuses to replace an existing super-admin.  
+**Precaution:** Do not import Supabase password hashes.
 
-Review and install the unit template:
+Optional content seed from repo JSON (not required for launch if public pages use `data/*.json` + `img/ksl`):
+
+```sh
+npm run import:gallery   # uses staff-portal/migration-data/gallery.json → DB
+```
+
+---
+
+## Stage 4: Application service
+
+### 4.1 Install systemd unit `[change]`
 
 ```sh
 sudo cp /opt/ksl-website/deploy/vps/ksl-portal.service /etc/systemd/system/ksl-portal.service
+# Edit WorkingDirectory / paths if your layout differs
 sudo systemctl daemon-reload
 sudo systemctl enable --now ksl-portal
-sudo systemctl status ksl-portal --no-pager
 ```
 
-The unit runs `npm run start -- --hostname 127.0.0.1 --port 3000` as `ksl-portal`, after PostgreSQL, with `EnvironmentFile=/etc/ksl-portal.env`.
+**Purpose:** Runs `npm run start -- --hostname 127.0.0.1 --port 3000` as `ksl-portal` with `/etc/ksl-portal.env`.  
+**Expect:** `active (running)`.
 
-Adjust `WorkingDirectory`, Node/npm paths, and `ReadWritePaths` if your layout differs. Ensure `ksl-portal` can read the env file and write `STORAGE_DIR` plus `staff-portal/.next/cache`.
+### 4.2 Verify service and logs `[verify]`
 
-Health check (once the service is up):
+```sh
+sudo systemctl status ksl-portal --no-pager
+sudo journalctl -u ksl-portal -n 80 --no-pager
+```
+
+### 4.3 Health endpoint `[verify]`
 
 ```sh
 curl -sS http://127.0.0.1:3000/api/health
 ```
 
-Expect `{"status":"ok","database":"up"}`.
+**Expect:** `{"status":"ok","database":"up"}`.
 
-## 13. Nginx reverse proxy
+---
 
-Templates live in `deploy/vps/nginx/`:
+## Stage 5: Nginx and public access
 
-- `ksl-public.conf` — static public site + `/storage/media-public/` alias to `$STORAGE_DIR/media-public`
-- `ksl-portal.conf` — TLS on port 8443 proxying to `127.0.0.1:3000`
+### 5.1 Publish static public site `[change]`
 
-Example:
+Confirm `/var/www/ksl` is **only** for this site (rsync deletes extras):
 
 ```sh
-sudo apt-get install -y nginx
+bash /opt/ksl-website/deploy/vps/publish-public.sh
+# or: DEST=/var/www/ksl bash /opt/ksl-website/deploy/vps/publish-public.sh
+```
+
+**Purpose:** Copies HTML/css/js/lib/img/docs/data including `img/ksl` defaults and `data/gallery.json`.  
+**Precaution:** Wrong `DEST` can wipe another website.
+
+### 5.2 Install Nginx site configs `[change]`
+
+Templates:
+
+- `deploy/vps/nginx/ksl-public.conf` — static site + `/storage/media-public/` → `$STORAGE_DIR/media-public`
+- `deploy/vps/nginx/ksl-portal.conf` — TLS on `8443` → `127.0.0.1:3000`
+
+```sh
 sudo sed "s/VPS_IP/YOUR_PUBLIC_IP/g" /opt/ksl-website/deploy/vps/nginx/ksl-public.conf \
   | sudo tee /etc/nginx/sites-available/ksl-public
 sudo cp /opt/ksl-website/deploy/vps/nginx/ksl-portal.conf /etc/nginx/sites-available/ksl-portal
@@ -251,55 +348,65 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-Publish static files (confirm `DEST` is a dedicated KSL root — `rsync --delete` is destructive):
+**Purpose:** Reverse-proxy portal; serve static defaults and optional public upload alias.  
+**Precaution:** Review enabled sites so you do not steal another app’s `default_server`. Private buckets (`downloads`, `avatars`) must **not** be aliased publicly.
 
-```sh
-bash /opt/ksl-website/deploy/vps/publish-public.sh
-# or: DEST=/var/www/ksl bash /opt/ksl-website/deploy/vps/publish-public.sh
-```
+### 5.3 DNS and SSL `[change]`
 
-Point public HTML `data-ksl-content-api` at the portal origin and keep that origin in `PUBLIC_SITE_ORIGIN`.
+Replace placeholder IP certificates with real certs (Let’s Encrypt or corporate PKI). Update `server_name`, then set matching `NEXT_PUBLIC_PORTAL_URL` / `NEXT_PUBLIC_SITE_URL` / `PUBLIC_SITE_ORIGIN` and **rebuild** the portal so passkeys and public origins match.
 
-## 14. Domain and SSL
-
-Replace IP certificates in the nginx templates with your real certificates (Let's Encrypt or corporate PKI). Update `server_name`, `NEXT_PUBLIC_PORTAL_URL`, `NEXT_PUBLIC_SITE_URL`, and `PUBLIC_SITE_ORIGIN`, then rebuild the portal so public origins are correct.
-
-## 15. Firewall
-
-Allow only what you need, for example:
+### 5.4 Firewall `[change]`
 
 ```sh
 sudo ufw allow OpenSSH
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
-# Stage 1 SSH-tunnel only: do NOT open 8443 publicly; use ssh -L instead.
+# Stage 1 private test: do NOT open 8443; use SSH tunnel instead:
+#   ssh -L 8443:127.0.0.1:8443 user@VPS
 sudo ufw enable
 sudo ufw status
 ```
 
-Never open PostgreSQL `5432` publicly.
+**Precaution:** Never open PostgreSQL `5432` to the world.
 
-## 16. Database and file backups
+### 5.5 Pre-public test `[verify]`
+
+1. Tunnel or local curl to health and login.
+2. Confirm public pages load images from `/img/ksl/...`.
+3. Confirm gallery falls back to `data/gallery.json` if the API is down.
+4. Only then point DNS / open public HTTPS.
+
+---
+
+## Stage 6: Backups and maintenance
+
+### 6.1 Backup PostgreSQL `[change]` (writes backup files only)
 
 ```sh
+sudo mkdir -p /secure-backups
 sudo -u postgres pg_dump --format=custom --file=/secure-backups/ksl-$(date +%Y%m%d).dump ksl
+```
+
+### 6.2 Backup uploads `[change]`
+
+```sh
 sudo tar -czf /secure-backups/ksl-files-$(date +%Y%m%d).tar.gz -C /var/lib/ksl-portal files
 ```
 
-Store encrypted copies off-box. A database dump does **not** include `STORAGE_DIR` file bodies.
+Repo static images under `img/ksl` are version-controlled separately via Git.
 
-Test restore into a separate empty database before you need it in an emergency.
+### 6.3 Restore (test on a disposable DB first) `[change]`
 
-## 17. Test the production website
+```sh
+sudo -u postgres createdb --owner=ksl_migrator ksl_restore
+sudo -u postgres pg_restore --no-owner --role=ksl_migrator --dbname=ksl_restore /secure-backups/ksl-YYYYMMDD.dump
+```
 
-1. `curl -sS http://127.0.0.1:3000/api/health`
-2. Open the portal login (SSH tunnel or HTTPS).
-3. Sign in with the bootstrap admin; complete forced password change.
-4. Publish a news item; confirm `/api/public/news` returns it.
-5. Confirm public pages load from `/var/www/ksl` and call the portal API.
-6. Upload a public media file; confirm it is under `/var/lib/ksl-portal/files/media-public/`.
+Restore files with ownership preserved into a staging `STORAGE_DIR` before swapping production.
 
-## Subsequent deployment workflow
+**Precaution:** Restoring over the live `ksl` database replaces live data — only after a verified backup and maintenance window.
+
+### 6.4 Future code updates
 
 ```sh
 cd /opt/ksl-website
@@ -314,24 +421,38 @@ bash /opt/ksl-website/deploy/vps/publish-public.sh
 curl -sS http://127.0.0.1:3000/api/health
 ```
 
-### Precautions
+Back up DB + `STORAGE_DIR` before schema migrations. There are no automatic down-migrations.
 
-- Back up PostgreSQL and `STORAGE_DIR` before migrations that change schema.
-- If a migration fails, it rolls back that file’s transaction and does not write a `schema_migrations` row. Fix the SQL, then re-run; do not hand-edit `schema_migrations`.
-- Never edit an already-applied migration file; add a new numbered `00N_*.sql` instead.
-- Do not point `publish-public.sh` at WordPress, osTicket, or a shared web root.
+---
 
-## Local developer verification (not the VPS)
+## Stage 7: Verification checklist
 
-From `staff-portal/` on a workstation:
+| Check | How |
+|-------|-----|
+| Website loads | Open public site; pages render with `img/ksl` assets |
+| Authentication (password) | Sign in at portal login with bootstrap admin |
+| Passkeys | After HTTPS portal URL is correct: My account → register passkey → sign out → “Sign in with a passkey” |
+| Sessions | Idle timeout / single-session behaviour; pulse keeps session alive while active |
+| CRUD | Create/edit a news draft or FAQ item in the portal |
+| Default images | Logos, heroes, gallery from `img/ksl` / `data/*.json` without broken placeholders |
+| New uploads | Upload via portal; file appears under `STORAGE_DIR`; row in `stored_files` |
+| Public gallery | `/api/public/gallery` when portal up; else `data/gallery.json` fallback |
+| Admin | Modules load; staff invite/bootstrap works |
+| Health | `curl -sS http://127.0.0.1:3000/api/health` → `ok` |
+| Restart survival | `sudo systemctl restart ksl-portal` then health + login again |
+
+---
+
+## Local developer checks (not the VPS)
 
 ```sh
+cd staff-portal
 npm ci
 npm test
-npm run test:pg    # disposable embedded PostgreSQL: migrate twice + CRUD smoke
+npm run test:pg    # disposable embedded PostgreSQL; migrate twice + smoke
 npx tsc --noEmit
 npm run lint
 NEXT_PUBLIC_SITE_URL=https://www.example.test NEXT_PUBLIC_PORTAL_URL=https://portal.example.test npm run build
 ```
 
-`npm run test:pg` must never be pointed at the production VPS database.
+Never point `test:pg`, migrator, or smoke scripts at the production VPS database.

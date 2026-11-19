@@ -44,9 +44,16 @@ for (const required of [
   "gallery_photos",
   "stored_files",
   "schema_migrations",
+  "webauthn_challenges",
+  "webauthn_credentials",
 ]) {
   assert(names.has(required), `missing table ${required}`);
 }
+
+assert(
+  migrations.rows.some((row) => row.version === "002_webauthn_passkeys"),
+  "002_webauthn_passkeys must be recorded",
+);
 
 const fks = await query(`
   SELECT COUNT(*)::int AS count

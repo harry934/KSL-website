@@ -19,7 +19,7 @@ This branch replaces the staff portal's Supabase database, authentication, and o
 | 030–035 | Organization chart, board sections/groups, milestones, date precision and ordering |
 | 036–043 | Drafts/returns, security follow-up, project details, message IP/risk metadata, organogram |
 
-Supabase Auth and Storage services are replaced by the portal's bcrypt cost-12/session and local-file implementations. Passkeys are intentionally omitted. Supabase-only RLS, grants, RPCs, and service roles are intentionally not copied; authorization is enforced in the application and the runtime database role has no schema-creation privilege. The schema seeds module/settings rows but does not create staff accounts.
+Supabase Auth and Storage services are replaced by the portal's bcrypt cost-12 passwords, database-backed sessions, WebAuthn passkeys (`002_webauthn_passkeys.sql`), and local-file storage. Supabase-only RLS, grants, RPCs, and service roles are intentionally not copied; authorization is enforced in the application and the runtime database role has no schema-creation privilege. The schema seeds module/settings rows but does not create staff accounts.
 
 **Verification is still required before production.** This environment has no `psql`, `postgres`, or `pg_ctl`; Docker is intentionally not used. The migration SQL, transaction behavior, PostgreSQL CRUD/auth/storage integration, and backup restore have therefore not been executed against a real local PostgreSQL server. Do not treat schema coverage as database-test coverage or deploy until those checks pass.
 
