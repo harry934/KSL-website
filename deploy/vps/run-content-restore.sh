@@ -37,10 +37,17 @@ if [[ -z "${DATABASE_URL:-}" || -z "${STORAGE_DIR:-}" ]]; then
   exit 1
 fi
 
-mkdir -p "$STORAGE_DIR"
-BACKUP_DIR="/var/lib/ksl-portal/backups"
-mkdir -p "$BACKUP_DIR"
+mkdir -p "$STORAGE_DIR" 2>/dev/null || true
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+# Prefer the shared backups dir when writable; otherwise use /tmp (avoids root-owned Permission denied).
+if [[ -n "${BACKUP_DIR:-}" ]]; then
+  mkdir -p "$BACKUP_DIR"
+elif mkdir -p /var/lib/ksl-portal/backups 2>/dev/null && [[ -w /var/lib/ksl-portal/backups ]]; then
+  BACKUP_DIR=/var/lib/ksl-portal/backups
+else
+  BACKUP_DIR="${TMPDIR:-/tmp}/ksl-portal-backups"
+  mkdir -p "$BACKUP_DIR"
+fi
 BACKUP_FILE="$BACKUP_DIR/ksl-before-restore-$STAMP.sql"
 
 echo "==> pg_dump backup → $BACKUP_FILE"
