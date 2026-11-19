@@ -539,10 +539,72 @@ function WhatsAppIcon() {
   );
 }
 
+/** On-page preview of the branded invite (iframe srcDoc is blocked by CSP). */
+function BrandedInviteCard({ issued }: { issued: Issued }) {
+  const until = expiryLabel(issued.expiresAt);
+  const headline = issued.isNew ? "Staff portal invitation" : "Password reset";
+  const intro = issued.isNew
+    ? "You have been invited to the Kenya Shipyards Limited staff portal."
+    : "Use this passcode to choose a new password.";
+  const cta = issued.isNew ? "Click here to sign up" : "Click here to choose a new password";
+  const step =
+    "Click the button to open the page. Your passcode fills in automatically. Keep the code below if you need it.";
+
+  return (
+    <div className="mx-auto w-full max-w-[580px] overflow-hidden border border-[#d7dee7] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+      <div className="h-1 bg-[#0b1f3a]" />
+      <div className="px-8 pb-4 pt-7 text-center">
+        <img
+          src={appPath("/ksl-logo.png")}
+          alt="Kenya Shipyards Limited"
+          width={88}
+          height={88}
+          className="mx-auto mb-3.5 h-[88px] w-[88px] object-contain"
+        />
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c5a028]">Ministry of Defence</p>
+        <p className="mt-2 text-[22px] font-bold text-[#0b1f3a]">Kenya Shipyards Limited</p>
+        <p className="mt-2 text-[15px] text-[#5b6775]">{headline}</p>
+      </div>
+      <div className="px-8 pb-7 pt-2">
+        <p className="mb-5 text-[15px] leading-relaxed text-[#3d4c5f]">{intro}</p>
+        <div className="border border-[#e5e9ef] bg-[#f6f8fa] px-5 py-4">
+          <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7785]">One-time passcode</p>
+          <p className="font-mono text-[30px] font-bold tracking-[0.32em] text-[#0b1f3a]">{issued.passcode}</p>
+        </div>
+        <p className="mb-3.5 mt-[18px] text-[14px] leading-relaxed text-[#3d4c5f]">{step}</p>
+        <p className="mb-[22px] text-center">
+          <a
+            href={issued.signupUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-block bg-[#0b1f3a] px-[26px] py-[13px] text-[14px] font-bold text-white no-underline"
+          >
+            {cta}
+          </a>
+        </p>
+        <p className="text-[13px] text-[#5b6775]">
+          {until ? (
+            <>
+              Expires <strong className="text-[#0b1f3a]">{until} East Africa Time</strong>
+            </>
+          ) : (
+            <>
+              Expires in <strong className="text-[#0b1f3a]">10 minutes</strong>
+            </>
+          )}
+        </p>
+      </div>
+      <div className="border-t border-[#eef1f4] px-8 py-4">
+        <p className="text-[12px] text-[#6b7785]">© Kenya Shipyards Limited</p>
+      </div>
+    </div>
+  );
+}
+
 function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () => void }) {
   const [copied, setCopied] = useState<"passcode" | "link" | "branded" | null>(null);
   const [hint, setHint] = useState<string | null>(null);
-  const [previewHtml, setPreviewHtml] = useState("");
+  const [copyHtml, setCopyHtml] = useState("");
 
   const plain = invitePlainText(issued);
   const brandedPlain = brandedPlainText(issued);
@@ -552,7 +614,7 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
   useEffect(() => {
     let alive = true;
     inviteHtmlEmail(issued).then((html) => {
-      if (alive) setPreviewHtml(html);
+      if (alive) setCopyHtml(html);
     });
     return () => {
       alive = false;
@@ -573,7 +635,7 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
   }
 
   async function copyBrandedEmail() {
-    const html = previewHtml || (await inviteHtmlEmail(issued));
+    const html = copyHtml || (await inviteHtmlEmail(issued));
     const ok = await copyHtmlAndPlain(html, brandedPlain);
     if (!ok) {
       setHint("Could not copy the branded email. Use Gmail or Outlook below instead.");
@@ -645,26 +707,17 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
           <div>
             <p className="text-[13px] font-semibold text-[#0b1f3a]">Branded email</p>
             <p className="mt-0.5 text-[12px] text-[#6b7785]">
-              Preview of the message that pastes into Gmail. Copy, then Ctrl+V in compose.
+              This is the message that pastes into Gmail. Copy, then Ctrl+V in compose.
             </p>
           </div>
-          <Button variant="secondary" size="sm" onClick={copyBrandedEmail} disabled={!previewHtml}>
+          <Button variant="secondary" size="sm" onClick={copyBrandedEmail}>
             {copied === "branded" ? <Check className="h-4 w-4 text-[#12b76a]" /> : <Copy className="h-4 w-4" />}
             {copied === "branded" ? "Copied" : "Copy branded email"}
           </Button>
         </div>
-        {previewHtml ? (
-          <iframe
-            title="Branded invite email preview"
-            srcDoc={previewHtml}
-            className="h-[440px] w-full border-0 bg-[#eef2f6]"
-          />
-        ) : (
-          <div className="flex h-[180px] items-center justify-center gap-2 text-[13px] text-[#6b7785]">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Preparing branded message…
-          </div>
-        )}
+        <div className="px-3 py-5 sm:px-6">
+          <BrandedInviteCard issued={issued} />
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
