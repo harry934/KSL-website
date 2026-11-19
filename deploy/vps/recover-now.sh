@@ -53,9 +53,7 @@ fi
 npm run build
 cd ..
 
-sudo systemctl restart ksl-portal
-sleep 2
-sudo systemctl --no-pager --full status ksl-portal | head -15
+bash deploy/vps/restart-portal.sh
 
 PUBLIC_DEST=/var/www/kenyashipyards
 [[ -d "$PUBLIC_DEST" ]] || PUBLIC_DEST=/var/www/ksl
@@ -69,13 +67,11 @@ fi
 
 echo
 echo "=== VERIFY ==="
-curl -sS http://127.0.0.1:3000/api/health || true
-echo
 REDIRECT="$(curl -sS -D - -o /dev/null "http://${IP}/kwela/staff" | tr -d '\r' | grep -i '^location:' || true)"
 echo "$REDIRECT"
 echo "Commit: $(git log -1 --oneline)"
 if echo "$REDIRECT" | grep -qi 'localhost'; then
-  echo "FAIL: redirect still points at localhost — NEXT_PUBLIC_PORTAL_URL was wrong at build time."
+  echo "FAIL: redirect still points at localhost — portal process was not replaced or NEXT_PUBLIC_PORTAL_URL was wrong at build time."
   exit 1
 fi
 echo "=== RECOVER OK ==="

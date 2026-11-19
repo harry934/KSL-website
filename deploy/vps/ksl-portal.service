@@ -1,3 +1,8 @@
+# Template only. Prefer:
+#   bash deploy/vps/install-portal-service.sh
+# which writes /etc/systemd/system/ksl-portal.service with the real checkout path and user.
+#
+# Default layout on this VPS: /opt/kenyashipyards/admin-api
 [Unit]
 Description=Kenya Shipyards staff portal
 After=network.target postgresql.service
@@ -7,8 +12,10 @@ Wants=postgresql.service
 Type=simple
 User=ksl-portal
 Group=ksl-portal
-WorkingDirectory=/opt/ksl-website/staff-portal
-EnvironmentFile=/etc/ksl-portal.env
+WorkingDirectory=/opt/kenyashipyards/admin-api/staff-portal
+Environment=NODE_ENV=production
+EnvironmentFile=-/etc/ksl-portal.env
+EnvironmentFile=-/opt/kenyashipyards/admin-api/staff-portal/.env.production
 ExecStart=/usr/bin/npm run start -- --hostname 127.0.0.1 --port 3000
 Restart=on-failure
 RestartSec=5
@@ -17,7 +24,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/lib/ksl-portal /opt/ksl-website/staff-portal/.next/cache
+ReadWritePaths=/var/lib/ksl-portal /opt/kenyashipyards/admin-api/staff-portal/.next/cache
 
 [Install]
 WantedBy=multi-user.target

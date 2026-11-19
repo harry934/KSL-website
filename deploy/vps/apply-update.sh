@@ -69,14 +69,7 @@ fi
 npm run build
 cd ..
 
-echo "Restarting portal..."
-if systemctl list-unit-files | grep -q '^ksl-portal\.service'; then
-  sudo systemctl restart ksl-portal
-elif command -v pm2 >/dev/null 2>&1; then
-  pm2 restart all
-else
-  echo "WARNING: could not find ksl-portal systemd unit or pm2. Restart the portal process yourself."
-fi
+bash deploy/vps/restart-portal.sh
 
 PUBLIC_DEST=/var/www/kenyashipyards
 if [[ ! -d "$PUBLIC_DEST" ]]; then

@@ -78,10 +78,7 @@ fi
 npm run build
 cd ..
 
-echo "Restarting ksl-portal..."
-sudo systemctl restart ksl-portal
-sleep 2
-sudo systemctl --no-pager --full status ksl-portal | head -20
+bash deploy/vps/restart-portal.sh
 
 PUBLIC_DEST=/var/www/kenyashipyards
 [[ -d "$PUBLIC_DEST" ]] || PUBLIC_DEST=/var/www/ksl
@@ -93,15 +90,13 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 echo
-echo "Health:"
-curl -sS http://127.0.0.1:3000/api/health || true
-echo
 echo "Login redirect (must NOT be localhost:3000):"
 REDIRECT="$(curl -sS -D - -o /dev/null "http://${IP}/kwela/staff" | tr -d '\r' | grep -i '^location:' || true)"
 echo "$REDIRECT"
-# #region agent log
-echo "[debug:7f13f2] {\"hypothesisId\":\"H3\",\"message\":\"post-deploy redirect\",\"data\":{\"redirect\":\"${REDIRECT}\",\"commit\":\"$(git rev-parse --short HEAD)\"}}"
-# #endregion
+if echo "$REDIRECT" | grep -qi 'localhost'; then
+  echo "FAIL: redirect still points at localhost — portal process was not replaced." >&2
+  exit 1
+fi
 echo
 echo "DONE. Hard-refresh the browser (Ctrl+Shift+R)."
 echo "Commit: $(git log -1 --oneline)"
