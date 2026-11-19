@@ -1,9 +1,10 @@
 /**
  * Clipboard helpers that work on HTTP (VPS IP) as well as HTTPS.
- * `navigator.clipboard` is unavailable outside a secure context.
+ * `navigator.clipboard.write` is unavailable outside a secure context, so HTML
+ * paste into Gmail must use the legacy copy-event path on http:// hosts.
  */
 
-function legacyCopy(value: string) {
+function legacyCopyPlain(value: string) {
   const area = document.createElement("textarea");
   area.value = value;
   area.setAttribute("readonly", "");
@@ -27,6 +28,39 @@ function legacyCopy(value: string) {
   return ok;
 }
 
+/** Copies HTML + plain via the copy event (works on HTTP with a user gesture). */
+function legacyCopyHtml(html: string, plain: string) {
+  let ok = false;
+  const onCopy = (event: ClipboardEvent) => {
+    event.clipboardData?.setData("text/html", html);
+    event.clipboardData?.setData("text/plain", plain);
+    event.preventDefault();
+    ok = true;
+  };
+  document.addEventListener("copy", onCopy);
+  try {
+    const bridge = document.createElement("div");
+    bridge.contentEditable = "true";
+    bridge.innerHTML = html;
+    bridge.style.cssText =
+      "position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden";
+    document.body.appendChild(bridge);
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(bridge);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    document.execCommand("copy");
+    selection?.removeAllRanges();
+    bridge.remove();
+  } catch {
+    ok = false;
+  } finally {
+    document.removeEventListener("copy", onCopy);
+  }
+  return ok || legacyCopyPlain(plain);
+}
+
 export async function copyPlainText(value: string): Promise<boolean> {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
     try {
@@ -36,7 +70,7 @@ export async function copyPlainText(value: string): Promise<boolean> {
       /* fall through — common on http:// hostnames */
     }
   }
-  return legacyCopy(value);
+  return legacyCopyPlain(value);
 }
 
 /** Prefer rich HTML when the browser allows it; always keep a plain-text fallback. */
@@ -44,7 +78,8 @@ export async function copyHtmlAndPlain(html: string, plain: string): Promise<boo
   if (
     typeof navigator !== "undefined" &&
     typeof ClipboardItem !== "undefined" &&
-    navigator.clipboard?.write
+    navigator.clipboard?.write &&
+    window.isSecureContext
   ) {
     try {
       await navigator.clipboard.write([
@@ -55,8 +90,8 @@ export async function copyHtmlAndPlain(html: string, plain: string): Promise<boo
       ]);
       return true;
     } catch {
-      /* fall through */
+      /* fall through to copy-event path */
     }
   }
-  return copyPlainText(plain);
+  return legacyCopyHtml(html, plain);
 }

@@ -1,6 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { constants } from "node:fs";
-import { mkdir, open, readFile, realpath, rm } from "node:fs/promises";
+import { mkdir, open, readFile, realpath, rm, statfs } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { currentBasePath } from "@/lib/base-path";
@@ -42,6 +42,20 @@ async function ensureStorageRoot() {
   const resolved = await realpath(root);
   if (resolved !== root) throw new Error("STORAGE_DIR must not resolve through a symlink");
   return root;
+}
+
+/** Disk capacity for STORAGE_DIR (phone-style used / free / total). */
+export async function storageDiskCapacity(): Promise<{ total: number; free: number } | null> {
+  try {
+    const root = await ensureStorageRoot();
+    const stats = await statfs(root);
+    const total = Number(stats.bsize) * Number(stats.blocks);
+    const free = Number(stats.bsize) * Number(stats.bavail);
+    if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(free) || free < 0) return null;
+    return { total, free: Math.min(free, total) };
+  } catch {
+    return null;
+  }
 }
 
 async function filePath(bucket: string, value: string, createParent: boolean) {

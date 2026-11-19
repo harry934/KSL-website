@@ -10,4 +10,7 @@ test("clipboard helpers export copyPlainText and copyHtmlAndPlain", () => {
   assert.match(source, /export async function copyPlainText/);
   assert.match(source, /export async function copyHtmlAndPlain/);
   assert.match(source, /document\.execCommand\("copy"\)/);
+  assert.match(source, /text\/html/);
+  assert.match(source, /legacyCopyHtml/);
+  assert.match(source, /isSecureContext/);
 });

@@ -343,17 +343,24 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       file.type === "video/x-quicktime" ||
       ((file.type === "" || file.type === "application/octet-stream") && named);
     if (!typed) {
-      toast("Use an MP4, WebM, or MOV video.", "error");
+      toast("Use an MP4 (H.264), WebM, or MOV video.", "error");
       return;
     }
     if (file.size > 50 * 1024 * 1024) {
-      toast("Video is too large (max 50 MB).", "error");
+      toast("Video is too large (max 50 MB). Compress it or export a shorter clip.", "error");
+      return;
+    }
+    if (file.size < 64) {
+      toast("That video file looks empty. Choose another file.", "error");
       return;
     }
     if (!heroRoom()) return;
     setBusy(HOME_HERO_SLOT);
     try {
       const uploaded = await uploadFile("site_settings", file, { "x-ksl-hero": "1" });
+      if (!uploaded?.public_url) {
+        throw new Error("The upload finished without a usable video address. Please try again.");
+      }
       const next = [
         ...heroItems,
         {
@@ -369,7 +376,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       setSelectedHeroIndex(next.length - 1);
       await persistHero(next);
     } catch (err) {
-      toast((err as Error).message, "error");
+      toast((err as Error).message || "The video upload did not work. Please try again.", "error");
       setBusy(null);
     }
   }

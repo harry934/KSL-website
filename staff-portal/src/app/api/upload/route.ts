@@ -5,6 +5,9 @@ import { saveStoredFile, signedStoredFileUrl, storedFileUrl } from "@/lib/storag
 import type { ModuleKey } from "@/lib/modules";
 import { NextRequest, NextResponse } from "next/server";
 
+/** Hero/gallery videos can approach 50 MB; give the Node handler time to buffer them. */
+export const maxDuration = 120;
+
 const ALLOWED_MODULES = new Set<ModuleKey>([
   "news",
   "gallery",

@@ -8,6 +8,7 @@ import { MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import { permissionNavLinks, usesSidebar } from "@/lib/portal-nav";
 import { formatBytes } from "@/lib/downloads";
 import { loadStorageBreakdown, type StorageBreakdown } from "@/lib/storage-files";
+import { storageDiskCapacity } from "@/lib/storage";
 import { AccountRequestsPanel } from "@/components/portal/account-requests-panel";
 import { DashboardRefresh } from "@/components/portal/dashboard-refresh";
 import { ReturnedNotes } from "@/components/portal/drafts-page";
@@ -25,6 +26,8 @@ const QUICK_ACTIONS: { module: ModuleKey; label: string }[] = [
 ];
 
 const GIBIBYTE = 1024 * 1024 * 1024;
+/** Soft guide for the Postgres meter when disk stats are unavailable. */
+const DATABASE_GUIDE = 2 * GIBIBYTE;
 
 const BUCKETS = [
   { id: "media-public", label: "Photos", tone: "photos" },
@@ -46,11 +49,16 @@ function storageLabel(bytes: number) {
 async function loadStorageUsage(): Promise<StorageBreakdown | null> {
   noStore();
   const admin = createDatabaseClient();
-  const breakdown = await loadStorageBreakdown(admin);
-  return breakdown;
+  return loadStorageBreakdown(admin);
 }
 
-function StorageMeter({ usage }: { usage: StorageBreakdown | null }) {
+function StorageMeter({
+  usage,
+  disk,
+}: {
+  usage: StorageBreakdown | null;
+  disk: { total: number; free: number } | null;
+}) {
   if (!usage) {
     return (
       <article className="storage-meter">
@@ -69,19 +77,31 @@ function StorageMeter({ usage }: { usage: StorageBreakdown | null }) {
     .reduce((sum, row) => sum + row.bytes, 0);
   const used = slices.reduce((sum, row) => sum + row.bytes, 0) + other;
   const stored = used + usage.bin + usage.spare;
-  const scale = Math.max(stored, 1);
-  const width = (bytes: number) => `${(bytes / scale) * 100}%`;
+  const total = disk?.total && disk.total > 0 ? disk.total : Math.max(stored, 1);
+  const free = disk ? Math.max(0, disk.free) : Math.max(0, total - stored);
+  const scale = Math.max(total, stored, 1);
+  const width = (bytes: number) => `${Math.max((bytes / scale) * 100, bytes > 0 ? 0.4 : 0)}%`;
+  const high = disk ? stored / total >= 0.8 : false;
 
   return (
-    <article className="storage-meter" aria-label={`Storage, ${storageLabel(used)} in use on the VPS`}>
+    <article
+      className={high ? "storage-meter is-tight" : "storage-meter"}
+      aria-label={`Storage, ${storageLabel(stored)} used, ${storageLabel(free)} free of ${storageLabel(total)}`}
+    >
       <div className="storage-head">
         <div>
           <h2>Storage</h2>
-          <p>Uploads use the VPS filesystem; monitor available disk capacity on the host.</p>
+          <p>
+            {disk
+              ? high
+                ? "More than 80% of the VPS disk for uploads is in use."
+                : `${storageLabel(stored)} used · ${storageLabel(free)} free of ${storageLabel(total)}`
+              : "Uploads use the VPS filesystem."}
+          </p>
         </div>
         <p className="storage-figure">
-          <strong>{storageLabel(used)}</strong>
-          <span>used</span>
+          <strong>{storageLabel(stored)}</strong>
+          <span>of {storageLabel(total)}</span>
         </p>
       </div>
       <div className="storage-bar" aria-hidden>
@@ -121,6 +141,11 @@ function StorageMeter({ usage }: { usage: StorageBreakdown | null }) {
             <strong>{storageLabel(usage.spare)}</strong>
           </li>
         ) : null}
+        <li>
+          <span className="storage-swatch is-free" />
+          <span>Free</span>
+          <strong>{storageLabel(free)}</strong>
+        </li>
       </ul>
     </article>
   );
@@ -136,7 +161,13 @@ async function loadDatabaseSize() {
   }
 }
 
-function DatabaseMeter({ bytes }: { bytes: number | null }) {
+function DatabaseMeter({
+  bytes,
+  disk,
+}: {
+  bytes: number | null;
+  disk: { total: number; free: number } | null;
+}) {
   if (bytes == null) {
     return (
       <article className="storage-meter">
@@ -146,28 +177,43 @@ function DatabaseMeter({ bytes }: { bytes: number | null }) {
     );
   }
 
-  const scale = Math.max(bytes, 1);
+  const total = disk?.total && disk.total > 0 ? disk.total : DATABASE_GUIDE;
+  const free = disk ? Math.max(0, disk.free) : Math.max(0, total - bytes);
+  const scale = Math.max(total, bytes, 1);
+  const high = bytes / total >= 0.8;
 
   return (
-    <article className="storage-meter" aria-label={`PostgreSQL database, ${storageLabel(bytes)} current size`}>
+    <article
+      className={high ? "storage-meter is-tight" : "storage-meter"}
+      aria-label={`PostgreSQL database, ${storageLabel(bytes)} used, ${storageLabel(free)} free of ${storageLabel(total)}`}
+    >
       <div className="storage-head">
         <div>
           <h2>Database</h2>
-          <p>Current PostgreSQL database size; no application quota is configured.</p>
+          <p>
+            {disk
+              ? `${storageLabel(bytes)} used · ${storageLabel(free)} free on the VPS disk`
+              : `Current size ${storageLabel(bytes)}`}
+          </p>
         </div>
         <p className="storage-figure">
           <strong>{storageLabel(bytes)}</strong>
-          <span>used</span>
+          <span>of {storageLabel(total)}</span>
         </p>
       </div>
       <div className="storage-bar" aria-hidden>
-        {bytes > 0 ? <i className="is-database" style={{ width: `${(bytes / scale) * 100}%` }} /> : null}
+        {bytes > 0 ? <i className="is-database" style={{ width: `${Math.max((bytes / scale) * 100, 0.4)}%` }} /> : null}
       </div>
       <ul className="storage-legend">
         <li>
           <span className="storage-swatch is-database" />
-          <span>Current size</span>
+          <span>Used</span>
           <strong>{storageLabel(bytes)}</strong>
+        </li>
+        <li>
+          <span className="storage-swatch is-free" />
+          <span>Free</span>
+          <strong>{storageLabel(free)}</strong>
         </li>
       </ul>
     </article>
@@ -180,9 +226,9 @@ export default async function DashboardPage() {
   const session = await getStaffSession();
   if (!session) return null;
 
-  const [storage, database] = session.isSuperAdmin
-    ? await Promise.all([loadStorageUsage(), loadDatabaseSize()])
-    : [null, null];
+  const [storage, database, disk] = session.isSuperAdmin
+    ? await Promise.all([loadStorageUsage(), loadDatabaseSize(), storageDiskCapacity()])
+    : [null, null, null];
   const cards = !usesSidebar(session);
   const sections = cards ? permissionNavLinks(session) : [];
   const quick = QUICK_ACTIONS.filter((action) => {
@@ -228,8 +274,8 @@ export default async function DashboardPage() {
 
       {session.isSuperAdmin && (
         <section className="grid gap-3 lg:grid-cols-2" aria-label="Database and storage usage">
-          <StorageMeter usage={storage} />
-          <DatabaseMeter bytes={database} />
+          <StorageMeter usage={storage} disk={disk} />
+          <DatabaseMeter bytes={database} disk={disk} />
         </section>
       )}
 
