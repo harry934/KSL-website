@@ -2,15 +2,17 @@
 # Write the VPS address into staff-portal/.env.production (or .env.example copy)
 # and js/portal-host.js so the public site talks to the portal on this VPS.
 #
-# IP smoke test (HTTP, before Nginx / before company DNS):
+# HTTP via Nginx on ports 80 only (portal proxied at /admin, Node stays on 127.0.0.1:3000):
 #   bash deploy/vps/fill-ip.sh --http 203.0.113.10
-#     → portal http://IP:3000 , site http://IP:8080
+#     → portal http://IP/admin , site http://IP
+#     → also sets NEXT_PUBLIC_BASE_PATH=/admin
 #
-# Later with Nginx TLS on 8443 / 443:
+# Later with Nginx TLS on 443:
 #   bash deploy/vps/fill-ip.sh 203.0.113.10
-#     → portal https://IP:8443 , site https://IP
+#     → portal https://IP/admin , site https://IP
 #
 # Do not use kenyashipyards.co.ke until DNS for that hostname points here.
+# Do not open port 3000 publicly; Nginx proxies to loopback.
 set -euo pipefail
 
 MODE="https"
@@ -24,19 +26,20 @@ fi
 
 if ! [[ "$IP" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
   echo "Usage:" >&2
-  echo "  bash deploy/vps/fill-ip.sh --http YOUR_VPS_IP   # Stage 1 HTTP smoke test" >&2
-  echo "  bash deploy/vps/fill-ip.sh YOUR_VPS_IP          # HTTPS via Nginx :8443 / :443" >&2
+  echo "  bash deploy/vps/fill-ip.sh --http YOUR_VPS_IP   # HTTP Nginx :80 + /admin proxy" >&2
+  echo "  bash deploy/vps/fill-ip.sh YOUR_VPS_IP          # HTTPS Nginx :443 + /admin proxy" >&2
   exit 1
 fi
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 if [[ "$MODE" == "http" ]]; then
-  PORTAL="http://${IP}:3000"
-  SITE="http://${IP}:8080"
+  PORTAL="http://${IP}/admin"
+  SITE="http://${IP}"
 else
-  PORTAL="https://${IP}:8443"
+  PORTAL="https://${IP}/admin"
   SITE="https://${IP}"
 fi
+BASE_PATH="/admin"
 
 ENV_FILE="$ROOT/staff-portal/.env.production"
 HOST_JS="$ROOT/js/portal-host.js"
@@ -58,6 +61,7 @@ wanted = {
     "NEXT_PUBLIC_PORTAL_URL": portal,
     "NEXT_PUBLIC_SITE_URL": site,
     "PUBLIC_SITE_ORIGIN": site,
+    "NEXT_PUBLIC_BASE_PATH": "/admin",
 }
 lines = open(path).read().splitlines()
 seen = set()
