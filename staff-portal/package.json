@@ -10,6 +10,7 @@
     "test": "node --experimental-strip-types --import ./test-register.mjs --test src/lib/security.test.ts src/lib/portal-nav.test.ts src/lib/storage-path.test.ts src/lib/stored-file.test.ts src/lib/draft-access.test.ts",
     "db:migrate": "node scripts/migrate.mjs",
     "bootstrap:admin": "node scripts/bootstrap-super-admin.mjs",
+    "reset:admin-password": "node scripts/reset-admin-password.mjs",
     "import:content-export": "node scripts/import-content-export.mjs",
     "import:storage-objects": "node --experimental-strip-types --import ./test-register.mjs scripts/import-storage-objects.mjs",
     "import:faq": "node scripts/import-faq-from-json.mjs",

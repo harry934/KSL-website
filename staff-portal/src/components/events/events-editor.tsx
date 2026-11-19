@@ -16,6 +16,7 @@ import { uniqueSlug } from "@/lib/list-utils";
 import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { EventsMonth } from "@/components/events/events-month";
 import { nairobiToday } from "@/lib/dates";
+import { appPath } from "@/lib/base-path";
 
 function formatDate(value: string | null) {
   if (!value) return "";
@@ -33,7 +34,7 @@ export function EventsEditor() {
   const [view, setView] = useState<"month" | "list">("month");
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/events");
+    const res = await fetch(appPath("/api/events"));
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setItems(data.items ?? []);

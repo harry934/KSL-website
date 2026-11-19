@@ -7,6 +7,7 @@ import { siteAssetUrl } from "@/lib/site-url";
 import { uploadFile } from "@/lib/upload-client";
 import { PhotoCropDialog } from "@/components/ui/photo-crop";
 import { cn } from "@/lib/cn";
+import { appPath } from "@/lib/base-path";
 
 export function ImageField({
   module,
@@ -87,7 +88,7 @@ export function ImageField({
                 setGalleryOpen(true);
                 if (gallery) return;
                 try {
-                  const res = await fetch("/api/organization/photos", { cache: "no-store" });
+                  const res = await fetch(appPath("/api/organization/photos"), { cache: "no-store" });
                   const data = await res.json().catch(() => ({}));
                   if (!res.ok) throw new Error(data.error || "Could not open the gallery.");
                   setGallery(Array.isArray(data.photos) ? data.photos : []);
@@ -171,7 +172,7 @@ export function GalleryBrowser({ onPick, label = "From gallery" }: { onPick: (sr
     setError(null);
     if (gallery) return;
     try {
-      const res = await fetch("/api/organization/photos", { cache: "no-store" });
+      const res = await fetch(appPath("/api/organization/photos"), { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Could not open the gallery.");
       setGallery(Array.isArray(data.photos) ? data.photos : []);

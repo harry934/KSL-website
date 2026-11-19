@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { NOTICES_REFRESH, SEEN_EVENT } from "@/lib/notification-seen";
+import { appPath } from "@/lib/base-path";
 
 const POLL_MS = 15_000;
 
@@ -11,7 +12,7 @@ export function useNoticeBadges(userId: string) {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/notifications", { cache: "no-store" });
+      const res = await fetch(appPath("/api/notifications"), { cache: "no-store" });
       if (!res.ok) return;
       const data = await res.json();
       setRecycle(Number(data.recycleCount) || 0);

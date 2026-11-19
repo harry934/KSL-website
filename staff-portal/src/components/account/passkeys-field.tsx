@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/form-bits";
 import { startRegistration } from "@simplewebauthn/browser";
 import { passkeyError } from "@/lib/passkey";
+import { appPath } from "@/lib/base-path";
 
 type SavedPasskey = {
   id: string;
@@ -27,7 +28,7 @@ export function PasskeysField() {
   const [error, setError] = useState<string | null>(null);
 
   async function load(shouldUpdate: () => boolean = () => true) {
-    const response = await fetch("/api/auth/passkey", {
+    const response = await fetch(appPath("/api/auth/passkey"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "list" }),
@@ -67,7 +68,7 @@ export function PasskeysField() {
     setBusy(true);
     setError(null);
     try {
-      const optionsResponse = await fetch("/api/auth/passkey", {
+      const optionsResponse = await fetch(appPath("/api/auth/passkey"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "registration-options" }),
@@ -75,7 +76,7 @@ export function PasskeysField() {
       const options = await optionsResponse.json().catch(() => ({}));
       if (!optionsResponse.ok) throw new Error(options.error ?? "Passkey registration is unavailable.");
       const credential = await startRegistration({ optionsJSON: options });
-      const verifyResponse = await fetch("/api/auth/passkey", {
+      const verifyResponse = await fetch(appPath("/api/auth/passkey"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -98,7 +99,7 @@ export function PasskeysField() {
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch("/api/auth/passkey", {
+      const response = await fetch(appPath("/api/auth/passkey"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "remove", credentialId: id }),

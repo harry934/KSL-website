@@ -26,6 +26,7 @@ import { cn } from "@/lib/cn";
 import { gmailComposeUrl, openMailto, outlookWebComposeUrl } from "@/lib/mail-compose";
 import { forwardPlainBody, forwardSubject, replyPlainBody, replySubject } from "@/lib/message-forward";
 import { refreshNotices } from "@/lib/notification-seen";
+import { appPath } from "@/lib/base-path";
 
 type Message = {
   id: string;
@@ -230,7 +231,7 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
   }
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/messages", { cache: "no-store" });
+    const res = await fetch(appPath("/api/messages"), { cache: "no-store" });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) setError(data.error ?? "Could not load messages.");
     else {
@@ -251,7 +252,7 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
       return;
     }
     setUnlocking(true);
-    const res = await fetch("/api/messages/unlock", {
+    const res = await fetch(appPath("/api/messages/unlock"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password: unlockPassword }),
@@ -274,7 +275,7 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
     url.searchParams.set("id", row.id);
     window.history.replaceState(null, "", url.pathname + url.search);
     if (!unlocked || row.read_at) return;
-    const res = await fetch("/api/messages", {
+    const res = await fetch(appPath("/api/messages"), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: row.id }),

@@ -24,6 +24,7 @@ import { newsPublicUrl } from "@/lib/public-links";
 import { useOpenEdit } from "@/lib/open-edit";
 import { uniqueSlug } from "@/lib/list-utils";
 import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
+import { appPath } from "@/lib/base-path";
 
 function formatDate(value: string | null) {
   if (!value) return "";
@@ -40,7 +41,7 @@ export function NewsEditor() {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/news");
+    const res = await fetch(appPath("/api/news"));
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setItems(data.items ?? []);

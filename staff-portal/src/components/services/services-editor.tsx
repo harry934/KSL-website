@@ -23,6 +23,7 @@ import { keyFrom, orderedGroups, reorderItem, uniqueSlug } from "@/lib/list-util
 import { useLiveDrag } from "@/components/ui/live-drag";
 import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { useOpenEdit } from "@/lib/open-edit";
+import { appPath } from "@/lib/base-path";
 
 type DocRow = { key: string; title: string; href: string };
 
@@ -53,7 +54,7 @@ export function ServicesEditor() {
   const [saving, setSaving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/services");
+    const res = await fetch(appPath("/api/services"));
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setIntro(data.intro ?? "");

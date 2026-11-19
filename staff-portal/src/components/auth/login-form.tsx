@@ -8,6 +8,7 @@ import { fieldLabel, Notice } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { passkeyError } from "@/lib/passkey";
+import { appPath } from "@/lib/base-path";
 
 export function LoginForm({ notice }: { notice?: string | null }) {
   const { toast } = useFeedback();
@@ -24,7 +25,7 @@ export function LoginForm({ notice }: { notice?: string | null }) {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const res = await fetch("/api/auth/sign-in", {
+    const res = await fetch(appPath("/api/auth/sign-in"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
@@ -38,14 +39,14 @@ export function LoginForm({ notice }: { notice?: string | null }) {
       return;
     }
     toast("Signed in.");
-    window.location.href = "/";
+    window.location.href = appPath("/");
   }
 
   async function onPasskey() {
     setError(null);
     setPasskeyLoading(true);
     try {
-      const optionsResponse = await fetch("/api/auth/passkey", {
+      const optionsResponse = await fetch(appPath("/api/auth/passkey"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "authentication-options" }),
@@ -53,7 +54,7 @@ export function LoginForm({ notice }: { notice?: string | null }) {
       const options = await optionsResponse.json().catch(() => ({}));
       if (!optionsResponse.ok) throw new Error(options.error ?? "Passkey sign-in is unavailable.");
       const credential = await startAuthentication({ optionsJSON: options });
-      const verifyResponse = await fetch("/api/auth/passkey", {
+      const verifyResponse = await fetch(appPath("/api/auth/passkey"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -65,7 +66,7 @@ export function LoginForm({ notice }: { notice?: string | null }) {
       const result = await verifyResponse.json().catch(() => ({}));
       if (!verifyResponse.ok) throw new Error(result.error ?? "The passkey was not accepted.");
       toast("Signed in.");
-      window.location.href = "/";
+      window.location.href = appPath("/");
     } catch (caught) {
       setPasskeyLoading(false);
       const message = passkeyError(caught);
@@ -84,7 +85,7 @@ export function LoginForm({ notice }: { notice?: string | null }) {
       return;
     }
     setForgotLoading(true);
-    const res = await fetch("/api/auth/forgot-password", {
+    const res = await fetch(appPath("/api/auth/forgot-password"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username }),

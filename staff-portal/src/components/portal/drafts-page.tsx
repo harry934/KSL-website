@@ -10,6 +10,7 @@ import { useFeedback } from "@/components/ui/feedback";
 import { Input } from "@/components/ui/input";
 import { NOTICES_REFRESH } from "@/lib/notification-seen";
 import { sendJson } from "@/lib/upload-client";
+import { appPath } from "@/lib/base-path";
 
 type ReviewDraft = {
   id: string;
@@ -45,7 +46,7 @@ export function useDraftCount(enabled: boolean) {
     if (!enabled) return;
     let stop = false;
     function load() {
-      fetch("/api/drafts", { cache: "no-store" })
+      fetch(appPath("/api/drafts"), { cache: "no-store" })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (!stop && data) setCount(Array.isArray(data.items) ? data.items.length : 0);
@@ -79,7 +80,7 @@ export function ReturnedNotes() {
 
   useEffect(() => {
     let stop = false;
-    fetch("/api/drafts", { cache: "no-store" })
+    fetch(appPath("/api/drafts"), { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!stop && data) setItems(Array.isArray(data.returned) ? data.returned : []);

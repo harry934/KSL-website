@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import { dismissNotices, NOTICES_REFRESH, readDismissed, readSeen, SEEN_EVENT } from "@/lib/notification-seen";
 import { NotificationCenter, type NotificationIcon, type NotificationItem, type NotificationTone } from "@/components/ui/notification-center";
+import { appPath } from "@/lib/base-path";
 
 type Item = {
   id: string;
@@ -47,7 +48,7 @@ export function NotificationBell({ userId }: { userId: string }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/notifications", { cache: "no-store" });
+      const res = await fetch(appPath("/api/notifications"), { cache: "no-store" });
       if (!res.ok) return;
       const next = ((await res.json()).items ?? []) as Item[];
       setItems(next);
@@ -123,7 +124,7 @@ export function NotificationBell({ userId }: { userId: string }) {
       .map((item) => item.id.replace(/^message:/, ""));
     if (!messageIds.length) return;
     if (messageIds.length === items.filter((item) => item.kind === "message" && item.unread).length) {
-      fetch("/api/messages", {
+      fetch(appPath("/api/messages"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ all: true }),
@@ -131,7 +132,7 @@ export function NotificationBell({ userId }: { userId: string }) {
       return;
     }
     for (const id of messageIds) {
-      fetch("/api/messages", {
+      fetch(appPath("/api/messages"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),

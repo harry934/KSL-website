@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { IDLE_MS } from "@/lib/staff-session";
 import { signOutNow } from "@/lib/sign-out-client";
+import { appPath } from "@/lib/base-path";
 
 const CHECK_MS = 20 * 1000;
 
@@ -16,7 +17,7 @@ export function SessionWatch() {
       lastActive = Date.now();
       if (stopped || lastActive - lastPulse < 60 * 1000) return;
       lastPulse = lastActive;
-      fetch("/api/auth/pulse", { method: "POST" })
+      fetch(appPath("/api/auth/pulse"), { method: "POST" })
         .then(async (res) => {
           if (res.ok || stopped) return;
           stopped = true;
@@ -32,7 +33,7 @@ export function SessionWatch() {
         await signOutNow();
         return;
       }
-      const res = await fetch("/api/auth/session").catch(() => null);
+      const res = await fetch(appPath("/api/auth/session")).catch(() => null);
       if (!res || res.ok || stopped) return;
       stopped = true;
       await signOutNow();

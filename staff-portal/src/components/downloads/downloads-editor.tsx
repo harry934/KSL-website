@@ -14,6 +14,7 @@ import { keyFrom, reorderItem } from "@/lib/list-utils";
 import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { downloadSource, formatBytes, type DownloadItemRow } from "@/lib/downloads";
 import { useOpenEdit } from "@/lib/open-edit";
+import { appPath } from "@/lib/base-path";
 
 type Draft = Partial<DownloadItemRow> & { isNew?: boolean };
 
@@ -43,7 +44,7 @@ export function DownloadsEditor() {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/downloads");
+    const res = await fetch(appPath("/api/downloads"));
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setBaseUrl((data.settings?.base_url ?? "").replace(/\/?$/, "/"));

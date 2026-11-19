@@ -9,6 +9,7 @@ import { UserAvatar } from "@/components/portal/user-avatar";
 import { withBusy } from "@/lib/upload-client";
 import { GalleryBrowser } from "@/components/ui/image-field";
 import { PhotoCropDialog } from "@/components/ui/photo-crop";
+import { appPath } from "@/lib/base-path";
 
 export function AvatarField({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
   const router = useRouter();
@@ -24,7 +25,7 @@ export function AvatarField({ name, avatarUrl }: { name: string; avatarUrl: stri
       const fd = new FormData();
       fd.append("file", file);
       const data = await withBusy("Uploading your photo…", async () => {
-        const res = await fetch("/api/account/avatar", { method: "POST", body: fd });
+        const res = await fetch(appPath("/api/account/avatar"), { method: "POST", body: fd });
         const json = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(json.error ?? "The upload did not work. Please try again.");
         return json;
@@ -46,7 +47,7 @@ export function AvatarField({ name, avatarUrl }: { name: string; avatarUrl: stri
     setBusy(true);
     try {
       await withBusy("Removing your photo…", async () => {
-        const res = await fetch("/api/account/avatar", { method: "DELETE" });
+        const res = await fetch(appPath("/api/account/avatar"), { method: "DELETE" });
         if (!res.ok) throw new Error("Could not remove the photo. Please try again.");
       });
       setUrl(null);

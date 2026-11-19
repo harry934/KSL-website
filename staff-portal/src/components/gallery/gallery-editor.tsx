@@ -14,6 +14,7 @@ import { siteAssetUrl } from "@/lib/site-url";
 import { sendJson, uploadFile, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { PhotoCropDialog } from "@/components/ui/photo-crop";
 import { cn } from "@/lib/cn";
+import { appPath } from "@/lib/base-path";
 
 type VideoDraft = { id?: string; link: string; title: string; caption: string; featured: boolean; status: string; sort_order: number };
 type PhotoEdit = { id: string; title: string; alt_text: string; category: string; status: string };
@@ -40,7 +41,7 @@ export function GalleryEditor() {
   const [savingVideo, setSavingVideo] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/gallery");
+    const res = await fetch(appPath("/api/gallery"));
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setPhotos(data.photos ?? []);

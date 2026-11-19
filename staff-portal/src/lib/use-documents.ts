@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { appPath } from "@/lib/base-path";
 
 export type DocumentChoice = { id: string; title: string };
 
@@ -10,7 +11,7 @@ export function useDocuments() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/public/downloads")
+    fetch(appPath("/api/public/downloads"))
       .then((res) => (res.ok ? res.json() : { items: [] }))
       .then((data: { items?: { id: string; title: string; aliasOf?: string }[] }) => {
         if (cancelled) return;

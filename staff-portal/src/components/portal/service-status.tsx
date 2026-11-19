@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { appPath } from "@/lib/base-path";
 
 type ServiceState = "up" | "slow" | "down";
 type Probe = { state: ServiceState; ms: number };
@@ -66,7 +67,7 @@ export function ServiceStatus() {
   useEffect(() => {
     let stopped = false;
     async function load() {
-      const res = await fetch("/api/admin/status", { cache: "no-store" }).catch(() => null);
+      const res = await fetch(appPath("/api/admin/status"), { cache: "no-store" }).catch(() => null);
       if (!res?.ok || stopped) return;
       const json = (await res.json().catch(() => null)) as Report | null;
       if (json?.database && json?.website && json?.portal) setReport(json);

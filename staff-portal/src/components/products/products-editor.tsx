@@ -24,6 +24,7 @@ import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import type { ProductRow, ProductsSettings, Spec } from "@/lib/products";
 import { productPublicUrl } from "@/lib/public-links";
 import { useOpenEdit } from "@/lib/open-edit";
+import { appPath } from "@/lib/base-path";
 
 type GroupDraft = { title: string; itemsText: string };
 
@@ -74,7 +75,7 @@ export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean;
   const [saving, setSaving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/products");
+    const res = await fetch(appPath("/api/products"));
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setItems(data.items ?? []);

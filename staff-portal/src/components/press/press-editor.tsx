@@ -16,6 +16,7 @@ import { documentOptions, useDocuments } from "@/lib/use-documents";
 import { SearchSelect } from "@/components/ui/search-select";
 import { cn } from "@/lib/cn";
 import type { PressAssetRow } from "@/lib/press";
+import { appPath } from "@/lib/base-path";
 
 type Source = "document" | "file" | "link";
 type Draft = Partial<PressAssetRow> & { source: Source };
@@ -54,7 +55,7 @@ export function PressEditor() {
   const [saving, setSaving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/press");
+    const res = await fetch(appPath("/api/press"));
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setBoilerplate(data.settings?.boilerplate ?? "");

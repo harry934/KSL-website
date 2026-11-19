@@ -15,6 +15,7 @@ import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { PROJECT_GROUPS, type ProjectRow } from "@/lib/projects";
 import { projectPublicUrl } from "@/lib/public-links";
 import { useOpenEdit } from "@/lib/open-edit";
+import { appPath } from "@/lib/base-path";
 
 export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean; canDelete: boolean }) {
   const { toast, confirm } = useFeedback();
@@ -25,7 +26,7 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/projects");
+    const res = await fetch(appPath("/api/projects"));
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setItems(data.items ?? []);

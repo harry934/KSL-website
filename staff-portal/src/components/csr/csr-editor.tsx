@@ -13,6 +13,7 @@ import { reorderItem, uniqueSlug } from "@/lib/list-utils";
 import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { useOpenEdit } from "@/lib/open-edit";
 import type { CsrImage, CsrProjectRow, CsrSettings, CsrStat } from "@/lib/csr";
+import { appPath } from "@/lib/base-path";
 
 const EMPTY_SETTINGS: CsrSettings = {
   kicker: "",
@@ -39,7 +40,7 @@ export function CsrEditor({ canPublish, canDelete }: { canPublish: boolean; canD
   const [saving, setSaving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/csr");
+    const res = await fetch(appPath("/api/csr"));
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setItems(data.items ?? []);

@@ -1,5 +1,6 @@
 import type { ModuleKey } from "@/lib/modules";
 import { refreshNotices } from "@/lib/notification-seen";
+import { appPath } from "@/lib/base-path";
 
 export const BUSY_EVENT = "ksl-busy";
 export type BusyDetail = { delta: 1 | -1; message?: string };
@@ -25,7 +26,7 @@ async function uploadError(res: Response) {
 async function uploadHeroVideo(module: ModuleKey, file: File) {
   const body = new FormData();
   body.append("file", file);
-  const res = await fetch("/api/upload", {
+  const res = await fetch(appPath("/api/upload"), {
     method: "POST",
     headers: {
       "x-ksl-module": module,
@@ -46,7 +47,7 @@ export async function uploadFile(
     if (extraHeaders?.["x-ksl-hero"] === "1") return uploadHeroVideo(module, file);
     const fd = new FormData();
     fd.append("file", file);
-    const res = await fetch("/api/upload", {
+    const res = await fetch(appPath("/api/upload"), {
       method: "POST",
       headers: { "x-ksl-module": module, ...extraHeaders },
       body: fd,

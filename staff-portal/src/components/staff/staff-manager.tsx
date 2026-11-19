@@ -17,6 +17,7 @@ import { sessionIsLive } from "@/lib/staff-session";
 import { sendJson } from "@/lib/upload-client";
 import { cn } from "@/lib/cn";
 import { PasscodeDisplay } from "@/components/ui/password-input";
+import { appPath } from "@/lib/base-path";
 
 const EDITABLE_MODULES = (Object.keys(MODULE_LABELS) as ModuleKey[]).filter((k) => k !== "staff") as ModuleKey[];
 type PermField = "can_view" | "can_edit" | "can_publish" | "can_delete";
@@ -321,8 +322,9 @@ function inviteSubject(issued: Issued) {
 let logoDataUrlPromise: Promise<string> | null = null;
 
 function logoPublicUrl() {
-  if (typeof window === "undefined") return "/ksl-logo.png";
-  return `${window.location.origin}/ksl-logo.png`;
+  const path = appPath("/ksl-logo.png");
+  if (typeof window === "undefined") return path;
+  return `${window.location.origin}${path}`;
 }
 
 async function logoDataUrl() {
@@ -646,9 +648,9 @@ export function StaffManager() {
 
   const load = useCallback(async () => {
     const [res, requestRes, inviteRes] = await Promise.all([
-      fetch("/api/staff"),
-      fetch("/api/staff/requests"),
-      fetch("/api/staff/invites"),
+      fetch(appPath("/api/staff")),
+      fetch(appPath("/api/staff/requests")),
+      fetch(appPath("/api/staff/invites")),
     ]);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) setError(data.error ?? "Could not load the staff list.");

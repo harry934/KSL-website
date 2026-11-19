@@ -32,10 +32,20 @@ export function sessionIsLive(seenAt: string | null | undefined, now = Date.now(
   return Number.isFinite(seen) && now - seen <= idleMs;
 }
 
+function cookieSecure() {
+  const forced = (process.env.COOKIE_SECURE || "").trim().toLowerCase();
+  if (forced === "true" || forced === "1") return true;
+  if (forced === "false" || forced === "0") return false;
+  const origin = (process.env.PUBLIC_SITE_ORIGIN || process.env.NEXT_PUBLIC_SITE_URL || "").trim();
+  if (origin.startsWith("https://")) return true;
+  if (origin.startsWith("http://")) return false;
+  return process.env.NODE_ENV === "production";
+}
+
 export function sessionCookieOptions(maxAge = 60 * 60 * 12) {
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieSecure(),
     sameSite: "lax" as const,
     path: "/",
     maxAge,

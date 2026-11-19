@@ -12,6 +12,7 @@ import { reorderItem } from "@/lib/list-utils";
 import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import type { CareerListingRow } from "@/lib/careers";
 import { useOpenEdit } from "@/lib/open-edit";
+import { appPath } from "@/lib/base-path";
 
 type Settings = { apply_email: string; apply_note: string | null };
 type Kind = CareerListingRow["kind"];
@@ -37,7 +38,7 @@ export function CareersEditor() {
   const [saving, setSaving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/careers");
+    const res = await fetch(appPath("/api/careers"));
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setSettings({ apply_email: data.settings?.apply_email ?? "", apply_note: data.settings?.apply_note ?? "" });

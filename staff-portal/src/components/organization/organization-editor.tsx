@@ -14,6 +14,7 @@ import { keyFrom, reorderItem } from "@/lib/list-utils";
 import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { documentOptions, useDocuments } from "@/lib/use-documents";
 import { cleanBoardGroups, cleanBoardSections, cleanIntro, cleanOrgChart, milestoneDateText, parseMilestoneWhen, SHIPPED_BOARD_GROUPS, SHIPPED_BOARD_SECTIONS, SHIPPED_CHART, SHIPPED_INTRO, SHIPPED_MILESTONES_HEADING, type BoardGroup, type BoardMemberRow, type BoardSection, type LeadershipRow, type MilestoneRow, type MilestonesHeading, type OrgChart, type OrgIntro } from "@/lib/organization";
+import { appPath } from "@/lib/base-path";
 type Scope = "leadership" | "board" | "milestone";
 type Draft = {
   scope: Scope;
@@ -92,7 +93,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
   }
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/organization");
+    const res = await fetch(appPath("/api/organization"));
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setChartDownloadId(data.settings?.chart_download_id ?? "");

@@ -6,6 +6,7 @@ import { PasswordHints, PasswordInput } from "@/components/ui/password-input";
 import { Field, Notice } from "@/components/ui/form-bits";
 import { validatePassword, validateUsername, normalizeUsername } from "@/lib/accounts";
 import { Input } from "@/components/ui/input";
+import { appPath } from "@/lib/base-path";
 
 export function ChangePasswordForm({
   forced = false,
@@ -50,7 +51,7 @@ export function ChangePasswordForm({
       }
     }
     setSaving(true);
-    const res = await fetch("/api/account/password", {
+    const res = await fetch(appPath("/api/account/password"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -66,7 +67,7 @@ export function ChangePasswordForm({
       return;
     }
     if (forced) {
-      window.location.href = "/";
+      window.location.href = appPath("/");
       return;
     }
     setMessage("Your password has been changed.");

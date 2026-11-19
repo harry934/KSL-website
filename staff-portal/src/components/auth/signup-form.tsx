@@ -8,6 +8,7 @@ import { Field, Notice, fieldLabel } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { normalizeUsername, validatePassword, validateUsername } from "@/lib/accounts";
 import { cn } from "@/lib/cn";
+import { appPath } from "@/lib/base-path";
 
 export function SignupForm({ token, initialCode = "" }: { token: string; initialCode?: string }) {
   const { toast } = useFeedback();
@@ -51,7 +52,7 @@ export function SignupForm({ token, initialCode = "" }: { token: string; initial
     setUsernameStatus("checking");
     setUsernameHint("Checking…");
     const timer = window.setTimeout(async () => {
-      const res = await fetch("/api/auth/invite/username-check", {
+      const res = await fetch(appPath("/api/auth/invite/username-check"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, username: next }),
@@ -84,7 +85,7 @@ export function SignupForm({ token, initialCode = "" }: { token: string; initial
       return;
     }
     setVerifying(true);
-    const res = await fetch("/api/auth/invite/verify", {
+    const res = await fetch(appPath("/api/auth/invite/verify"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, passcode }),
@@ -132,7 +133,7 @@ export function SignupForm({ token, initialCode = "" }: { token: string; initial
       }
     }
     setSaving(true);
-    const res = await fetch("/api/auth/invite/complete", {
+    const res = await fetch(appPath("/api/auth/invite/complete"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -152,7 +153,7 @@ export function SignupForm({ token, initialCode = "" }: { token: string; initial
     }
     toast(kind === "create" ? "Account ready. Sign in next." : "Password saved. Sign in next.");
     const notice = kind === "create" ? "account-ready" : "password-ready";
-    window.location.href = `/login?notice=${notice}`;
+    window.location.href = appPath(`/login?notice=${notice}`);
   }
 
   if (!kind) {
