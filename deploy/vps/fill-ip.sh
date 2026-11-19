@@ -1,22 +1,54 @@
 #!/bin/bash
-# Write the VPS address into the local env file and js/portal-host.js.
-# Run this on your computer, before you copy anything to the server.
-# Usage: bash deploy/vps/fill-ip.sh 203.0.113.10
+# Write the VPS address into staff-portal/.env.production (or .env.example copy)
+# and js/portal-host.js so the public site talks to the portal on this VPS.
+#
+# IP smoke test (HTTP, before Nginx / before company DNS):
+#   bash deploy/vps/fill-ip.sh --http 203.0.113.10
+#     → portal http://IP:3000 , site http://IP:8080
+#
+# Later with Nginx TLS on 8443 / 443:
+#   bash deploy/vps/fill-ip.sh 203.0.113.10
+#     → portal https://IP:8443 , site https://IP
+#
+# Do not use kenyashipyards.co.ke until DNS for that hostname points here.
 set -euo pipefail
-IP="${1:-}"
+
+MODE="https"
+IP=""
+if [[ "${1:-}" == "--http" ]]; then
+  MODE="http"
+  IP="${2:-}"
+else
+  IP="${1:-}"
+fi
+
 if ! [[ "$IP" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
-  echo "Usage: bash deploy/vps/fill-ip.sh YOUR_VPS_IP" >&2
+  echo "Usage:" >&2
+  echo "  bash deploy/vps/fill-ip.sh --http YOUR_VPS_IP   # Stage 1 HTTP smoke test" >&2
+  echo "  bash deploy/vps/fill-ip.sh YOUR_VPS_IP          # HTTPS via Nginx :8443 / :443" >&2
   exit 1
 fi
+
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-PORTAL="https://${IP}:8443"
-SITE="https://${IP}"
+if [[ "$MODE" == "http" ]]; then
+  PORTAL="http://${IP}:3000"
+  SITE="http://${IP}:8080"
+else
+  PORTAL="https://${IP}:8443"
+  SITE="https://${IP}"
+fi
+
 ENV_FILE="$ROOT/staff-portal/.env.production"
 HOST_JS="$ROOT/js/portal-host.js"
 
 if [[ ! -f "$ENV_FILE" ]]; then
-  echo "Missing $ENV_FILE" >&2
-  exit 1
+  if [[ -f "$ROOT/staff-portal/.env.example" ]]; then
+    cp "$ROOT/staff-portal/.env.example" "$ENV_FILE"
+    echo "Created $ENV_FILE from .env.example — fill DATABASE_URL and secrets next."
+  else
+    echo "Missing $ENV_FILE" >&2
+    exit 1
+  fi
 fi
 
 python3 - "$ENV_FILE" "$PORTAL" "$SITE" <<'PY'
@@ -31,7 +63,7 @@ lines = open(path).read().splitlines()
 seen = set()
 out = []
 for line in lines:
-    key = line.split("=", 1)[0]
+    key = line.split("=", 1)[0] if "=" in line else ""
     if key in wanted:
         out.append(f"{key}={wanted[key]}")
         seen.add(key)
@@ -53,7 +85,9 @@ if n != 1:
 open(path, "w").write(new)
 PY
 
-echo "Portal address set to $PORTAL"
-echo "Public site address set to $SITE"
-echo "Next: configure DATABASE_URL, STORAGE_DIR, signing secrets, Turnstile keys, and proxy settings in staff-portal/.env.production."
-echo "Keep the env file private; never commit or copy it into the public website directory."
+echo "Mode: $MODE"
+echo "Portal address set to $PORTAL  (js/portal-host.js + NEXT_PUBLIC_PORTAL_URL)"
+echo "Public site address set to $SITE  (NEXT_PUBLIC_SITE_URL + PUBLIC_SITE_ORIGIN)"
+echo "Next: set DATABASE_URL, STORAGE_DIR, and signing secrets in staff-portal/.env.production"
+echo "Rebuild the portal after changing NEXT_PUBLIC_* values."
+echo "Keep the env file private; never commit it."

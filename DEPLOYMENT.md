@@ -29,6 +29,111 @@ Do **not** invent alternate database/role names. Do **not** apply `supabase/migr
 
 ---
 
+## Clone correctly (avoids “merge conflicts”)
+
+You only need **one branch**. Do **not** clone `main` and merge `vps-postgres` into it on the VPS.
+
+```sh
+# [change] Fresh clone — no merge, no pull of main
+sudo mkdir -p /opt/ksl-website
+sudo chown "$USER":"$USER" /opt/ksl-website
+git clone -b vps-postgres --single-branch https://github.com/harry934/KSL-website.git /opt/ksl-website
+cd /opt/ksl-website
+git status
+git log -1 --oneline
+```
+
+**Expect:** `On branch vps-postgres`, clean tree, latest commit.  
+**If Git talks about merge conflicts:** you mixed branches. Fix with a clean clone of `vps-postgres` only (or `git fetch` + `git checkout vps-postgres` and do **not** `git merge main`).  
+**Do not** open the MySQL WIP on `main` on the VPS.
+
+Company contact emails like `info@kenyashipyards.co.ke` in page footers can stay — those are contact addresses. What you **skip for now** is using `kenyashipyards.co.ke` as this app’s site/portal hostname until DNS points here.
+
+---
+
+## Stage 0: Show the site on the VPS IP (before Nginx, before company DNS)
+
+Goal: browse **`http://YOUR_VPS_IP:8080`** (public pages) and **`http://YOUR_VPS_IP:3000/login`** (portal) using IP only.
+
+Replace `YOUR_VPS_IP` everywhere (example `203.0.113.10`).
+
+### 0.1 After PostgreSQL roles + clone (Stages 1–2 / clone above)
+
+```sh
+cd /opt/ksl-website
+cp staff-portal/.env.example staff-portal/.env.production
+bash deploy/vps/fill-ip.sh --http YOUR_VPS_IP
+```
+
+Then edit `staff-portal/.env.production` and set real values for:
+
+- `DATABASE_URL` (runtime password)
+- `STORAGE_DIR=/var/lib/ksl-portal/files`
+- the three `*_SECRET` values (`openssl rand -base64 48`)
+
+Leave Turnstile empty for private IP testing if you want.
+
+`fill-ip.sh --http` sets:
+
+| Variable | Value |
+|----------|--------|
+| `NEXT_PUBLIC_PORTAL_URL` | `http://YOUR_VPS_IP:3000` |
+| `NEXT_PUBLIC_SITE_URL` | `http://YOUR_VPS_IP:8080` |
+| `PUBLIC_SITE_ORIGIN` | `http://YOUR_VPS_IP:8080` |
+| `js/portal-host.js` | same portal URL (overrides Vercel `data-ksl-content-api`) |
+
+### 0.2 Migrate, install, build, admin `[change]`
+
+```sh
+# Migrator env (separate file)
+sudo tee /etc/ksl-portal-migrator.env >/dev/null <<EOF
+DATABASE_URL=postgresql://ksl_migrator:MIGRATOR_PASSWORD@127.0.0.1:5432/ksl
+DATABASE_SSL=disable
+EOF
+sudo chmod 600 /etc/ksl-portal-migrator.env
+
+cd /opt/ksl-website/staff-portal
+npm ci
+MIGRATOR_ENV_FILE=/etc/ksl-portal-migrator.env npm run db:migrate
+set -a; . ./.env.production; set +a
+npm run build
+npm run bootstrap:admin
+```
+
+### 0.3 Run portal on the VPS IP (temporary, no Nginx) `[change]`
+
+For IP smoke test only, bind all interfaces (firewall carefully):
+
+```sh
+cd /opt/ksl-website/staff-portal
+set -a; . ./.env.production; set +a
+# Temporary: listen on all interfaces so http://YOUR_VPS_IP:3000 works
+npm run start -- --hostname 0.0.0.0 --port 3000
+```
+
+In another SSH session, serve the static site:
+
+```sh
+cd /opt/ksl-website
+python3 -m http.server 8080 --bind 0.0.0.0
+```
+
+**Open in a browser**
+
+- Public site: `http://YOUR_VPS_IP:8080/`
+- Portal login: `http://YOUR_VPS_IP:3000/login`
+- Health: `http://YOUR_VPS_IP:3000/api/health`
+
+**Expect:** Pages load with `img/ksl` images; live content may come from the portal API (via `portal-host.js`) or fall back to `data/*.json`. Password login works.  
+**Passkeys:** need HTTPS + matching portal hostname — skip until Nginx/TLS.  
+**Precaution:** Opening `:3000`/`:8080` on the public IP is for private testing. Prefer firewall allowlist or SSH tunnels if the VPS is on the open internet. Later, systemd keeps the portal on `127.0.0.1:3000` behind Nginx only.
+
+### 0.4 When IP smoke test passes
+
+Continue Stages 4–5 (systemd on loopback, Nginx, TLS). Only then introduce a real hostname. Rebuild after changing origins to HTTPS.
+
+---
+
 ## Stage 1: VPS preparation
 
 ### 1.1 Verify PostgreSQL `[verify]`
@@ -179,7 +284,10 @@ sudo chmod 640 /etc/ksl-portal.env
 sudo install -m 600 /dev/null /etc/ksl-portal-migrator.env
 ```
 
-Edit `/etc/ksl-portal.env` (runtime — **no migrator password**):
+Edit `/etc/ksl-portal.env` (runtime — **no migrator password**).
+
+For **IP Stage 0** use HTTP IP origins (see Stage 0 / `fill-ip.sh --http`).  
+For **later Nginx + DNS**, switch to HTTPS hostnames and rebuild — do not require `kenyashipyards.co.ke` until that DNS points at this VPS.
 
 ```env
 DATABASE_URL=postgresql://ksl_runtime:RUNTIME_PASSWORD@127.0.0.1:5432/ksl
@@ -189,12 +297,12 @@ STORAGE_DIR=/var/lib/ksl-portal/files
 STORED_FILE_SIGNING_SECRET=
 CONTACT_TOKEN_SECRET=
 MESSAGE_VIEW_UNLOCK_SECRET=
-NEXT_PUBLIC_PORTAL_URL=https://portal.example.co.ke
-NEXT_PUBLIC_SITE_URL=https://www.kenyashipyards.co.ke
-PUBLIC_SITE_ORIGIN=https://www.kenyashipyards.co.ke,https://kenyashipyards.co.ke
+NEXT_PUBLIC_PORTAL_URL=http://YOUR_VPS_IP:3000
+NEXT_PUBLIC_SITE_URL=http://YOUR_VPS_IP:8080
+PUBLIC_SITE_ORIGIN=http://YOUR_VPS_IP:8080
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 TURNSTILE_SECRET_KEY=
-TRUSTED_PROXY_HOPS=1
+TRUSTED_PROXY_HOPS=0
 NODE_ENV=production
 ```
 
