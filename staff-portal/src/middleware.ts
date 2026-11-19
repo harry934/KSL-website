@@ -29,6 +29,8 @@ const PUBLIC_API_PATHS = new Set([
   "/api/auth/invite/verify",
   "/api/auth/invite/complete",
   "/api/auth/invite/username-check",
+  // Public media (and signed private downloads) — route still enforces bucket/signature rules.
+  "/api/stored-file",
 ]);
 
 function isAllowedOrigin(origin: string) {
@@ -104,5 +106,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|favicon.png|ksl-logo.png|brand/).*)"],
+  // Keep /api/upload out of middleware so large raw bodies are not touched before the route.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|favicon.png|ksl-logo.png|brand/|api/upload).*)"],
 };

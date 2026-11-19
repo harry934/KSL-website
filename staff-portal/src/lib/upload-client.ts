@@ -19,20 +19,27 @@ async function uploadError(res: Response) {
   const data = await res.json().catch(() => ({}));
   if (typeof data.error === "string" && data.error) return data.error;
   if (res.status === 413) return "That file is too large to send this way.";
+  if (res.status === 0 || res.type === "error") {
+    return "The upload was interrupted. Check your connection and try a smaller MP4 (H.264).";
+  }
   return "The upload did not work. Please try again.";
 }
 
-/** Home-hero films use the same validated, server-side filesystem upload as other files. */
-async function uploadHeroVideo(module: ModuleKey, file: File) {
-  const body = new FormData();
-  body.append("file", file);
+/**
+ * Send the file as a raw body. Multipart form-data through this VPS Nginx/Next path
+ * resets the TCP connection (net::ERR_CONNECTION_RESET).
+ */
+async function postFile(module: ModuleKey, file: File, extraHeaders?: Record<string, string>) {
   const res = await fetch(appPath("/api/upload"), {
     method: "POST",
     headers: {
+      "Content-Type": "application/octet-stream",
       "x-ksl-module": module,
-      "x-ksl-hero": "1",
+      "x-ksl-filename": file.name,
+      "x-ksl-content-type": file.type || "application/octet-stream",
+      ...extraHeaders,
     },
-    body,
+    body: file,
   });
   if (!res.ok) throw new Error(await uploadError(res));
   return res.json();
@@ -43,18 +50,7 @@ export async function uploadFile(
   file: File,
   extraHeaders?: Record<string, string>
 ): Promise<{ public_url: string; storage_path: string; preview_url?: string }> {
-  return withBusy("Uploading…", async () => {
-    if (extraHeaders?.["x-ksl-hero"] === "1") return uploadHeroVideo(module, file);
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch(appPath("/api/upload"), {
-      method: "POST",
-      headers: { "x-ksl-module": module, ...extraHeaders },
-      body: fd,
-    });
-    if (!res.ok) throw new Error(await uploadError(res));
-    return res.json();
-  });
+  return withBusy("Uploading…", () => postFile(module, file, extraHeaders));
 }
 
 const BUSY_WORDS: Record<string, string> = { DELETE: "Deleting…", GET: "" };
