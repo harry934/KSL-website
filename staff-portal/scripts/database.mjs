@@ -4,8 +4,9 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
-const envPath = resolve(scriptDir, "../.env.local");
-if (existsSync(envPath)) {
+for (const name of [".env.local", ".env.production"]) {
+  const envPath = resolve(scriptDir, `../${name}`);
+  if (!existsSync(envPath)) continue;
   const contents = readFileSync(envPath, "utf8").replace(/^\uFEFF/, "");
   for (const line of contents.split(/\r?\n/)) {
     const trimmed = line.trim();
