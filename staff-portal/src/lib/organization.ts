@@ -1,3 +1,5 @@
+import { isImagePath, safeImageUrl } from "@/lib/site-image-url";
+
 export type LeadershipRow = {
   id: string;
   role: string;
@@ -369,22 +371,13 @@ export function cleanStoryKey(value: unknown) {
   return text || null;
 }
 
-function httpsImage(value: string) {
-  try {
-    const url = new URL(value);
-    if (url.protocol !== "https:") return null;
-    if (!/\.(jpe?g|png|webp)$/i.test(url.pathname)) return null;
-    return url.toString();
-  } catch {
-    return null;
-  }
-}
-
 export function cleanMilestoneImage(value: unknown) {
   const text = String(value ?? "").trim();
   if (!text) return null;
   if (/^img\/[a-z0-9_./-]+\.(jpe?g|png|webp)$/i.test(text)) return text;
-  return httpsImage(text);
+  const safe = safeImageUrl(text);
+  if (!safe || !isImagePath(safe)) return null;
+  return safe;
 }
 
 export function cleanImageSlot(value: unknown) {

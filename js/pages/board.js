@@ -253,7 +253,11 @@
     }
 
     function portraitSrc(member) {
-        if (member.photo) return member.photo;
+        var photo = member.photo;
+        if (photo && window.KSL_CONTENT && window.KSL_CONTENT.safeMediaUrl) {
+            photo = window.KSL_CONTENT.safeMediaUrl(photo) || "";
+        }
+        if (photo) return photo;
         var parts = String(member.name || "").trim().split(/\s+/).filter(Boolean);
         var initials = ((parts[0] || "K").charAt(0) + (parts.length > 1 ? parts[parts.length - 1].charAt(0) : "")).toUpperCase();
         var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="480"><rect width="100%" height="100%" fill="#0b1f3a"/><text x="50%" y="54%" text-anchor="middle" fill="#c5a028" font-family="Georgia,serif" font-size="120">' + initials + "</text></svg>";

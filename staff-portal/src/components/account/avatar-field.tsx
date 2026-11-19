@@ -22,10 +22,17 @@ export function AvatarField({ name, avatarUrl }: { name: string; avatarUrl: stri
   async function upload(file: File) {
     setBusy(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
       const data = await withBusy("Uploading your photo…", async () => {
-        const res = await fetch(appPath("/api/account/avatar"), { method: "POST", body: fd });
+        // Raw body — multipart through this VPS Nginx/Next path can reset the connection.
+        const res = await fetch(appPath("/api/account/avatar"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/octet-stream",
+            "x-ksl-filename": file.name,
+            "x-ksl-content-type": file.type || "application/octet-stream",
+          },
+          body: file,
+        });
         const json = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(json.error ?? "The upload did not work. Please try again.");
         return json;

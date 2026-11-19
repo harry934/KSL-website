@@ -3,7 +3,9 @@
     "use strict";
 
     var style = document.createElement("style");
-    style.textContent = "[data-ksl-await]:not(.is-live){visibility:hidden}img[data-ksl-image]:not(.is-live){visibility:hidden}";
+    // Hide CMS text until live data arrives. Photos stay visible (shipped defaults) —
+    // site-images.js swaps overrides without blanking the page on refresh.
+    style.textContent = "[data-ksl-await]:not(.is-live){visibility:hidden}";
     document.head.appendChild(style);
 
     function list(target) {

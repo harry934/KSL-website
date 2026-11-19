@@ -7,8 +7,9 @@ import type { SessionStop } from "@/lib/staff-session";
 import { signedStoredFileUrl } from "@/lib/storage";
 import { STAFF_SESSION_COOKIE } from "@/lib/staff-session";
 
+/** Long-lived enough for a workday; each page load refreshes the signature. */
 export async function avatarUrl(path: string) {
-  return signedStoredFileUrl("avatars", path, 60 * 60);
+  return signedStoredFileUrl("avatars", path, 60 * 60 * 12);
 }
 
 export type StaffSession = {

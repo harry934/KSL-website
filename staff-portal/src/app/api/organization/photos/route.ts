@@ -2,6 +2,7 @@ import { createDatabaseClient } from "@/lib/db-client";
 import { requireStaff, dbError } from "@/lib/api-auth";
 import { photoSrc } from "@/lib/gallery";
 import { kept } from "@/lib/recycle";
+import { isImagePath } from "@/lib/site-image-url";
 import { siteAssetUrl } from "@/lib/site-url";
 import { NextResponse } from "next/server";
 
@@ -22,7 +23,7 @@ export async function GET() {
       const src = photoSrc(row);
       return { src: /^https?:/i.test(src) ? src : siteAssetUrl(src), title: row.title || "Gallery photo" };
     })
-    .filter((row) => /\.(jpe?g|png|webp)(\?|$)/i.test(row.src));
+    .filter((row) => isImagePath(row.src));
 
   return NextResponse.json({ photos });
 }

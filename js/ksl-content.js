@@ -47,6 +47,31 @@
         }
     }
 
+    /** Extension from a stored-file URL lives in the path= query, not the pathname. */
+    function storedFileExt(url) {
+        try {
+            var parsed = new URL(url, typeof location !== "undefined" ? location.href : "http://localhost");
+            if (parsed.pathname.indexOf("/api/stored-file") === -1) return "";
+            var path = parsed.searchParams.get("path") || "";
+            var match = /\.([a-z0-9]+)$/i.exec(path);
+            return match ? match[1].toLowerCase() : "";
+        } catch (err) {
+            return "";
+        }
+    }
+
+    function isImageMedia(url) {
+        if (/\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(url)) return true;
+        var ext = storedFileExt(url);
+        return ext === "jpg" || ext === "jpeg" || ext === "png" || ext === "webp" || ext === "gif" || ext === "avif";
+    }
+
+    function isVideoMedia(url) {
+        if (/\.(mp4|webm)(\?|#|$)/i.test(url)) return true;
+        var ext = storedFileExt(url);
+        return ext === "mp4" || ext === "webm";
+    }
+
     /** Accept relative img/, https, and http URLs on the portal/site host (VPS staging). */
     function safeMediaUrl(value) {
         var url = String(value || "").trim();
@@ -70,6 +95,8 @@
     global.KSL_CONTENT = {
         apiBase: apiBase,
         fetchJson: fetchJson,
-        safeMediaUrl: safeMediaUrl
+        safeMediaUrl: safeMediaUrl,
+        isImageMedia: isImageMedia,
+        isVideoMedia: isVideoMedia
     };
 })(window);

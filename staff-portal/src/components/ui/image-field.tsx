@@ -24,6 +24,7 @@ export function ImageField({
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [broken, setBroken] = useState(false);
   const [pending, setPending] = useState<File | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [gallery, setGallery] = useState<{ src: string; title: string }[] | null>(null);
@@ -33,6 +34,7 @@ export function ImageField({
     setError(null);
     try {
       const data = await uploadFile(module, file);
+      setBroken(false);
       onChange(data.public_url);
     } catch (e) {
       setError((e as Error).message);
@@ -47,18 +49,33 @@ export function ImageField({
     <div className="flex min-w-0 items-center gap-3">
       <div
         className={cn(
-          "flex shrink-0 items-center justify-center overflow-hidden rounded-[8px] border border-[#e3e8ee] bg-[#f6f8fa] text-[#98a3b1]",
+          "flex shrink-0 items-center justify-center overflow-hidden rounded-[8px] border bg-[#f6f8fa] text-[#98a3b1]",
+          broken ? "border-[#f0c08a] bg-[#fff8f1]" : "border-[#e3e8ee]",
           compact ? "h-14 w-20" : "h-20 w-28"
         )}
+        title={broken ? "This image URL does not load. Re-upload or pick another photo." : undefined}
       >
-        {preview ? (
+        {preview && !broken ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt="" className="h-full w-full object-cover" loading="lazy" />
+          <img
+            src={preview}
+            alt=""
+            className="h-full w-full object-cover"
+            loading="lazy"
+            onLoad={() => setBroken(false)}
+            onError={() => setBroken(true)}
+            key={preview}
+          />
         ) : (
           <ImageIcon className="h-6 w-6" />
         )}
       </div>
       <div className="min-w-0 flex-1 space-y-1.5">
+        {broken ? (
+          <p className="text-[12.5px] font-medium text-[#9a3412]">
+            Image missing or broken — re-upload so the website can show it.
+          </p>
+        ) : null}
         <div className="flex flex-wrap items-center gap-2">
           <label
             className={cn(

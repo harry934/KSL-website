@@ -106,6 +106,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Keep /api/upload out of middleware so large raw bodies are not touched before the route.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|favicon.png|ksl-logo.png|brand/|api/upload).*)"],
+  // Keep raw file uploads out of middleware so large bodies are not touched before the route.
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|favicon.png|ksl-logo.png|default-avatar.webp|brand/|api/upload|api/account/avatar).*)",
+  ],
 };

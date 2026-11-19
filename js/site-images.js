@@ -22,30 +22,54 @@
         var img = new Image();
         img.decoding = "async";
         if (img.fetchPriority !== undefined) img.fetchPriority = "high";
-        img.onload = function () { done(); };
-        img.onerror = function () {};
+        img.onload = function () { done(true); };
+        // Broken override → keep shipped image visible instead of staying hidden.
+        img.onerror = function () { done(false); };
         img.src = url;
+    }
+
+    function isImageUrl(url) {
+        if (window.KSL_CONTENT && window.KSL_CONTENT.isImageMedia) return window.KSL_CONTENT.isImageMedia(url);
+        return /\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i.test(url);
+    }
+
+    function isVideoUrl(url) {
+        if (window.KSL_CONTENT && window.KSL_CONTENT.isVideoMedia) return window.KSL_CONTENT.isVideoMedia(url);
+        return /\.(mp4|webm)(\?|#|$)/i.test(url);
     }
 
     function paint(el) {
         var id = el.getAttribute("data-ksl-image");
         var url = id && overrides[id];
-        if (!url) return;
+        if (!url) {
+            el.classList.add("is-live");
+            return;
+        }
         if (el.classList && el.classList.contains("page-header")) {
-            whenLoaded(url, function () {
-                el.style.setProperty("--ksl-photo-page-header", 'url("' + url + '")');
+            whenLoaded(url, function (ok) {
+                if (ok) el.style.setProperty("--ksl-photo-page-header", 'url("' + url + '")');
+                el.classList.add("is-live");
             });
             return;
         }
-        if (el.tagName !== "IMG" || el.getAttribute("src") === url) return;
-        whenLoaded(url, function () {
-            el.src = url;
+        if (el.tagName !== "IMG") {
             el.classList.add("is-live");
-            var parent = el.parentElement;
-            var href = parent && parent.getAttribute && parent.getAttribute("href");
-            if (parent && parent.tagName === "A" && href && /\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i.test(href)) {
-                parent.setAttribute("href", url);
+            return;
+        }
+        if (el.getAttribute("src") === url) {
+            el.classList.add("is-live");
+            return;
+        }
+        whenLoaded(url, function (ok) {
+            if (ok) {
+                el.src = url;
+                var parent = el.parentElement;
+                var href = parent && parent.getAttribute && parent.getAttribute("href");
+                if (parent && parent.tagName === "A" && href && isImageUrl(href)) {
+                    parent.setAttribute("href", url);
+                }
             }
+            el.classList.add("is-live");
         });
     }
 
@@ -53,8 +77,8 @@
         Object.keys(CSS_SLOTS).forEach(function (id) {
             var url = overrides[id];
             if (!url) return;
-            whenLoaded(url, function () {
-                document.documentElement.style.setProperty(CSS_SLOTS[id], 'url("' + url + '")');
+            whenLoaded(url, function (ok) {
+                if (ok) document.documentElement.style.setProperty(CSS_SLOTS[id], 'url("' + url + '")');
             });
         });
         var scope = root && root.querySelectorAll ? root : document;
@@ -103,8 +127,8 @@
             var url = safeUrl(item && item.url);
             var kind = item && item.kind === "video" ? "video" : "image";
             if (!url) return;
-            if (kind === "video" && !/\.(mp4|webm)(\?|#|$)/i.test(url)) return;
-            if (kind === "image" && !/\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i.test(url)) return;
+            if (kind === "video" && !isVideoUrl(url)) return;
+            if (kind === "image" && !isImageUrl(url)) return;
             clean.push({
                 kind: kind,
                 url: url,
@@ -203,10 +227,13 @@
         ready();
     }
 
+    // Show shipped/default photos immediately; CMS overrides swap in without a blank flash.
+    settle(true);
+
     if (window.KSL_CONTENT) {
-        window.KSL_CONTENT.fetchJson("/api/public/site-images", "data/site-images.json").then(take).catch(settle);
-    } else {
-        settle();
+        window.KSL_CONTENT.fetchJson("/api/public/site-images", "data/site-images.json").then(take).catch(function () {
+            settle(true);
+        });
     }
     setTimeout(function () { settle(true); }, 8000);
 
