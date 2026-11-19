@@ -21,7 +21,7 @@ export async function GET() {
     (row) => !row.deleted_at && (!row.go_live_on || String(row.go_live_on).slice(0, 10) <= today)
   );
   const split = splitEventsByDate(live, today);
-  const payload = { upcoming: split.upcoming, past: [] };
+  const payload = { upcoming: split.upcoming, past: split.past };
 
   return NextResponse.json(await signPayload(payload), {
     headers: { "Cache-Control": PUBLIC_CMS_CACHE },

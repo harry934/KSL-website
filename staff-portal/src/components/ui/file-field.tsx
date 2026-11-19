@@ -5,6 +5,7 @@ import { FileText, Link2, Loader2, Upload } from "lucide-react";
 import type { ModuleKey } from "@/lib/modules";
 import { uploadFile } from "@/lib/upload-client";
 import { siteAssetUrl } from "@/lib/site-url";
+import { appPath } from "@/lib/base-path";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/cn";
 
@@ -39,7 +40,7 @@ export function FileField({
       return;
     }
     let cancel = false;
-    fetch(`/api/stored-file?ref=${encodeURIComponent(value)}`)
+    fetch(appPath(`/api/stored-file?ref=${encodeURIComponent(value)}`))
       .then((res) => res.json())
       .then((data) => {
         if (!cancel && data.url) setOpenHref(data.url);

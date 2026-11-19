@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { appPath } from "@/lib/base-path";
 
 type Hit = { id: string; title: string; hint: string; href: string; area: string };
 
@@ -24,7 +25,7 @@ export function PortalSearch({ className }: { className?: string }) {
     }
     const timer = window.setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(text)}`, { cache: "no-store" });
+        const res = await fetch(appPath(`/api/search?q=${encodeURIComponent(text)}`), { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
         setResults(data.results ?? []);

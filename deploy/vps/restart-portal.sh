@@ -57,5 +57,5 @@ fi
 sudo systemctl --no-pager --full status ksl-portal | head -20
 echo
 echo "Local health:"
-curl -sS --max-time 5 http://127.0.0.1:3000/api/health || true
+curl -sS --max-time 5 http://127.0.0.1:3000/kwela/api/health || true
 echo

@@ -5,10 +5,11 @@
     --bs-secondary: #99792c;
     --bs-light: #F7F9FB;
     --bs-dark: #273272;
-    --ksl-photo-home-hero: url("../img/ksl/mombasa.webp");
-    --ksl-photo-page-header: url("../img/ksl/yard.jpg");
+    /* No shipped photo until CMS media loads — waiting state uses a soft blue wash. */
+    --ksl-photo-home-hero: none;
+    --ksl-photo-page-header: none;
     --ksl-photo-flag: url("../img/ksl/kenya-flag-strip.png");
-    --ksl-photo-banner-mombasa: url("../img/ksl/mombasa.webp");
+    --ksl-photo-banner-mombasa: none;
 }
 
 #spinner {
@@ -108,10 +109,17 @@ img[data-ksl-image]:not([data-ksl-image="brand.logo"]) {
     transition: opacity .2s ease;
 }
 
+img[data-ksl-image]:not([data-ksl-image="brand.logo"]):not(.is-live) {
+    opacity: 0;
+}
+
 .page-header {
     position: relative;
     overflow: hidden;
+    /* Solid soft navy so white header text stays readable while the photo loads.
+       Kill the template carousel background from css/style.css. */
     background: #09296C;
+    background-image: none;
     animation: ksl-page-in .45s ease both;
 }
 
@@ -131,13 +139,18 @@ main {
     right: 0;
     top: -18%;
     height: 136%;
-    background:
-        linear-gradient(rgba(39, 50, 114, .62), rgba(9, 41, 108, .62)),
-        var(--ksl-photo-page-header) center center / cover no-repeat;
+    /* Soft blue hold — no default photo until .is-photo-ready */
+    background: rgba(1, 101, 252, 0.16);
     transform: translate3d(0, var(--ksl-header-y, 0px), 0);
     z-index: 0;
     will-change: transform;
-    transition: opacity .85s cubic-bezier(.22, 1, .36, 1);
+    transition: opacity .85s cubic-bezier(.22, 1, .36, 1), background-color .45s ease;
+}
+
+.page-header.is-photo-ready::before {
+    background:
+        linear-gradient(rgba(39, 50, 114, .62), rgba(9, 41, 108, .62)),
+        var(--ksl-photo-page-header) center center / cover no-repeat;
 }
 
 .page-header .container {
@@ -5377,9 +5390,18 @@ body {
     position: absolute;
     inset: 0;
     z-index: 0;
-    background: var(--ksl-photo-home-hero) center 42% / cover no-repeat;
+    /* Soft blue hold — no default photo until .is-photo-ready */
+    background: rgba(1, 101, 252, 0.16);
     pointer-events: none;
-    transition: opacity .35s ease;
+    transition: opacity .35s ease, background-color .45s ease;
+}
+
+.ksl-hero.is-photo-ready::before {
+    background: var(--ksl-photo-home-hero) center 42% / cover no-repeat;
+}
+
+.ksl-hero.has-custom-media.is-photo-ready::before {
+    opacity: 0;
 }
 
 .ksl-hero-shade {
@@ -15230,6 +15252,9 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     bottom: 0;
     left: 0;
     width: min(280px, 28vw);
+    background: rgba(1, 101, 252, 0.16);
+}
+.ksl-banner.is-quay.is-photo-ready::before {
     background:
         linear-gradient(90deg, transparent 62%, #09296C),
         var(--ksl-banner-photo, var(--ksl-photo-banner-mombasa)) center 42% / cover no-repeat;
@@ -15246,6 +15271,9 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     right: 0;
     bottom: 0;
     width: min(280px, 28vw);
+    background: rgba(1, 101, 252, 0.16);
+}
+.ksl-banner.is-berth.is-photo-ready::before {
     background:
         linear-gradient(270deg, transparent 62%, #09296C),
         var(--ksl-banner-photo, var(--ksl-photo-banner-mombasa)) center 42% / cover no-repeat;
@@ -15257,12 +15285,18 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
 
 .ksl-banner.is-channel {
     color: #fff;
+    background: #09296C;
+}
+.ksl-banner.is-channel.is-photo-ready {
     background: var(--ksl-banner-photo, var(--ksl-photo-banner-mombasa)) center 40% / cover no-repeat;
 }
 .ksl-banner.is-channel::before {
     content: "";
     position: absolute;
     inset: 0;
+    background: rgba(1, 101, 252, 0.16);
+}
+.ksl-banner.is-channel.is-photo-ready::before {
     background: linear-gradient(90deg, rgba(9, 41, 108, 0.94) 0 34%, rgba(9, 41, 108, 0.55) 58%, rgba(9, 41, 108, 0.12) 100%);
 }
 .ksl-banner.is-channel .ksl-banner-tag { color: #e6c56a; }

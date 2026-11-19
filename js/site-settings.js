@@ -245,8 +245,22 @@
             bar.style.setProperty("--kb-ticker-duration", Math.min(48, Math.max(26, a.text.length * 0.18)) + "s");
         }
         if (style === "quay" || style === "berth" || style === "channel") {
+            bar.classList.add("is-waiting");
+            bar.classList.remove("is-photo-ready");
             var photo = cssImageUrl(a.photos && a.photos[style]);
-            if (photo) bar.style.setProperty("--ksl-banner-photo", photo);
+            if (photo) {
+                var raw = String((a.photos && a.photos[style]) || "").trim();
+                var preload = new Image();
+                preload.onload = function () {
+                    bar.style.setProperty("--ksl-banner-photo", photo);
+                    bar.classList.remove("is-waiting");
+                    bar.classList.add("is-photo-ready");
+                };
+                preload.onerror = function () {
+                    bar.classList.remove("is-waiting");
+                };
+                preload.src = raw;
+            }
         }
 
         function dismiss() {

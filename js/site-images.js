@@ -1,4 +1,4 @@
-/* Swaps photos that staff replaced in the admin. Shipped files stay if this fails. */
+/* Swaps photos that staff replaced in the admin. Soft blue hold until the real image loads — no default photo flash. */
 (function () {
     "use strict";
 
@@ -23,7 +23,6 @@
         img.decoding = "async";
         if (img.fetchPriority !== undefined) img.fetchPriority = "high";
         img.onload = function () { done(true); };
-        // Broken override → keep shipped image visible instead of staying hidden.
         img.onerror = function () { done(false); };
         img.src = url;
     }
@@ -38,18 +37,46 @@
         return /\.(mp4|webm)(\?|#|$)/i.test(url);
     }
 
+    function revealPhoto(el) {
+        if (!el || !el.classList) return;
+        el.classList.remove("is-waiting");
+        el.classList.add("is-photo-ready");
+    }
+
+    function armPhotoSlots() {
+        document.querySelectorAll(".page-header[data-ksl-image]").forEach(function (el) {
+            el.classList.add("is-waiting");
+            el.classList.remove("is-photo-ready");
+            el.style.removeProperty("--ksl-photo-page-header");
+        });
+        var hero = document.querySelector(".ksl-hero");
+        if (hero) {
+            hero.classList.add("is-waiting");
+            hero.classList.remove("is-photo-ready");
+        }
+    }
+
     function paint(el) {
         var id = el.getAttribute("data-ksl-image");
         var url = id && overrides[id];
-        if (!url) {
-            el.classList.add("is-live");
-            return;
-        }
         if (el.classList && el.classList.contains("page-header")) {
+            el.classList.add("is-waiting");
+            el.classList.remove("is-photo-ready");
+            if (!url) {
+                el.classList.add("is-live");
+                return;
+            }
             whenLoaded(url, function (ok) {
-                if (ok) el.style.setProperty("--ksl-photo-page-header", 'url("' + url + '")');
+                if (ok) {
+                    el.style.setProperty("--ksl-photo-page-header", 'url("' + url + '")');
+                    revealPhoto(el);
+                }
                 el.classList.add("is-live");
             });
+            return;
+        }
+        if (!url) {
+            el.classList.add("is-live");
             return;
         }
         if (el.tagName !== "IMG") {
@@ -78,7 +105,11 @@
             var url = overrides[id];
             if (!url) return;
             whenLoaded(url, function (ok) {
-                if (ok) document.documentElement.style.setProperty(CSS_SLOTS[id], 'url("' + url + '")');
+                if (!ok) return;
+                document.documentElement.style.setProperty(CSS_SLOTS[id], 'url("' + url + '")');
+                if (id === "chrome.home-hero") {
+                    revealPhoto(document.querySelector(".ksl-hero"));
+                }
             });
         });
         var scope = root && root.querySelectorAll ? root : document;
@@ -89,8 +120,6 @@
     function ready() {
         document.documentElement.classList.add("ksl-photos-ready");
     }
-
-    ready();
 
     function heroCrop(value) {
         if (!value || typeof value !== "object") return null;
@@ -177,10 +206,15 @@
         }
         if (item && item.kind === "image") {
             var video = hero.querySelector("video.ksl-hero-video");
-            if (video) {
-                video.setAttribute("poster", item.url);
-                video.removeAttribute("data-src");
-            }
+            whenLoaded(item.url, function (ok) {
+                if (!ok) return;
+                if (video) {
+                    video.setAttribute("poster", item.url);
+                    video.removeAttribute("data-src");
+                }
+                document.documentElement.style.setProperty("--ksl-photo-home-hero", 'url("' + item.url + '")');
+                revealPhoto(hero);
+            });
         }
         if (item && item.kind === "video") {
             var clip = hero.querySelector("video.ksl-hero-video");
@@ -188,6 +222,16 @@
                 clip.setAttribute("poster", "");
                 clip.src = item.url;
                 clip.removeAttribute("data-src");
+                function onVideoReady() {
+                    clip.classList.add("is-ready");
+                    hero.classList.add("has-custom-media");
+                    revealPhoto(hero);
+                }
+                if (clip.readyState >= 2) onVideoReady();
+                else {
+                    clip.addEventListener("loadeddata", onVideoReady, { once: true });
+                    clip.addEventListener("error", function () {}, { once: true });
+                }
             }
         }
         hero.classList.add("is-live");
@@ -200,6 +244,10 @@
         scope.querySelectorAll("[data-ksl-image]").forEach(function (el) { nodes.push(el); });
         nodes.forEach(function (el) {
             var id = el.getAttribute("data-ksl-image");
+            if (el.classList && el.classList.contains("page-header")) {
+                // Headers stay on the blue hold unless a real photo already painted.
+                if (!el.classList.contains("is-photo-ready")) return;
+            }
             if (!forceShow && id && overrides[id] && el.tagName === "IMG" && el.getAttribute("src") !== overrides[id]) return;
             el.classList.add("is-live");
         });
@@ -227,13 +275,14 @@
         ready();
     }
 
-    // Show shipped/default photos immediately; CMS overrides swap in without a blank flash.
-    settle(true);
-
+    armPhotoSlots();
+    // Do not paint shipped defaults first — wait for CMS (or timeout) so headers stay soft blue.
     if (window.KSL_CONTENT) {
         window.KSL_CONTENT.fetchJson("/api/public/site-images", "data/site-images.json").then(take).catch(function () {
             settle(true);
         });
+    } else {
+        settle(true);
     }
     setTimeout(function () { settle(true); }, 8000);
 
