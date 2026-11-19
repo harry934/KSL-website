@@ -31,7 +31,10 @@ export async function POST(req: NextRequest) {
     .select("id, is_active, deleted_at, must_change_password, one_time_password_expires_at, password_hash")
     .eq("username", username)
     .maybeSingle();
-  if (gateError) return NextResponse.json({ error: "Sign-in is temporarily unavailable." }, { status: 503 });
+  if (gateError) {
+    console.error("sign-in admin_profiles lookup failed", gateError.code ?? "", gateError.message);
+    return NextResponse.json({ error: "Sign-in is temporarily unavailable." }, { status: 503 });
+  }
   if (gate?.deleted_at) {
     await recordAttempt(username, ip, false);
     return NextResponse.json({ error: INVALID }, { status: 401 });
@@ -40,7 +43,10 @@ export async function POST(req: NextRequest) {
   if (gate?.is_active && gate.must_change_password && expiresAt && expiresAt <= Date.now()) {
     const discarded = `${generateOneTimePassword()}${generateOneTimePassword()}`.replace(/-/g, "");
     const { error } = await admin.from("admin_profiles").update({ password_hash: await hashPassword(discarded) }).eq("id", gate.id);
-    if (error) return NextResponse.json({ error: "Sign-in is temporarily unavailable." }, { status: 503 });
+    if (error) {
+      console.error("sign-in expired OTP discard failed", error.code ?? "", error.message);
+      return NextResponse.json({ error: "Sign-in is temporarily unavailable." }, { status: 503 });
+    }
     await recordAttempt(username, ip, false);
     return NextResponse.json(
       { error: "This one-time passcode has expired. Ask an administrator for a new one." },
