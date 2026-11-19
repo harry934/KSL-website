@@ -2,9 +2,11 @@
 
 This branch replaces the staff portal's Supabase database, authentication, and object storage with PostgreSQL, local authentication, and private filesystem storage. The Docker-free setup below is documentation only; no VPS or production service has been contacted or changed.
 
+**Full VPS cutover checklist with exact commands:** [../DEPLOYMENT.md](../DEPLOYMENT.md)
+
 ## Migration status and source coverage
 
-`migrations/001_standalone_schema.sql` is the consolidated initial schema for a new PostgreSQL database. The ordered, checksum-verified runner is `staff-portal/scripts/migrate.mjs` (`npm run db:migrate`). It serializes concurrent runs with a PostgreSQL advisory lock and applies each migration transactionally. Never run the historical `../supabase/migrations/*.sql` files against ordinary PostgreSQL: they include Supabase `auth`, `storage`, roles, APIs, and RLS.
+`migrations/001_standalone_schema.sql` is the consolidated initial schema for a new PostgreSQL database. The ordered, checksum-verified runner is `staff-portal/scripts/migrate.mjs` (`npm run db:migrate`). It serializes concurrent runs with a PostgreSQL advisory lock and applies each migration transactionally. Never run the historical `../supabase/migrations/*.sql` files against ordinary PostgreSQL: they include Supabase `auth`, `storage`, roles, APIs, and RLS. See [MIGRATION-COVERAGE.md](./MIGRATION-COVERAGE.md) for a per-file source-to-replacement matrix.
 
 | Historical migration | Standalone replacement in `001_standalone_schema.sql` |
 |---|---|
@@ -17,7 +19,7 @@ This branch replaces the staff portal's Supabase database, authentication, and o
 | 030–035 | Organization chart, board sections/groups, milestones, date precision and ordering |
 | 036–043 | Drafts/returns, security follow-up, project details, message IP/risk metadata, organogram |
 
-Supabase Auth and Storage services are replaced by the portal's Argon2id/session and local-file implementations. Supabase-only RLS, grants, RPCs, and service roles are intentionally not copied; authorization is enforced in the application and the runtime database role has no schema-creation privilege. The schema seeds module/settings rows but does not create staff accounts.
+Supabase Auth and Storage services are replaced by the portal's bcrypt cost-12/session and local-file implementations. Passkeys are intentionally omitted. Supabase-only RLS, grants, RPCs, and service roles are intentionally not copied; authorization is enforced in the application and the runtime database role has no schema-creation privilege. The schema seeds module/settings rows but does not create staff accounts.
 
 **Verification is still required before production.** This environment has no `psql`, `postgres`, or `pg_ctl`; Docker is intentionally not used. The migration SQL, transaction behavior, PostgreSQL CRUD/auth/storage integration, and backup restore have therefore not been executed against a real local PostgreSQL server. Do not treat schema coverage as database-test coverage or deploy until those checks pass.
 
@@ -54,9 +56,10 @@ Do not expose database credentials, signing secrets, or `STORAGE_DIR` through `N
 - Review `../deploy/vps/ksl-portal.service`, adjust its application path and Node/npm paths to the installed layout, then install it as a systemd unit. It binds Next.js to `127.0.0.1:3000`; configure the existing reverse proxy and TLS separately.
 - `../deploy/vps/publish-public.sh` uses `rsync --delete` with `/var/www/ksl` as its default destination. Before running it, verify that this is a dedicated KSL document root, separate from the company's WordPress and osTicket paths; never point `DEST` at an existing site or shared web root.
 - Build from a reviewed checkout with `npm ci`; provide the public build-time origins and Turnstile site key to `npm run build` because Next.js embeds `NEXT_PUBLIC_*` values into the build. Do not pass server secrets on the command line. Then start/restart the service with systemd. The unit is a template and is not installed or enabled by this repository.
-- Create the initial local super-admin with `npm run bootstrap:admin`. It prompts for a hidden password, stores an Argon2id hash, and refuses to replace an existing super-admin.
-- The `staff-portal/scripts/import-*-from-json.mjs` scripts load public seed content from the repository JSON files. They are not a Supabase export tool.
-- No production database rows, staff accounts, or file bodies have been exported or imported. Before cutover, export authorized business data and storage files to encrypted offline media, map/validate those exports in a staging database, and copy files while preserving referenced paths. Do not migrate Supabase password hashes; issue local password resets/invites instead.
+- Create the initial local super-admin with `npm run bootstrap:admin`. It prompts for a hidden password, stores a bcrypt cost-12 hash, marks the account for a required password change, and refuses to replace an existing super-admin.
+- The `staff-portal/scripts/import-*-from-json.mjs` scripts load public seed content from repository JSON files. For an authorized export kept outside Git, use `npm run import:content-export -- /absolute/path/content-export.json`. Its input is `{ "tables": { "news_items": [{ ... }] } }`; it accepts only documented content tables, preserves supplied content IDs and relations, strips audit-user references, and explicitly rejects `auth` data, `encrypted_password`, and `password_hash` fields.
+- Copy exported file bodies into an external directory with `media-public/`, `downloads/`, and `avatars/` subdirectories, then use `npm run import:storage-objects -- /absolute/path/object-export`. It rejects links, traversal, unknown extensions, oversize files, and signature mismatches. It writes filesystem objects plus `stored_files` metadata but publishes no URLs, so avatars and downloads remain private.
+- No production database rows, staff accounts, or file bodies have been exported or imported. Before cutover, map/validate authorized exports in a staging database and copy files while preserving referenced paths. Do not migrate Supabase password hashes; issue local password resets/invites instead.
 
 ## Backup, restore, rollback
 

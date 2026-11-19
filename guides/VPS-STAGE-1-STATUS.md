@@ -24,12 +24,31 @@ systemctl is-active mysql || true
 sudo ss -lntp | grep -E ':(3306|33060)\\b' || true
 ```
 
-Do not send credential values. Do not run `postgres/bootstrap/roles.sql` until confirming the names `ksl`, `ksl_migrator`, and `ksl_runtime` are unused and PostgreSQL is loopback-only. Do not apply any application schema yet: the standalone schema and runner are not implemented.
+Do not send credential values. Do not run `postgres/bootstrap/roles.sql` until confirming the names `ksl`, `ksl_migrator`, and `ksl_runtime` are unused and PostgreSQL is loopback-only. Do not apply historical `supabase/migrations/*.sql` files to the VPS.
 
 ## Current implementation status
 
-The branch currently has no converted `postgres/migrations/` schema, no Postgres migration runner, no Postgres app data layer, no local authentication conversion, and no fully converted filesystem-only storage. Existing runtime still imports Supabase; the checked `staff-portal/package.json` contains Supabase SDK packages and does not contain `pg`, `bcryptjs`, or `mysql2`. Do not deploy it as a standalone app. Historical `supabase/migrations/` remain unchanged.
+Implemented on `vps-postgres` (not deployed):
+
+- `postgres/migrations/001_standalone_schema.sql`, role bootstrap SQL, a checksum-verified/advisory-lock migration runner, and [per-source migration coverage](../postgres/MIGRATION-COVERAGE.md).
+- Server-only PostgreSQL runtime access using `DATABASE_URL`, dedicated migrator/runtime roles, local bcrypt cost-12 password hashes, SHA-256-hashed random session tokens, single live session records, and staff/invite/reset flows.
+- Filesystem-only object storage under `STORAGE_DIR`, with controlled public media delivery and authorization/signed links for avatars/downloads.
+- Supabase SDK packages, environment keys, runtime clients, and passkey UI/routes/schema were removed. Historical Supabase migrations/docs remain as source history only.
+
+Local verification completed from the `vps-postgres` worktree on 18 November 2026:
+
+- `npm ci --ignore-scripts` — completed.
+- `npm test` — 32 passing tests.
+- `npm run lint` — completed with 12 existing warnings and no errors.
+- `npx tsc --noEmit` — completed with no diagnostics.
+- `npm audit` — completed; 13 high-severity transitive dependency findings remain. The offered automated fix is breaking (`eslint-config-next` downgrade), so it was not applied.
+- `npm run build` without public origins — correctly fails because `NEXT_PUBLIC_SITE_URL` is required in production. `NEXT_PUBLIC_SITE_URL=https://www.kenyashipyards.example NEXT_PUBLIC_PORTAL_URL=https://portal.kenyashipyards.example npm run build` — passed. Use the real public origins at deployment build time; do not pass secrets on the command line.
+- `import:content-export` and `import:storage-objects` — syntax-checked; both reject repository/deployment-tree input before opening a database connection. They still require disposable-PostgreSQL integration coverage.
+
+Disposable PostgreSQL verification was added as `npm run test:pg` (embedded PostgreSQL; no system package install required). On 19 November 2026 it applied `001_standalone_schema` twice (second run no-op), reported 42 public tables, and passed `db-smoke` CRUD/auth/storage checks. No VPS, MySQL service, Nginx, DNS, Vercel project, or Supabase project has been accessed or changed from this workspace.
 
 ## Next gate
 
-First complete repository schema/application conversion and tests. Then verify this PostgreSQL instance and provision database roles. Import/export packages and live VPS deployment require the user's private local exports and SSH access; keep all exports and secrets outside Git.
+1. On the VPS, follow [../DEPLOYMENT.md](../DEPLOYMENT.md): verify PostgreSQL, run `postgres/bootstrap/roles.sql`, migrate with `MIGRATOR_ENV_FILE`, build, and start `ksl-portal`.
+2. Optionally exercise `import:content-export` / `import:storage-objects` against a disposable database and an authorized off-repo export.
+3. Keep MySQL untouched. Nginx/certificates/DNS/public cutover remain Stage 2 after private SSH-tunnel validation.

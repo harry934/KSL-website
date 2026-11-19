@@ -4,9 +4,15 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+.env*.local
 node_modules/
 staff-portal/.next/
 staff-portal/node_modules/
 .vercel
 .cursor/
-.env*.local
+*.dump
+*.sql.gz
+*.pem
+*.key
+!deploy/vps/nginx/*.conf
+staff-portal/.env.production

@@ -12,6 +12,9 @@
             return pending;
         }
         var base = apiBase();
+        if (!base && !fallbackPath) {
+            return Promise.resolve(null);
+        }
         var primary = base ? base + apiPath : fallbackPath;
         return fetch(primary).then(function (res) {
             if (!res.ok) {
@@ -19,7 +22,7 @@
             }
             return res.json();
         }).catch(function () {
-            if (primary === fallbackPath) {
+            if (!fallbackPath || primary === fallbackPath) {
                 return null;
             }
             return fetch(fallbackPath).then(function (res) {

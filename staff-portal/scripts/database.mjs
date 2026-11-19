@@ -37,6 +37,10 @@ const pool = new pg.Pool({
 
 export const query = (text, values = []) => pool.query(text, values);
 
+export async function closePool() {
+  await pool.end();
+}
+
 export async function withTransaction(work) {
   const client = await pool.connect();
   try {

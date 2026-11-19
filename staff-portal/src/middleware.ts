@@ -18,7 +18,6 @@ function configuredOrigins() {
 /** Unauthenticated API routes that skip the staff session gate. `/api/public/*` is handled separately. */
 const PUBLIC_API_PATHS = new Set([
   "/api/auth/sign-in",
-  "/api/auth/passkey",
   "/api/auth/session",
   "/api/auth/pulse",
   "/api/auth/sign-out",

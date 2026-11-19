@@ -6,7 +6,7 @@ import { createDatabaseAdmin } from "./database.mjs";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const admin = createDatabaseAdmin();
 
-const data = JSON.parse(readFileSync(resolve(__dirname, "../../data/gallery.json"), "utf8"));
+const data = JSON.parse(readFileSync(resolve(__dirname, "../migration-data/gallery.json"), "utf8"));
 
 const { data: existingPhotos, error: photosErr } = await admin.from("gallery_photos").select("storage_path, public_url");
 if (photosErr) throw photosErr;

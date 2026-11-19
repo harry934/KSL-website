@@ -3,6 +3,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { Plus } from "lucide-react";
 import { getStaffSession } from "@/lib/session";
 import { createDatabaseClient } from "@/lib/db-client";
+import { query } from "@/lib/db";
 import { MODULE_ROUTES, type ModuleKey } from "@/lib/modules";
 import { permissionNavLinks, usesSidebar } from "@/lib/portal-nav";
 import { formatBytes } from "@/lib/downloads";
@@ -46,17 +47,7 @@ async function loadStorageUsage(): Promise<StorageBreakdown | null> {
   noStore();
   const admin = createDatabaseClient();
   const breakdown = await loadStorageBreakdown(admin);
-  if (breakdown) return breakdown;
-  const { data, error } = await admin.rpc("storage_usage");
-  if (error) return null;
-  return {
-    buckets: ((data ?? []) as { bucket_id: string; bytes: number | string }[]).map((row) => ({
-      bucket_id: row.bucket_id,
-      bytes: Number(row.bytes) || 0,
-    })),
-    bin: 0,
-    spare: 0,
-  };
+  return breakdown;
 }
 
 function StorageMeter({ usage }: { usage: StorageBreakdown | null }) {
@@ -136,10 +127,13 @@ function StorageMeter({ usage }: { usage: StorageBreakdown | null }) {
 }
 
 async function loadDatabaseSize() {
-  const { data, error } = await createDatabaseClient().rpc("database_size_bytes");
-  if (error || data == null) return null;
-  const bytes = Number(data);
-  return Number.isFinite(bytes) ? bytes : null;
+  try {
+    const result = await query<{ bytes: string }>("SELECT pg_database_size(current_database())::text AS bytes");
+    const bytes = Number(result.rows[0]?.bytes);
+    return Number.isFinite(bytes) ? bytes : null;
+  } catch {
+    return null;
+  }
 }
 
 function DatabaseMeter({ bytes }: { bytes: number | null }) {

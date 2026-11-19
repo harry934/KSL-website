@@ -1849,10 +1849,11 @@
         });
 
         (window.KSL_CONTENT
-            ? window.KSL_CONTENT.fetchJson("/api/public/gallery", "data/gallery.json")
-            : fetch("data/gallery.json").then(function (res) { return res.json(); }))
+            ? window.KSL_CONTENT.fetchJson("/api/public/gallery", null)
+            : Promise.resolve(null))
             .then(function (data) {
                 if (!data) {
+                    galleryRoot.innerHTML = '<section class="ksl-empty-state" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.5"></circle><path d="m21 16-5.2-5.2a1.2 1.2 0 0 0-1.7 0L8 17"></path></svg><h3>Gallery is unavailable</h3><p>Check your connection, then refresh the page.</p><div class="ksl-empty-state-actions"><button class="btn btn-primary" type="button" data-ksl-reload>Try again</button></div></section>';
                     return;
                 }
                 galleryPhotos = data.photos || [];
@@ -1945,7 +1946,6 @@
             grab("/api/public/downloads", "data/downloads.json"),
             grab("/api/public/careers", "data/careers.json"),
             grab("/api/public/organization", "data/organization.json"),
-            grab("/api/public/gallery", "data/gallery.json"),
             grab("/api/public/products", "data/products.json"),
             grab("/api/public/projects", "data/projects.json"),
             grab("/api/public/csr", "data/csr.json")
@@ -1958,10 +1958,9 @@
             var downloads = results[4];
             var careers = results[5];
             var org = results[6];
-            var gallery = results[7];
-            var products = results[8];
-            var projects = results[9];
-            var csr = results[10];
+            var products = results[7];
+            var projects = results[8];
+            var csr = results[9];
             ((downloads && downloads.items) || []).forEach(function (item) {
                 list.push({ title: item.title, href: "downloads.html", type: "Document", keys: (item.categoryLabel || "") + " " + (item.type || "") });
             });
@@ -1974,14 +1973,6 @@
             ((org && org.board) || []).forEach(function (item) {
                 if (!item.name) return;
                 list.push({ title: item.name, href: "board.html", type: "People", keys: (item.role || "") + " " + (item.summary || "") });
-            });
-            ((gallery && gallery.videos) || []).forEach(function (item) {
-                list.push({ title: item.title, href: "videos.html", type: "Video", keys: item.caption || "" });
-            });
-            ((gallery && gallery.photos) || []).forEach(function (item) {
-                var title = item.title || item.alt;
-                if (!title) return;
-                list.push({ title: title, href: "videos.html", type: "Photo", keys: (item.alt || "") + " " + ((item.tags || []).join(" ")) });
             });
             ((news && news.items) || []).forEach(function (item) {
                 list.push({ title: item.title, href: "article.html?slug=" + encodeURIComponent(item.slug), type: "News", keys: plain(item.excerpt) + " " + plain(item.body).slice(0, 800) });

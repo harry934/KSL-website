@@ -1,14 +1,11 @@
 # Kenya Shipyards Limited — website and admin portal
 
-Public site: https://ksl-website.vercel.app/
+This repository contains the public static website and the Next.js staff portal. On the `vps-postgres` branch the staff portal uses self-hosted PostgreSQL, local authentication, and filesystem storage instead of Supabase.
 
-Staff admin portal: https://ksl-websitekiza.vercel.app/login
-
-One Git repository. Two Vercel projects. Setup and status notes are in `guides/`.
-
-**Production overview and VPS migration:** [guides/PRODUCTION-OVERVIEW-AND-VPS.md](guides/PRODUCTION-OVERVIEW-AND-VPS.md)  
-**Move from Vercel to the VPS (SSH steps, and what the code does):** [guides/VPS-TRANSFER-PLAN.md](guides/VPS-TRANSFER-PLAN.md)  
-**VPS regression checklist:** [guides/VPS-MIGRATION-CHECKLIST.md](guides/VPS-MIGRATION-CHECKLIST.md)  
+**VPS production deployment (this branch):** [DEPLOYMENT.md](DEPLOYMENT.md)  
+**PostgreSQL schema and migration operations:** [postgres/README.md](postgres/README.md)  
+**VPS Stage 1 status:** [guides/VPS-STAGE-1-STATUS.md](guides/VPS-STAGE-1-STATUS.md)  
+**Historical Vercel/Supabase deployment notes:** [guides/DEPLOYMENT.md](guides/DEPLOYMENT.md)  
 **Burp / pen-test brief:** [guides/BURP-SECURITY-BRIEF.md](guides/BURP-SECURITY-BRIEF.md)
 
 ## Folders
@@ -24,7 +21,9 @@ One Git repository. Two Vercel projects. Setup and status notes are in `guides/`
 | `docs/` | Files visitors download (plans, forms, the brochure). These addresses are linked from the site, so do not rename them. |
 | `guides/` | Notes for the team: deployment, status, and the website proposal. Not published. |
 | `staff-portal/` | The Next.js admin portal. Its own readme is `staff-portal/README.md`. |
-| `supabase/migrations/` | Database changes, numbered `001` to `039`. Run them in that order. |
+| `postgres/` | Standalone PostgreSQL bootstrap SQL, versioned migrations, and operations docs. Use `npm run db:migrate` from `staff-portal/`. |
+| `supabase/migrations/` | Historical Supabase SQL archive only. Do **not** apply these to ordinary PostgreSQL. |
+| `deploy/vps/` | systemd unit, nginx templates, and public-site publish helper for the VPS. |
 | `tools/` | One-off scripts. `tools/scrape/` holds saved copies of old pages used to build the JSON. Not published. |
 
 ## Public pages

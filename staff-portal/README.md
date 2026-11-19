@@ -1,6 +1,6 @@
 # KSL staff portal
 
-The portal is a Next.js application using standalone PostgreSQL, local Argon2id authentication, database-backed sessions, and filesystem storage. It no longer requires Supabase services or Docker.
+The portal is a Next.js application using standalone PostgreSQL, local bcrypt password authentication (cost 12), database-backed sessions, and filesystem storage. It no longer requires Supabase services or Docker.
 
 ## Local development
 
@@ -21,7 +21,7 @@ The portal is a Next.js application using standalone PostgreSQL, local Argon2id 
    npm run dev
    ```
 
-The bootstrap command prompts for a username and hidden password, hashes it with Argon2id, and refuses to replace an existing super-admin.
+The bootstrap command prompts for a username and hidden password, hashes it with bcrypt at cost 12, marks the account for a required first-login password change, and refuses to replace an existing super-admin.
 
 ## Production and data import
 
@@ -33,9 +33,12 @@ The `scripts/import-*-from-json.mjs` tools import public content from the reposi
 
 ```sh
 npm test
+npm run test:pg
 npx tsc --noEmit
 npm run lint
 npm run build
 ```
 
-Database-dependent migration and API integration checks require a local PostgreSQL instance; they must not be pointed at production data during development.
+`npm run test:pg` starts a disposable embedded PostgreSQL cluster, applies migrations twice, and runs CRUD/auth/storage smoke checks. It must never be pointed at the production VPS database.
+
+Production cutover steps for the VPS are in [../DEPLOYMENT.md](../DEPLOYMENT.md).

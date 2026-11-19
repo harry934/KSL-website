@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import argon2 from "argon2";
+import bcrypt from "bcryptjs";
 import { withTransaction } from "./database.mjs";
 
 const [rawUsername, rawDisplayName, rawEmail] = process.argv.slice(2);
@@ -55,12 +55,7 @@ if (password.length < 10 || Buffer.byteLength(password) > 1024) {
   throw new Error("Password must contain 10 to 1024 bytes");
 }
 
-const passwordHash = await argon2.hash(password, {
-  type: argon2.argon2id,
-  memoryCost: 19_456,
-  timeCost: 2,
-  parallelism: 1,
-});
+const passwordHash = await bcrypt.hash(password, 12);
 const id = randomUUID();
 
 await withTransaction(async (client) => {
@@ -78,8 +73,8 @@ await withTransaction(async (client) => {
   if (existingUsername.rowCount) throw new Error("That username is already in use");
   await client.query(
     `INSERT INTO public.admin_profiles
-      (id, username, password_hash, contact_email, display_name, is_super_admin, is_active)
-     VALUES ($1, $2, $3, $4, $5, true, true)`,
+      (id, username, password_hash, contact_email, display_name, is_super_admin, is_active, must_change_password)
+     VALUES ($1, $2, $3, $4, $5, true, true, true)`,
     [id, username, passwordHash, contactEmail, displayName],
   );
 });

@@ -525,28 +525,6 @@ CREATE UNIQUE INDEX draft_returns_open_entity ON public.draft_returns (entity_ta
 CREATE UNIQUE INDEX draft_returns_open_key ON public.draft_returns (entity_table, entity_key)
   WHERE resolved_at IS NULL AND entity_id IS NULL;
 
-CREATE TABLE public.webauthn_challenges (
-  challenge text PRIMARY KEY,
-  purpose text NOT NULL CHECK (purpose IN ('registration', 'authentication')),
-  user_id uuid REFERENCES public.admin_profiles(id) ON DELETE CASCADE,
-  expires_at timestamptz NOT NULL,
-  CHECK ((purpose = 'registration' AND user_id IS NOT NULL) OR purpose = 'authentication')
-);
-CREATE INDEX webauthn_challenges_expiry_idx ON public.webauthn_challenges (expires_at);
-CREATE TABLE public.webauthn_credentials (
-  credential_id text PRIMARY KEY,
-  user_id uuid NOT NULL REFERENCES public.admin_profiles(id) ON DELETE CASCADE,
-  public_key bytea NOT NULL,
-  counter bigint NOT NULL DEFAULT 0 CHECK (counter >= 0),
-  transports text[] NOT NULL DEFAULT '{}',
-  device_type text NOT NULL,
-  backed_up boolean NOT NULL DEFAULT false,
-  friendly_name text NOT NULL DEFAULT 'Passkey',
-  created_at timestamptz NOT NULL DEFAULT now(),
-  last_used_at timestamptz
-);
-CREATE INDEX webauthn_credentials_user_idx ON public.webauthn_credentials (user_id, created_at);
-
 CREATE TABLE public.stored_files (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   bucket_id text NOT NULL CHECK (bucket_id IN ('media-public', 'downloads', 'avatars')),
