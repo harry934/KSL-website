@@ -35,6 +35,8 @@ const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || "").trim().replace(/\/$/,
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // VPS production installs often omit devDependencies; typecheck still runs in `next build`.
+  eslint: { ignoreDuringBuilds: true },
   ...(basePath ? { basePath } : {}),
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

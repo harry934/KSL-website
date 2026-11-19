@@ -1,5 +1,5 @@
 import { query } from "@/lib/db";
-import type { GalleryRow } from "@/lib/gallery";
+import type { GalleryRow, GalleryVideoRow } from "@/lib/gallery";
 import type { WebsiteMessageRow } from "@/lib/message-unlock";
 import type { NewsRow } from "@/lib/news";
 
@@ -60,6 +60,7 @@ type TableRows = {
   website_messages: WebsiteMessageRow;
   news_items: NewsRow;
   gallery_photos: GalleryRow & { deleted_at?: string | null };
+  gallery_videos: GalleryVideoRow & { deleted_at?: string | null };
   faq_groups: FaqGroupRow;
   faq_items: FaqItemRow;
   site_settings: SiteSettingRow;
@@ -68,7 +69,7 @@ type TableRows = {
   service_status_log: { id: number; service: string; state: string; latency_ms: number; checked_at: string };
 };
 type IdTables =
-  | "news_items" | "gallery_videos" | "event_items"
+  | "news_items" | "event_items"
   | "service_items" | "career_listings" | "download_items" | "organization_leadership"
   | "organization_yards" | "organization_board_members" | "organization_milestones"
   | "press_assets" | "products" | "projects" | "csr_projects" | "website_messages"
