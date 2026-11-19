@@ -133,7 +133,7 @@ export function CsrEditor({ canPublish, canDelete }: { canPublish: boolean; canD
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
       title: "Delete this programme?",
-      message: item ? `"${item.title}" leaves the website and is permanently deleted from the website.` : "It is permanently deleted from the website.",
+      message: item ? `"${item.title}" is permanently deleted from the database.` : "It is permanently deleted from the database.",
       confirmLabel: "Delete programme",
       danger: true,
     });

@@ -390,7 +390,7 @@ export function OrganizationEditor({ view = "organisation" }: { view?: "organisa
   async function remove(id: string, scope: Scope) {
     const ok = await confirm({
       title: "Delete this entry?",
-      message: "It leaves the website and is permanently deleted from the website.",
+      message: "It is permanently deleted from the database.",
       confirmLabel: "Delete",
       danger: true,
     });

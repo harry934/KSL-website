@@ -125,7 +125,7 @@ export function CareersEditor() {
     const item = listings.find((l) => l.id === id);
     const ok = await confirm({
       title: "Delete this listing?",
-      message: item ? `"${item.title}" leaves the website and is permanently deleted from the website.` : "It is permanently deleted from the website.",
+      message: item ? `"${item.title}" is permanently deleted from the database.` : "It is permanently deleted from the database.",
       confirmLabel: "Delete",
       danger: true,
     });

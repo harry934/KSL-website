@@ -142,7 +142,7 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
     const item = items.find((row) => row.id === id);
     const ok = await confirm({
       title: "Delete this project?",
-      message: item ? `"${item.title}" leaves the website and is permanently deleted from the website.` : "It is permanently deleted from the website.",
+      message: item ? `"${item.title}" is permanently deleted from the database.` : "It is permanently deleted from the database.",
       confirmLabel: "Delete project",
       danger: true,
     });

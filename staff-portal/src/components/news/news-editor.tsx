@@ -116,8 +116,8 @@ export function NewsEditor() {
     const ok = await confirm({
       title: "Remove this article?",
       message: item
-        ? `"${item.title}" leaves the website and is permanently deleted from the website.`
-        : "It is permanently deleted from the website. You can restore it from there.",
+        ? `"${item.title}" is permanently deleted from the database.`
+        : "It is permanently deleted from the database.",
       confirmLabel: "Delete article",
       danger: true,
     });

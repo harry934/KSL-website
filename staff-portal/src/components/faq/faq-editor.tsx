@@ -210,7 +210,7 @@ export function FaqEditor() {
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
       title: "Delete this question?",
-      message: item ? `"${shorten(item.question, 80)}" is permanently deleted from the website.` : "It is permanently deleted from the website.",
+      message: item ? `"${shorten(item.question, 80)}" is permanently deleted from the database.` : "It is permanently deleted from the database.",
       confirmLabel: "Delete",
       danger: true,
     });

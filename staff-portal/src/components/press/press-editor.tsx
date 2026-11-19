@@ -153,7 +153,7 @@ export function PressEditor() {
     const item = assets.find((a) => a.id === id);
     const ok = await confirm({
       title: "Remove this item?",
-      message: item ? `"${item.title}" leaves the press kit and is permanently deleted from the website.` : "It is permanently deleted from the website.",
+      message: item ? `"${item.title}" is permanently deleted from the database.` : "It is permanently deleted from the database.",
       confirmLabel: "Remove",
       danger: true,
     });
