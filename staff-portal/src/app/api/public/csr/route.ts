@@ -3,6 +3,7 @@ import { toPublicCsrPayload, type CsrProjectRow, type CsrSettings } from "@/lib/
 import { kept } from "@/lib/recycle";
 import { signPayload } from "@/lib/stored-file";
 import { NextResponse } from "next/server";
+import { PUBLIC_CMS_CACHE } from "@/lib/public-cache";
 
 export async function GET() {
   const admin = createDatabaseClient();
@@ -16,6 +17,6 @@ export async function GET() {
 
   const payload = toPublicCsrPayload(settingsRes.data as CsrSettings | null, kept((itemsRes.data ?? []) as Array<CsrProjectRow & { deleted_at?: string | null }>));
   return NextResponse.json(await signPayload(payload), {
-    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+    headers: { "Cache-Control": PUBLIC_CMS_CACHE },
   });
 }

@@ -19,25 +19,37 @@ export async function GET() {
   if (error) return error;
 
   const admin = createDatabaseClient();
+  // Postgres db-client does not support Supabase-style aliases (permissions:admin_module_permissions(...)).
+  // Select the relation by table name, then map to `permissions` for the UI.
   const [{ data, error: dbError }, { data: sessions }] = await Promise.all([
     admin
       .from("admin_profiles")
       .select(
-        "id, username, display_name, contact_email, is_super_admin, role_title, is_active, must_change_password, avatar_path, created_at, permissions:admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
+        "id, username, display_name, contact_email, is_super_admin, role_title, is_active, must_change_password, avatar_path, created_at, admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
       )
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
     admin.from("staff_sessions").select("user_id, seen_at"),
   ]);
 
-  if (dbError) return NextResponse.json({ error: "Could not load the staff list." }, { status: 500 });
+  if (dbError) {
+    console.error("staff list query failed", dbError);
+    return NextResponse.json({ error: "Could not load the staff list." }, { status: 500 });
+  }
   const seenByUser = new Map((sessions ?? []).map((row) => [row.user_id as string, (row.seen_at as string | null) ?? null]));
   const staff = await Promise.all(
-    (data ?? []).map(async ({ avatar_path, ...row }) => ({
-      ...row,
-      avatar_url: avatar_path ? await avatarUrl(avatar_path) : null,
-      last_seen_at: seenByUser.get(row.id) ?? null,
-    }))
+    (data ?? []).map(async (row) => {
+      const { avatar_path, admin_module_permissions, ...rest } = row as typeof row & {
+        avatar_path: string | null;
+        admin_module_permissions?: unknown;
+      };
+      return {
+        ...rest,
+        permissions: Array.isArray(admin_module_permissions) ? admin_module_permissions : [],
+        avatar_url: avatar_path ? await avatarUrl(avatar_path) : null,
+        last_seen_at: seenByUser.get(rest.id as string) ?? null,
+      };
+    })
   );
   return NextResponse.json({ staff });
 }

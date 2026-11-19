@@ -2,6 +2,7 @@ import { createDatabaseClient } from "@/lib/db-client";
 import { toPublicCareersPayload, type CareerListingRow, type CareersSettings } from "@/lib/careers";
 import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
+import { PUBLIC_CMS_CACHE } from "@/lib/public-cache";
 
 export async function GET() {
   const admin = createDatabaseClient();
@@ -19,6 +20,6 @@ export async function GET() {
   );
 
   return NextResponse.json(payload, {
-    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+    headers: { "Cache-Control": PUBLIC_CMS_CACHE },
   });
 }

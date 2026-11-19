@@ -3,6 +3,7 @@ import { toPublicPress, type PressAssetRow, type PressSettings } from "@/lib/pre
 import { openStoredUrl } from "@/lib/stored-file";
 import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
+import { PUBLIC_CMS_CACHE } from "@/lib/public-cache";
 
 export async function GET() {
   const admin = createDatabaseClient();
@@ -22,6 +23,6 @@ export async function GET() {
   const payload = toPublicPress(settingsRes.data as PressSettings | null, publicAssets);
 
   return NextResponse.json(payload, {
-    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+    headers: { "Cache-Control": PUBLIC_CMS_CACHE },
   });
 }

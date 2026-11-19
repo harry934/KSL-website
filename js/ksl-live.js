@@ -74,11 +74,13 @@
         if (seen[path] || !files[path]) return;
         seen[path] = true;
         var fallback = files[path];
+        // With a portal base configured, do not fall back to stale data/*.json —
+        // admin edits must win over committed snapshots.
         window.KSL_PREFETCH[path] = base
             ? fetch(base + path, { cache: "no-store" }).then(function (res) {
                 if (!res.ok) throw new Error("live");
                 return res.json();
-            }).catch(function () { return fromFile(fallback); })
+            }).catch(function () { return null; })
             : fromFile(fallback);
     });
 })();

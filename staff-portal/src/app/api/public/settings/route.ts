@@ -2,6 +2,7 @@ import { createDatabaseClient } from "@/lib/db-client";
 import { mergeSiteSettings } from "@/lib/site-settings";
 import { NextResponse } from "next/server";
 import { signPayload } from "@/lib/stored-file";
+import { PUBLIC_CMS_CACHE } from "@/lib/public-cache";
 
 export async function GET() {
   const { data, error } = await createDatabaseClient()
@@ -11,6 +12,6 @@ export async function GET() {
   if (error) return NextResponse.json({ error: "Unavailable" }, { status: 500 });
 
   return NextResponse.json(await signPayload(mergeSiteSettings(data ?? [])), {
-    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+    headers: { "Cache-Control": PUBLIC_CMS_CACHE },
   });
 }

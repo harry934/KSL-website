@@ -16,10 +16,30 @@ import { PhotoCropDialog } from "@/components/ui/photo-crop";
 import { cn } from "@/lib/cn";
 import { appPath } from "@/lib/base-path";
 
-type VideoDraft = { id?: string; link: string; title: string; caption: string; featured: boolean; status: string; sort_order: number };
+type VideoDraft = {
+  id?: string;
+  link: string;
+  title: string;
+  caption: string;
+  featured: boolean;
+  status: string;
+  sort_order: number;
+  storage_path?: string | null;
+  public_url?: string | null;
+  content_type?: string | null;
+  source: "youtube" | "file";
+};
 type PhotoEdit = { id: string; title: string; alt_text: string; category: string; status: string };
 
-const EMPTY_VIDEO: VideoDraft = { link: "", title: "", caption: "", featured: false, status: "published", sort_order: 0 };
+const EMPTY_VIDEO: VideoDraft = {
+  link: "",
+  title: "",
+  caption: "",
+  featured: false,
+  status: "published",
+  sort_order: 0,
+  source: "youtube",
+};
 
 export function GalleryEditor() {
   const { toast, confirm } = useFeedback();
@@ -72,12 +92,16 @@ export function GalleryEditor() {
     if (clip) {
       setVideo({
         id: clip.id,
-        link: `https://www.youtube.com/watch?v=${clip.youtube_id}`,
+        link: clip.youtube_id ? `https://www.youtube.com/watch?v=${clip.youtube_id}` : "",
         title: clip.title ?? "",
         caption: clip.caption ?? "",
         featured: clip.featured,
         status: clip.status,
         sort_order: clip.sort_order,
+        storage_path: clip.storage_path ?? null,
+        public_url: clip.public_url ?? null,
+        content_type: clip.content_type ?? null,
+        source: clip.youtube_id ? "youtube" : "file",
       });
     }
     if (!photo) window.setTimeout(() => document.getElementById(`gallery-${id}`)?.scrollIntoView({ block: "center" }), 50);
@@ -262,23 +286,62 @@ export function GalleryEditor() {
       row
         ? {
             id: row.id,
-            link: `https://www.youtube.com/watch?v=${row.youtube_id}`,
+            link: row.youtube_id ? `https://www.youtube.com/watch?v=${row.youtube_id}` : "",
             title: row.title,
             caption: row.caption ?? "",
             featured: row.featured,
             status: row.status,
             sort_order: row.sort_order,
+            storage_path: row.storage_path ?? null,
+            public_url: row.public_url ?? null,
+            content_type: row.content_type ?? null,
+            source: row.youtube_id ? "youtube" : "file",
           }
         : { ...EMPTY_VIDEO, status: "published", sort_order: videos.length }
     );
   }
 
+  async function uploadGalleryVideo(file: File) {
+    if (!video) return;
+    if (!/^video\/(mp4|webm)$/i.test(file.type) && !/\.(mp4|webm|mov|m4v)$/i.test(file.name)) {
+      toast("Use an MP4 or WebM video.", "error");
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      toast("Video is too large (max 50 MB).", "error");
+      return;
+    }
+    setSavingVideo(true);
+    try {
+      const uploaded = await uploadFile("gallery", file, { "x-ksl-gallery-video": "1" });
+      setVideo({
+        ...video,
+        source: "file",
+        link: "",
+        storage_path: uploaded.storage_path,
+        public_url: uploaded.public_url,
+        content_type:
+          file.type.startsWith("video/webm") || file.name.toLowerCase().endsWith(".webm") ? "video/webm" : "video/mp4",
+        title: video.title.trim() || file.name.replace(/\.[a-z0-9]+$/i, ""),
+      });
+      toast("Video uploaded. Add a title, then save.");
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSavingVideo(false);
+    }
+  }
+
   async function saveVideo(e: React.FormEvent) {
     e.preventDefault();
     if (!video) return;
-    const youtubeId = youtubeIdFrom(video.link);
-    if (!youtubeId) {
+    const youtubeId = video.source === "youtube" ? youtubeIdFrom(video.link) : null;
+    if (video.source === "youtube" && !youtubeId) {
       toast("That does not look like a YouTube link. Copy the address from the video's Share button.", "error");
+      return;
+    }
+    if (video.source === "file" && !(video.storage_path && video.public_url)) {
+      toast("Upload an MP4 or WebM file first.", "error");
       return;
     }
     if (!video.title.trim()) {
@@ -290,7 +353,10 @@ export function GalleryEditor() {
       const saved = await sendJson("/api/gallery", "POST", {
         type: "video",
         id: video.id,
-        youtube_id: youtubeId,
+        youtube_id: youtubeId || "",
+        storage_path: video.source === "file" ? video.storage_path : null,
+        public_url: video.source === "file" ? video.public_url : null,
+        content_type: video.source === "file" ? video.content_type : null,
         title: video.title,
         caption: video.caption,
         featured: video.featured,
@@ -327,7 +393,9 @@ export function GalleryEditor() {
   async function removeVideo(row: GalleryVideoRow) {
     const ok = await confirm({
       title: "Remove this video?",
-      message: `"${row.title}" will be removed from the gallery and go to the recycle bin. The film stays on YouTube.`,
+      message: row.youtube_id
+        ? `"${row.title}" will be removed from the gallery and go to the recycle bin. The film stays on YouTube.`
+        : `"${row.title}" will be removed from the gallery and go to the recycle bin.`,
       confirmLabel: "Remove video",
       danger: true,
     });
@@ -529,7 +597,7 @@ export function GalleryEditor() {
 
       <FormSection
         title="Videos"
-        description="YouTube videos for staff. Drag a video to change the order. Videos are not shown on the website."
+        description="Add a YouTube link or upload an MP4/WebM file. Videos appear on the public gallery page."
         actions={
           !video && (
             <Button onClick={() => startVideo()}>
@@ -541,15 +609,54 @@ export function GalleryEditor() {
       >
         {video && (
           <form onSubmit={saveVideo} className="space-y-4 rounded-[10px] border border-[#e3e8ee] bg-[#fafbfc] p-4">
-            <Field label="YouTube link" hint="Open the video on YouTube, click Share, then Copy and paste the link here.">
-              <Input
-                value={video.link}
-                onChange={(e) => setVideo({ ...video, link: e.target.value })}
-                placeholder="https://youtu.be/…"
-                autoFocus
-              />
-            </Field>
-            {youtubeIdFrom(video.link) && (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant={video.source === "youtube" ? "primary" : "secondary"}
+                onClick={() => setVideo({ ...video, source: "youtube", storage_path: null, public_url: null, content_type: null })}
+              >
+                YouTube link
+              </Button>
+              <Button
+                type="button"
+                variant={video.source === "file" ? "primary" : "secondary"}
+                onClick={() => setVideo({ ...video, source: "file", link: "" })}
+              >
+                Upload file
+              </Button>
+            </div>
+            {video.source === "youtube" ? (
+              <Field label="YouTube link" hint="Open the video on YouTube, click Share, then Copy and paste the link here.">
+                <Input
+                  value={video.link}
+                  onChange={(e) => setVideo({ ...video, link: e.target.value })}
+                  placeholder="https://youtu.be/…"
+                  autoFocus
+                />
+              </Field>
+            ) : (
+              <Field label="Video file" hint="MP4 or WebM, up to 50 MB. Upload first, then save.">
+                <label className="inline-flex h-[34px] cursor-pointer items-center gap-2 rounded-[6px] border border-[#d5dce4] bg-white px-3 text-[13px] font-semibold text-[#0b1f3a]">
+                  <Upload className="h-4 w-4" />
+                  {video.public_url ? "Replace video file" : "Choose video file"}
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm,.mp4,.webm,.mov,.m4v"
+                    className="sr-only"
+                    disabled={savingVideo}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (file) void uploadGalleryVideo(file);
+                    }}
+                  />
+                </label>
+                {video.public_url ? (
+                  <video className="mt-2 max-h-40 w-full max-w-md bg-black" src={video.public_url} controls preload="metadata" />
+                ) : null}
+              </Field>
+            )}
+            {video.source === "youtube" && youtubeIdFrom(video.link) && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={`https://img.youtube.com/vi/${youtubeIdFrom(video.link)}/mqdefault.jpg`}
@@ -582,7 +689,7 @@ export function GalleryEditor() {
         )}
 
         {videos.length === 0 && !video ? (
-          <EmptyState>No videos yet. Click Add video and paste a YouTube link.</EmptyState>
+          <EmptyState>No videos yet. Click Add video to paste a YouTube link or upload an MP4/WebM file.</EmptyState>
         ) : (
           <ul className="divide-y divide-[#eef1f4]">
             {videos.map((v, index) => (

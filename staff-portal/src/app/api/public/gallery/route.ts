@@ -2,6 +2,7 @@ import { createDatabaseClient } from "@/lib/db-client";
 import { toPublicPhoto, toPublicVideo } from "@/lib/gallery";
 import { signPayload } from "@/lib/stored-file";
 import { NextResponse } from "next/server";
+import { PUBLIC_CMS_CACHE } from "@/lib/public-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,6 @@ export async function GET() {
       photos: photos.map(toPublicPhoto),
       videos: videos.map(toPublicVideo),
     }),
-    { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } }
+    { headers: { "Cache-Control": PUBLIC_CMS_CACHE } }
   );
 }

@@ -331,6 +331,10 @@
     }
 
     function safeImage(value) {
+        if (window.KSL_CONTENT && window.KSL_CONTENT.safeMediaUrl) {
+            var live = window.KSL_CONTENT.safeMediaUrl(value);
+            if (live) return live;
+        }
         var text = String(value || "").trim();
         if (/^img\/[A-Za-z0-9_./-]+\.(jpe?g|png|webp)$/.test(text)) return text;
         if (/^https:\/\/[^\s"'<>]+$/.test(text) && /\.(jpe?g|png|webp)(\?|#|$)/i.test(text)) return text;

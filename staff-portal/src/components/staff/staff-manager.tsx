@@ -653,8 +653,13 @@ export function StaffManager() {
       fetch(appPath("/api/staff/invites")),
     ]);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) setError(data.error ?? "Could not load the staff list.");
-    else setStaff(data.staff);
+    if (!res.ok) {
+      setError(typeof data.error === "string" ? data.error : "Could not load the staff list.");
+      setStaff([]);
+    } else {
+      setError(null);
+      setStaff(Array.isArray(data.staff) ? data.staff : []);
+    }
     const requestData = await requestRes.json().catch(() => ({}));
     if (requestRes.ok) setRequests(requestData.requests ?? []);
     const inviteData = await inviteRes.json().catch(() => ({}));
@@ -1228,13 +1233,26 @@ export function StaffManager() {
             </tr>
           </thead>
           <tbody>
-            {shownStaff.length === 0 && (
+            {shownStaff.length === 0 && !error && (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-[#6b7785]">
-                  No results found.{" "}
-                  <button type="button" className="font-semibold text-[#0b1f3a] underline" onClick={() => setQuery("")}>
-                    Clear search
-                  </button>
+                  {staff.length === 0 ? (
+                    <>No staff accounts yet. Use Invite someone to add a colleague.</>
+                  ) : (
+                    <>
+                      No results found.{" "}
+                      <button type="button" className="font-semibold text-[#0b1f3a] underline" onClick={() => setQuery("")}>
+                        Clear search
+                      </button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            )}
+            {shownStaff.length === 0 && error && (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-[#6b7785]">
+                  The staff list could not be loaded. Check the message above and try again.
                 </td>
               </tr>
             )}

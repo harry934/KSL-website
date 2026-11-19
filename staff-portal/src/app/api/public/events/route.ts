@@ -3,6 +3,7 @@ import { splitEventsByDate, type EventRow } from "@/lib/events";
 import { nairobiToday } from "@/lib/dates";
 import { signPayload } from "@/lib/stored-file";
 import { NextResponse } from "next/server";
+import { PUBLIC_CMS_CACHE } from "@/lib/public-cache";
 
 export async function GET() {
   const admin = createDatabaseClient();
@@ -23,6 +24,6 @@ export async function GET() {
   const payload = { upcoming: split.upcoming, past: [] };
 
   return NextResponse.json(await signPayload(payload), {
-    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+    headers: { "Cache-Control": PUBLIC_CMS_CACHE },
   });
 }

@@ -10,8 +10,12 @@
     var overrides = {};
 
     function safeUrl(value) {
-        if (typeof value !== "string" || !/^https:\/\//i.test(value)) return "";
-        return value.replace(/"/g, "");
+        var url = window.KSL_CONTENT && window.KSL_CONTENT.safeMediaUrl
+            ? window.KSL_CONTENT.safeMediaUrl(value)
+            : "";
+        if (!url) return "";
+        // CSS url("...") still needs quotes stripped from the value itself.
+        return url.replace(/"/g, "");
     }
 
     function whenLoaded(url, done) {

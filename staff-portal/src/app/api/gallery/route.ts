@@ -52,25 +52,41 @@ export async function POST(req: NextRequest) {
   const status = plan.status;
 
   if (body.type === "video") {
-    const youtubeId = youtubeIdFrom(String(body.youtube_id ?? ""));
-    if (!youtubeId) {
-      return NextResponse.json({ error: "That does not look like a YouTube link." }, { status: 400 });
+    const youtubeId = youtubeIdFrom(String(body.youtube_id ?? body.link ?? "")) || null;
+    const storagePath =
+      typeof body.storage_path === "string" && /^[\w./-]+$/.test(body.storage_path) ? body.storage_path : null;
+    const publicUrl = typeof body.public_url === "string" ? String(body.public_url).trim() : "";
+    const contentType =
+      body.content_type === "video/webm" || body.content_type === "video/mp4" ? body.content_type : null;
+    const fileVideo = Boolean(storagePath && publicUrl && !youtubeId);
+    if (!youtubeId && !fileVideo) {
+      return NextResponse.json(
+        { error: "Add a YouTube link, or upload an MP4 or WebM video file." },
+        { status: 400 }
+      );
     }
+    const title = String(body.title ?? "").trim();
+    if (!title) return NextResponse.json({ error: "Give the video a title." }, { status: 400 });
     const row = {
       ...(body.id ? { id: body.id } : {}),
-      youtube_id: youtubeId,
-      title: String(body.title ?? "").trim(),
+      youtube_id: fileVideo ? null : youtubeId,
+      storage_path: fileVideo ? storagePath : null,
+      public_url: fileVideo ? publicUrl : null,
+      content_type: fileVideo ? contentType || (storagePath?.endsWith(".webm") ? "video/webm" : "video/mp4") : null,
+      title,
       caption: body.caption ? String(body.caption).trim() : null,
       featured: Boolean(body.featured),
       sort_order: Number(body.sort_order) || 0,
       status,
       updated_by: session.userId,
     };
-    if (row.featured) {
-      await admin.from("gallery_videos").update({ featured: false }).neq("youtube_id", youtubeId);
-    }
+    const previous = await rememberFiles(admin, "gallery_videos", body.id, ["storage_path", "public_url"]);
     const { data, error: upErr } = await admin.from("gallery_videos").upsert(row).select("id").single();
     if (upErr || !data) return NextResponse.json({ error: "Could not save the video." }, { status: 500 });
+    if (row.featured) {
+      await admin.from("gallery_videos").update({ featured: false }).neq("id", data.id);
+    }
+    await releaseUnusedValues(admin, previous);
     await clearReviewDraft(admin, "gallery_videos", data.id);
     await logActivity(session.userId, "gallery", "upsert", "gallery_video", data.id);
     return NextResponse.json(saveBody(session, "gallery", { id: data.id }));

@@ -5,7 +5,16 @@ import { applyBinDelete, listBinItems, purgeStaffAccount, restoreRow, restoreSta
 import { RECYCLE_SOURCES } from "@/lib/recycle-sources";
 import { NextRequest, NextResponse } from "next/server";
 
-const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** FAQ groups and downloads use text slug primary keys; everything else uses UUIDs. */
+const SLUG_TABLES = new Set(["faq_groups", "download_items"]);
+const SLUG = /^[a-z0-9][a-z0-9_-]{0,119}$/i;
+
+function validRecycleId(table: string, id: string) {
+  if (!id) return false;
+  if (SLUG_TABLES.has(table)) return SLUG.test(id);
+  return UUID.test(id);
+}
 
 export async function GET() {
   const { error, session } = await requireStaff(null, "view");
@@ -34,7 +43,7 @@ export async function POST(req: NextRequest) {
   for (const entry of rawItems) {
     const id = String(entry?.id ?? "");
     const source = RECYCLE_SOURCES.find((row) => row.table === entry?.table);
-    if (!source || !ID.test(id)) {
+    if (!source || !validRecycleId(source.table, id)) {
       return NextResponse.json({ error: "That item was not found." }, { status: 400 });
     }
     const allowed = canAccess(

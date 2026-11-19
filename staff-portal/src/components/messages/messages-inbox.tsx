@@ -304,7 +304,7 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
     });
     if (!ok) return;
     setDeleting(true);
-    const res = await fetch(`/api/messages?id=${encodeURIComponent(row.id)}`, { method: "DELETE" });
+    const res = await fetch(appPath(`/api/messages?id=${encodeURIComponent(row.id)}`), { method: "DELETE" });
     const data = await res.json().catch(() => ({}));
     setDeleting(false);
     if (!res.ok) {

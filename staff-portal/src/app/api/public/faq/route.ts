@@ -2,6 +2,7 @@ import { createDatabaseClient } from "@/lib/db-client";
 import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
 import { signPayload } from "@/lib/stored-file";
+import { PUBLIC_CMS_CACHE } from "@/lib/public-cache";
 
 /** Public read-only FAQ feed (same shape as data/faq.json groups). */
 export async function GET() {
@@ -37,7 +38,7 @@ export async function GET() {
 
   return NextResponse.json(await signPayload(payload), {
     headers: {
-      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      "Cache-Control": PUBLIC_CMS_CACHE,
     },
   });
 }

@@ -3,6 +3,7 @@ import { toPublicServicesPayload, type ServiceRow, type ServicesSettings } from 
 import { openStoredUrl, signPayload } from "@/lib/stored-file";
 import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
+import { PUBLIC_CMS_CACHE } from "@/lib/public-cache";
 
 export async function GET() {
   const admin = createDatabaseClient();
@@ -31,6 +32,6 @@ export async function GET() {
   const safePayload = await signPayload(payload);
 
   return NextResponse.json(safePayload, {
-    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+    headers: { "Cache-Control": PUBLIC_CMS_CACHE },
   });
 }

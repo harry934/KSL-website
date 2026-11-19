@@ -14,6 +14,9 @@
     }
 
     function safeUrl(value) {
+        if (window.KSL_CONTENT && window.KSL_CONTENT.safeMediaUrl) {
+            return window.KSL_CONTENT.safeMediaUrl(value);
+        }
         var url = String(value || "").trim();
         if (/^img\/[\w./-]+$/i.test(url) || /^https:\/\/[^\s"'<>]+$/i.test(url)) return url;
         return "";

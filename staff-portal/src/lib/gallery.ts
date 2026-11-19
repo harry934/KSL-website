@@ -12,12 +12,15 @@ export type GalleryRow = {
 
 export type GalleryVideoRow = {
   id: string;
-  youtube_id: string;
+  youtube_id: string | null;
   title: string;
   caption: string | null;
   featured: boolean;
   sort_order: number;
   status: string;
+  storage_path?: string | null;
+  public_url?: string | null;
+  content_type?: string | null;
 };
 
 export const GALLERY_CATEGORIES = [
@@ -46,8 +49,11 @@ export function toPublicPhoto(row: GalleryRow) {
 }
 
 export function toPublicVideo(row: GalleryVideoRow) {
+  const src = row.public_url || row.storage_path || "";
   return {
-    youtubeId: row.youtube_id,
+    youtubeId: row.youtube_id || "",
+    src,
+    contentType: row.content_type || "",
     title: row.title,
     caption: row.caption ?? "",
     ...(row.featured ? { featured: true } : {}),

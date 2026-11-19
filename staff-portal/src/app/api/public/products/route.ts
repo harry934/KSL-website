@@ -3,6 +3,7 @@ import { toPublicProductsPayload, type ProductRow, type ProductsSettings } from 
 import { signPayload } from "@/lib/stored-file";
 import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
+import { PUBLIC_CMS_CACHE } from "@/lib/public-cache";
 
 export async function GET() {
   const admin = createDatabaseClient();
@@ -18,6 +19,6 @@ export async function GET() {
     toPublicProductsPayload(settingsRes.data as ProductsSettings | null, kept((itemsRes.data ?? []) as Array<ProductRow & { deleted_at?: string | null }>))
   );
   return NextResponse.json(payload, {
-    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+    headers: { "Cache-Control": PUBLIC_CMS_CACHE },
   });
 }

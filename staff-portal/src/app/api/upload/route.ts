@@ -51,16 +51,18 @@ export async function POST(req: NextRequest) {
   }
 
   const heroVideo = req.headers.get("x-ksl-hero") === "1" && moduleKey === "site_settings";
+  const galleryVideo = moduleKey === "gallery" && req.headers.get("x-ksl-gallery-video") === "1";
+  const allowVideo = heroVideo || galleryVideo;
   let ext: string | undefined = TYPES[file.type];
   let video = false;
-  if (!ext && heroVideo) {
+  if (!ext && allowVideo) {
     ext = heroExtension(file.name, file.type);
     video = Boolean(ext);
   }
   if (!ext) {
     return NextResponse.json(
       {
-        error: heroVideo
+        error: allowVideo
           ? "Use a JPG, PNG or WebP photo, or an MP4 or WebM video."
           : "Only JPG, PNG or WebP images, or PDF / Word documents are allowed.",
       },

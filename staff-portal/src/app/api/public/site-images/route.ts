@@ -2,6 +2,7 @@ import { createDatabaseClient } from "@/lib/db-client";
 import { HOME_HERO_SLOT, isImagePath, parseHeroMedia, safeImageUrl } from "@/lib/site-images";
 import { NextResponse } from "next/server";
 import { signPayload } from "@/lib/stored-file";
+import { PUBLIC_CMS_CACHE } from "@/lib/public-cache";
 
 export async function GET() {
   const { data, error } = await createDatabaseClient()
@@ -46,6 +47,6 @@ export async function GET() {
 
   return NextResponse.json(
     await signPayload({ images, hero }),
-    { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } }
+    { headers: { "Cache-Control": PUBLIC_CMS_CACHE } }
   );
 }

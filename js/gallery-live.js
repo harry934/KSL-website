@@ -43,8 +43,11 @@
         return fig;
     }
 
-    function renderGallery() {
-        galleryRoot.innerHTML = "";
+    var PAGE_SIZE = 24;
+    var galleryShown = 0;
+
+    function renderGallery(reset) {
+        if (reset !== false) galleryShown = 0;
         var visible = galleryPhotos.filter(function (photo) {
             var cat = photo.category || "all";
             return galleryFilter === "all" || cat === galleryFilter;
@@ -53,14 +56,39 @@
             galleryRoot.innerHTML = '<section class="ksl-empty-state" role="status"><h3>No photos in this category</h3><p>Try another filter or view the full gallery.</p><div class="ksl-empty-state-actions"><button class="btn btn-primary" type="button" data-gallery-all>View all photos</button></div></section>';
             return;
         }
-        visible.forEach(function (photo) {
+        if (galleryShown === 0) galleryRoot.innerHTML = "";
+        var next = visible.slice(galleryShown, galleryShown + PAGE_SIZE);
+        next.forEach(function (photo) {
             galleryRoot.appendChild(photoFigure(photo));
         });
+        galleryShown += next.length;
+        var more = galleryRoot.querySelector("[data-gallery-more]");
+        if (more) more.remove();
+        if (galleryShown < visible.length) {
+            var wrap = document.createElement("div");
+            wrap.className = "ksl-empty-state-actions";
+            wrap.style.gridColumn = "1 / -1";
+            wrap.innerHTML = '<button class="btn btn-primary" type="button" data-gallery-more>Show more photos</button>';
+            galleryRoot.appendChild(wrap);
+        }
     }
 
     function mountPlayer(parent, video) {
-        if (!parent || !video || !video.youtubeId) return;
+        if (!parent || !video) return;
         parent.innerHTML = "";
+        if (video.src) {
+            var player = document.createElement("video");
+            player.src = video.src;
+            player.controls = true;
+            player.preload = "metadata";
+            player.playsInline = true;
+            player.setAttribute("playsinline", "");
+            player.title = video.title || "Kenya Shipyards Limited video";
+            if (video.contentType) player.setAttribute("type", video.contentType);
+            parent.appendChild(player);
+            return;
+        }
+        if (!video.youtubeId) return;
         var iframe = document.createElement("iframe");
         iframe.src = "https://www.youtube.com/embed/" + video.youtubeId;
         iframe.title = video.title || "Kenya Shipyards Limited video";
@@ -101,12 +129,16 @@
     }
 
     galleryRoot.addEventListener("click", function (event) {
+        if (event.target.closest("[data-gallery-more]")) {
+            renderGallery(false);
+            return;
+        }
         if (!event.target.closest("[data-gallery-all]")) return;
         galleryFilter = "all";
         document.querySelectorAll(".ksl-gallery-filters [data-ksl-gallery-filter]").forEach(function (btn) {
             btn.classList.toggle("is-active", (btn.getAttribute("data-ksl-gallery-filter") || "all") === "all");
         });
-        renderGallery();
+        renderGallery(true);
     });
 
     document.querySelectorAll(".ksl-gallery-filters [data-ksl-gallery-filter]").forEach(function (btn) {
@@ -116,13 +148,13 @@
             });
             btn.classList.add("is-active");
             galleryFilter = btn.getAttribute("data-ksl-gallery-filter") || "all";
-            renderGallery();
+            renderGallery(true);
         });
     });
 
     window.KSL_CONTENT.fetchJson("/api/public/gallery", "data/gallery.json").then(function (data) {
         galleryPhotos = (data && data.photos) || [];
-        renderGallery();
+        renderGallery(true);
         renderVideos((data && data.videos) || []);
         show();
     }).catch(function () {

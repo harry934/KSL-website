@@ -3,6 +3,7 @@ import { toPublicProjects, type ProjectRow } from "@/lib/projects";
 import { signPayload } from "@/lib/stored-file";
 import { kept } from "@/lib/recycle";
 import { NextResponse } from "next/server";
+import { PUBLIC_CMS_CACHE } from "@/lib/public-cache";
 
 export async function GET() {
   const admin = createDatabaseClient();
@@ -17,6 +18,6 @@ export async function GET() {
     groupOrder: Array.isArray(settingsRes.data?.group_order) ? settingsRes.data.group_order : [],
   });
   return NextResponse.json(payload, {
-    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+    headers: { "Cache-Control": PUBLIC_CMS_CACHE },
   });
 }

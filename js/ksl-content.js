@@ -1,4 +1,4 @@
-/* Reads published content from the admin portal, then data/*.json if the portal is unreachable. */
+/* Reads published content from the admin portal. Static data/*.json is only used when no portal is configured. */
 (function (global) {
     "use strict";
 
@@ -15,27 +15,61 @@
         if (!base && !fallbackPath) {
             return Promise.resolve(null);
         }
-        var primary = base ? base + apiPath : fallbackPath;
-        return fetch(primary).then(function (res) {
+        // When a portal base is set, never silently fall back to stale data/*.json —
+        // that hid admin create/edit/delete from the public site.
+        if (base) {
+            return fetch(base + apiPath, { cache: "no-store" }).then(function (res) {
+                if (!res.ok) {
+                    throw new Error("fetch failed");
+                }
+                return res.json();
+            }).catch(function () {
+                return null;
+            });
+        }
+        return fetch(fallbackPath, { cache: "no-store" }).then(function (res) {
             if (!res.ok) {
-                throw new Error("fetch failed");
+                return null;
             }
             return res.json();
         }).catch(function () {
-            if (!fallbackPath || primary === fallbackPath) {
-                return null;
-            }
-            return fetch(fallbackPath).then(function (res) {
-                if (!res.ok) {
-                    return null;
-                }
-                return res.json();
-            });
+            return null;
         });
+    }
+
+    function portalHostname() {
+        var base = apiBase();
+        if (!base) return "";
+        try {
+            return new URL(base).hostname.toLowerCase();
+        } catch (err) {
+            return "";
+        }
+    }
+
+    /** Accept relative img/, https, and http URLs on the portal/site host (VPS staging). */
+    function safeMediaUrl(value) {
+        var url = String(value || "").trim();
+        if (!url || url.indexOf("..") !== -1) return "";
+        if (/^\/?img\/[\w./-]+$/i.test(url)) return url.replace(/^\//, "");
+        try {
+            var parsed = new URL(url, typeof location !== "undefined" ? location.href : "http://localhost");
+            if (parsed.protocol === "https:") return parsed.href;
+            if (parsed.protocol === "http:") {
+                var host = parsed.hostname.toLowerCase();
+                var portal = portalHostname();
+                var local = typeof location !== "undefined" ? location.hostname.toLowerCase() : "";
+                if ((portal && host === portal) || (local && host === local)) return parsed.href;
+            }
+        } catch (err) {
+            return "";
+        }
+        return "";
     }
 
     global.KSL_CONTENT = {
         apiBase: apiBase,
-        fetchJson: fetchJson
+        fetchJson: fetchJson,
+        safeMediaUrl: safeMediaUrl
     };
 })(window);
