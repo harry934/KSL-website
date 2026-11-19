@@ -27,10 +27,29 @@ git pull origin vps-postgres
 echo "Setting portal URL for $IP ..."
 bash deploy/vps/fill-ip.sh --http "$IP"
 
-echo "Migrating database..."
+echo "Migrating database (must use ksl_migrator)..."
 cd staff-portal
+npm install
+
+MIGRATOR_FILE=""
+if [[ -f /etc/ksl-portal-migrator.env ]]; then
+  MIGRATOR_FILE=/etc/ksl-portal-migrator.env
+elif [[ -f .env.migrator ]]; then
+  MIGRATOR_FILE="$(pwd)/.env.migrator"
+fi
+
+if [[ -n "$MIGRATOR_FILE" ]]; then
+  MIGRATOR_ENV_FILE="$MIGRATOR_FILE" npm run db:migrate
+else
+  echo "WARNING: No /etc/ksl-portal-migrator.env found."
+  echo "Skipping migrate for now. Portal code can still rebuild."
+  echo "To migrate later, create that file with:"
+  echo "  DATABASE_URL=postgresql://ksl_migrator:PASSWORD@127.0.0.1:5432/ksl"
+  echo "  DATABASE_SSL=disable"
+fi
+
+# Build with the runtime portal env (NEXT_PUBLIC_*).
 set -a
-# Prefer live env; fall back to .env.production template values already on the server.
 if [[ -f /etc/ksl-portal.env ]]; then
   # shellcheck disable=SC1091
   . /etc/ksl-portal.env
@@ -42,8 +61,11 @@ elif [[ -f .env.local ]]; then
   . ./.env.local
 fi
 set +a
-npm install
-npm run db:migrate
+# Ensure public URL values from fill-ip are present even if /etc overrides older values.
+if [[ -f .env.production ]]; then
+  # shellcheck disable=SC1091
+  set -a; . ./.env.production; set +a
+fi
 npm run build
 cd ..
 
