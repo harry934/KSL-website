@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { PasscodeDisplay } from "@/components/ui/password-input";
 import { useFeedback } from "@/components/ui/feedback";
 import { sendJson } from "@/lib/upload-client";
+import { copyPlainText } from "@/lib/clipboard";
 
 type AccountRequest = {
   id: string;
@@ -88,13 +89,13 @@ export function AccountRequestsPanel() {
   }
 
   async function copy(value: string, key: string) {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(key);
-      window.setTimeout(() => setCopied(null), 2000);
-    } catch {
-      toast("Could not copy that.", "error");
+    const ok = await copyPlainText(value);
+    if (!ok) {
+      toast("Could not copy that. Select the text and press Ctrl+C.", "error");
+      return;
     }
+    setCopied(key);
+    window.setTimeout(() => setCopied(null), 2000);
   }
 
   if (!requests?.length && !issued) return null;

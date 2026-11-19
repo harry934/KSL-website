@@ -27,6 +27,7 @@ import { gmailComposeUrl, openMailto, outlookWebComposeUrl } from "@/lib/mail-co
 import { forwardPlainBody, forwardSubject, replyPlainBody, replySubject } from "@/lib/message-forward";
 import { refreshNotices } from "@/lib/notification-seen";
 import { appPath } from "@/lib/base-path";
+import { copyPlainText } from "@/lib/clipboard";
 
 type Message = {
   id: string;
@@ -353,14 +354,14 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
   }
 
   async function copyForward(row: Message) {
-    try {
-      await navigator.clipboard.writeText(forwardPlainBody(row));
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-      toast("Message copied. Paste into any email app.");
-    } catch {
-      toast("Could not copy.", "error");
+    const ok = await copyPlainText(forwardPlainBody(row));
+    if (!ok) {
+      toast("Could not copy. Select the text and press Ctrl+C.", "error");
+      return;
     }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+    toast("Message copied. Paste into any email app.");
   }
 
   if (loading) {
@@ -723,12 +724,12 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
                     />
                     <MailProviderButton
                       label="Forward with Gmail"
-                      src="/brand/gmail.svg"
+                      src={appPath("/brand/gmail.svg")}
                       onClick={() => forwardToColleague(openRow, "gmail")}
                     />
                     <MailProviderButton
                       label="Forward with Outlook"
-                      src="/brand/outlook.svg"
+                      src={appPath("/brand/outlook.svg")}
                       onClick={() => forwardToColleague(openRow, "outlook")}
                     />
                   </div>

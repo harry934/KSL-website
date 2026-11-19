@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { appPath } from "@/lib/base-path";
 
 const UNITS = [
   { key: "days", label: "Days" },
@@ -42,7 +43,7 @@ export function MaintenanceScreen({ endsAt }: { endsAt: string }) {
     <Empty>
       <EmptyHeader>
         <EmptyMedia>
-          <img className="w-40 grayscale dark:invert" src="/brand/maintenance.svg" alt="" />
+          <img className="w-40 grayscale dark:invert" src={appPath("/brand/maintenance.svg")} alt="" />
         </EmptyMedia>
         <EmptyTitle>Under Maintenance</EmptyTitle>
         <EmptyDescription>

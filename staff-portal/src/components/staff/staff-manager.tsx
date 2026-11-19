@@ -18,6 +18,7 @@ import { sendJson } from "@/lib/upload-client";
 import { cn } from "@/lib/cn";
 import { PasscodeDisplay } from "@/components/ui/password-input";
 import { appPath } from "@/lib/base-path";
+import { copyHtmlAndPlain, copyPlainText } from "@/lib/clipboard";
 
 const EDITABLE_MODULES = (Object.keys(MODULE_LABELS) as ModuleKey[]).filter((k) => k !== "staff") as ModuleKey[];
 type PermField = "can_view" | "can_edit" | "can_publish" | "can_delete";
@@ -510,42 +511,31 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
   const hasEmail = issued.email.includes("@");
 
   async function copyText(value: string, which: "passcode" | "link") {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(which);
-      window.setTimeout(() => setCopied(null), 2000);
-    } catch {
+    const ok = await copyPlainText(value);
+    if (!ok) {
+      setHint("Could not copy. Select the text and press Ctrl+C.");
+      window.setTimeout(() => setHint(null), 6000);
       setCopied(null);
+      return;
     }
+    setCopied(which);
+    setHint(null);
+    window.setTimeout(() => setCopied(null), 2000);
   }
 
   async function copyBrandedEmail() {
     const html = await inviteHtmlEmail(issued);
-    try {
-      if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/html": new Blob([html], { type: "text/html" }),
-            "text/plain": new Blob([brandedPlain], { type: "text/plain" }),
-          }),
-        ]);
-      } else {
-        await navigator.clipboard.writeText(brandedPlain);
-      }
-      setCopied("branded");
-      window.setTimeout(() => setCopied(null), 2500);
-      return true;
-    } catch {
-      try {
-        await navigator.clipboard.writeText(brandedPlain);
-        setCopied("branded");
-        window.setTimeout(() => setCopied(null), 2500);
-        return true;
-      } catch {
-        setCopied(null);
-        return false;
-      }
+    const ok = await copyHtmlAndPlain(html, brandedPlain);
+    if (!ok) {
+      setHint("Could not copy the branded email. Use Gmail or Outlook below instead.");
+      window.setTimeout(() => setHint(null), 6000);
+      setCopied(null);
+      return false;
     }
+    setCopied("branded");
+    setHint(null);
+    window.setTimeout(() => setCopied(null), 2500);
+    return true;
   }
 
   async function openGmail() {
@@ -612,9 +602,9 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <ShareIconButton label="Gmail" src="/brand/gmail.svg" disabled={!hasEmail} onClick={openGmail} />
-        <ShareIconButton label="Outlook" src="/brand/outlook.svg" disabled={!hasEmail} onClick={openOutlook} />
-        <ShareIconButton label="WhatsApp" src="/brand/whatsapp.svg" onClick={sendWhatsApp} />
+        <ShareIconButton label="Gmail" src={appPath("/brand/gmail.svg")} disabled={!hasEmail} onClick={openGmail} />
+        <ShareIconButton label="Outlook" src={appPath("/brand/outlook.svg")} disabled={!hasEmail} onClick={openOutlook} />
+        <ShareIconButton label="WhatsApp" src={appPath("/brand/whatsapp.svg")} onClick={sendWhatsApp} />
         <Button className="ml-auto" onClick={onClose}>
           Done
         </Button>
@@ -1066,12 +1056,9 @@ export function StaffManager() {
                       variant="secondary"
                       size="sm"
                       onClick={async () => {
-                        try {
-                          await navigator.clipboard.writeText(invite.signupUrl);
-                          toast("Sign-up link copied.");
-                        } catch {
-                          setError("Could not copy the link.");
-                        }
+                        const ok = await copyPlainText(invite.signupUrl);
+                        if (ok) toast("Sign-up link copied.");
+                        else setError("Could not copy the link. Select it and press Ctrl+C.");
                       }}
                     >
                       <Copy className="h-3.5 w-3.5" /> Copy link
