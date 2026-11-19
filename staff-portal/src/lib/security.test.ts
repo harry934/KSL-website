@@ -16,6 +16,7 @@ import { cleanBoardGroups, cleanBoardSections, cleanIntro, cleanMilestoneInput, 
 import { safeLink } from "./safe-link.ts";
 import { verifyTurnstile } from "./contact-token.ts";
 import { clientIp } from "./auth-server.ts";
+import { isAllowedMutationOrigin } from "./request-origin.ts";
 import type { NextRequest } from "next/server";
 
 test("published careers stay public and drafts stay out", () => {
@@ -437,4 +438,43 @@ test("client IP with TRUSTED_PROXY_HOPS uses rightmost trusted hop", () => {
   );
   if (prev === undefined) delete process.env.TRUSTED_PROXY_HOPS;
   else process.env.TRUSTED_PROXY_HOPS = prev;
+});
+
+test("mutation origin allows public Host behind a loopback nextUrl", () => {
+  const prevSite = process.env.PUBLIC_SITE_ORIGIN;
+  const prevPortal = process.env.NEXT_PUBLIC_PORTAL_URL;
+  process.env.PUBLIC_SITE_ORIGIN = "http://178.162.219.218";
+  process.env.NEXT_PUBLIC_PORTAL_URL = "http://178.162.219.218/admin";
+
+  const asReq = (headers: Record<string, string>, origin = "http://127.0.0.1:3000") =>
+    ({
+      headers: { get: (name: string) => headers[name.toLowerCase()] ?? null },
+      nextUrl: { origin, protocol: "http:" },
+    }) as NextRequest;
+
+  assert.equal(
+    isAllowedMutationOrigin(
+      asReq({
+        origin: "http://178.162.219.218",
+        host: "178.162.219.218",
+        "x-forwarded-proto": "http",
+      }),
+    ),
+    true,
+  );
+  assert.equal(
+    isAllowedMutationOrigin(
+      asReq({
+        origin: "https://evil.example",
+        host: "178.162.219.218",
+        "x-forwarded-proto": "http",
+      }),
+    ),
+    false,
+  );
+
+  if (prevSite === undefined) delete process.env.PUBLIC_SITE_ORIGIN;
+  else process.env.PUBLIC_SITE_ORIGIN = prevSite;
+  if (prevPortal === undefined) delete process.env.NEXT_PUBLIC_PORTAL_URL;
+  else process.env.NEXT_PUBLIC_PORTAL_URL = prevPortal;
 });

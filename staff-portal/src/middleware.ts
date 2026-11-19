@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isAllowedMutationOrigin } from "@/lib/request-origin";
 import { STAFF_SESSION_COOKIE } from "@/lib/staff-session";
 
 const ALLOWED_ORIGINS = new Set([
@@ -72,20 +73,11 @@ export async function middleware(request: NextRequest) {
   }
   const hasSessionCookie = Boolean(request.cookies.get(STAFF_SESSION_COOKIE)?.value);
   const isMutation = !["GET", "HEAD", "OPTIONS"].includes(request.method);
-  if (hasSessionCookie && isMutation) {
-    const origin = request.headers.get("origin");
-    const referer = request.headers.get("referer");
-    let requestOrigin = origin;
-    if (!requestOrigin && referer) {
-      try {
-        requestOrigin = new URL(referer).origin;
-      } catch {
-        requestOrigin = null;
-      }
-    }
-    if (requestOrigin !== request.nextUrl.origin) {
-      return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
-    }
+  // Cookie-authenticated POSTs must come from the public site/portal origin.
+  // Compare against Host / X-Forwarded-* and env URLs — not only nextUrl.origin,
+  // which is often http://127.0.0.1:3000 behind Nginx.
+  if (hasSessionCookie && isMutation && !isAllowedMutationOrigin(request)) {
+    return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
   }
   if (pathname === "/login" && request.nextUrl.searchParams.has("reason")) {
     const url = request.nextUrl.clone();
