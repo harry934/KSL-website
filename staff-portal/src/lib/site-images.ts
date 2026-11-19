@@ -1,8 +1,10 @@
 import manifest from "@/lib/site-image-manifest.json";
 import { parseHeroCrop, parseHeroTrim, type HeroCrop, type HeroTrim } from "@/lib/hero-frame";
 import { safeLink } from "@/lib/safe-link";
+import { isImagePath, isVideoPath, safeImageUrl } from "@/lib/site-image-url";
 
 export type { HeroCrop, HeroTrim };
+export { isImagePath, isVideoPath, safeImageUrl } from "@/lib/site-image-url";
 
 export type SiteImageSlot = {
   id: string;
@@ -19,18 +21,6 @@ const SLOT_IDS = new Set(SITE_IMAGE_SLOTS.map((slot) => slot.id));
 
 export function isSiteImageSlot(id: string) {
   return SLOT_IDS.has(id);
-}
-
-export function safeImageUrl(value: unknown) {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  try {
-    const url = new URL(trimmed);
-    if (url.protocol !== "https:") return null;
-    return url.toString();
-  } catch {
-    return null;
-  }
 }
 
 export const HOME_HERO_SLOT = "chrome.home-hero";
@@ -59,14 +49,6 @@ function cleanHeroText(value: unknown, max: number) {
 
 function cleanHeroLink(value: unknown) {
   return safeLink(value, 240) ?? "";
-}
-
-export function isImagePath(value: string) {
-  return /\.(jpe?g|png|webp)(\?|#|$)/i.test(value);
-}
-
-export function isVideoPath(value: string) {
-  return /\.(mp4|webm)(\?|#|$)/i.test(value);
 }
 
 function storagePathOf(value: unknown) {

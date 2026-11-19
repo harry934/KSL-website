@@ -31,8 +31,25 @@ const CONFLICT_KEYS = {
   services_settings: ["id"], careers_settings: ["id"], downloads_settings: ["id"],
   organization_settings: ["id"], press_settings: ["id"], products_settings: ["id"],
   projects_settings: ["id"], csr_settings: ["id"], faq_groups: ["id"], download_items: ["id"],
+  news_items: ["slug"],
+  event_items: ["slug"],
+  service_items: ["slug"],
+  products: ["slug"],
+  projects: ["slug"],
+  csr_projects: ["slug"],
 };
 const AUDIT_COLUMNS = new Set(["updated_by", "created_by", "actor_id", "author_id", "reviewer_id", "submitted_by", "resolved_by"]);
+const JSONB_COLUMNS = {
+  services_settings: new Set(["download_catalog", "group_order"]),
+  service_items: new Set(["downloads"]),
+  products_settings: new Set(["range_groups"]),
+  products: new Set(["key_specs", "extra_specs"]),
+  csr_settings: new Set(["badges", "hero_images", "stats"]),
+  organization_settings: new Set(["chart", "board_sections", "board_groups"]),
+  projects_settings: new Set(["group_order"]),
+  site_settings: new Set(["value"]),
+  site_image_overrides: new Set(["media"]),
+};
 
 function usage(message) {
   if (message) console.error(message);
@@ -103,10 +120,13 @@ await withTransaction(async (client) => {
     }
     const values = [];
     const tuples = rows.map((row) => `(${columns.map((column) => {
-      values.push(row[column]);
-      return `$${values.length}`;
+      const raw = row[column];
+      const asJson = JSONB_COLUMNS[table]?.has(column);
+      values.push(asJson && raw !== null ? JSON.stringify(raw) : raw);
+      return asJson ? `$${values.length}::jsonb` : `$${values.length}`;
     }).join(", ")})`);
-    const updates = columns.filter((column) => !conflict.includes(column));
+    // Keep existing primary keys stable when upserting on slug/natural keys.
+    const updates = columns.filter((column) => !conflict.includes(column) && column !== "id");
     const action = updates.length
       ? `DO UPDATE SET ${updates.map((column) => `${quoted(column)} = EXCLUDED.${quoted(column)}`).join(", ")}`
       : "DO NOTHING";
