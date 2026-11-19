@@ -79,9 +79,11 @@ python3 - "$HOST_JS" "$PORTAL" <<'PY'
 import re, sys
 path, portal = sys.argv[1], sys.argv[2]
 text = open(path).read()
-new, n = re.subn(r'var origin = "[^"]*";', f'var origin = "{portal}";', text, count=1)
+# Only rewrite the executable assignment, not the comment example.
+pattern = r'(^[ \t]*var origin = ")[^"]*(";)\s*$'
+new, n = re.subn(pattern, rf'\g<1>{portal}\2', text, count=1, flags=re.M)
 if n != 1:
-    sys.exit("Could not find the origin line in js/portal-host.js")
+    sys.exit("Could not find the executable origin assignment in js/portal-host.js")
 open(path, "w").write(new)
 PY
 
