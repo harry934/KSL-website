@@ -136,6 +136,30 @@ export async function applyBinDelete(admin: Admin, table: RecycleTable, id: stri
 
   // Hard-delete the live or already-binned row — the Postgres row is removed.
   const { data, error } = await admin.from(table).delete().eq("id", id).select("*");
+  // #region agent log
+  fetch("http://127.0.0.1:7803/ingest/4f341d0e-a3a4-42b5-af32-b08843fde9b3", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "7f13f2" },
+    body: JSON.stringify({
+      sessionId: "7f13f2",
+      hypothesisId: "H-delete",
+      location: "recycle.ts:applyBinDelete",
+      message: "hard-delete result",
+      data: {
+        table,
+        permanent,
+        softPath: false,
+        removed: Array.isArray(data) ? data.length : 0,
+        errorCode: error?.code ?? null,
+        errorMessage: error?.message ?? null,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  console.info(
+    `[debug:7f13f2] hard-delete table=${table} removed=${Array.isArray(data) ? data.length : 0} err=${error?.code ?? error?.message ?? "none"}`,
+  );
+  // #endregion
   if (error) return { error: error as BinError };
   if (!data?.length) return { error: { message: "That item was not found.", code: "bin" } };
   await releaseUnusedValues(admin, data[0]);

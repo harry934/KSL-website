@@ -17,10 +17,36 @@ if (envFile) {
     const separator = trimmed.indexOf("=");
     if (separator < 1) continue;
     const key = trimmed.slice(0, separator).trim();
-    if (process.env[key] === undefined) process.env[key] = trimmed.slice(separator + 1).trim();
+    // Migrator file must win over a shell-exported runtime DATABASE_URL (ksl_runtime).
+    process.env[key] = trimmed.slice(separator + 1).trim();
   }
 }
 const connectionString = process.env.DATABASE_URL;
+
+// #region agent log
+{
+  let roleHint = "missing-url";
+  try {
+    roleHint = connectionString ? String(new URL(connectionString).username || "no-user") : "missing-url";
+  } catch {
+    roleHint = "unparseable-url";
+  }
+  const payload = {
+    sessionId: "7f13f2",
+    hypothesisId: "H2",
+    location: "migrate.mjs:env",
+    message: "migrator env resolved",
+    data: { hasMigratorFile: Boolean(envFile), roleHint, ssl: process.env.DATABASE_SSL || null },
+    timestamp: Date.now(),
+  };
+  console.info(`[debug:7f13f2] ${JSON.stringify(payload)}`);
+  fetch("http://127.0.0.1:7803/ingest/4f341d0e-a3a4-42b5-af32-b08843fde9b3", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "7f13f2" },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
+}
+// #endregion
 
 if (!connectionString) {
   throw new Error("DATABASE_URL is required to run migrations");
