@@ -158,6 +158,56 @@ try {
     STORAGE_DIR: path.join(dataDir, "files"),
   });
 
+  console.info("Dry-run content import outside the repository...");
+  const exportDir = path.join(os.tmpdir(), `ksl-content-export-${process.pid}`);
+  await mkdir(exportDir, { recursive: true, mode: 0o700 });
+  const exportFile = path.join(exportDir, "content-export.json");
+  const newsId = "11111111-1111-4111-8111-111111111111";
+  await writeFile(
+    exportFile,
+    JSON.stringify({
+      tables: {
+        news_items: [
+          {
+            id: newsId,
+            title: "Import dry-run",
+            slug: "import-dry-run",
+            excerpt: "Disposable import check",
+            body_html: "<p>ok</p>",
+            status: "published",
+            published_date: "2026-01-01",
+          },
+        ],
+      },
+    }),
+    { mode: 0o600 },
+  );
+  await run("node", ["scripts/import-content-export.mjs", exportFile], {
+    DATABASE_URL: runtimeUrl,
+    DATABASE_SSL: "disable",
+  });
+  const verifyImport = new pg.Client({ connectionString: runtimeUrl });
+  await verifyImport.connect();
+  try {
+    const imported = await verifyImport.query(
+      "SELECT title, status FROM public.news_items WHERE id = $1",
+      [newsId],
+    );
+    if (imported.rows[0]?.title !== "Import dry-run" || imported.rows[0]?.status !== "published") {
+      throw new Error("content export import dry-run did not upsert news_items");
+    }
+    const galleryPublic = await verifyImport.query(
+      `SELECT COUNT(*)::int AS count FROM public.gallery_photos
+       WHERE status = 'published' AND deleted_at IS NULL`,
+    );
+    if (typeof galleryPublic.rows[0].count !== "number") {
+      throw new Error("gallery public filter query failed");
+    }
+  } finally {
+    await verifyImport.end();
+  }
+  await rm(exportDir, { recursive: true, force: true });
+
   console.info("local-pg-test OK");
 } finally {
   if (started) {

@@ -84,6 +84,44 @@ const selected = await query(
 );
 assert(selected.rows[0]?.id === inserted.rows[0].id, "news select did not return inserted row");
 
+const upsertedTitle = `${marker}-upserted`;
+const upsert = await query(
+  `INSERT INTO public.news_items (id, title, slug, excerpt, body_html, status)
+   VALUES ($1, $2, $3, $4, $5, 'published')
+   ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, status = EXCLUDED.status
+   RETURNING id, title, status`,
+  [inserted.rows[0].id, upsertedTitle, marker, "smoke excerpt", "<p>smoke</p>"],
+);
+assert(upsert.rows[0]?.title === upsertedTitle, "news upsert with ON CONFLICT (id) failed");
+assert(upsert.rows[0]?.status === "published", "news upsert did not publish");
+
+const galleryId = randomUUID();
+await query(
+  `INSERT INTO public.gallery_photos (id, title, alt_text, category, tags, status, sort_order)
+   VALUES ($1, $2, $3, 'all', '{}', 'published', 1)`,
+  [galleryId, "Smoke photo", "Smoke alt"],
+);
+const publishedGallery = await query(
+  `SELECT COUNT(*)::int AS count FROM public.gallery_photos
+   WHERE status = 'published' AND deleted_at IS NULL AND id = $1`,
+  [galleryId],
+);
+assert(publishedGallery.rows[0].count === 1, "published gallery photo not visible to public filter");
+
+const inviteId = randomUUID();
+const inviteToken = `tok_${inviteId.replace(/-/g, "")}`;
+const passcodeHash = await bcrypt.hash("123456", 12);
+await query(
+  `INSERT INTO public.staff_invites
+    (id, token, passcode_hash, kind, contact_email, role_title, is_super_admin, expires_at)
+   VALUES ($1, $2, $3, 'create', $4, $5, false, $6)`,
+  [inviteId, inviteToken, passcodeHash, "smoke-invite@staff.local", "Editor", new Date(Date.now() + 86_400_000).toISOString()],
+);
+const inviteRow = await query("SELECT id, kind FROM public.staff_invites WHERE id = $1", [inviteId]);
+assert(inviteRow.rows[0]?.id === inviteId && inviteRow.rows[0]?.kind === "create", "staff invite insert failed");
+
+await query("DELETE FROM public.staff_invites WHERE id = $1", [inviteId]);
+await query("DELETE FROM public.gallery_photos WHERE id = $1", [galleryId]);
 await query("DELETE FROM public.news_items WHERE id = $1", [inserted.rows[0].id]);
 
 const passwordHash = await bcrypt.hash("SmokeTest-Password-12!", 12);

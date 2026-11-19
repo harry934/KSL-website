@@ -159,14 +159,17 @@ export async function POST(req: NextRequest) {
     }
 
     const poster = items.find((item) => item.kind === "image") ?? null;
-    const { error: upErr } = await admin.from("site_image_overrides").upsert({
-      slot_id: slotId,
-      source: "storage",
-      public_url: poster?.public_url ?? null,
-      storage_path: poster?.storage_path ?? items[0].storage_path,
-      media: items,
-      updated_by: session.userId,
-    });
+    const { error: upErr } = await admin.from("site_image_overrides").upsert(
+      {
+        slot_id: slotId,
+        source: "storage",
+        public_url: poster?.public_url ?? null,
+        storage_path: poster?.storage_path ?? items[0].storage_path,
+        media: items,
+        updated_by: session.userId,
+      },
+      { onConflict: "slot_id" },
+    );
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     await releaseUnusedValues(admin, previous);
 
@@ -195,13 +198,16 @@ export async function POST(req: NextRequest) {
     if (galleryErr) return NextResponse.json({ error: galleryErr }, { status: 500 });
   }
 
-  const { error: upErr } = await admin.from("site_image_overrides").upsert({
-    slot_id: slotId,
-    source: "storage",
-    public_url: publicUrl,
-    storage_path: storagePath,
-    updated_by: session.userId,
-  });
+  const { error: upErr } = await admin.from("site_image_overrides").upsert(
+    {
+      slot_id: slotId,
+      source: "storage",
+      public_url: publicUrl,
+      storage_path: storagePath,
+      updated_by: session.userId,
+    },
+    { onConflict: "slot_id" },
+  );
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   await releaseUnusedValues(admin, previous);
   await clearReviewDraft(admin, "site_image_overrides", null, slotId);

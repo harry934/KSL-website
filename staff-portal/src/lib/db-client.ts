@@ -220,7 +220,10 @@ class TableQuery<T = DbRow[]> implements PromiseLike<DbResult<T>> {
   upsert(values: Record<string, unknown> | Record<string, unknown>[], options: { onConflict?: string } = {}) {
     this.operation = "upsert";
     this.values = values;
-    this.conflictColumns = options.onConflict?.split(",").map((column) => column.trim()).filter(Boolean) ?? [];
+    const columns = options.onConflict?.split(",").map((column) => column.trim()).filter(Boolean) ?? [];
+    // Postgres requires an inference target for ON CONFLICT DO UPDATE. Default to id
+    // (content tables). Callers with other keys must pass onConflict explicitly.
+    this.conflictColumns = columns.length ? columns : ["id"];
     return this;
   }
 

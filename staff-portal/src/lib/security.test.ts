@@ -444,7 +444,7 @@ test("mutation origin allows public Host behind a loopback nextUrl", () => {
   const prevSite = process.env.PUBLIC_SITE_ORIGIN;
   const prevPortal = process.env.NEXT_PUBLIC_PORTAL_URL;
   process.env.PUBLIC_SITE_ORIGIN = "http://178.162.219.218";
-  process.env.NEXT_PUBLIC_PORTAL_URL = "http://178.162.219.218/admin";
+  process.env.NEXT_PUBLIC_PORTAL_URL = "http://178.162.219.218/kwela";
 
   const asReq = (headers: Record<string, string>, origin = "http://127.0.0.1:3000") =>
     ({

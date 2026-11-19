@@ -69,13 +69,20 @@ export function awaitingReview(data: unknown) {
 /** POST/PATCH/DELETE JSON and turn any failure into a readable message. */
 export async function sendJson(url: string, method: string, body?: unknown) {
   const run = async () => {
-    const res = await fetch(url, {
+    const res = await fetch(appPath(url), {
       method,
       headers: body === undefined ? undefined : { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error ?? "Something went wrong. Please try again.");
+    if (!res.ok) {
+      const message =
+        typeof data.error === "string" && data.error
+          ? data.error
+          : `Something went wrong (${res.status}). Please try again.`;
+      const requestId = typeof data.requestId === "string" && data.requestId ? ` [${data.requestId}]` : "";
+      throw new Error(`${message}${requestId}`);
+    }
     if (method.toUpperCase() !== "GET") refreshNotices();
     return data;
   };

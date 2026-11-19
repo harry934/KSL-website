@@ -51,9 +51,11 @@ Company contact emails like `info@kenyashipyards.co.ke` in page footers can stay
 
 ---
 
-## Stage 0: Show the site on the VPS IP (before Nginx, before company DNS)
+## Stage 0: Show the site on the VPS IP
 
-Goal: browse **`http://YOUR_VPS_IP:8080`** (public pages) and **`http://YOUR_VPS_IP:3000/login`** (portal) using IP only.
+**Preferred (Nginx on :80):** public site at `http://YOUR_VPS_IP/` and portal at `http://YOUR_VPS_IP/kwela/login` (Node stays on `127.0.0.1:3000`).
+
+Post-deploy mutation fixes, data inventory, and content import gates: [guides/POST-DEPLOY-AUDIT.md](guides/POST-DEPLOY-AUDIT.md).
 
 Replace `YOUR_VPS_IP` everywhere (example `203.0.113.10`).
 
@@ -77,9 +79,10 @@ Leave Turnstile empty for private IP testing if you want.
 
 | Variable | Value |
 |----------|--------|
-| `NEXT_PUBLIC_PORTAL_URL` | `http://YOUR_VPS_IP:3000` |
-| `NEXT_PUBLIC_SITE_URL` | `http://YOUR_VPS_IP:8080` |
-| `PUBLIC_SITE_ORIGIN` | `http://YOUR_VPS_IP:8080` |
+| `NEXT_PUBLIC_BASE_PATH` | `/kwela` |
+| `NEXT_PUBLIC_PORTAL_URL` | `http://YOUR_VPS_IP/kwela` |
+| `NEXT_PUBLIC_SITE_URL` | `http://YOUR_VPS_IP` |
+| `PUBLIC_SITE_ORIGIN` | `http://YOUR_VPS_IP` |
 | `js/portal-host.js` | same portal URL (overrides Vercel `data-ksl-content-api`) |
 
 ### 0.2 Migrate, install, build, admin `[change]`
@@ -118,15 +121,16 @@ cd /opt/ksl-website
 python3 -m http.server 8080 --bind 0.0.0.0
 ```
 
-**Open in a browser**
+**Open in a browser (after Nginx from `deploy/vps/nginx/kenyashipyards-ip.conf`)**
 
-- Public site: `http://YOUR_VPS_IP:8080/`
-- Portal login: `http://YOUR_VPS_IP:3000/login`
-- Health: `http://YOUR_VPS_IP:3000/api/health`
+- Public site: `http://YOUR_VPS_IP/`
+- Portal login: `http://YOUR_VPS_IP/kwela/login`
+- Health: `http://YOUR_VPS_IP/kwela/api/health` (or `curl http://127.0.0.1:3000/api/health` on the server)
+- Old path: `http://YOUR_VPS_IP/admin` → 301 to `/kwela`
 
-**Expect:** Pages load with `img/ksl` images; live content may come from the portal API (via `portal-host.js`) or fall back to `data/*.json`. Password login works.  
+**Expect:** Pages load with `img/ksl` images; live CMS content comes from the portal API (via `portal-host.js`). Schema-only DBs show empty sections until a reviewed content import (see [guides/POST-DEPLOY-AUDIT.md](guides/POST-DEPLOY-AUDIT.md)). Password login works. Admin saves must hit `/kwela/api/...` (not bare `/api/...`).  
 **Passkeys:** need HTTPS + matching portal hostname — skip until Nginx/TLS.  
-**Precaution:** Opening `:3000`/`:8080` on the public IP is for private testing. Prefer firewall allowlist or SSH tunnels if the VPS is on the open internet. Later, systemd keeps the portal on `127.0.0.1:3000` behind Nginx only.
+**Precaution:** Do not open port 3000 publicly. systemd/PM2 keeps the portal on `127.0.0.1:3000` behind Nginx only.
 
 ### 0.4 When IP smoke test passes
 
@@ -297,12 +301,13 @@ STORAGE_DIR=/var/lib/ksl-portal/files
 STORED_FILE_SIGNING_SECRET=
 CONTACT_TOKEN_SECRET=
 MESSAGE_VIEW_UNLOCK_SECRET=
-NEXT_PUBLIC_PORTAL_URL=http://YOUR_VPS_IP:3000
-NEXT_PUBLIC_SITE_URL=http://YOUR_VPS_IP:8080
-PUBLIC_SITE_ORIGIN=http://YOUR_VPS_IP:8080
+NEXT_PUBLIC_BASE_PATH=/kwela
+NEXT_PUBLIC_PORTAL_URL=http://YOUR_VPS_IP/kwela
+NEXT_PUBLIC_SITE_URL=http://YOUR_VPS_IP
+PUBLIC_SITE_ORIGIN=http://YOUR_VPS_IP
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 TURNSTILE_SECRET_KEY=
-TRUSTED_PROXY_HOPS=0
+TRUSTED_PROXY_HOPS=1
 NODE_ENV=production
 ```
 
@@ -441,23 +446,26 @@ bash /opt/ksl-website/deploy/vps/publish-public.sh
 
 ### 5.2 Install Nginx site configs `[change]`
 
-Templates:
+**IP / same-host preferred template:**
+
+- `deploy/vps/nginx/kenyashipyards-ip.conf` — static site on `:80` + portal at `/kwela` → `127.0.0.1:3000` (with `/admin` → `/kwela` redirect)
+
+**Legacy split-port templates (optional):**
 
 - `deploy/vps/nginx/ksl-public.conf` — static site + `/storage/media-public/` → `$STORAGE_DIR/media-public`
-- `deploy/vps/nginx/ksl-portal.conf` — TLS on `8443` → `127.0.0.1:3000`
+- `deploy/vps/nginx/ksl-portal.conf` — TLS on `8443` → `127.0.0.1:3000` (portal at host root; set `NEXT_PUBLIC_BASE_PATH` empty if used)
 
 ```sh
-sudo sed "s/VPS_IP/YOUR_PUBLIC_IP/g" /opt/ksl-website/deploy/vps/nginx/ksl-public.conf \
-  | sudo tee /etc/nginx/sites-available/ksl-public
-sudo cp /opt/ksl-website/deploy/vps/nginx/ksl-portal.conf /etc/nginx/sites-available/ksl-portal
-sudo ln -sf /etc/nginx/sites-available/ksl-public /etc/nginx/sites-enabled/ksl-public
-sudo ln -sf /etc/nginx/sites-available/ksl-portal /etc/nginx/sites-enabled/ksl-portal
+# Preferred IP layout
+sudo cp /opt/ksl-website/deploy/vps/nginx/kenyashipyards-ip.conf /etc/nginx/sites-available/kenyashipyards
+sudo ln -sf /etc/nginx/sites-available/kenyashipyards /etc/nginx/sites-enabled/kenyashipyards
+sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-**Purpose:** Reverse-proxy portal; serve static defaults and optional public upload alias.  
-**Precaution:** Review enabled sites so you do not steal another app’s `default_server`. Private buckets (`downloads`, `avatars`) must **not** be aliased publicly.
+**Purpose:** Reverse-proxy portal under `/kwela`; serve static site.  
+**Precaution:** Review enabled sites so you do not steal another app’s `default_server`. Private buckets (`downloads`, `avatars`) must **not** be aliased publicly. Rebuild the portal after any `NEXT_PUBLIC_BASE_PATH` / portal URL change.
 
 ### 5.3 DNS and SSL `[change]`
 

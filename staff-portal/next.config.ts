@@ -30,7 +30,7 @@ const securityHeaders = [
   { key: "X-Robots-Tag", value: "noindex, nofollow" },
 ];
 
-/** Set NEXT_PUBLIC_BASE_PATH=/admin when Nginx proxies the portal on port 80/443 (no open :3000). */
+/** Set NEXT_PUBLIC_BASE_PATH=/kwela when Nginx proxies the portal on port 80/443 (no open :3000). */
 const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || "").trim().replace(/\/$/, "") || undefined;
 
 const nextConfig: NextConfig = {

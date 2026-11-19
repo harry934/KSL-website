@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --import ./test-register.mjs --test src/lib/security.test.ts src/lib/portal-nav.test.ts src/lib/storage-path.test.ts src/lib/stored-file.test.ts src/lib/draft-access.test.ts",
+    "test": "node --experimental-strip-types --import ./test-register.mjs --test src/lib/security.test.ts src/lib/portal-nav.test.ts src/lib/storage-path.test.ts src/lib/stored-file.test.ts src/lib/draft-access.test.ts src/lib/base-path.test.ts src/lib/api-auth.test.ts",
     "db:migrate": "node scripts/migrate.mjs",
     "bootstrap:admin": "node scripts/bootstrap-super-admin.mjs",
     "reset:admin-password": "node scripts/reset-admin-password.mjs",
@@ -16,6 +16,8 @@
     "import:faq": "node scripts/import-faq-from-json.mjs",
     "import:news": "node scripts/import-news-from-json.mjs",
     "import:gallery": "node scripts/import-gallery-from-json.mjs",
+    "inventory:postgres": "node scripts/inventory-postgres.mjs",
+    "inventory:supabase": "node scripts/inventory-supabase-export.mjs",
     "db:smoke": "node scripts/db-smoke.mjs",
     "test:pg": "node scripts/local-pg-test.mjs"
   },

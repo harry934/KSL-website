@@ -1,6 +1,9 @@
 import { staffGate } from "@/lib/session";
 import { canAccess, type ModuleKey } from "@/lib/modules";
+import { dbError, newRequestId } from "@/lib/db-errors";
 import { NextResponse } from "next/server";
+
+export { dbError, newRequestId } from "@/lib/db-errors";
 
 export function credentialsCurrent(session: { mustChangePassword: boolean; mustChangeUsername: boolean }) {
   if (!session.mustChangePassword && !session.mustChangeUsername) return null;
@@ -32,16 +35,22 @@ export async function requireStaff(
 
 const NOT_ALLOWED = "You are not allowed to do this. Ask an administrator if you need access.";
 
-/** Database errors in words a non-technical editor can act on. */
-export function dbError(err: { message?: string; code?: string } | null | undefined) {
-  if (err?.code === "23505" || /duplicate key/i.test(err?.message ?? "")) {
-    return "Another item already uses this name or web address. Change it slightly and save again.";
+/** Staff JSON error with optional requestId. Never put SQL or secrets in `error`. */
+export function jsonError(
+  message: string,
+  status: number,
+  options: { requestId?: string; logDetail?: unknown } = {}
+) {
+  const requestId = options.requestId ?? newRequestId();
+  if (options.logDetail !== undefined) {
+    console.error(`[${requestId}]`, options.logDetail);
   }
-  if (err?.code === "23514" || err?.code === "22P02" || err?.code === "22007") {
-    return "One of the values is not in the right format. Check the form and try again.";
-  }
-  if (err?.code === "23502") return "Some required information is missing. Fill in all fields and try again.";
-  return "Something went wrong. Please try again.";
+  return NextResponse.json({ error: message, requestId }, { status });
+}
+
+/** Convenience when a route wants both a safe message and a logged detail. */
+export function dbFailure(err: { message?: string; code?: string } | null | undefined, fallback?: string) {
+  return jsonError(fallback ?? dbError(err), 500, { logDetail: err });
 }
 
 /** Agents with edit-only rights may save drafts; going live needs publish rights. */

@@ -56,12 +56,15 @@ export async function POST(req: NextRequest) {
   });
   if (plan.held) return plan.held;
 
-  const { error: upErr } = await admin.from("site_settings").upsert({
-    key,
-    value,
-    status: "published",
-    updated_by: session.userId,
-  });
+  const { error: upErr } = await admin.from("site_settings").upsert(
+    {
+      key,
+      value,
+      status: "published",
+      updated_by: session.userId,
+    },
+    { onConflict: "key" },
+  );
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   await clearReviewDraft(admin, "site_settings", null, key);
 
