@@ -3,6 +3,7 @@ import { constants } from "node:fs";
 import { mkdir, open, readFile, realpath, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { currentBasePath } from "@/lib/base-path";
 import { query } from "@/lib/db";
 
 const BUCKETS = new Set(["media-public", "downloads", "avatars"]);
@@ -83,9 +84,28 @@ function portalUrl() {
   throw new Error("NEXT_PUBLIC_PORTAL_URL is required in production");
 }
 
+/** Origin + optional /kwela base path. `new URL("/api/...", portal)` would drop /kwela. */
+function portalApiRoot() {
+  const portal = portalUrl();
+  const base = currentBasePath();
+  try {
+    const url = new URL(portal);
+    const pathName = url.pathname.replace(/\/+$/, "");
+    if (base && (pathName === base || pathName.endsWith(base))) return portal;
+    if (base) {
+      url.pathname = `${base}/`;
+      return url.toString().replace(/\/+$/, "");
+    }
+    return portal;
+  } catch {
+    return portal;
+  }
+}
+
 export function storedFileUrl(bucket: string, file: string) {
   if (!BUCKETS.has(bucket)) throw new Error("Invalid storage bucket");
-  const url = new URL("/api/stored-file", portalUrl());
+  // Keep /kwela (or other basePath) — absolute "/api/..." would resolve at the host root.
+  const url = new URL(`${portalApiRoot()}/api/stored-file`);
   url.searchParams.set("bucket", bucket);
   url.searchParams.set("path", safePath(file));
   return url.toString();

@@ -35,6 +35,10 @@ test("safeImageUrl accepts https, relative img paths, storage paths, and http po
     safeImageUrl("http://178.162.219.218/kwela/api/stored-file?bucket=media-public&path=site_settings/a.jpg"),
     "http://178.162.219.218/kwela/api/stored-file?bucket=media-public&path=site_settings/a.jpg",
   );
+  assert.equal(
+    safeImageUrl("http://178.162.219.218:3000/api/stored-file?bucket=media-public&path=site_settings/a.jpg"),
+    "http://178.162.219.218:3000/api/stored-file?bucket=media-public&path=site_settings/a.jpg",
+  );
   assert.equal(safeImageUrl("http://evil.example/a.jpg"), null);
   assert.equal(safeImageUrl("javascript:alert(1)"), null);
 });

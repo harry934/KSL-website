@@ -1,13 +1,16 @@
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
+const siteOrigin = (process.env.PUBLIC_SITE_ORIGIN || process.env.NEXT_PUBLIC_SITE_URL || "").trim();
+/** HTTP IP staging must allow http: media; HTTPS production stays https-only beyond 'self'. */
+const allowHttpMedia = !siteOrigin.startsWith("https://");
 
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https:",
-  "media-src 'self' blob: https:",
+  `img-src 'self' data: blob: https:${allowHttpMedia ? " http:" : ""}`,
+  `media-src 'self' blob: https:${allowHttpMedia ? " http:" : ""}`,
   "font-src 'self' data:",
   "connect-src 'self'",
   "frame-ancestors 'none'",
@@ -15,8 +18,6 @@ const csp = [
   "form-action 'self'",
   "object-src 'none'",
 ].join("; ");
-
-const siteOrigin = (process.env.PUBLIC_SITE_ORIGIN || process.env.NEXT_PUBLIC_SITE_URL || "").trim();
 const securityHeaders = [
   { key: "Content-Security-Policy", value: csp },
   { key: "X-Frame-Options", value: "DENY" },

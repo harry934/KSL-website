@@ -25,7 +25,8 @@ export function storageObjectFrom(value: unknown): StorageObject | null {
   if (/^https?:/i.test(raw)) {
     try {
       const url = new URL(raw);
-      if (url.pathname === "/api/stored-file") {
+      // Match /api/stored-file and /kwela/api/stored-file (and any other basePath).
+      if (/\/api\/stored-file$/.test(url.pathname)) {
         const bucket = url.searchParams.get("bucket");
         const path = url.searchParams.get("path") ?? "";
         if (

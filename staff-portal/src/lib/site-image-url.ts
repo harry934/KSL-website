@@ -8,7 +8,10 @@ function allowedHttpHosts() {
     const value = raw?.trim();
     if (!value) continue;
     try {
-      hosts.add(new URL(value).host.toLowerCase());
+      const url = new URL(value);
+      hosts.add(url.host.toLowerCase());
+      // Allow the same hostname with or without an explicit port (IP:3000 vs Nginx :80).
+      hosts.add(url.hostname.toLowerCase());
     } catch {
       /* ignore invalid origin */
     }
@@ -18,6 +21,14 @@ function allowedHttpHosts() {
     hosts.add("127.0.0.1");
   }
   return hosts;
+}
+
+function httpHostAllowed(host: string) {
+  const normalized = host.toLowerCase();
+  const allowed = allowedHttpHosts();
+  if (allowed.has(normalized)) return true;
+  const bare = normalized.split(":")[0];
+  return allowed.has(bare);
 }
 
 function extensionInStoredFilePath(value: string) {
@@ -68,7 +79,7 @@ export function safeImageUrl(value: unknown) {
   try {
     const url = new URL(trimmed);
     if (url.protocol === "https:") return url.toString();
-    if (url.protocol === "http:" && allowedHttpHosts().has(url.host.toLowerCase())) {
+    if (url.protocol === "http:" && httpHostAllowed(url.host)) {
       return url.toString();
     }
     return null;

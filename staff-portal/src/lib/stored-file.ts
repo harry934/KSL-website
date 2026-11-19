@@ -29,11 +29,12 @@ function localizeStoredUrl(value: string) {
 export async function signPayload<T>(value: T): Promise<T> {
   if (typeof value === "string") {
     if (isPrivateRef(value)) return "" as T;
+    // Re-localize every known storage object so legacy URLs that dropped /kwela
+    // (or still point at :3000) are rewritten to the current portal address.
+    const object = storageObjectFrom(value);
+    if (object) return localizeStoredUrl(value) as T;
     if (value.includes("/storage/v1/object/")) {
       return value.replace(/https?:\/\/[^"' <>)\]]+/g, localizeStoredUrl) as T;
-    }
-    if (/^(news|gallery|events|services|products|projects|downloads|csr|press|careers|organization|site_settings|avatars)\//.test(value)) {
-      return localizeStoredUrl(value) as T;
     }
     return value as T;
   }

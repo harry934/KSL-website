@@ -23,9 +23,14 @@ Related: [POST-DEPLOY-AUDIT.md](./POST-DEPLOY-AUDIT.md) · [../DEPLOYMENT.md](..
 
 ## Image upload fix
 
-Root cause: `safeImageUrl()` only allowed `https:`, so HTTP portal upload URLs (`http://VPS/kwela/api/stored-file?...`) were rejected with **“Choose an image file.”**
+Two bugs stacked on the VPS portal:
 
-Fix (in code): allow http for configured portal/site hosts, relative `img/` paths, and storage-relative object paths; recognize extensions in `stored-file` query `path=`.
+1. `safeImageUrl()` only allowed `https:`, so HTTP portal upload URLs were rejected with **“Choose an image file.”**
+2. `storedFileUrl()` used `new URL("/api/stored-file", portalUrl)`, which **drops `/kwela`**, so uploads saved files but returned `http://VPS/api/stored-file?...` (404). Staff/org photos then showed as broken images.
+
+Fix (in code): allow http for configured portal/site hosts (hostname with or without port); keep `/kwela` in stored-file URLs; rewrite legacy broken URLs in public API payloads; Nginx 301 from `/api/stored-file` → `/kwela/api/stored-file`.
+
+After pulling this commit on the VPS: update env with `bash deploy/vps/fill-ip.sh --http 178.162.219.218`, rebuild/restart the portal, reload Nginx from `deploy/vps/nginx/kenyashipyards-ip.conf`.
 
 ---
 

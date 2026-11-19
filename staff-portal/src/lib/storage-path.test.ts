@@ -17,6 +17,18 @@ test("storage paths point at the bucket that holds the file", () => {
     ),
     { bucket: "media-public", path: "site_settings/1710000000000-abcd1234.mp4" }
   );
+  assert.deepEqual(
+    storageObjectFrom(
+      "http://178.162.219.218/api/stored-file?bucket=media-public&path=organization/1710000000000-abcd1234.jpg"
+    ),
+    { bucket: "media-public", path: "organization/1710000000000-abcd1234.jpg" }
+  );
+  assert.deepEqual(
+    storageObjectFrom(
+      "http://178.162.219.218/kwela/api/stored-file?bucket=media-public&path=organization/1710000000000-abcd1234.jpg"
+    ),
+    { bucket: "media-public", path: "organization/1710000000000-abcd1234.jpg" }
+  );
   assert.equal(storageObjectFrom("img/ksl/mombasa.webp"), null);
   assert.equal(storageObjectFrom("https://kenyashipyards.co.ke/img/ksl/mombasa.webp"), null);
   assert.equal(storageObjectFrom("../secrets.pdf"), null);
