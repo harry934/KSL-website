@@ -542,11 +542,22 @@ function WhatsAppIcon() {
 function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () => void }) {
   const [copied, setCopied] = useState<"passcode" | "link" | "branded" | null>(null);
   const [hint, setHint] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState("");
 
   const plain = invitePlainText(issued);
   const brandedPlain = brandedPlainText(issued);
   const subject = inviteSubject(issued);
   const hasEmail = issued.email.includes("@");
+
+  useEffect(() => {
+    let alive = true;
+    inviteHtmlEmail(issued).then((html) => {
+      if (alive) setPreviewHtml(html);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [issued]);
 
   async function copyText(value: string, which: "passcode" | "link") {
     const ok = await copyPlainText(value);
@@ -562,7 +573,7 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
   }
 
   async function copyBrandedEmail() {
-    const html = await inviteHtmlEmail(issued);
+    const html = previewHtml || (await inviteHtmlEmail(issued));
     const ok = await copyHtmlAndPlain(html, brandedPlain);
     if (!ok) {
       setHint("Could not copy the branded email. Use Gmail or Outlook below instead.");
@@ -580,7 +591,7 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
     if (!hasEmail) return;
     const ok = await copyBrandedEmail();
     if (ok) {
-      setHint("Ctrl+V in the message");
+      setHint("Branded message copied — press Ctrl+V in the Gmail compose window.");
       window.setTimeout(() => setHint(null), 6000);
     }
     window.open(mailComposeUrl(issued.email, subject), "_blank", "noopener");
@@ -629,14 +640,31 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
         <p className="mt-2 break-all font-mono text-[13px] text-[#0b1f3a]">{issued.signupUrl}</p>
       </div>
 
-      <div className="mt-3 rounded-[8px] bg-[#f6f8fa] px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[12.5px] text-[#6b7785]">Branded email</p>
-          <Button variant="secondary" size="sm" onClick={copyBrandedEmail}>
+      <div className="mt-4 overflow-hidden rounded-[10px] border border-[#d7dee7] bg-[#eef2f6]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#d7dee7] bg-white px-4 py-3">
+          <div>
+            <p className="text-[13px] font-semibold text-[#0b1f3a]">Branded email</p>
+            <p className="mt-0.5 text-[12px] text-[#6b7785]">
+              Preview of the message that pastes into Gmail. Copy, then Ctrl+V in compose.
+            </p>
+          </div>
+          <Button variant="secondary" size="sm" onClick={copyBrandedEmail} disabled={!previewHtml}>
             {copied === "branded" ? <Check className="h-4 w-4 text-[#12b76a]" /> : <Copy className="h-4 w-4" />}
-            {copied === "branded" ? "Copied" : "Copy"}
+            {copied === "branded" ? "Copied" : "Copy branded email"}
           </Button>
         </div>
+        {previewHtml ? (
+          <iframe
+            title="Branded invite email preview"
+            srcDoc={previewHtml}
+            className="h-[440px] w-full border-0 bg-[#eef2f6]"
+          />
+        ) : (
+          <div className="flex h-[180px] items-center justify-center gap-2 text-[13px] text-[#6b7785]">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Preparing branded message…
+          </div>
+        )}
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
