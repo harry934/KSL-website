@@ -94,13 +94,32 @@ export async function listBinItems(viewer: { permissions: ModulePermission[]; is
 const SOFT_DELETE_TABLES = new Set<RecycleTable>(["admin_profiles", "website_messages"]);
 
 export async function softDelete(admin: Admin, table: RecycleTable, id: string) {
-  return admin.from(table).update({ deleted_at: new Date().toISOString() }).eq("id", id).is("deleted_at", null);
+  const { data, error } = await admin
+    .from(table)
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("deleted_at", null)
+    .select("id");
+  if (error) return { data: null, error };
+  if (!data?.length) {
+    return { data: null, error: { message: "That item was not found.", code: "bin" } };
+  }
+  return { data, error: null };
 }
 
 export async function restoreRow(admin: Admin, table: RecycleTable, id: string) {
-  const result = await admin.from(table).update({ deleted_at: null }).eq("id", id).not("deleted_at", "is", null);
-  if (!result.error) revalidatePath("/");
-  return result;
+  const { data, error } = await admin
+    .from(table)
+    .update({ deleted_at: null })
+    .eq("id", id)
+    .not("deleted_at", "is", null)
+    .select("id");
+  if (error) return { data: null, error };
+  if (!data?.length) {
+    return { data: null, error: { message: "That item is not in the recycle bin.", code: "bin" } };
+  }
+  revalidatePath("/");
+  return { data, error: null };
 }
 
 /**
@@ -115,7 +134,7 @@ export async function applyBinDelete(admin: Admin, table: RecycleTable, id: stri
     return { error: error as BinError };
   }
 
-  // Hard-delete the live or already-binned row.
+  // Hard-delete the live or already-binned row — the Postgres row is removed.
   const { data, error } = await admin.from(table).delete().eq("id", id).select("*");
   if (error) return { error: error as BinError };
   if (!data?.length) return { error: { message: "That item was not found.", code: "bin" } };

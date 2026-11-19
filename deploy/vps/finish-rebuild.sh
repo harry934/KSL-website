@@ -7,14 +7,41 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
+IP="${1:-178.162.219.218}"
 
 echo "Repo: $ROOT"
-echo "Commit: $(git log -1 --oneline)"
+echo "Commit before build: $(git log -1 --oneline)"
 
-bash deploy/vps/fill-ip.sh --http "${1:-178.162.219.218}"
+bash deploy/vps/fill-ip.sh --http "$IP"
 
 cd staff-portal
 npm install
+
+# Make NEXT_PUBLIC_* visible to next build (and print them for debugging).
+set -a
+if [[ -f .env.production ]]; then
+  # shellcheck disable=SC1091
+  . ./.env.production
+fi
+if [[ -f /etc/ksl-portal.env ]]; then
+  # shellcheck disable=SC1091
+  . /etc/ksl-portal.env
+fi
+# fill-ip values must win over older /etc values
+if [[ -f .env.production ]]; then
+  # shellcheck disable=SC1091
+  . ./.env.production
+fi
+set +a
+
+echo "NEXT_PUBLIC_PORTAL_URL=${NEXT_PUBLIC_PORTAL_URL:-<missing>}"
+echo "NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH:-<missing>}"
+echo "NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-<missing>}"
+
+if [[ -z "${NEXT_PUBLIC_PORTAL_URL:-}" || -z "${NEXT_PUBLIC_BASE_PATH:-}" ]]; then
+  echo "ERROR: portal public URL / base path missing. Aborting build." >&2
+  exit 1
+fi
 
 if [[ -f /etc/ksl-portal-migrator.env ]]; then
   echo "Running migrations with ksl_migrator..."
@@ -28,6 +55,7 @@ cd ..
 
 echo "Restarting ksl-portal..."
 sudo systemctl restart ksl-portal
+sleep 2
 sudo systemctl --no-pager --full status ksl-portal | head -20
 
 PUBLIC_DEST=/var/www/kenyashipyards
@@ -40,7 +68,12 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 echo
-echo "DONE. Hard-refresh the browser (Ctrl+Shift+R)."
+echo "Health:"
 curl -sS http://127.0.0.1:3000/api/health || true
 echo
-git log -1 --oneline
+echo "Login redirect (must NOT be localhost:3000):"
+curl -sS -D - -o /dev/null "http://127.0.0.1/kwela/staff" 2>/dev/null | tr -d '\r' | grep -i '^location:' || \
+  curl -sS -D - -o /dev/null "http://${IP}/kwela/staff" | tr -d '\r' | grep -i '^location:' || true
+echo
+echo "DONE. Hard-refresh the browser (Ctrl+Shift+R)."
+echo "Commit: $(git log -1 --oneline)"

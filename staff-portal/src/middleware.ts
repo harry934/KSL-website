@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isAllowedMutationOrigin } from "@/lib/request-origin";
+import { publicPortalUrl } from "@/lib/public-url";
 import { STAFF_SESSION_COOKIE } from "@/lib/staff-session";
 
 const ALLOWED_ORIGINS = new Set([
@@ -80,9 +81,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
   }
   if (pathname === "/login" && request.nextUrl.searchParams.has("reason")) {
-    const url = request.nextUrl.clone();
-    url.search = "";
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(publicPortalUrl("/login", request));
   }
   if (PUBLIC_API_PATHS.has(pathname)) {
     return NextResponse.next();
@@ -95,9 +94,8 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
     }
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+    // Never redirect to http://localhost:3000 behind Nginx — use the public portal URL.
+    return NextResponse.redirect(publicPortalUrl("/login", request));
   }
 
   const response = NextResponse.next({ request: { headers: request.headers } });

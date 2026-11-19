@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Check, Copy, KeyRound, Loader2, Pencil, Trash2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -480,12 +480,12 @@ function ShareIconButton({
   label,
   disabled,
   onClick,
-  src,
+  icon,
 }: {
   label: string;
   disabled?: boolean;
   onClick: () => void;
-  src: string;
+  icon: ReactNode;
 }) {
   return (
     <button
@@ -496,8 +496,46 @@ function ShareIconButton({
       onClick={onClick}
       className="inline-flex h-[72px] w-[72px] items-center justify-center rounded-[16px] border border-[#e8ecf1] bg-white p-0 shadow-[0_6px_16px_rgba(15,23,42,0.10)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_22px_rgba(15,23,42,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b1f3a]/25 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0 disabled:hover:shadow-[0_6px_16px_rgba(15,23,42,0.10)]"
     >
-      <img src={src} alt="" className="h-10 w-10 object-contain" draggable={false} />
+      {icon}
     </button>
+  );
+}
+
+/** Inline icons — never depend on /kwela/brand/*.svg loading behind Nginx. */
+function GmailIcon() {
+  return (
+    <svg viewBox="52 42 88 66" className="h-10 w-10" aria-hidden>
+      <path fill="#4285f4" d="M58 108h14V74L52 59v43c0 3.32 2.69 6 6 6" />
+      <path fill="#34a853" d="M120 108h14c3.32 0 6-2.69 6-6V59l-20 15" />
+      <path fill="#fbbc04" d="M120 48v26l20-15v-8c0-7.42-8.47-11.65-14.4-7.2" />
+      <path fill="#ea4335" d="M72 74V48l24 18 24-18v26L96 92" />
+      <path fill="#c5221f" d="M52 51v8l20 15V48l-5.6-4.2c-5.94-4.45-14.4-.22-14.4 7.2" />
+    </svg>
+  );
+}
+
+function OutlookIcon() {
+  return (
+    <svg viewBox="0 0 48 48" className="h-10 w-10" aria-hidden>
+      <rect x="18" y="8" width="24" height="32" rx="3" fill="#0078D4" />
+      <path fill="#28A8EA" d="M18 16h24v8H18z" />
+      <path fill="#50D9FF" d="M18 8h24v8H18z" />
+      <rect x="6" y="14" width="22" height="22" rx="3" fill="#0A63C9" />
+      <circle cx="17" cy="25" r="6.5" fill="#fff" />
+      <circle cx="17" cy="25" r="3.5" fill="#0A63C9" />
+    </svg>
+  );
+}
+
+function WhatsAppIcon() {
+  return (
+    <svg viewBox="0 0 48 48" className="h-10 w-10" aria-hidden>
+      <circle cx="24" cy="24" r="22" fill="#25D366" />
+      <path
+        fill="#fff"
+        d="M24.1 12.2c-6.6 0-12 5.4-12 12 0 2.1.6 4.1 1.6 5.9L12 36l5.9-1.6c1.7.9 3.7 1.4 5.7 1.4h.1c6.6 0 12-5.4 12-12s-5.5-11.6-11.6-11.6zm6.9 16.7c-.3.8-1.6 1.5-2.6 1.7-.7.1-1.6.2-2.6-.2-1.5-.5-3.3-1.7-5.4-3.5-2.6-2.2-4.4-4.9-4.8-5.7-.4-.8-1.5-2.5-.1-3.7.3-.3.7-.5 1.1-.5h.8c.3 0 .4 0 .6.5l1 2.3c.1.3.1.4 0 .6l-.4.7c-.2.3-.4.5-.2.8.5.8 1.4 2 2.5 3.1 1.4 1.4 2.6 1.9 3 .1.2-.3.5-.4.8-.3l1.1.5c.3.1.5.2.6.3.1.4.1 1.1-.2 1.9z"
+      />
+    </svg>
   );
 }
 
@@ -602,9 +640,9 @@ function OneTimePasscodeBox({ issued, onClose }: { issued: Issued; onClose: () =
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <ShareIconButton label="Gmail" src={appPath("/brand/gmail.svg")} disabled={!hasEmail} onClick={openGmail} />
-        <ShareIconButton label="Outlook" src={appPath("/brand/outlook.svg")} disabled={!hasEmail} onClick={openOutlook} />
-        <ShareIconButton label="WhatsApp" src={appPath("/brand/whatsapp.svg")} onClick={sendWhatsApp} />
+        <ShareIconButton label="Gmail" icon={<GmailIcon />} disabled={!hasEmail} onClick={openGmail} />
+        <ShareIconButton label="Outlook" icon={<OutlookIcon />} disabled={!hasEmail} onClick={openOutlook} />
+        <ShareIconButton label="WhatsApp" icon={<WhatsAppIcon />} onClick={sendWhatsApp} />
         <Button className="ml-auto" onClick={onClose}>
           Done
         </Button>

@@ -135,7 +135,7 @@ export function RecyclePage() {
     <div>
       <PageHeader
         title="Recycle bin"
-        description="Deleted pages, photos, and messages stay here. Select items to restore or delete them for good."
+        description="Staff accounts and inbox messages stay here so you can restore them. News, gallery, and other pages are deleted from the database immediately and do not appear here."
       />
       {loading ? (
         <div className="flex items-center gap-2 text-[14px] text-[#5b6775]">

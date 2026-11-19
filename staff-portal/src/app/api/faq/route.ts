@@ -97,26 +97,21 @@ export async function DELETE(req: NextRequest) {
 
   const permanent = params.get("permanent") === "1";
   const admin = createDatabaseClient();
-  if (type === "group" && !permanent) {
-    // Soft-delete child questions first so they appear in the recycle bin with the group.
-    const { data: children } = await admin.from("faq_items").select("id").eq("group_id", id).is("deleted_at", null);
-    for (const child of children ?? []) {
-      const { error: childErr } = await applyBinDelete(admin, "faq_items", String(child.id), false);
-      if (childErr?.code === "bin") return NextResponse.json({ error: childErr.message }, { status: 400 });
-      if (childErr) return NextResponse.json({ error: dbError(childErr) }, { status: 500 });
-    }
-  }
-  if (type === "group" && permanent) {
-    // Purge children before the group so CASCADE does not surprise bulk recycle flows.
+  if (type === "group") {
+    // Hard-delete child questions first (content is never soft-binned).
     const { data: children } = await admin.from("faq_items").select("id").eq("group_id", id);
     for (const child of children ?? []) {
-      await applyBinDelete(admin, "faq_items", String(child.id), true);
+      const { error: childErr } = await applyBinDelete(admin, "faq_items", String(child.id), true);
+      if (childErr?.code === "bin") continue;
+      if (childErr) return NextResponse.json({ error: dbError(childErr) }, { status: 500 });
+      await clearReviewDraft(admin, "faq_items", String(child.id));
     }
   }
   const table = type === "group" ? "faq_groups" : "faq_items";
   const { error: delErr } = await applyBinDelete(admin, table, id, permanent);
   if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
-  await logActivity(session.userId, "faq", permanent ? "purge" : "delete", type === "group" ? "faq_group" : "faq_item", id);
+  await clearReviewDraft(admin, table, id);
+  await logActivity(session.userId, "faq", "purge", type === "group" ? "faq_group" : "faq_item", id);
   return NextResponse.json({ ok: true });
 }

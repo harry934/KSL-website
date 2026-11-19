@@ -113,16 +113,33 @@ const inviteToken = `tok_${inviteId.replace(/-/g, "")}`;
 const passcodeHash = await bcrypt.hash("123456", 12);
 await query(
   `INSERT INTO public.staff_invites
-    (id, token, passcode_hash, kind, contact_email, role_title, is_super_admin, expires_at)
-   VALUES ($1, $2, $3, 'create', $4, $5, false, $6)`,
-  [inviteId, inviteToken, passcodeHash, "smoke-invite@staff.local", "Editor", new Date(Date.now() + 86_400_000).toISOString()],
+    (id, token, passcode_hash, kind, contact_email, role_title, is_super_admin, permissions, expires_at)
+   VALUES ($1, $2, $3, 'create', $4, $5, false, $6::jsonb, $7)`,
+  [
+    inviteId,
+    inviteToken,
+    passcodeHash,
+    "smoke-invite@staff.local",
+    "Editor",
+    "[]",
+    new Date(Date.now() + 86_400_000).toISOString(),
+  ],
 );
-const inviteRow = await query("SELECT id, kind FROM public.staff_invites WHERE id = $1", [inviteId]);
+const inviteRow = await query("SELECT id, kind, permissions FROM public.staff_invites WHERE id = $1", [inviteId]);
 assert(inviteRow.rows[0]?.id === inviteId && inviteRow.rows[0]?.kind === "create", "staff invite insert failed");
+assert(JSON.stringify(inviteRow.rows[0]?.permissions ?? null) === "[]", "empty permissions jsonb insert failed");
 
 await query("DELETE FROM public.staff_invites WHERE id = $1", [inviteId]);
 await query("DELETE FROM public.gallery_photos WHERE id = $1", [galleryId]);
-await query("DELETE FROM public.news_items WHERE id = $1", [inserted.rows[0].id]);
+const newsId = inserted.rows[0].id;
+await query("DELETE FROM public.news_items WHERE id = $1", [newsId]);
+const gone = await query("SELECT COUNT(*)::int AS count FROM public.news_items WHERE id = $1", [newsId]);
+assert(gone.rows[0].count === 0, "hard delete left the news_items row in Postgres");
+const softGhost = await query(
+  "SELECT COUNT(*)::int AS count FROM public.news_items WHERE id = $1 AND deleted_at IS NOT NULL",
+  [newsId],
+);
+assert(softGhost.rows[0].count === 0, "hard delete must remove the row, not only set deleted_at");
 
 const passwordHash = await bcrypt.hash("SmokeTest-Password-12!", 12);
 const profileId = randomUUID();

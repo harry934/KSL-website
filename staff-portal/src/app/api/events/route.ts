@@ -92,6 +92,6 @@ export async function DELETE(req: NextRequest) {
   if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
   await clearReviewDraft(createDatabaseClient(), "event_items", id);
-  await logActivity(session.userId, "events", permanent ? "purge" : "delete", "event_item", id);
+  await logActivity(session.userId, "events",  "purge", "event_item", id);
   return NextResponse.json({ ok: true });
 }

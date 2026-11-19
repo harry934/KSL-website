@@ -133,6 +133,6 @@ export async function DELETE(req: NextRequest) {
   if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
   await clearReviewDraft(admin, table, id);
-  await logActivity(session.userId, "gallery", permanent ? "purge" : "delete", isVideo ? "gallery_video" : "gallery_photo", id);
+  await logActivity(session.userId, "gallery",  "purge", isVideo ? "gallery_video" : "gallery_photo", id);
   return NextResponse.json({ ok: true });
 }

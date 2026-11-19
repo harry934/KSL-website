@@ -114,9 +114,11 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ error: "Nothing was selected." }, { status: 400 });
 
   const permanent = new URL(req.url).searchParams.get("permanent") === "1";
-  const { error: delErr } = await applyBinDelete(createDatabaseClient(), "download_items", id, permanent);
+  const admin = createDatabaseClient();
+  const { error: delErr } = await applyBinDelete(admin, "download_items", id, permanent);
   if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
   if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
-  await logActivity(session.userId, "downloads", permanent ? "purge" : "delete", "download_item", id);
+  await clearReviewDraft(admin, "download_items", id);
+  await logActivity(session.userId, "downloads", "purge", "download_item", id);
   return NextResponse.json({ ok: true });
 }
