@@ -1,5 +1,5 @@
 import { createDatabaseClient } from "@/lib/db-client";
-import { requireStaff, logActivity } from "@/lib/api-auth";
+import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { clearReviewDraft, editorSavePlan, overlayDrafts, saveBody } from "@/lib/draft-review";
 import { youtubeIdFrom } from "@/lib/gallery";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
@@ -131,7 +131,7 @@ export async function DELETE(req: NextRequest) {
   const table = isVideo ? "gallery_videos" : "gallery_photos";
   const { error: delErr } = await applyBinDelete(admin, table, id, permanent);
   if (delErr?.code === "bin") return NextResponse.json({ error: delErr.message }, { status: 400 });
-  if (delErr) return NextResponse.json({ error: "Could not remove it." }, { status: 500 });
+  if (delErr) return NextResponse.json({ error: dbError(delErr) }, { status: 500 });
   await clearReviewDraft(admin, table, id);
   await logActivity(session.userId, "gallery", permanent ? "purge" : "delete", isVideo ? "gallery_video" : "gallery_photo", id);
   return NextResponse.json({ ok: true });

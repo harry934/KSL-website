@@ -311,6 +311,25 @@ class TableQuery<T = DbRow[]> implements PromiseLike<DbResult<T>> {
     return this;
   }
 
+  /**
+   * node-pg treats JS arrays as Postgres arrays. Columns like `media` / `payload` /
+   * `chart` are jsonb and need JSON text when the value is an array of objects.
+   * Plain string arrays (e.g. tags text[]) stay as real Postgres arrays.
+   */
+  private encodeValue(value: unknown) {
+    if (value == null) return null;
+    if (Array.isArray(value)) {
+      if (value.some((item) => item !== null && typeof item === "object")) {
+        return JSON.stringify(value);
+      }
+      return value;
+    }
+    if (typeof value === "object" && !(value instanceof Date) && !Buffer.isBuffer(value)) {
+      return JSON.stringify(value);
+    }
+    return value;
+  }
+
   private buildWhere(params: unknown[], source = "src") {
     const expression = ({ column, operator, value }: Filter) => {
       const name = `${source}.${identifier(column)}`;
@@ -368,7 +387,7 @@ class TableQuery<T = DbRow[]> implements PromiseLike<DbResult<T>> {
           const valuesSql = sourceRows.map((row) => {
             const placeholders = columns.map((column) => {
               identifier(column);
-              params.push(row[column] ?? null);
+              params.push(this.encodeValue(row[column] ?? null));
               return `$${params.length}`;
             });
             return `(${placeholders.join(", ")})`;
@@ -388,7 +407,7 @@ class TableQuery<T = DbRow[]> implements PromiseLike<DbResult<T>> {
           const updates = Object.entries(this.values as Record<string, unknown>);
           if (!updates.length) throw new Error("Cannot update an empty row");
           const set = updates.map(([column, value]) => {
-            params.push(value);
+            params.push(this.encodeValue(value));
             return `${identifier(column)} = $${params.length}`;
           }).join(", ");
           const where = this.buildWhere(params);

@@ -10,6 +10,12 @@ export function dbError(err: { message?: string; code?: string } | null | undefi
     return "Another item already uses this name or web address. Change it slightly and save again.";
   }
   if (err?.code === "23514" || err?.code === "22P02" || err?.code === "22007") {
+    if (/uuid/i.test(message)) {
+      return "That item could not be found (invalid id). Refresh the page and try again.";
+    }
+    if (/json|jsonb/i.test(message)) {
+      return "That change could not be saved because of a data format problem. Refresh and try again.";
+    }
     return "One of the values is not in the right format. Check the form and try again.";
   }
   if (err?.code === "23502") return "Some required information is missing. Fill in all fields and try again.";
