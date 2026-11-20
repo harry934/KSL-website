@@ -115,7 +115,7 @@ export function FileField({
         )}
       </div>
       <p className="text-[12px] text-[#6b7785]">
-        {allowImages ? "PDF, Word or an image (JPG, PNG, WebP)." : "PDF or Word, up to 25 MB."} A file whose contents do not match its extension is refused.
+        {allowImages ? "PDF, Word or an image (JPG, PNG, WebP)." : "PDF or Word, up to 100 MB."} A file whose contents do not match its extension is refused.
       </p>
       {error && <p className="text-[12.5px] text-[#b42318]">{error}</p>}
     </div>

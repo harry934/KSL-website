@@ -5,7 +5,7 @@ import { saveStoredFile, signedStoredFileUrl, storedFileUrl } from "@/lib/storag
 import type { ModuleKey } from "@/lib/modules";
 import { NextRequest, NextResponse } from "next/server";
 
-/** Hero/gallery videos can approach 50 MB; give the Node handler time to buffer them. */
+/** Large docs/videos need time to buffer through Nginx → Next on the VPS. */
 export const maxDuration = 120;
 
 const ALLOWED_MODULES = new Set<ModuleKey>([
@@ -24,8 +24,8 @@ const ALLOWED_MODULES = new Set<ModuleKey>([
 ]);
 
 const MAX_BYTES = 8 * 1024 * 1024;
-const MAX_DOC_BYTES = 25 * 1024 * 1024;
-const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+const MAX_DOC_BYTES = 100 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 
 const TYPES: Record<string, string> = {
   "image/jpeg": "jpg",

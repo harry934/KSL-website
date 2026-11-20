@@ -28,7 +28,7 @@ async function uploadError(res: Response) {
 function networkUploadError(err: unknown) {
   const message = err instanceof Error ? err.message : "";
   if (/failed to fetch|networkerror|load failed|connection/i.test(message)) {
-    return "The upload was interrupted. Check your connection and try again. Documents can be up to 25 MB; videos up to 50 MB.";
+    return "The upload was interrupted. Check your connection and try again. Documents and videos can be up to 100 MB.";
   }
   return message || "The upload did not work. Please try again.";
 }

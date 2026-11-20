@@ -307,8 +307,8 @@ export function GalleryEditor() {
       toast("Use an MP4 or WebM video.", "error");
       return;
     }
-    if (file.size > 50 * 1024 * 1024) {
-      toast("Video is too large (max 50 MB).", "error");
+    if (file.size > 100 * 1024 * 1024) {
+      toast("Video is too large (max 100 MB).", "error");
       return;
     }
     setSavingVideo(true);
@@ -635,7 +635,7 @@ export function GalleryEditor() {
                 />
               </Field>
             ) : (
-              <Field label="Video file" hint="MP4 or WebM, up to 50 MB. Upload first, then save.">
+              <Field label="Video file" hint="MP4 or WebM, up to 100 MB. Upload first, then save.">
                 <label className="inline-flex h-[34px] cursor-pointer items-center gap-2 rounded-[6px] border border-[#d5dce4] bg-white px-3 text-[13px] font-semibold text-[#0b1f3a]">
                   <Upload className="h-4 w-4" />
                   {video.public_url ? "Replace video file" : "Choose video file"}

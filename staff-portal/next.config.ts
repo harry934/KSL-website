@@ -40,9 +40,9 @@ const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
   ...(basePath ? { basePath } : {}),
   experimental: {
-    // Default is 10MB. Docs allow 25MB and hero/gallery videos 50MB; without this,
-    // larger uploads reset the TCP connection and the browser shows "Failed to fetch".
-    middlewareClientMaxBodySize: "55mb",
+    // Default is 10MB. App allows uploads up to 100MB; without this, larger bodies
+    // reset the TCP connection and the browser shows "Failed to fetch".
+    middlewareClientMaxBodySize: "100mb",
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

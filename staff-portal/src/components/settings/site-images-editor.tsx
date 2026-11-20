@@ -346,8 +346,8 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       toast("Use an MP4 (H.264), WebM, or MOV video.", "error");
       return;
     }
-    if (file.size > 50 * 1024 * 1024) {
-      toast("Video is too large (max 50 MB). Compress it or export a shorter clip.", "error");
+    if (file.size > 100 * 1024 * 1024) {
+      toast("Video is too large (max 100 MB). Compress it or export a shorter clip.", "error");
       return;
     }
     if (file.size < 64) {
