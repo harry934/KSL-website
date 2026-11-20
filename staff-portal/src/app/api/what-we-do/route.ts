@@ -18,9 +18,26 @@ async function loadLabel(admin: ReturnType<typeof createDatabaseClient>) {
   return normalizeWhatWeDoLabel(data?.value).label;
 }
 
+function missingTableError(error: { message?: string; code?: string } | null) {
+  const message = String(error?.message ?? "");
+  if (
+    error?.code === "42P01" ||
+    /home_what_we_do_items/i.test(message) ||
+    /does not exist/i.test(message) ||
+    /undefined (table|column)/i.test(message)
+  ) {
+    return {
+      message:
+        "The database is missing home_what_we_do_items. On the VPS run: cd staff-portal && npm run db:migrate && npm run build, then restart the portal.",
+      code: "schema",
+    };
+  }
+  return null;
+}
+
 async function seedCardsIfEmpty(admin: ReturnType<typeof createDatabaseClient>, userId: string | null) {
   const { data: existing, error } = await admin.from("home_what_we_do_items").select("id").limit(1);
-  if (error) return { error };
+  if (error) return { error: missingTableError(error) ?? error };
   if (existing?.length) return { error: null };
 
   const { data: setting } = await admin.from("site_settings").select("value").eq("key", "what_we_do").maybeSingle();
@@ -57,7 +74,10 @@ export async function GET() {
     loadLabel(admin),
     admin.from("home_what_we_do_items").select("*").order("sort_order", { ascending: true }),
   ]);
-  if (itemsRes.error) return NextResponse.json({ error: dbError(itemsRes.error) }, { status: 500 });
+  if (itemsRes.error) {
+    const schemaErr = missingTableError(itemsRes.error);
+    return NextResponse.json({ error: schemaErr?.message ?? dbError(itemsRes.error) }, { status: 500 });
+  }
 
   const split = splitRemoved((itemsRes.data ?? []) as WhatWeDoItemRow[]);
   return NextResponse.json({

@@ -23,3 +23,12 @@ CREATE INDEX IF NOT EXISTS home_what_we_do_items_live_idx
 
 COMMENT ON TABLE public.home_what_we_do_items IS
   'Cards under What we do on the home page. Soft-deleted rows stay until purged from the recycle bin.';
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ksl_runtime') THEN
+    RAISE EXCEPTION 'Role ksl_runtime is missing; provision postgres/bootstrap/roles.sql before migrating';
+  END IF;
+  GRANT SELECT, INSERT, UPDATE, DELETE ON public.home_what_we_do_items TO ksl_runtime;
+END
+$$;
