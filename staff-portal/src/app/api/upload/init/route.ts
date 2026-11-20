@@ -126,8 +126,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       uploadId: meta.id,
       signature: signUploadId(meta.id, session.userId),
-      // Keep binary chunks small — sent as base64 JSON through Nginx/Next.
-      chunkSize: 512 * 1024,
+      // Raw binary chunks (no base64) — much faster for videos/large PDFs.
+      chunkSize: 4 * 1024 * 1024,
+      mode: "binary",
     });
   } catch (err) {
     console.error("Could not start chunked upload", err);

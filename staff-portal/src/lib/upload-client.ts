@@ -34,15 +34,6 @@ function networkUploadError(err: unknown) {
   return message || "The upload did not work. Please try again.";
 }
 
-function bytesToBase64(bytes: Uint8Array) {
-  let binary = "";
-  const step = 0x8000;
-  for (let i = 0; i < bytes.length; i += step) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + step));
-  }
-  return btoa(binary);
-}
-
 async function postJson(url: string, body: unknown, signal: AbortSignal) {
   const res = await fetch(appPath(url), {
     method: "POST",
@@ -61,50 +52,110 @@ export type UploadProgress = {
   totalBytes: number;
 };
 
-/**
- * Upload in small base64 JSON chunks so large brochures work reliably behind Nginx/Next.
- */
-async function postFile(
+/** Small files: one raw POST — fastest path. */
+async function postFileDirect(
   module: ModuleKey,
   file: File,
-  extraHeaders?: Record<string, string>,
+  extraHeaders: Record<string, string> | undefined,
+  signal: AbortSignal,
   onProgress?: (progress: UploadProgress) => void
 ) {
-  const controller = new AbortController();
-  const timeoutMs = Math.min(300_000, Math.max(90_000, Math.round(file.size / 256) + 90_000));
-  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  onProgress?.({ percent: 5, sentBytes: 0, totalBytes: file.size });
+  const res = await fetch(appPath("/api/upload"), {
+    method: "POST",
+    signal,
+    headers: {
+      "Content-Type": "application/octet-stream",
+      "x-ksl-module": module,
+      "x-ksl-filename": encodeURIComponent(file.name),
+      "x-ksl-content-type": file.type || "application/octet-stream",
+      ...extraHeaders,
+    },
+    body: file,
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  const data = await res.json().catch(() => null);
+  if (!data || typeof data.public_url !== "string") {
+    throw new Error("The upload finished but the portal did not return a file link. Please try again.");
+  }
+  onProgress?.({ percent: 100, sentBytes: file.size, totalBytes: file.size });
+  return data as { public_url: string; storage_path: string; preview_url?: string };
+}
+
+/**
+ * Large files: raw binary chunks (no base64). Much faster than JSON encoding.
+ * Falls back to base64 JSON chunks only if raw binary is rejected.
+ */
+async function postFileChunked(
+  module: ModuleKey,
+  file: File,
+  extraHeaders: Record<string, string> | undefined,
+  signal: AbortSignal,
+  onProgress?: (progress: UploadProgress) => void
+) {
   const report = (sentBytes: number) => {
     const totalBytes = file.size || 1;
     const percent = Math.max(0, Math.min(100, Math.round((sentBytes / totalBytes) * 100)));
     onProgress?.({ percent, sentBytes, totalBytes });
   };
 
-  try {
-    const heroVideo = extraHeaders?.["x-ksl-hero"] === "1";
-    const galleryVideo = extraHeaders?.["x-ksl-gallery-video"] === "1";
-    report(0);
-    const init = await postJson(
-      "/api/upload/init",
-      {
-        module,
-        name: file.name,
-        contentType: file.type || "application/octet-stream",
-        size: file.size,
-        heroVideo,
-        galleryVideo,
-      },
-      controller.signal
-    );
+  const heroVideo = extraHeaders?.["x-ksl-hero"] === "1";
+  const galleryVideo = extraHeaders?.["x-ksl-gallery-video"] === "1";
+  report(0);
+  const init = await postJson(
+    "/api/upload/init",
+    {
+      module,
+      name: file.name,
+      contentType: file.type || "application/octet-stream",
+      size: file.size,
+      heroVideo,
+      galleryVideo,
+    },
+    signal
+  );
 
-    const uploadId = String(init.uploadId || "");
-    const signature = String(init.signature || "");
-    const chunkSize = Math.max(64 * 1024, Math.min(512 * 1024, Number(init.chunkSize) || 512 * 1024));
-    if (!uploadId || !signature) throw new Error("The upload did not start correctly. Please try again.");
+  const uploadId = String(init.uploadId || "");
+  const signature = String(init.signature || "");
+  const chunkSize = Math.max(256 * 1024, Math.min(4 * 1024 * 1024, Number(init.chunkSize) || 4 * 1024 * 1024));
+  if (!uploadId || !signature) throw new Error("The upload did not start correctly. Please try again.");
 
-    let offset = 0;
-    while (offset < file.size) {
-      const piece = file.slice(offset, offset + chunkSize);
+  let useBinary = init.mode !== "json";
+  let offset = 0;
+  while (offset < file.size) {
+    const piece = file.slice(offset, offset + chunkSize);
+    let received: number;
+
+    if (useBinary) {
+      const res = await fetch(appPath("/api/upload/chunk"), {
+        method: "POST",
+        signal,
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "x-ksl-module": module,
+          "x-ksl-upload-id": uploadId,
+          "x-ksl-upload-sig": signature,
+          "x-ksl-offset": String(offset),
+        },
+        body: piece,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // One-time fallback if this VPS still rejects raw bodies.
+        if (res.status === 400 && offset === 0) {
+          useBinary = false;
+          continue;
+        }
+        throw new Error(typeof data.error === "string" && data.error ? data.error : await readError(res));
+      }
+      received = Number(data.received);
+    } else {
       const bytes = new Uint8Array(await piece.arrayBuffer());
+      let binary = "";
+      const step = 0x8000;
+      for (let i = 0; i < bytes.length; i += step) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + step));
+      }
       const data = await postJson(
         "/api/upload/chunk",
         {
@@ -112,28 +163,44 @@ async function postFile(
           uploadId,
           signature,
           offset,
-          data: bytesToBase64(bytes),
+          data: btoa(binary),
         },
-        controller.signal
+        signal
       );
-      const received = Number(data.received);
-      if (!Number.isFinite(received) || received <= offset) {
-        throw new Error("The upload stalled. Please try again.");
-      }
-      offset = received;
-      report(offset);
+      received = Number(data.received);
     }
 
-    const finished = await postJson(
-      "/api/upload/finish",
-      { module, uploadId, signature },
-      controller.signal
-    );
-    if (!finished || typeof finished.public_url !== "string") {
-      throw new Error("The upload finished but the portal did not return a file link. Please try again.");
+    if (!Number.isFinite(received) || received <= offset) {
+      throw new Error("The upload stalled. Please try again.");
     }
-    report(file.size);
-    return finished as { public_url: string; storage_path: string; preview_url?: string };
+    offset = received;
+    report(offset);
+  }
+
+  const finished = await postJson("/api/upload/finish", { module, uploadId, signature }, signal);
+  if (!finished || typeof finished.public_url !== "string") {
+    throw new Error("The upload finished but the portal did not return a file link. Please try again.");
+  }
+  report(file.size);
+  return finished as { public_url: string; storage_path: string; preview_url?: string };
+}
+
+async function postFile(
+  module: ModuleKey,
+  file: File,
+  extraHeaders?: Record<string, string>,
+  onProgress?: (progress: UploadProgress) => void
+) {
+  const controller = new AbortController();
+  const timeoutMs = Math.min(300_000, Math.max(60_000, Math.round(file.size / 128) + 60_000));
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    // Single request is much faster for small photos/docs.
+    if (file.size > 0 && file.size <= 3 * 1024 * 1024) {
+      return await postFileDirect(module, file, extraHeaders, controller.signal, onProgress);
+    }
+    return await postFileChunked(module, file, extraHeaders, controller.signal, onProgress);
   } catch (err) {
     throw new Error(networkUploadError(err));
   } finally {
