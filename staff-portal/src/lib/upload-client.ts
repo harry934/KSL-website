@@ -193,7 +193,6 @@ async function sendBinaryChunk(
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const chunkController = new AbortController();
     const unlink = linkSignals(parentSignal, chunkController);
-    // ~512 KB at very slow uplinks still needs headroom; keep under nginx body timeout.
     const chunkTimer = window.setTimeout(() => chunkController.abort(), 180_000);
 
     try {
@@ -216,7 +215,6 @@ async function sendBinaryChunk(
           typeof result.data.error === "string" && result.data.error
             ? result.data.error
             : `The upload did not work (${result.status}). Please try again.`;
-        // One-time signal to caller that binary was rejected at offset 0.
         if (result.status === 400 && offset === 0) {
           const err = new Error(message) as Error & { binaryRejected?: boolean };
           err.binaryRejected = true;
@@ -225,11 +223,7 @@ async function sendBinaryChunk(
         throw new Error(message);
       }
 
-      const received = Number(result.data.received);
-      if (!Number.isFinite(received) || received <= offset) {
-        throw new Error("The upload stalled. Please try again.");
-      }
-      return received;
+      return { chunkBytes: piece.size };
     } catch (err) {
       lastError = err;
       if (parentSignal.aborted) throw err;
@@ -246,8 +240,8 @@ async function sendBinaryChunk(
 }
 
 /**
- * Large files: raw binary chunks (no base64). Much faster than JSON encoding.
- * Falls back to base64 JSON chunks only if raw binary is rejected.
+ * Large files: raw binary chunks in parallel (no base64).
+ * Falls back to sequential base64 JSON chunks only if raw binary is rejected.
  */
 async function postFileChunked(
   module: ModuleKey,
@@ -280,39 +274,88 @@ async function postFileChunked(
 
   const uploadId = String(init.uploadId || "");
   const signature = String(init.signature || "");
-  // Prefer smaller chunks so progress moves often and a single slow chunk can be retried.
-  const requested = Number(init.chunkSize) || 1024 * 1024;
-  const chunkSize = Math.max(256 * 1024, Math.min(1024 * 1024, requested));
+  const requested = Number(init.chunkSize) || 4 * 1024 * 1024;
+  const chunkSize = Math.max(512 * 1024, Math.min(4 * 1024 * 1024, requested));
+  const concurrency = Math.max(1, Math.min(4, Number(init.concurrency) || (heroVideo || galleryVideo ? 3 : 2)));
   if (!uploadId || !signature) throw new Error("The upload did not start correctly. Please try again.");
 
-  let useBinary = init.mode !== "json";
-  let offset = 0;
-  while (offset < file.size) {
-    const piece = file.slice(offset, offset + chunkSize);
+  const offsets: number[] = [];
+  for (let offset = 0; offset < file.size; offset += chunkSize) offsets.push(offset);
 
-    if (useBinary) {
-      try {
-        const received = await sendBinaryChunk(
-          module,
-          uploadId,
-          signature,
-          offset,
-          piece,
-          signal,
-          (loadedInChunk) => report(offset + loadedInChunk)
-        );
-        offset = received;
-        report(offset);
-        continue;
-      } catch (err) {
-        if ((err as { binaryRejected?: boolean }).binaryRejected && offset === 0) {
-          useBinary = false;
-          continue;
+  let useBinary = init.mode !== "json";
+  if (useBinary) {
+    const confirmed = new Map<number, number>();
+    const inFlight = new Map<number, number>();
+    const summarize = () => {
+      let done = 0;
+      for (const bytes of confirmed.values()) done += bytes;
+      let flying = 0;
+      for (const bytes of inFlight.values()) flying += bytes;
+      report(done + flying);
+    };
+
+    let nextIndex = 0;
+    let binaryRejected = false;
+    let workerError: unknown;
+
+    async function worker() {
+      while (nextIndex < offsets.length) {
+        if (signal.aborted) throw new DOMException("The upload timed out.", "AbortError");
+        if (binaryRejected || workerError) return;
+        const index = nextIndex++;
+        const offset = offsets[index];
+        const piece = file.slice(offset, offset + chunkSize);
+        inFlight.set(offset, 0);
+        try {
+          const result = await sendBinaryChunk(
+            module,
+            uploadId,
+            signature,
+            offset,
+            piece,
+            signal,
+            (loadedInChunk) => {
+              inFlight.set(offset, loadedInChunk);
+              summarize();
+            }
+          );
+          confirmed.set(offset, result.chunkBytes);
+          inFlight.delete(offset);
+          summarize();
+        } catch (err) {
+          inFlight.delete(offset);
+          if ((err as { binaryRejected?: boolean }).binaryRejected && offset === 0) {
+            binaryRejected = true;
+            return;
+          }
+          workerError = err;
+          throw err;
         }
-        throw err;
       }
     }
 
+    try {
+      await Promise.all(Array.from({ length: Math.min(concurrency, offsets.length) }, () => worker()));
+    } catch (err) {
+      if (!binaryRejected) throw err;
+    }
+    if (workerError && !binaryRejected) throw workerError;
+
+    if (!binaryRejected) {
+      const finished = await postJson("/api/upload/finish", { module, uploadId, signature }, signal);
+      if (!finished || typeof finished.public_url !== "string") {
+        throw new Error("The upload finished but the portal did not return a file link. Please try again.");
+      }
+      report(file.size);
+      return finished as { public_url: string; storage_path: string; preview_url?: string };
+    }
+    useBinary = false;
+  }
+
+  // Sequential JSON fallback (older servers / rare binary rejection).
+  let offset = 0;
+  while (offset < file.size) {
+    const piece = file.slice(offset, offset + Math.min(chunkSize, 1024 * 1024));
     const bytes = new Uint8Array(await piece.arrayBuffer());
     let binary = "";
     const step = 0x8000;
@@ -355,15 +398,10 @@ async function postFile(
 ) {
   const controller = new AbortController();
   const unlinkExternal = externalSignal ? linkSignals(externalSignal, controller) : () => undefined;
-  // Allow slow uplinks: assume ~16 KB/s floor, plus 2 minutes headroom; videos up to 20 min.
-  const timeoutMs = Math.min(
-    1_200_000,
-    Math.max(120_000, Math.round(file.size / 16) + 120_000)
-  );
+  const timeoutMs = Math.min(1_200_000, Math.max(120_000, Math.round(file.size / 16) + 120_000));
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    // Single request is much faster for small photos/docs.
     if (file.size > 0 && file.size <= 3 * 1024 * 1024) {
       return await postFileDirect(module, file, extraHeaders, controller.signal, onProgress);
     }

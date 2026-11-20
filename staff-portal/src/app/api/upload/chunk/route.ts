@@ -48,7 +48,12 @@ export async function POST(req: NextRequest) {
 
     try {
       const meta = await appendChunk(uploadId, session.userId, offset, buffer);
-      return NextResponse.json({ ok: true, received: meta.received, size: meta.size });
+      return NextResponse.json({
+        ok: true,
+        received: meta.received,
+        filled: meta.filled,
+        size: meta.size,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "The upload did not work. Please try again.";
       console.error("Chunk append failed", err);
@@ -82,7 +87,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const meta = await appendChunk(uploadId, session.userId, offset, buffer);
-    return NextResponse.json({ ok: true, received: meta.received, size: meta.size });
+    return NextResponse.json({
+      ok: true,
+      received: meta.received,
+      filled: meta.filled,
+      size: meta.size,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "The upload did not work. Please try again.";
     console.error("Chunk append failed", err);

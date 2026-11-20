@@ -1,6 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { constants } from "node:fs";
-import { mkdir, open, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, open, readFile, readdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { query } from "@/lib/db";
 
@@ -16,9 +16,29 @@ export type ChunkUploadMeta = {
   contentType: string;
   ext: string;
   size: number;
+  /** Contiguous bytes from offset 0 that are complete. */
   received: number;
+  /** Total bytes stored across all parts (may be ahead of received when parallel). */
+  filled: number;
+  /** offset -> length for accepted parts */
+  parts: Record<string, number>;
   createdAt: number;
 };
+
+const locks = new Map<string, Promise<unknown>>();
+
+function withUploadLock<T>(id: string, work: () => Promise<T>): Promise<T> {
+  const previous = locks.get(id) ?? Promise.resolve();
+  const run = previous.catch(() => undefined).then(work);
+  locks.set(
+    id,
+    run.then(
+      () => undefined,
+      () => undefined
+    )
+  );
+  return run;
+}
 
 function storageRoot() {
   const configured = process.env.STORAGE_DIR?.trim();
@@ -53,7 +73,13 @@ function sessionPaths(root: string, id: string) {
     dir,
     meta: path.join(dir, "meta.json"),
     data: path.join(dir, "data.bin"),
+    parts: path.join(dir, "parts"),
   };
+}
+
+function partPath(paths: ReturnType<typeof sessionPaths>, offset: number) {
+  if (!Number.isInteger(offset) || offset < 0) throw new Error("Invalid upload offset");
+  return path.join(paths.parts, `${offset}.part`);
 }
 
 function safeStoragePath(value: string) {
@@ -70,6 +96,19 @@ function safeStoragePath(value: string) {
   return value;
 }
 
+function recomputeProgress(meta: ChunkUploadMeta) {
+  let filled = 0;
+  for (const length of Object.values(meta.parts)) filled += length;
+  let received = 0;
+  while (received < meta.size) {
+    const length = meta.parts[String(received)];
+    if (!length) break;
+    received += length;
+  }
+  meta.filled = filled;
+  meta.received = received;
+}
+
 export function signUploadId(id: string, userId: string) {
   return createHmac("sha256", signingSecret()).update(`${id}\n${userId}`).digest("base64url");
 }
@@ -80,12 +119,15 @@ export function verifyUploadId(id: string, userId: string, sig: string) {
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
-export async function createChunkUpload(input: Omit<ChunkUploadMeta, "id" | "received" | "createdAt" | "path"> & { path: string }) {
+export async function createChunkUpload(
+  input: Omit<ChunkUploadMeta, "id" | "received" | "filled" | "parts" | "createdAt" | "path"> & { path: string }
+) {
   if (!BUCKETS.has(input.bucket)) throw new Error("Invalid storage bucket");
   const root = await incomingRoot();
   const id = randomUUID();
   const paths = sessionPaths(root, id);
   await mkdir(paths.dir, { recursive: true, mode: 0o700 });
+  await mkdir(paths.parts, { recursive: true, mode: 0o700 });
   const handle = await open(paths.data, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
   await handle.close();
   const meta: ChunkUploadMeta = {
@@ -99,6 +141,8 @@ export async function createChunkUpload(input: Omit<ChunkUploadMeta, "id" | "rec
     ext: input.ext,
     size: input.size,
     received: 0,
+    filled: 0,
+    parts: {},
     createdAt: Date.now(),
   };
   await writeFile(paths.meta, JSON.stringify(meta), { mode: 0o600 });
@@ -115,69 +159,111 @@ export async function loadChunkUpload(id: string, userId: string): Promise<Chunk
     await rm(paths.dir, { recursive: true, force: true });
     throw new Error("Upload session expired. Please try again.");
   }
+  if (!meta.parts || typeof meta.parts !== "object") meta.parts = {};
+  if (!Number.isFinite(meta.filled)) meta.filled = meta.received || 0;
   return meta;
 }
 
 export async function appendChunk(id: string, userId: string, offset: number, chunk: Buffer) {
-  const root = await incomingRoot();
-  const paths = sessionPaths(root, id);
-  const meta = await loadChunkUpload(id, userId);
-  if (offset !== meta.received) {
-    throw new Error("Upload chunks arrived out of order. Please try again.");
-  }
-  if (meta.received + chunk.byteLength > meta.size) {
-    throw new Error("Upload is larger than declared.");
-  }
-  const handle = await open(paths.data, constants.O_WRONLY | constants.O_NOFOLLOW);
+  return withUploadLock(id, async () => {
+    const root = await incomingRoot();
+    const paths = sessionPaths(root, id);
+    const meta = await loadChunkUpload(id, userId);
+    if (!Number.isInteger(offset) || offset < 0) throw new Error("Invalid upload offset.");
+    if (offset + chunk.byteLength > meta.size) throw new Error("Upload is larger than declared.");
+    if (!chunk.byteLength) throw new Error("Invalid upload chunk size.");
+
+    const existing = meta.parts[String(offset)];
+    if (existing) {
+      if (existing !== chunk.byteLength) throw new Error("Upload chunk size mismatch. Please try again.");
+      recomputeProgress(meta);
+      return meta;
+    }
+
+    // Reject overlapping ranges with an already-accepted part.
+    for (const [startRaw, length] of Object.entries(meta.parts)) {
+      const start = Number(startRaw);
+      const end = start + length;
+      const nextEnd = offset + chunk.byteLength;
+      if (offset < end && nextEnd > start) {
+        throw new Error("Upload chunks overlapped. Please try again.");
+      }
+    }
+
+    await mkdir(paths.parts, { recursive: true, mode: 0o700 });
+    const target = partPath(paths, offset);
+    const temp = `${target}.${randomUUID().slice(0, 8)}.tmp`;
+    await writeFile(temp, chunk, { mode: 0o600 });
+    await rename(temp, target);
+
+    meta.parts[String(offset)] = chunk.byteLength;
+    recomputeProgress(meta);
+    await writeFile(paths.meta, JSON.stringify(meta), { mode: 0o600 });
+    return meta;
+  });
+}
+
+async function assembleParts(paths: ReturnType<typeof sessionPaths>, meta: ChunkUploadMeta) {
+  const handle = await open(paths.data, constants.O_WRONLY | constants.O_TRUNC | constants.O_NOFOLLOW);
   try {
-    let written = 0;
-    while (written < chunk.byteLength) {
-      const result = await handle.write(chunk, written, chunk.byteLength - written, meta.received + written);
-      if (!result.bytesWritten) throw new Error("Could not write upload chunk.");
-      written += result.bytesWritten;
+    let offset = 0;
+    while (offset < meta.size) {
+      const length = meta.parts[String(offset)];
+      if (!length) throw new Error("Upload is incomplete. Please try again.");
+      const bytes = await readFile(partPath(paths, offset));
+      if (bytes.byteLength !== length) throw new Error("Upload part is damaged. Please try again.");
+      let written = 0;
+      while (written < bytes.byteLength) {
+        const result = await handle.write(bytes, written, bytes.byteLength - written, offset + written);
+        if (!result.bytesWritten) throw new Error("Could not assemble upload.");
+        written += result.bytesWritten;
+      }
+      offset += length;
     }
   } finally {
     await handle.close();
   }
-  meta.received += chunk.byteLength;
-  await writeFile(paths.meta, JSON.stringify(meta), { mode: 0o600 });
-  return meta;
 }
 
 export async function finishChunkUpload(id: string, userId: string) {
-  const root = await incomingRoot();
-  const paths = sessionPaths(root, id);
-  const meta = await loadChunkUpload(id, userId);
-  if (meta.received !== meta.size) {
-    throw new Error("Upload is incomplete. Please try again.");
-  }
-  const info = await stat(paths.data);
-  if (info.size !== meta.size) {
-    throw new Error("Upload size mismatch. Please try again.");
-  }
+  return withUploadLock(id, async () => {
+    const root = await incomingRoot();
+    const paths = sessionPaths(root, id);
+    const meta = await loadChunkUpload(id, userId);
+    recomputeProgress(meta);
+    if (meta.received !== meta.size || meta.filled !== meta.size) {
+      throw new Error("Upload is incomplete. Please try again.");
+    }
 
-  const storageRootPath = storageRoot();
-  const finalPath = path.resolve(storageRootPath, meta.bucket, meta.path);
-  if (!finalPath.startsWith(path.resolve(storageRootPath, meta.bucket) + path.sep)) {
-    throw new Error("Invalid storage path");
-  }
-  await mkdir(path.dirname(finalPath), { recursive: true, mode: 0o700 });
-  await rename(paths.data, finalPath);
+    await assembleParts(paths, meta);
+    const info = await stat(paths.data);
+    if (info.size !== meta.size) {
+      throw new Error("Upload size mismatch. Please try again.");
+    }
 
-  try {
-    await query(
-      `INSERT INTO stored_files (id, bucket_id, name, size_bytes, content_type)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [randomUUID(), meta.bucket, meta.path, meta.size, meta.contentType],
-    );
-  } catch (error) {
-    await rm(finalPath, { force: true });
+    const storageRootPath = storageRoot();
+    const finalPath = path.resolve(storageRootPath, meta.bucket, meta.path);
+    if (!finalPath.startsWith(path.resolve(storageRootPath, meta.bucket) + path.sep)) {
+      throw new Error("Invalid storage path");
+    }
+    await mkdir(path.dirname(finalPath), { recursive: true, mode: 0o700 });
+    await rename(paths.data, finalPath);
+
+    try {
+      await query(
+        `INSERT INTO stored_files (id, bucket_id, name, size_bytes, content_type)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [randomUUID(), meta.bucket, meta.path, meta.size, meta.contentType]
+      );
+    } catch (error) {
+      await rm(finalPath, { force: true });
+      await rm(paths.dir, { recursive: true, force: true }).catch(() => null);
+      throw error;
+    }
+
     await rm(paths.dir, { recursive: true, force: true }).catch(() => null);
-    throw error;
-  }
-
-  await rm(paths.dir, { recursive: true, force: true }).catch(() => null);
-  return meta;
+    return meta;
+  });
 }
 
 export async function abortChunkUpload(id: string, userId: string) {
@@ -196,13 +282,35 @@ export async function abortChunkUpload(id: string, userId: string) {
 export async function peekChunkUpload(id: string, userId: string, maxBytes = 64) {
   const root = await incomingRoot();
   const paths = sessionPaths(root, id);
-  await loadChunkUpload(id, userId);
-  const handle = await open(paths.data, constants.O_RDONLY | constants.O_NOFOLLOW);
+  const meta = await loadChunkUpload(id, userId);
+  const firstLength = meta.parts["0"];
+  if (firstLength) {
+    const bytes = await readFile(partPath(paths, 0));
+    return bytes.subarray(0, Math.min(maxBytes, bytes.byteLength));
+  }
+  // Legacy sequential uploads wrote directly into data.bin.
   try {
-    const buf = Buffer.alloc(maxBytes);
-    const result = await handle.read(buf, 0, maxBytes, 0);
-    return buf.subarray(0, result.bytesRead);
-  } finally {
-    await handle.close();
+    const handle = await open(paths.data, constants.O_RDONLY | constants.O_NOFOLLOW);
+    try {
+      const buf = Buffer.alloc(maxBytes);
+      const result = await handle.read(buf, 0, maxBytes, 0);
+      return buf.subarray(0, result.bytesRead);
+    } finally {
+      await handle.close();
+    }
+  } catch {
+    return Buffer.alloc(0);
+  }
+}
+
+/** Test helper / diagnostics: list part files for an upload session. */
+export async function listChunkParts(id: string, userId: string) {
+  const root = await incomingRoot();
+  const paths = sessionPaths(root, id);
+  await loadChunkUpload(id, userId);
+  try {
+    return await readdir(paths.parts);
+  } catch {
+    return [];
   }
 }

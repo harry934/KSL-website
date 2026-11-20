@@ -126,8 +126,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       uploadId: meta.id,
       signature: signUploadId(meta.id, session.userId),
-      // 1 MB chunks: progress moves often; a hung chunk can be retried without restarting the whole video.
-      chunkSize: 1024 * 1024,
+      // Larger chunks + parallel uploads (client) cut round-trips on slow links.
+      chunkSize: video ? 4 * 1024 * 1024 : 2 * 1024 * 1024,
+      concurrency: video ? 3 : 2,
       mode: "binary",
     });
   } catch (err) {
