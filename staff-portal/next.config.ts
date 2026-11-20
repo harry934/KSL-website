@@ -39,6 +39,11 @@ const nextConfig: NextConfig = {
   // VPS production installs often omit devDependencies; typecheck still runs in `next build`.
   eslint: { ignoreDuringBuilds: true },
   ...(basePath ? { basePath } : {}),
+  experimental: {
+    // Default is 10MB. Docs allow 25MB and hero/gallery videos 50MB; without this,
+    // larger uploads reset the TCP connection and the browser shows "Failed to fetch".
+    middlewareClientMaxBodySize: "55mb",
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

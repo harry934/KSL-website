@@ -20,9 +20,17 @@ async function uploadError(res: Response) {
   if (typeof data.error === "string" && data.error) return data.error;
   if (res.status === 413) return "That file is too large to send this way.";
   if (res.status === 0 || res.type === "error") {
-    return "The upload was interrupted. Check your connection and try a smaller MP4 (H.264).";
+    return "The upload was interrupted. Check your connection and try a smaller file.";
   }
   return "The upload did not work. Please try again.";
+}
+
+function networkUploadError(err: unknown) {
+  const message = err instanceof Error ? err.message : "";
+  if (/failed to fetch|networkerror|load failed|connection/i.test(message)) {
+    return "The upload was interrupted. Check your connection and try again. Documents can be up to 25 MB; videos up to 50 MB.";
+  }
+  return message || "The upload did not work. Please try again.";
 }
 
 /**
@@ -30,17 +38,23 @@ async function uploadError(res: Response) {
  * resets the TCP connection (net::ERR_CONNECTION_RESET).
  */
 async function postFile(module: ModuleKey, file: File, extraHeaders?: Record<string, string>) {
-  const res = await fetch(appPath("/api/upload"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/octet-stream",
-      "x-ksl-module": module,
-      "x-ksl-filename": file.name,
-      "x-ksl-content-type": file.type || "application/octet-stream",
-      ...extraHeaders,
-    },
-    body: file,
-  });
+  let res: Response;
+  try {
+    res = await fetch(appPath("/api/upload"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "x-ksl-module": module,
+        // Percent-encode so non-ASCII / spaces never break ByteString headers.
+        "x-ksl-filename": encodeURIComponent(file.name),
+        "x-ksl-content-type": file.type || "application/octet-stream",
+        ...extraHeaders,
+      },
+      body: file,
+    });
+  } catch (err) {
+    throw new Error(networkUploadError(err));
+  }
   if (!res.ok) throw new Error(await uploadError(res));
   return res.json();
 }

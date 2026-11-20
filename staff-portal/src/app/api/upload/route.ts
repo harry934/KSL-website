@@ -63,7 +63,13 @@ async function readUpload(req: NextRequest): Promise<UploadBody | null> {
     };
   }
 
-  const name = (req.headers.get("x-ksl-filename") || "upload.bin").trim() || "upload.bin";
+  const rawName = (req.headers.get("x-ksl-filename") || "upload.bin").trim() || "upload.bin";
+  let name = rawName;
+  try {
+    name = decodeURIComponent(rawName);
+  } catch {
+    name = rawName;
+  }
   const type =
     (req.headers.get("x-ksl-content-type") || "").trim() ||
     (contentType.startsWith("application/octet-stream") ? "" : contentType) ||
@@ -164,15 +170,28 @@ export async function POST(req: NextRequest) {
   }
 
   if (!image && !video) {
-    return NextResponse.json({
-      storage_path: path,
-      public_url: privateRef(path),
-      preview_url: signedStoredFileUrl(bucket, path, 3600),
-    });
+    try {
+      return NextResponse.json({
+        storage_path: path,
+        public_url: privateRef(path),
+        preview_url: signedStoredFileUrl(bucket, path, 3600),
+      });
+    } catch (signError) {
+      console.error("Could not sign private download URL", signError);
+      return NextResponse.json({
+        storage_path: path,
+        public_url: privateRef(path),
+      });
+    }
   }
 
-  const url = storedFileUrl(bucket, path);
-  return NextResponse.json({ storage_path: path, public_url: url, preview_url: url });
+  try {
+    const url = storedFileUrl(bucket, path);
+    return NextResponse.json({ storage_path: path, public_url: url, preview_url: url });
+  } catch (urlError) {
+    console.error("Could not build public media URL", urlError);
+    return NextResponse.json({ error: "The file was saved but its link could not be built. Please try again." }, { status: 500 });
+  }
 }
 
 function heroExtension(name: string, type: string): string | undefined {
