@@ -26,6 +26,9 @@ async function uploadError(res: Response) {
 }
 
 function networkUploadError(err: unknown) {
+  if (err instanceof DOMException && err.name === "AbortError") {
+    return "The upload timed out. Try again, or use a smaller file.";
+  }
   const message = err instanceof Error ? err.message : "";
   if (/failed to fetch|networkerror|load failed|connection/i.test(message)) {
     return "The upload was interrupted. Check your connection and try again. Documents and videos can be up to 100 MB.";
@@ -38,10 +41,15 @@ function networkUploadError(err: unknown) {
  * resets the TCP connection (net::ERR_CONNECTION_RESET).
  */
 async function postFile(module: ModuleKey, file: File, extraHeaders?: Record<string, string>) {
+  const controller = new AbortController();
+  // Large PDFs on the VPS can take a few minutes; fail clearly instead of spinning forever.
+  const timeoutMs = Math.min(300_000, Math.max(60_000, Math.round(file.size / 1024) + 60_000));
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
   let res: Response;
   try {
     res = await fetch(appPath("/api/upload"), {
       method: "POST",
+      signal: controller.signal,
       headers: {
         "Content-Type": "application/octet-stream",
         "x-ksl-module": module,
@@ -54,9 +62,15 @@ async function postFile(module: ModuleKey, file: File, extraHeaders?: Record<str
     });
   } catch (err) {
     throw new Error(networkUploadError(err));
+  } finally {
+    window.clearTimeout(timer);
   }
   if (!res.ok) throw new Error(await uploadError(res));
-  return res.json();
+  const data = await res.json().catch(() => null);
+  if (!data || typeof data !== "object" || typeof (data as { public_url?: unknown }).public_url !== "string") {
+    throw new Error("The upload finished but the portal did not return a file link. Please try again.");
+  }
+  return data as { public_url: string; storage_path: string; preview_url?: string; ok?: boolean };
 }
 
 export async function uploadFile(

@@ -141,10 +141,11 @@ export async function saveStoredFile(bucket: string, file: string, bytes: Buffer
   const target = await filePath(bucket, file, true);
   const handle = await open(target, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
   try {
+    // Skip fsync — awaiting sync on large PDFs can hang the request after the
+    // bytes are already written, so the browser spinner never finishes.
     await handle.writeFile(bytes);
-    await handle.sync();
   } catch (error) {
-    await handle.close();
+    await handle.close().catch(() => null);
     await rm(target, { force: true });
     throw error;
   }

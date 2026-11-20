@@ -169,25 +169,38 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "The upload did not work. Please try again." }, { status: 500 });
   }
 
+  const headers = {
+    // Help proxies finish the response cleanly after large request bodies.
+    Connection: "close",
+  };
+
   if (!image && !video) {
     try {
-      return NextResponse.json({
-        storage_path: path,
-        public_url: privateRef(path),
-        preview_url: signedStoredFileUrl(bucket, path, 3600),
-      });
+      return NextResponse.json(
+        {
+          ok: true,
+          storage_path: path,
+          public_url: privateRef(path),
+          preview_url: signedStoredFileUrl(bucket, path, 3600),
+        },
+        { headers }
+      );
     } catch (signError) {
       console.error("Could not sign private download URL", signError);
-      return NextResponse.json({
-        storage_path: path,
-        public_url: privateRef(path),
-      });
+      return NextResponse.json(
+        {
+          ok: true,
+          storage_path: path,
+          public_url: privateRef(path),
+        },
+        { headers }
+      );
     }
   }
 
   try {
     const url = storedFileUrl(bucket, path);
-    return NextResponse.json({ storage_path: path, public_url: url, preview_url: url });
+    return NextResponse.json({ ok: true, storage_path: path, public_url: url, preview_url: url }, { headers });
   } catch (urlError) {
     console.error("Could not build public media URL", urlError);
     return NextResponse.json({ error: "The file was saved but its link could not be built. Please try again." }, { status: 500 });

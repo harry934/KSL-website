@@ -39,6 +39,7 @@ export function FileField({
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [pasting, setPasting] = useState(false);
   const [openHref, setOpenHref] = useState(value);
 
@@ -62,11 +63,13 @@ export function FileField({
   async function upload(file: File) {
     setUploading(true);
     setError(null);
+    setSuccess(null);
     try {
       const data = await uploadFile(module, file);
       onChange(data.public_url, file);
       if (data.preview_url) setOpenHref(data.preview_url);
       setPasting(false);
+      setSuccess("File uploaded successfully. Click Save to add it to the list.");
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -74,12 +77,14 @@ export function FileField({
     }
   }
 
+  const preview = openFileHref(openHref);
+
   return (
     <div className="min-w-0 space-y-2">
       {value && !pasting && (
-        openFileHref(openHref) ? (
+        preview ? (
           <a
-            href={openFileHref(openHref)}
+            href={preview}
             target="_blank"
             rel="noreferrer"
             className="flex min-w-0 items-center gap-2 rounded-[6px] border border-[#e3e8ee] bg-[#f6f8fa] px-3 py-2 text-[13px] text-[#0b1f3a] hover:bg-white"
@@ -91,7 +96,6 @@ export function FileField({
           <div className="flex min-w-0 items-center gap-2 rounded-[6px] border border-[#e3e8ee] bg-[#f6f8fa] px-3 py-2 text-[13px] text-[#0b1f3a]">
             <FileText className="h-4 w-4 shrink-0 text-[#5b6775]" />
             <span className="truncate">{fileLabel(value)}</span>
-            <span className="shrink-0 text-[12px] text-[#6b7785]">Uploaded — click Save below</span>
           </div>
         )
       )}
@@ -133,6 +137,7 @@ export function FileField({
       <p className="text-[12px] text-[#6b7785]">
         {allowImages ? "PDF, Word or an image (JPG, PNG, WebP)." : "PDF or Word, up to 100 MB."} A file whose contents do not match its extension is refused.
       </p>
+      {success && <p className="text-[12.5px] font-medium text-[#0f7b3d]">{success}</p>}
       {error && <p className="text-[12.5px] text-[#b42318]">{error}</p>}
     </div>
   );
