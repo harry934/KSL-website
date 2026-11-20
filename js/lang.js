@@ -87,6 +87,7 @@
         "Years of Shipbuilding": "Miaka ya Ujenzi wa Meli",
         "ISO 9001 System": "Mfumo wa ISO 9001",
         "Why Choose": "Kwa nini utuchague",
+        "Why choose us?": "Kwa nini utuchague?",
         "Kenya Shipyards Limited?": "Kenya Shipyards Limited?",
         "With 5 years of experience in the shipbuilding industry, we don’t just build ships we build trust. With ISO 9001 certification and strategically located facilities in Mombasa and Kisumu, we offer world class infrastructure backed by a skilled, certified and readily available workforce. Total quality, safety, and cost efficiency are at the core of every project.": "Kwa miaka 5 katika sekta ya ujenzi wa meli, hatujengi meli tu bali tunajenga imani. Kwa uidhinishaji wa ISO 9001 na vituo vya Mombasa na Kisumu, tunatoa miundombinu ya kiwango cha dunia ikisaidiwa na wafanyakazi stadi. Ubora, usalama na gharama ndogo ndio msingi wa kila mradi.",
         "As a state corporation under the Ministry of Defence we operate with discipline, accountability and high standards.": "Kama shirika la umma chini ya Wizara ya Ulinzi, tunafanya kazi kwa nidhamu, uwajibikaji na viwango vya juu.",

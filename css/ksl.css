@@ -2146,15 +2146,23 @@ body {
 .about-gallery.is-single {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr;
+    width: 100%;
+    max-width: 100%;
     height: auto;
     aspect-ratio: 4 / 5;
     max-height: min(560px, 78vw);
     padding-bottom: 0;
     margin: 0;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 #about .about-split {
-    align-items: start;
+    align-items: flex-start !important;
+}
+
+#about .about-split > [class*="col-"] {
+    min-width: 0;
 }
 
 #about .about-copy {
@@ -2198,7 +2206,8 @@ body {
 }
 
 #about .about-copy .fs-5,
-#about .about-copy .ksl-section-kicker {
+#about .about-copy .ksl-section-kicker,
+#about .about-copy .ksl-section-title {
     margin-bottom: .85rem;
 }
 
@@ -2208,13 +2217,17 @@ body {
 
 @media (min-width: 992px) {
     #about .about-gallery.is-single {
-        height: auto;
+        width: 100%;
+        max-width: 100%;
+        height: auto !important;
         min-height: 0;
         max-height: none;
         aspect-ratio: 4 / 5;
         position: sticky;
         top: 96px;
-        align-self: start;
+        align-self: flex-start;
+        overflow: hidden;
+        box-sizing: border-box;
     }
 
     #about .about-copy {
@@ -3170,11 +3183,24 @@ body {
     margin-bottom: 6px;
 }
 
-/* Shared section titles (Who we are, What we do, Our locations, page kickers). */
+/* Homepage / page section titles — match News Room (navy h2). */
+.ksl-section-title,
+.ksl-home-news-section .ksl-section-head h2,
+#about .about-copy > .ksl-section-title,
+[data-ksl-what-we-do-label].ksl-section-title,
+#yards .ksl-section-title {
+    margin: 0 0 .85rem;
+    color: #273272;
+    font: 700 2rem / 1.2 Poppins, sans-serif;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+/* Legacy blue kickers (inner pages / older blocks). */
 .ksl-section-kicker,
 #about .about-copy > .fs-5.fw-bold.text-primary,
 #about .about-copy > .ksl-section-kicker,
-[data-ksl-what-we-do-label],
+[data-ksl-what-we-do-label]:not(.ksl-section-title),
 #yards .fs-5.fw-bold.text-primary,
 .product-kicker,
 .org-kicker {

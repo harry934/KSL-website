@@ -7,12 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Field, Notice, Select } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
 import { sendJson, uploadFile } from "@/lib/upload-client";
+import {
+  clearUploadJob,
+  getActiveUploadJobs,
+  getUploadJobs,
+  startUploadJob,
+  subscribeUploadJobs,
+} from "@/lib/upload-jobs";
 import { PhotoCropDialog } from "@/components/ui/photo-crop";
 import { VideoCropDialog } from "@/components/ui/video-crop";
 import { VideoTrimDialog } from "@/components/ui/video-trim";
 import { heroFrameOffset, type HeroCrop, type HeroTrim } from "@/lib/hero-frame";
 import { siteAssetUrl } from "@/lib/site-url";
 import { HERO_MEDIA_LIMIT, HOME_HERO_SLOT, isImagePath, parseHeroMedia, type SiteImageSlot } from "@/lib/site-images";
+import { appPath } from "@/lib/base-path";
 
 type Override = { slot_id: string; source: string; public_url: string | null; storage_path: string | null; media?: unknown };
 type LibraryImage = { url: string; storagePath: string | null; label: string };
@@ -191,6 +199,38 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   }, [load]);
 
   useEffect(() => {
+    function syncUploadJobs() {
+      const active = getActiveUploadJobs(HOME_HERO_SLOT)[0];
+      if (active) {
+        setBusy(HOME_HERO_SLOT);
+        setUploadProgress({ percent: active.percent, label: active.label });
+        return;
+      }
+
+      const finished = getUploadJobs().find(
+        (job) => job.key === HOME_HERO_SLOT && (job.status === "done" || job.status === "error")
+      );
+      if (!finished) {
+        setUploadProgress((current) => (current ? null : current));
+        return;
+      }
+
+      if (finished.status === "done") {
+        toast("Home hero updated.");
+        void load();
+      } else {
+        toast(finished.error || "The video upload did not work. Please try again.", "error");
+      }
+      clearUploadJob(finished.id);
+      setBusy(null);
+      setUploadProgress(null);
+    }
+
+    syncUploadJobs();
+    return subscribeUploadJobs(syncUploadJobs);
+  }, [load, toast]);
+
+  useEffect(() => {
     if (loading || !slots.length) return;
     const url = new URL(window.location.href);
     const slotId = url.searchParams.get("slot");
@@ -335,7 +375,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     }
   }
 
-  async function addHeroVideo(file: File) {
+  function addHeroVideo(file: File) {
     const named = /\.(mp4|webm|mov|m4v)$/i.test(file.name);
     const typed =
       file.type === "video/mp4" ||
@@ -356,39 +396,62 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       return;
     }
     if (!heroRoom()) return;
+    if (getActiveUploadJobs(HOME_HERO_SLOT).length) {
+      toast("A video is already uploading. Wait for it to finish.", "error");
+      return;
+    }
+
     setBusy(HOME_HERO_SLOT);
     setUploadProgress({ percent: 0, label: "Starting video upload…" });
-    try {
-      const uploaded = await uploadFile("site_settings", file, { "x-ksl-hero": "1" }, (state) => {
-        setUploadProgress({
-          percent: state.percent,
-          label: `Uploading video… ${state.percent}%`,
+
+    startUploadJob({
+      key: HOME_HERO_SLOT,
+      module: "site_settings",
+      file,
+      label: "Uploading video…",
+      returnPath: appPath("/images"),
+      extraHeaders: { "x-ksl-hero": "1" },
+      afterUpload: async (uploaded) => {
+        if (!uploaded?.public_url) {
+          throw new Error("The upload finished without a usable video address. Please try again.");
+        }
+        const data = await sendJson("/api/site-images", "GET");
+        const rows: Override[] = data.overrides ?? [];
+        const hero = heroFromOverride(rows.find((row) => row.slot_id === HOME_HERO_SLOT));
+        if (hero.items.length >= HERO_MEDIA_LIMIT) {
+          throw new Error(`You can add up to ${HERO_MEDIA_LIMIT} slides.`);
+        }
+        const next = [
+          ...hero.items,
+          {
+            kind: "video" as const,
+            url: uploaded.public_url,
+            storagePath: uploaded.storage_path,
+            label: file.name.replace(/\.[a-z0-9]+$/i, "") || "Video",
+            crop: null,
+            trim: null,
+            ...DEFAULT_HERO_COPY,
+          },
+        ];
+        await sendJson("/api/site-images", "POST", {
+          slotId: HOME_HERO_SLOT,
+          source: "storage",
+          items: next.map((item) => ({
+            kind: item.kind,
+            publicUrl: item.url,
+            storagePath: item.storagePath,
+            crop: item.kind === "video" ? item.crop : null,
+            trim: item.kind === "video" ? item.trim : null,
+            title: item.title,
+            subtitle: item.subtitle,
+            buttonLabel: item.buttonLabel,
+            buttonUrl: item.buttonUrl,
+          })),
         });
-      });
-      if (!uploaded?.public_url) {
-        throw new Error("The upload finished without a usable video address. Please try again.");
-      }
-      setUploadProgress({ percent: 100, label: "Saving slide…" });
-      const next = [
-        ...heroItems,
-        {
-          kind: "video" as const,
-          url: uploaded.public_url,
-          storagePath: uploaded.storage_path,
-          label: file.name.replace(/\.[a-z0-9]+$/i, "") || "Video",
-          crop: null,
-          trim: null,
-          ...DEFAULT_HERO_COPY,
-        },
-      ];
-      setSelectedHeroIndex(next.length - 1);
-      await persistHero(next);
-    } catch (err) {
-      toast((err as Error).message || "The video upload did not work. Please try again.", "error");
-      setBusy(null);
-    } finally {
-      setUploadProgress(null);
-    }
+      },
+    }).promise.catch(() => {
+      // Errors are stored on the job and surfaced by the upload-jobs subscription.
+    });
   }
 
   function moveHero(from: number, to: number) {

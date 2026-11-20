@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { BUSY_EVENT, type BusyDetail } from "@/lib/upload-client";
+import { getActiveUploadJobs, subscribeUploadJobs } from "@/lib/upload-jobs";
 
 /** Thin loading bar under the flag stripe. Button labels and ding toasts carry the save/delete feedback. */
 export function ActivityIndicators() {
@@ -11,10 +12,20 @@ export function ActivityIndicators() {
   const [navigating, setNavigating] = useState(false);
   const [busyCount, setBusyCount] = useState(0);
   const [busyMessage, setBusyMessage] = useState("");
+  const [uploadLabel, setUploadLabel] = useState("");
 
   useEffect(() => {
     setNavigating(false);
   }, [pathname, searchParams]);
+
+  useEffect(() => {
+    function syncUploads() {
+      const active = getActiveUploadJobs()[0];
+      setUploadLabel(active ? active.label : "");
+    }
+    syncUploads();
+    return subscribeUploadJobs(syncUploads);
+  }, []);
 
   useEffect(() => {
     function onClick(event: MouseEvent) {
@@ -43,15 +54,16 @@ export function ActivityIndicators() {
     };
   }, []);
 
-  if (!(navigating || busyCount > 0)) return null;
+  const chipMessage = uploadLabel || busyMessage;
+  if (!(navigating || busyCount > 0 || uploadLabel)) return null;
 
   return (
     <>
       <div className="app-progress-bar" aria-hidden />
-      {busyMessage ? (
+      {chipMessage ? (
         <div className="app-busy-chip" role="status" aria-live="polite">
           <span className="app-busy-chip-dot" aria-hidden />
-          {busyMessage}
+          {chipMessage}
         </div>
       ) : null}
     </>
