@@ -274,9 +274,9 @@ async function postFileChunked(
 
   const uploadId = String(init.uploadId || "");
   const signature = String(init.signature || "");
-  const requested = Number(init.chunkSize) || 4 * 1024 * 1024;
-  const chunkSize = Math.max(512 * 1024, Math.min(4 * 1024 * 1024, requested));
-  const concurrency = Math.max(1, Math.min(4, Number(init.concurrency) || (heroVideo || galleryVideo ? 3 : 2)));
+  const requested = Number(init.chunkSize) || 8 * 1024 * 1024;
+  const chunkSize = Math.max(512 * 1024, Math.min(8 * 1024 * 1024, requested));
+  const concurrency = Math.max(1, Math.min(6, Number(init.concurrency) || (heroVideo || galleryVideo ? 6 : 3)));
   if (!uploadId || !signature) throw new Error("The upload did not start correctly. Please try again.");
 
   const offsets: number[] = [];
@@ -402,7 +402,11 @@ async function postFile(
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    if (file.size > 0 && file.size <= 3 * 1024 * 1024) {
+    const directLimit =
+      extraHeaders?.["x-ksl-hero"] === "1" || extraHeaders?.["x-ksl-gallery-video"] === "1"
+        ? 16 * 1024 * 1024
+        : 4 * 1024 * 1024;
+    if (file.size > 0 && file.size <= directLimit) {
       return await postFileDirect(module, file, extraHeaders, controller.signal, onProgress);
     }
     return await postFileChunked(module, file, extraHeaders, controller.signal, onProgress);

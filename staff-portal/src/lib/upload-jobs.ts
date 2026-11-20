@@ -103,6 +103,8 @@ type StartUploadJobInput = {
   label: string;
   returnPath: string;
   extraHeaders?: Record<string, string>;
+  /** Shrink large hero/gallery videos in-browser before the network transfer. */
+  compress?: boolean;
   /** Called after bytes finish uploading, while the job is still tracked (e.g. save hero slide). */
   afterUpload?: (uploaded: { public_url: string; storage_path: string; preview_url?: string }) => Promise<void>;
 };
@@ -132,15 +134,37 @@ export function startUploadJob(input: StartUploadJobInput) {
 
   const work = (async () => {
     try {
+      let file = input.file;
+      if (input.compress) {
+        const { compressHeroVideo } = await import("@/lib/compress-hero-video");
+        file = await compressHeroVideo(
+          input.file,
+          (state) => {
+            const current = jobs.get(id);
+            if (!current || current.status === "cancelled") return;
+            patch(id, {
+              percent: Math.max(1, Math.min(20, Math.round(state.percent * 0.2))),
+              label: state.label,
+              status: "uploading",
+            });
+          },
+          controller.signal
+        );
+        if (jobs.get(id)?.status === "cancelled" || controller.signal.aborted) {
+          throw new UploadCancelledError();
+        }
+      }
+
       const uploaded = await uploadFile(
         input.module,
-        input.file,
+        file,
         input.extraHeaders,
         (state: UploadProgress) => {
           const current = jobs.get(id);
           if (!current || current.status === "cancelled") return;
+          const percent = input.compress ? Math.max(20, Math.round(20 + state.percent * 0.8)) : state.percent;
           patch(id, {
-            percent: state.percent,
+            percent,
             label: `${input.label} ${state.percent}%`,
             status: "uploading",
           });

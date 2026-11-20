@@ -5,7 +5,7 @@ import type { ModuleKey } from "@/lib/modules";
 
 export const maxDuration = 120;
 
-const MAX_RAW_CHUNK = 8 * 1024 * 1024;
+const MAX_RAW_CHUNK = 16 * 1024 * 1024;
 const MAX_JSON_CHUNK = 1024 * 1024;
 
 export async function POST(req: NextRequest) {

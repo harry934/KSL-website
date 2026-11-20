@@ -126,9 +126,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       uploadId: meta.id,
       signature: signUploadId(meta.id, session.userId),
-      // Larger chunks + parallel uploads (client) cut round-trips on slow links.
-      chunkSize: video ? 4 * 1024 * 1024 : 2 * 1024 * 1024,
-      concurrency: video ? 3 : 2,
+      // Push throughput: large chunks + many parallel part uploads.
+      chunkSize: video ? 8 * 1024 * 1024 : 4 * 1024 * 1024,
+      concurrency: video ? 6 : 3,
       mode: "binary",
     });
   } catch (err) {
