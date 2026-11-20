@@ -73,6 +73,7 @@ type IdTables =
   | "service_items" | "career_listings" | "download_items" | "organization_leadership"
   | "organization_yards" | "organization_board_members" | "organization_milestones"
   | "press_assets" | "products" | "projects" | "csr_projects" | "website_messages"
+  | "home_what_we_do_items"
   | "content_drafts" | "draft_returns" | "staff_invites";
 type RowFor<Table extends string> =
   Table extends keyof TableRows ? TableRows[Table] :

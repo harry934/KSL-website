@@ -296,11 +296,11 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
 
   async function remove(row: Message) {
     const ok = await confirm({
-      title: "Delete this message?",
+      title: "Move this message to the recycle bin?",
       message: unlocked
-        ? `"${row.subject}" from ${fullName(row)} is moved out of the inbox.`
-        : "This message is moved out of the inbox.",
-      confirmLabel: "Delete message",
+        ? `"${row.subject}" from ${fullName(row)} moves to the recycle bin.`
+        : "This message moves to the recycle bin.",
+      confirmLabel: "Move to bin",
       danger: true,
     });
     if (!ok) return;
@@ -318,7 +318,7 @@ export function MessagesInbox({ initialId }: { initialId: string | null }) {
     const url = new URL(window.location.href);
     url.searchParams.delete("id");
     window.history.replaceState(null, "", url.pathname + url.search);
-    toast("Message deleted.");
+    toast("Moved to the recycle bin.");
   }
 
   const openRow = messages.find((row) => row.id === openId) ?? null;

@@ -125,14 +125,14 @@ export function CareersEditor() {
     const item = listings.find((l) => l.id === id);
     const ok = await confirm({
       title: "Delete this listing?",
-      message: item ? `"${item.title}" is permanently deleted from the database.` : "It is permanently deleted from the database.",
-      confirmLabel: "Delete",
+      message: item ? `"${item.title}" moves to the recycle bin. Restore it or delete it for good from there.` : "It moves to the recycle bin. Restore it or delete it for good from there.",
+      confirmLabel: "Move to bin",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/careers?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Listing deleted.");
+      toast("Moved to the recycle bin.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");

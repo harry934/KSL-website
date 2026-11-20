@@ -133,14 +133,14 @@ export function CsrEditor({ canPublish, canDelete }: { canPublish: boolean; canD
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
       title: "Delete this programme?",
-      message: item ? `"${item.title}" is permanently deleted from the database.` : "It is permanently deleted from the database.",
-      confirmLabel: "Delete programme",
+      message: item ? `"${item.title}" moves to the recycle bin. Restore it or delete it for good from there.` : "It moves to the recycle bin. Restore it or delete it for good from there.",
+      confirmLabel: "Move to bin",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/csr?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Programme deleted.");
+      toast("Moved to the recycle bin.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");

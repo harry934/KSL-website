@@ -413,7 +413,7 @@ export const DEFAULT_WHAT_WE_DO_CARDS: WhatWeDoCard[] = [
 
 export function blankWhatWeDoCard(): WhatWeDoCard {
   return {
-    id: `card-${Date.now().toString(36)}`,
+    id: crypto.randomUUID(),
     title: "",
     excerpt: "",
     detail: "",
@@ -429,8 +429,12 @@ export function blankWhatWeDoCard(): WhatWeDoCard {
 
 function cleanWhatWeDoCard(raw: Partial<WhatWeDoCard> | null | undefined, index: number): WhatWeDoCard {
   const source = raw ?? {};
-  const id =
-    typeof source.id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(source.id) ? source.id : `card-${index + 1}`;
+  const rawId = typeof source.id === "string" ? source.id.trim() : "";
+  const id = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId)
+    ? rawId
+    : typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
   const icon = WHAT_WE_DO_ICONS.includes(source.icon as WhatWeDoIcon) ? (source.icon as WhatWeDoIcon) : "ship";
   return {
     id,
@@ -452,7 +456,70 @@ export function normalizeWhatWeDo(input?: unknown): WhatWeDoSettings {
   const cards = Array.isArray(raw?.cards) ? raw.cards.map((card, index) => cleanWhatWeDoCard(card, index)).slice(0, 12) : [];
   return {
     label: String(raw?.label ?? "What we do").trim().slice(0, 40) || "What we do",
-    cards: cards.length ? cards : structuredClone(DEFAULT_WHAT_WE_DO_CARDS),
+    cards,
+  };
+}
+
+/** Label-only payload for site_settings — cards live in home_what_we_do_items. */
+export function normalizeWhatWeDoLabel(input?: unknown): WhatWeDoSettings {
+  const raw = input && typeof input === "object" ? (input as Partial<WhatWeDoSettings>) : null;
+  return {
+    label: String(raw?.label ?? "What we do").trim().slice(0, 40) || "What we do",
+    cards: [],
+  };
+}
+
+export type WhatWeDoItemRow = {
+  id: string;
+  title: string;
+  excerpt: string | null;
+  detail: string | null;
+  image_path: string | null;
+  image_slot: string | null;
+  link: string;
+  link_label: string;
+  button_label: string;
+  icon: string;
+  sort_order: number;
+  status: string;
+  deleted_at?: string | null;
+};
+
+export function whatWeDoCardFromRow(row: WhatWeDoItemRow): WhatWeDoCard {
+  return cleanWhatWeDoCard(
+    {
+      id: row.id,
+      title: row.title,
+      excerpt: row.excerpt ?? "",
+      detail: row.detail ?? "",
+      image: row.image_path ?? "",
+      imageSlot: row.image_slot ?? "",
+      link: row.link,
+      linkLabel: row.link_label,
+      buttonLabel: row.button_label,
+      icon: row.icon,
+      enabled: row.status === "published",
+    },
+    row.sort_order,
+  );
+}
+
+export function whatWeDoRowFromCard(card: WhatWeDoCard, sortOrder: number, userId: string | null) {
+  const cleaned = cleanWhatWeDoCard(card, sortOrder);
+  return {
+    id: cleaned.id,
+    title: cleaned.title || "Untitled card",
+    excerpt: cleaned.excerpt || null,
+    detail: cleaned.detail || null,
+    image_path: cleaned.image || null,
+    image_slot: cleaned.imageSlot || null,
+    link: cleaned.link,
+    link_label: cleaned.linkLabel,
+    button_label: cleaned.buttonLabel,
+    icon: cleaned.icon,
+    sort_order: sortOrder,
+    status: cleaned.enabled ? "published" : "draft",
+    updated_by: userId,
   };
 }
 
@@ -556,6 +623,11 @@ export function mergeSiteSettings(rows: { key: string; value: unknown }[]): Site
   );
   merged.maintenance = normalizeMaintenance(merged.maintenance);
   const rawWhatWeDo = rows.find((row) => row.key === "what_we_do")?.value;
-  merged.what_we_do = normalizeWhatWeDo(rawWhatWeDo ?? merged.what_we_do);
+  const normalized = normalizeWhatWeDo(rawWhatWeDo ?? merged.what_we_do);
+  merged.what_we_do = {
+    label: normalized.label,
+    // Prefer legacy JSON cards until home_what_we_do_items is seeded; public API overlays the table.
+    cards: normalized.cards.length ? normalized.cards : structuredClone(DEFAULT_WHAT_WE_DO_CARDS),
+  };
   return merged;
 }

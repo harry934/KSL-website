@@ -142,14 +142,14 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
     const item = items.find((row) => row.id === id);
     const ok = await confirm({
       title: "Delete this project?",
-      message: item ? `"${item.title}" is permanently deleted from the database.` : "It is permanently deleted from the database.",
-      confirmLabel: "Delete project",
+      message: item ? `"${item.title}" moves to the recycle bin. Restore it or delete it for good from there.` : "It moves to the recycle bin. Restore it or delete it for good from there.",
+      confirmLabel: "Move to bin",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/projects?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Project deleted.");
+      toast("Moved to the recycle bin.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");

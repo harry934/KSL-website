@@ -5,7 +5,7 @@ import {
   mergeSiteSettings,
   normalizeAnnouncement,
   normalizeMaintenance,
-  normalizeWhatWeDo,
+  normalizeWhatWeDoLabel,
   SITE_SETTING_KEYS,
   type AnnouncementSettings,
   type SiteSettingKey,
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       : key === "maintenance"
         ? normalizeMaintenance(body.value)
         : key === "what_we_do"
-          ? normalizeWhatWeDo(body.value)
+          ? normalizeWhatWeDoLabel(body.value)
           : body.value;
   const admin = createDatabaseClient();
   const plan = await editorSavePlan(admin, session, "site_settings", "site_settings", {

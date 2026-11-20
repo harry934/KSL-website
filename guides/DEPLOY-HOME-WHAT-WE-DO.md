@@ -1,4 +1,4 @@
-# Deploy home About + What we do changes
+# Deploy home About + What we do + recycle-bin deletes
 
 Branch: `vps-postgres`  
 Repo path on PC: `kenya-shipyards website-vps-postgres`
@@ -7,7 +7,9 @@ Repo path on PC: `kenya-shipyards website-vps-postgres`
 
 - Home **About** copy updated; removed “About Kenya Shipyards Limited” heading
 - Removed **Shipbuilding and engineering** heading under What we do
-- New admin sidebar item **What we do** (under Website) to edit home cards: title, summary, detail, photo, button, link, icon, show/hide, order
+- Admin **What we do** editor for home cards
+- **All admin content deletes soft-delete into the recycle bin first**; permanent delete only from Recycle bin
+- What we do cards stored in `home_what_we_do_items` (migration `004_home_what_we_do.sql`)
 
 ---
 
@@ -32,39 +34,31 @@ git fetch origin
 git checkout vps-postgres
 git pull origin vps-postgres
 
-# Rebuild staff portal (needed for the new What we do admin page)
+# Apply DB migration (creates home_what_we_do_items)
 cd staff-portal
-npm ci
 set -a
 [ -f /etc/ksl-portal.env ] && . /etc/ksl-portal.env
 [ -f .env.production ] && . ./.env.production
 set +a
+npm run db:migrate
+
+npm ci
 npm run build
 cd ..
 
-# Restart portal
 bash deploy/vps/restart-portal.sh
 # or: pm2 reload ksl-portal
 
-# Publish public HTML / CSS / JS
 PUBLIC_DEST=/var/www/kenyashipyards
 [ -d "$PUBLIC_DEST" ] || PUBLIC_DEST=/var/www/ksl
 DEST="$PUBLIC_DEST" bash deploy/vps/publish-public.sh
-```
-
-Or one-shot if your clone already has the update script:
-
-```bash
-bash deploy/vps/apply-update.sh 178.162.219.218
 ```
 
 ---
 
 ## Check
 
-1. Public: `http://178.162.219.218/index.html#about` — new About text, no extra headings  
-2. Public: scroll to **What we do** — cards still show  
-3. Admin: `http://178.162.219.218/kwela/` → sidebar **What we do**  
-4. Edit a card, save, hard-refresh the home page  
-
-No database migration is required. Cards are stored in `site_settings` under key `what_we_do`. Until you save once in admin, the site uses the defaults baked into the public settings payload / `data/settings.json`.
+1. Public: home About + What we do cards  
+2. Admin → **What we do** → trash a card → it appears under **Recycle bin**  
+3. Recycle bin → restore works; permanent delete removes it for good  
+4. Same soft-delete behaviour for news, services, gallery, etc.

@@ -264,9 +264,9 @@ export function GalleryEditor() {
 
   async function removePhoto(row: GalleryRow) {
     const ok = await confirm({
-      title: "Remove this photo?",
-      message: "It will be permanently deleted from the gallery.",
-      confirmLabel: "Remove photo",
+      title: "Move this photo to the recycle bin?",
+      message: "It leaves the gallery and can be restored or deleted for good from the recycle bin.",
+      confirmLabel: "Move to bin",
       danger: true,
     });
     if (!ok) return;
@@ -274,7 +274,7 @@ export function GalleryEditor() {
       await sendJson(`/api/gallery?id=${encodeURIComponent(row.id)}`, "DELETE");
       setPhotos((list) => list.filter((p) => p.id !== row.id));
       setOpenId((current) => (current === row.id ? null : current));
-      toast("Photo deleted.");
+      toast("Moved to the recycle bin.");
       load();
     } catch (e) {
       toast((e as Error).message, "error");
@@ -394,16 +394,16 @@ export function GalleryEditor() {
     const ok = await confirm({
       title: "Remove this video?",
       message: row.youtube_id
-        ? `"${row.title}" will be permanently deleted from the gallery. The film stays on YouTube.`
-        : `"${row.title}" will be permanently deleted from the gallery.`,
-      confirmLabel: "Remove video",
+        ? `"${row.title}" moves to the recycle bin. The film stays on YouTube; restore or permanently delete the listing from the recycle bin.`
+        : `"${row.title}" moves to the recycle bin. Restore it or delete it for good from there.`,
+      confirmLabel: "Move to bin",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/gallery?id=${encodeURIComponent(row.id)}&type=video`, "DELETE");
       setVideos((list) => list.filter((v) => v.id !== row.id));
-      toast("Video deleted.");
+      toast("Moved to the recycle bin.");
       load();
     } catch (e) {
       toast((e as Error).message, "error");

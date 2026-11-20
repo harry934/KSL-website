@@ -24,6 +24,7 @@ export const RECYCLE_TABLES = [
   "organization_leadership",
   "organization_board_members",
   "organization_milestones",
+  "home_what_we_do_items",
   "website_messages",
   "admin_profiles",
 ] as const;
@@ -90,9 +91,6 @@ export async function listBinItems(viewer: { permissions: ModulePermission[]; is
   return { items, error: errorMessage };
 }
 
-/** Staff accounts and inbox messages stay soft-deleted so they can be restored. */
-const SOFT_DELETE_TABLES = new Set<RecycleTable>(["admin_profiles", "website_messages"]);
-
 export async function softDelete(admin: Admin, table: RecycleTable, id: string) {
   const { data, error } = await admin
     .from(table)
@@ -123,45 +121,23 @@ export async function restoreRow(admin: Admin, table: RecycleTable, id: string) 
 }
 
 /**
- * Deletes a content row from PostgreSQL.
- * Content modules are hard-deleted (row removed). Staff/messages stay soft-deleted unless `permanent`.
- * Unused media files are released when nothing else references them.
+ * Removes a row from the live lists.
+ * - permanent=false: soft-delete into the recycle bin (restorable).
+ * - permanent=true: hard-delete from the recycle bin (gone for good).
+ * Unused media files are released only on permanent delete.
  */
 export async function applyBinDelete(admin: Admin, table: RecycleTable, id: string, permanent: boolean) {
-  if (!permanent && SOFT_DELETE_TABLES.has(table)) {
+  if (!permanent) {
     const { error } = await softDelete(admin, table, id);
     if (!error) revalidatePath("/");
     return { error: error as BinError };
   }
 
-  // Hard-delete the live or already-binned row — the Postgres row is removed.
-  const { data, error } = await admin.from(table).delete().eq("id", id).select("*");
-  // #region agent log
-  fetch("http://127.0.0.1:7803/ingest/4f341d0e-a3a4-42b5-af32-b08843fde9b3", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "7f13f2" },
-    body: JSON.stringify({
-      sessionId: "7f13f2",
-      hypothesisId: "H-delete",
-      location: "recycle.ts:applyBinDelete",
-      message: "hard-delete result",
-      data: {
-        table,
-        permanent,
-        softPath: false,
-        removed: Array.isArray(data) ? data.length : 0,
-        errorCode: error?.code ?? null,
-        errorMessage: error?.message ?? null,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  console.info(
-    `[debug:7f13f2] hard-delete table=${table} removed=${Array.isArray(data) ? data.length : 0} err=${error?.code ?? error?.message ?? "none"}`,
-  );
-  // #endregion
+  const { data, error } = await admin.from(table).delete().eq("id", id).not("deleted_at", "is", null).select("*");
   if (error) return { error: error as BinError };
-  if (!data?.length) return { error: { message: "That item was not found.", code: "bin" } };
+  if (!data?.length) {
+    return { error: { message: "That item is not in the recycle bin.", code: "bin" } };
+  }
   await releaseUnusedValues(admin, data[0]);
   revalidatePath("/");
   return { error: null };

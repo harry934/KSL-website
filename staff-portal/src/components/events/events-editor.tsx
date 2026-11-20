@@ -110,14 +110,14 @@ export function EventsEditor() {
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
       title: "Remove this event?",
-      message: item ? `"${item.title}" is permanently deleted from the database.` : "It is permanently deleted from the database.",
-      confirmLabel: "Delete event",
+      message: item ? `"${item.title}" moves to the recycle bin. Restore it or delete it for good from there.` : "It moves to the recycle bin. Restore it or delete it for good from there.",
+      confirmLabel: "Move to bin",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/events?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Event deleted.");
+      toast("Moved to the recycle bin.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");

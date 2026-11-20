@@ -114,17 +114,17 @@ export function NewsEditor() {
   async function remove(id: string) {
     const item = items.find((i) => i.id === id);
     const ok = await confirm({
-      title: "Remove this article?",
+      title: "Move this article to the recycle bin?",
       message: item
-        ? `"${item.title}" is permanently deleted from the database.`
-        : "It is permanently deleted from the database.",
-      confirmLabel: "Delete article",
+        ? `"${item.title}" moves to the recycle bin. Restore it or delete it for good from there.`
+        : "It moves to the recycle bin. Restore it or delete it for good from there.",
+      confirmLabel: "Move to bin",
       danger: true,
     });
     if (!ok) return;
     try {
       await sendJson(`/api/news?id=${encodeURIComponent(id)}`, "DELETE");
-      toast("Article deleted.");
+      toast("Moved to the recycle bin.");
       load();
     } catch (err) {
       toast((err as Error).message, "error");

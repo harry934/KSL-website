@@ -14,6 +14,7 @@ const HUNTS: Hunt[] = [
   { table: "projects", columns: ["image_path"], deleted: true },
   { table: "csr_projects", columns: ["image_path"], deleted: true },
   { table: "service_items", columns: ["image_path"], deleted: true },
+  { table: "home_what_we_do_items", columns: ["image_path"], deleted: true },
   { table: "gallery_photos", columns: ["storage_path", "public_url"], deleted: true },
   { table: "gallery_videos", columns: ["storage_path", "public_url"], deleted: true },
   { table: "download_items", columns: ["external_href"], deleted: true },

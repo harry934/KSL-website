@@ -23,6 +23,7 @@ export const RECYCLE_SOURCES: RecycleSource[] = [
   { table: "csr_projects", module: "csr", section: "Community (CSR)", entityType: "csr_project", restore: "edit", select: "id, title, deleted_at", title: (row) => text(row.title, "Untitled programme") },
   { table: "press_assets", module: "press", section: "Press kit", entityType: "press_asset", restore: "edit", select: "id, title, deleted_at", title: (row) => text(row.title, "Untitled item") },
   { table: "service_items", module: "services", section: "Services", entityType: "service_item", restore: "edit", select: "id, title, deleted_at", title: (row) => text(row.title, "Untitled service") },
+  { table: "home_what_we_do_items", module: "site_settings", section: "What we do", entityType: "home_what_we_do_item", restore: "edit", select: "id, title, deleted_at", title: (row) => text(row.title, "Untitled card") },
   { table: "faq_groups", module: "faq", section: "Questions (FAQ)", entityType: "faq_group", restore: "edit", select: "id, title, deleted_at", title: (row) => text(row.title, "Untitled group") },
   { table: "faq_items", module: "faq", section: "Questions (FAQ)", entityType: "faq_item", restore: "edit", select: "id, question, deleted_at", title: (row) => text(row.question, "Untitled question") },
   { table: "organization_leadership", module: "organization", section: "Organisation", entityType: "organization_leadership", restore: "edit", select: "id, role, deleted_at", title: (row) => text(row.role, "Leadership role") },

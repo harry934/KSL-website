@@ -7,15 +7,14 @@ import { Input } from "@/components/ui/input";
 import { ImageField } from "@/components/ui/image-field";
 import { Field, FormSection, SaveBar, Select, Switch, Textarea } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
-import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
+import { sendJson } from "@/lib/upload-client";
 import { appPath } from "@/lib/base-path";
+import { moveToBinConfirm } from "@/lib/recycle-copy";
 import {
   blankWhatWeDoCard,
   DEFAULT_SITE_SETTINGS,
-  normalizeWhatWeDo,
   WHAT_WE_DO_ICONS,
   type WhatWeDoCard,
-  type WhatWeDoSettings,
 } from "@/lib/site-settings";
 
 const ICON_OPTIONS = [
@@ -39,21 +38,21 @@ export function WhatWeDoEditor({ canEdit }: { canEdit: boolean }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [label, setLabel] = useState(DEFAULT_SITE_SETTINGS.what_we_do.label);
-  const [cards, setCards] = useState<WhatWeDoCard[]>(DEFAULT_SITE_SETTINGS.what_we_do.cards);
+  const [cards, setCards] = useState<WhatWeDoCard[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch(appPath("/api/site-settings"));
+    const res = await fetch(appPath("/api/what-we-do"));
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       toast(data.error ?? "Could not load What we do.", "error");
       setLoading(false);
       return;
     }
-    const next = normalizeWhatWeDo(data.settings?.what_we_do);
-    setLabel(next.label);
-    setCards(next.cards);
-    setOpenId(next.cards[0]?.id ?? null);
+    const nextCards = Array.isArray(data.items) ? (data.items as WhatWeDoCard[]) : [];
+    setLabel(typeof data.label === "string" && data.label.trim() ? data.label : "What we do");
+    setCards(nextCards);
+    setOpenId(nextCards[0]?.id ?? null);
     setLoading(false);
   }, [toast]);
 
@@ -79,14 +78,18 @@ export function WhatWeDoEditor({ canEdit }: { canEdit: boolean }) {
   async function removeCard(id: string) {
     const card = cards.find((item) => item.id === id);
     const ok = await confirm({
-      title: "Remove this card?",
-      message: card ? `"${card.title || "Untitled"}" will leave the What we do section after you save.` : "Remove this card?",
-      confirmLabel: "Remove card",
+      ...moveToBinConfirm(card?.title || "Untitled card"),
       danger: true,
     });
     if (!ok) return;
-    setCards((list) => list.filter((item) => item.id !== id));
-    if (openId === id) setOpenId(null);
+    try {
+      await sendJson(`/api/what-we-do?id=${encodeURIComponent(id)}`, "DELETE");
+      setCards((list) => list.filter((item) => item.id !== id));
+      if (openId === id) setOpenId(null);
+      toast("Moved to the recycle bin.");
+    } catch (err) {
+      toast((err as Error).message, "error");
+    }
   }
 
   async function save() {
@@ -102,11 +105,9 @@ export function WhatWeDoEditor({ canEdit }: { canEdit: boolean }) {
     }
     setSaving(true);
     try {
-      const value: WhatWeDoSettings = normalizeWhatWeDo({ label, cards });
-      const saved = await sendJson("/api/site-settings", "POST", { key: "what_we_do", value });
-      toast(awaitingReview(saved) ? DRAFT_SAVED : "What we do cards saved.");
-      setLabel(value.label);
-      setCards(value.cards);
+      await sendJson("/api/what-we-do", "POST", { label, cards });
+      toast("What we do cards saved.");
+      await load();
     } catch (err) {
       toast((err as Error).message, "error");
     } finally {
