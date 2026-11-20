@@ -39,7 +39,7 @@ export type HeroMediaItem = {
 };
 
 const DEFAULT_HERO_TITLE = "Catalyzing Shipbuilding Industry";
-const DEFAULT_HERO_SUBTITLE = "From Mombasa and Kisumu, we build and refit the vessels that keep Eastern Africa moving.";
+const DEFAULT_HERO_SUBTITLE = "";
 const DEFAULT_HERO_BUTTON_LABEL = "Read our story";
 const DEFAULT_HERO_BUTTON_URL = "about.html";
 

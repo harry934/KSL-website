@@ -40,7 +40,7 @@ type HeroItem = {
 
 const DEFAULT_HERO_COPY = {
   title: "Catalyzing Shipbuilding Industry",
-  subtitle: "From Mombasa and Kisumu, we build and refit the vessels that keep Eastern Africa moving.",
+  subtitle: "",
   buttonLabel: "Read our story",
   buttonUrl: "about.html",
 };

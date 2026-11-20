@@ -391,7 +391,7 @@ if (Array.isArray(hero) && hero.length) {
         crop: item.crop ?? null,
         trim: item.trim ?? null,
         title: item.title ?? "Catalyzing Shipbuilding Industry",
-        subtitle: item.subtitle ?? "From Mombasa and Kisumu, we build and refit the vessels that keep Eastern Africa moving.",
+        subtitle: item.subtitle ?? "",
         buttonLabel: item.buttonLabel ?? "Read our story",
         buttonUrl: item.buttonUrl ?? "about.html",
       };
