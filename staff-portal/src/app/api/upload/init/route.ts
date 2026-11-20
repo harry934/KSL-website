@@ -126,8 +126,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       uploadId: meta.id,
       signature: signUploadId(meta.id, session.userId),
-      // Raw binary chunks (no base64) — much faster for videos/large PDFs.
-      chunkSize: 4 * 1024 * 1024,
+      // 1 MB chunks: progress moves often; a hung chunk can be retried without restarting the whole video.
+      chunkSize: 1024 * 1024,
       mode: "binary",
     });
   } catch (err) {

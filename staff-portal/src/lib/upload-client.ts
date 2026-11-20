@@ -52,6 +52,72 @@ export type UploadProgress = {
   totalBytes: number;
 };
 
+type XhrJsonResult = { ok: boolean; status: number; data: Record<string, unknown> };
+
+/**
+ * Binary POST with real upload byte progress. Fetch cannot report mid-body progress,
+ * which made large video uploads look stuck at 0% for minutes.
+ */
+function postBinaryWithProgress(
+  url: string,
+  headers: Record<string, string>,
+  body: Blob,
+  signal: AbortSignal,
+  onUploadProgress?: (loaded: number, total: number) => void
+): Promise<XhrJsonResult> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    for (const [key, value] of Object.entries(headers)) {
+      xhr.setRequestHeader(key, value);
+    }
+
+    const failAbort = () => {
+      xhr.abort();
+      reject(new DOMException("The upload timed out.", "AbortError"));
+    };
+
+    if (signal.aborted) {
+      failAbort();
+      return;
+    }
+    signal.addEventListener("abort", failAbort, { once: true });
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onUploadProgress?.(event.loaded, event.total);
+    };
+
+    xhr.onload = () => {
+      signal.removeEventListener("abort", failAbort);
+      let data: Record<string, unknown> = {};
+      try {
+        data = JSON.parse(xhr.responseText || "{}") as Record<string, unknown>;
+      } catch {
+        data = {};
+      }
+      resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, data });
+    };
+
+    xhr.onerror = () => {
+      signal.removeEventListener("abort", failAbort);
+      reject(new TypeError("Failed to fetch"));
+    };
+
+    xhr.ontimeout = failAbort;
+    xhr.send(body);
+  });
+}
+
+function linkSignals(parent: AbortSignal, child: AbortController) {
+  if (parent.aborted) {
+    child.abort();
+    return () => undefined;
+  }
+  const onAbort = () => child.abort();
+  parent.addEventListener("abort", onAbort);
+  return () => parent.removeEventListener("abort", onAbort);
+}
+
 /** Small files: one raw POST — fastest path. */
 async function postFileDirect(
   module: ModuleKey,
@@ -60,26 +126,115 @@ async function postFileDirect(
   signal: AbortSignal,
   onProgress?: (progress: UploadProgress) => void
 ) {
-  onProgress?.({ percent: 5, sentBytes: 0, totalBytes: file.size });
-  const res = await fetch(appPath("/api/upload"), {
-    method: "POST",
-    signal,
-    headers: {
+  const totalBytes = file.size || 1;
+  const report = (sentBytes: number) => {
+    const percent = Math.max(0, Math.min(100, Math.round((sentBytes / totalBytes) * 100)));
+    onProgress?.({ percent, sentBytes, totalBytes });
+  };
+
+  report(0);
+  const result = await postBinaryWithProgress(
+    appPath("/api/upload"),
+    {
       "Content-Type": "application/octet-stream",
       "x-ksl-module": module,
       "x-ksl-filename": encodeURIComponent(file.name),
       "x-ksl-content-type": file.type || "application/octet-stream",
       ...extraHeaders,
     },
-    body: file,
-  });
-  if (!res.ok) throw new Error(await readError(res));
-  const data = await res.json().catch(() => null);
-  if (!data || typeof data.public_url !== "string") {
+    file,
+    signal,
+    (loaded) => report(loaded)
+  );
+
+  if (!result.ok) {
+    const message =
+      typeof result.data.error === "string" && result.data.error
+        ? result.data.error
+        : result.status === 413
+          ? "That file is too large to send this way."
+          : `The upload did not work (${result.status}). Please try again.`;
+    throw new Error(message);
+  }
+
+  const publicUrl = result.data.public_url;
+  const storagePath = result.data.storage_path;
+  if (typeof publicUrl !== "string" || typeof storagePath !== "string") {
     throw new Error("The upload finished but the portal did not return a file link. Please try again.");
   }
-  onProgress?.({ percent: 100, sentBytes: file.size, totalBytes: file.size });
-  return data as { public_url: string; storage_path: string; preview_url?: string };
+  report(file.size);
+  return {
+    public_url: publicUrl,
+    storage_path: storagePath,
+    preview_url: typeof result.data.preview_url === "string" ? result.data.preview_url : undefined,
+  };
+}
+
+async function sendBinaryChunk(
+  module: ModuleKey,
+  uploadId: string,
+  signature: string,
+  offset: number,
+  piece: Blob,
+  parentSignal: AbortSignal,
+  onBytes: (loadedInChunk: number) => void
+) {
+  const maxAttempts = 3;
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const chunkController = new AbortController();
+    const unlink = linkSignals(parentSignal, chunkController);
+    // ~512 KB at very slow uplinks still needs headroom; keep under nginx body timeout.
+    const chunkTimer = window.setTimeout(() => chunkController.abort(), 180_000);
+
+    try {
+      const result = await postBinaryWithProgress(
+        appPath("/api/upload/chunk"),
+        {
+          "Content-Type": "application/octet-stream",
+          "x-ksl-module": module,
+          "x-ksl-upload-id": uploadId,
+          "x-ksl-upload-sig": signature,
+          "x-ksl-offset": String(offset),
+        },
+        piece,
+        chunkController.signal,
+        (loaded) => onBytes(loaded)
+      );
+
+      if (!result.ok) {
+        const message =
+          typeof result.data.error === "string" && result.data.error
+            ? result.data.error
+            : `The upload did not work (${result.status}). Please try again.`;
+        // One-time signal to caller that binary was rejected at offset 0.
+        if (result.status === 400 && offset === 0) {
+          const err = new Error(message) as Error & { binaryRejected?: boolean };
+          err.binaryRejected = true;
+          throw err;
+        }
+        throw new Error(message);
+      }
+
+      const received = Number(result.data.received);
+      if (!Number.isFinite(received) || received <= offset) {
+        throw new Error("The upload stalled. Please try again.");
+      }
+      return received;
+    } catch (err) {
+      lastError = err;
+      if (parentSignal.aborted) throw err;
+      if ((err as { binaryRejected?: boolean }).binaryRejected) throw err;
+      if (attempt >= maxAttempts) break;
+      await new Promise((r) => window.setTimeout(r, 750 * attempt));
+    } finally {
+      window.clearTimeout(chunkTimer);
+      unlink();
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("The upload stalled. Please try again.");
 }
 
 /**
@@ -93,10 +248,10 @@ async function postFileChunked(
   signal: AbortSignal,
   onProgress?: (progress: UploadProgress) => void
 ) {
+  const totalBytes = file.size || 1;
   const report = (sentBytes: number) => {
-    const totalBytes = file.size || 1;
     const percent = Math.max(0, Math.min(100, Math.round((sentBytes / totalBytes) * 100)));
-    onProgress?.({ percent, sentBytes, totalBytes });
+    onProgress?.({ percent, sentBytes: Math.min(sentBytes, totalBytes), totalBytes });
   };
 
   const heroVideo = extraHeaders?.["x-ksl-hero"] === "1";
@@ -117,59 +272,57 @@ async function postFileChunked(
 
   const uploadId = String(init.uploadId || "");
   const signature = String(init.signature || "");
-  const chunkSize = Math.max(256 * 1024, Math.min(4 * 1024 * 1024, Number(init.chunkSize) || 4 * 1024 * 1024));
+  // Prefer smaller chunks so progress moves often and a single slow chunk can be retried.
+  const requested = Number(init.chunkSize) || 1024 * 1024;
+  const chunkSize = Math.max(256 * 1024, Math.min(1024 * 1024, requested));
   if (!uploadId || !signature) throw new Error("The upload did not start correctly. Please try again.");
 
   let useBinary = init.mode !== "json";
   let offset = 0;
   while (offset < file.size) {
     const piece = file.slice(offset, offset + chunkSize);
-    let received: number;
 
     if (useBinary) {
-      const res = await fetch(appPath("/api/upload/chunk"), {
-        method: "POST",
-        signal,
-        headers: {
-          "Content-Type": "application/octet-stream",
-          "x-ksl-module": module,
-          "x-ksl-upload-id": uploadId,
-          "x-ksl-upload-sig": signature,
-          "x-ksl-offset": String(offset),
-        },
-        body: piece,
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        // One-time fallback if this VPS still rejects raw bodies.
-        if (res.status === 400 && offset === 0) {
-          useBinary = false;
-          continue;
-        }
-        throw new Error(typeof data.error === "string" && data.error ? data.error : await readError(res));
-      }
-      received = Number(data.received);
-    } else {
-      const bytes = new Uint8Array(await piece.arrayBuffer());
-      let binary = "";
-      const step = 0x8000;
-      for (let i = 0; i < bytes.length; i += step) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + step));
-      }
-      const data = await postJson(
-        "/api/upload/chunk",
-        {
+      try {
+        const received = await sendBinaryChunk(
           module,
           uploadId,
           signature,
           offset,
-          data: btoa(binary),
-        },
-        signal
-      );
-      received = Number(data.received);
+          piece,
+          signal,
+          (loadedInChunk) => report(offset + loadedInChunk)
+        );
+        offset = received;
+        report(offset);
+        continue;
+      } catch (err) {
+        if ((err as { binaryRejected?: boolean }).binaryRejected && offset === 0) {
+          useBinary = false;
+          continue;
+        }
+        throw err;
+      }
     }
 
+    const bytes = new Uint8Array(await piece.arrayBuffer());
+    let binary = "";
+    const step = 0x8000;
+    for (let i = 0; i < bytes.length; i += step) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + step));
+    }
+    const data = await postJson(
+      "/api/upload/chunk",
+      {
+        module,
+        uploadId,
+        signature,
+        offset,
+        data: btoa(binary),
+      },
+      signal
+    );
+    const received = Number(data.received);
     if (!Number.isFinite(received) || received <= offset) {
       throw new Error("The upload stalled. Please try again.");
     }
@@ -192,7 +345,11 @@ async function postFile(
   onProgress?: (progress: UploadProgress) => void
 ) {
   const controller = new AbortController();
-  const timeoutMs = Math.min(300_000, Math.max(60_000, Math.round(file.size / 128) + 60_000));
+  // Allow slow uplinks: assume ~16 KB/s floor, plus 2 minutes headroom; videos up to 20 min.
+  const timeoutMs = Math.min(
+    1_200_000,
+    Math.max(120_000, Math.round(file.size / 16) + 120_000)
+  );
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
