@@ -29,7 +29,7 @@ function fileTypeFor(href: string) {
 }
 
 function baseName(href: string) {
-  const clean = href.split(/[?#]/)[0];
+  const clean = href.replace(/^private:/, "").split(/[?#]/)[0];
   return decodeURIComponent(clean.slice(clean.lastIndexOf("/") + 1));
 }
 

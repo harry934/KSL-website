@@ -11,8 +11,16 @@ import { cn } from "@/lib/cn";
 
 function fileLabel(href: string) {
   if (!href) return "";
-  const clean = href.split(/[?#]/)[0];
+  const clean = href.replace(/^private:/, "").split(/[?#]/)[0];
   return decodeURIComponent(clean.slice(clean.lastIndexOf("/") + 1)) || href;
+}
+
+/** Private storage refs are not public site paths — only open real http(s) preview links. */
+function openFileHref(href: string) {
+  const value = (href || "").trim();
+  if (!value || value.startsWith("private:")) return "";
+  if (/^(https?:)?\/\//i.test(value) || value.startsWith("/") || value.startsWith("blob:")) return value;
+  return siteAssetUrl(value);
 }
 
 /** Upload a PDF or Word file, or paste a link to one. */
@@ -69,15 +77,23 @@ export function FileField({
   return (
     <div className="min-w-0 space-y-2">
       {value && !pasting && (
-        <a
-          href={siteAssetUrl(openHref)}
-          target="_blank"
-          rel="noreferrer"
-          className="flex min-w-0 items-center gap-2 rounded-[6px] border border-[#e3e8ee] bg-[#f6f8fa] px-3 py-2 text-[13px] text-[#0b1f3a] hover:bg-white"
-        >
-          <FileText className="h-4 w-4 shrink-0 text-[#5b6775]" />
-          <span className="truncate">{fileLabel(value)}</span>
-        </a>
+        openFileHref(openHref) ? (
+          <a
+            href={openFileHref(openHref)}
+            target="_blank"
+            rel="noreferrer"
+            className="flex min-w-0 items-center gap-2 rounded-[6px] border border-[#e3e8ee] bg-[#f6f8fa] px-3 py-2 text-[13px] text-[#0b1f3a] hover:bg-white"
+          >
+            <FileText className="h-4 w-4 shrink-0 text-[#5b6775]" />
+            <span className="truncate">{fileLabel(value)}</span>
+          </a>
+        ) : (
+          <div className="flex min-w-0 items-center gap-2 rounded-[6px] border border-[#e3e8ee] bg-[#f6f8fa] px-3 py-2 text-[13px] text-[#0b1f3a]">
+            <FileText className="h-4 w-4 shrink-0 text-[#5b6775]" />
+            <span className="truncate">{fileLabel(value)}</span>
+            <span className="shrink-0 text-[12px] text-[#6b7785]">Uploaded — click Save below</span>
+          </div>
+        )
       )}
       {pasting && (
         <Input value={value} onChange={(e) => onChange(e.target.value.trim())} placeholder="https://…" autoFocus />
