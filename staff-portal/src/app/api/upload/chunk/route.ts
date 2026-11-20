@@ -5,30 +5,36 @@ import type { ModuleKey } from "@/lib/modules";
 
 export const maxDuration = 120;
 
-const MAX_CHUNK = 2 * 1024 * 1024 + 64 * 1024;
+const MAX_CHUNK = 1024 * 1024;
 
 export async function POST(req: NextRequest) {
-  const moduleKey = (req.headers.get("x-ksl-module") || "gallery") as ModuleKey;
-  const uploadId = (req.headers.get("x-ksl-upload-id") || "").trim();
-  const signature = (req.headers.get("x-ksl-upload-sig") || "").trim();
-  const offset = Number(req.headers.get("x-ksl-offset") || "NaN");
-
-  const { error, session } = await requireStaff(moduleKey, "edit");
-  if (error || !session) {
-    await req.arrayBuffer().catch(() => null);
-    return error;
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Invalid upload chunk payload." }, { status: 400 });
   }
 
-  if (!uploadId || !signature || !Number.isFinite(offset) || offset < 0) {
-    await req.arrayBuffer().catch(() => null);
+  const moduleKey = String((body as { module?: string }).module || "gallery") as ModuleKey;
+  const uploadId = String((body as { uploadId?: string }).uploadId || "").trim();
+  const signature = String((body as { signature?: string }).signature || "").trim();
+  const offset = Number((body as { offset?: number }).offset);
+  const data = String((body as { data?: string }).data || "");
+
+  const { error, session } = await requireStaff(moduleKey, "edit");
+  if (error || !session) return error;
+
+  if (!uploadId || !signature || !Number.isFinite(offset) || offset < 0 || !data) {
     return NextResponse.json({ error: "Invalid upload chunk." }, { status: 400 });
   }
   if (!verifyUploadId(uploadId, session.userId, signature)) {
-    await req.arrayBuffer().catch(() => null);
     return NextResponse.json({ error: "Invalid upload session." }, { status: 403 });
   }
 
-  const buffer = Buffer.from(await req.arrayBuffer());
+  let buffer: Buffer;
+  try {
+    buffer = Buffer.from(data, "base64");
+  } catch {
+    return NextResponse.json({ error: "Invalid upload chunk encoding." }, { status: 400 });
+  }
   if (!buffer.byteLength || buffer.byteLength > MAX_CHUNK) {
     return NextResponse.json({ error: "Invalid upload chunk size." }, { status: 400 });
   }

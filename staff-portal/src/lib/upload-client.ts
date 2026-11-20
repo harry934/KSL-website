@@ -19,7 +19,8 @@ async function readError(res: Response) {
   const data = await res.json().catch(() => ({}));
   if (typeof data.error === "string" && data.error) return data.error;
   if (res.status === 413) return "That file is too large to send this way.";
-  return "The upload did not work. Please try again.";
+  if (res.status === 404) return "Upload route missing. Rebuild/restart the portal on the server.";
+  return `The upload did not work (${res.status}). Please try again.`;
 }
 
 function networkUploadError(err: unknown) {
@@ -33,6 +34,15 @@ function networkUploadError(err: unknown) {
   return message || "The upload did not work. Please try again.";
 }
 
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  const step = 0x8000;
+  for (let i = 0; i < bytes.length; i += step) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + step));
+  }
+  return btoa(binary);
+}
+
 async function postJson(url: string, body: unknown, signal: AbortSignal) {
   const res = await fetch(appPath(url), {
     method: "POST",
@@ -41,17 +51,16 @@ async function postJson(url: string, body: unknown, signal: AbortSignal) {
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : await readError(res));
+  if (!res.ok) throw new Error(typeof data.error === "string" && data.error ? data.error : await readError(res));
   return data;
 }
 
 /**
- * Upload in small chunks so large brochures never hit the VPS/Next single-body hang
- * (file saved, storage up, browser spinner forever).
+ * Upload in small base64 JSON chunks so large brochures work reliably behind Nginx/Next.
  */
 async function postFile(module: ModuleKey, file: File, extraHeaders?: Record<string, string>) {
   const controller = new AbortController();
-  const timeoutMs = Math.min(300_000, Math.max(90_000, Math.round(file.size / 512) + 90_000));
+  const timeoutMs = Math.min(300_000, Math.max(90_000, Math.round(file.size / 256) + 90_000));
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
@@ -72,30 +81,29 @@ async function postFile(module: ModuleKey, file: File, extraHeaders?: Record<str
 
     const uploadId = String(init.uploadId || "");
     const signature = String(init.signature || "");
-    const chunkSize = Math.max(256 * 1024, Math.min(2 * 1024 * 1024, Number(init.chunkSize) || 2 * 1024 * 1024));
+    const chunkSize = Math.max(64 * 1024, Math.min(512 * 1024, Number(init.chunkSize) || 512 * 1024));
     if (!uploadId || !signature) throw new Error("The upload did not start correctly. Please try again.");
 
     let offset = 0;
     while (offset < file.size) {
       const piece = file.slice(offset, offset + chunkSize);
-      const res = await fetch(appPath("/api/upload/chunk"), {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          "Content-Type": "application/octet-stream",
-          "x-ksl-module": module,
-          "x-ksl-upload-id": uploadId,
-          "x-ksl-upload-sig": signature,
-          "x-ksl-offset": String(offset),
+      const bytes = new Uint8Array(await piece.arrayBuffer());
+      const data = await postJson(
+        "/api/upload/chunk",
+        {
+          module,
+          uploadId,
+          signature,
+          offset,
+          data: bytesToBase64(bytes),
         },
-        body: piece,
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : await readError(res));
-      offset = Number(data.received);
-      if (!Number.isFinite(offset) || offset <= 0) {
+        controller.signal
+      );
+      const received = Number(data.received);
+      if (!Number.isFinite(received) || received <= offset) {
         throw new Error("The upload stalled. Please try again.");
       }
+      offset = received;
     }
 
     const finished = await postJson(

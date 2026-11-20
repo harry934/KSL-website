@@ -130,7 +130,12 @@ export async function appendChunk(id: string, userId: string, offset: number, ch
   }
   const handle = await open(paths.data, constants.O_WRONLY | constants.O_NOFOLLOW);
   try {
-    await handle.write(chunk, 0, chunk.byteLength, meta.received);
+    let written = 0;
+    while (written < chunk.byteLength) {
+      const result = await handle.write(chunk, written, chunk.byteLength - written, meta.received + written);
+      if (!result.bytesWritten) throw new Error("Could not write upload chunk.");
+      written += result.bytesWritten;
+    }
   } finally {
     await handle.close();
   }

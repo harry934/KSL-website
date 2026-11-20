@@ -71,6 +71,10 @@ function publicApi(request: NextRequest) {
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  // Uploads must not be touched by middleware body cloning / origin gates.
+  if (pathname.startsWith("/api/upload") || pathname.startsWith("/api/account/avatar")) {
+    return NextResponse.next();
+  }
   if (pathname.startsWith("/api/public/")) {
     return publicApi(request);
   }
