@@ -37,7 +37,7 @@ git pull origin vps-postgres
 # Apply DB migration (creates home_what_we_do_items).
 # Must use ksl_migrator — not the normal portal DATABASE_URL.
 cd staff-portal
-ls ../postgres/migrations/004_home_what_we_do.sql
+ls ../postgres/migrations/004_home_what_we_do.sql ../postgres/migrations/005_projects_intro.sql
 env -u DATABASE_URL -u DATABASE_SSL MIGRATOR_ENV_FILE=/etc/ksl-portal-migrator.env npm run db:migrate
 
 set -a
