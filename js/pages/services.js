@@ -69,7 +69,23 @@
             "</div></div></div>";
     }
 
+    function paintIntro(data) {
+        var intro = document.querySelector(".service-intro");
+        if (!intro) return;
+        var text = data && typeof data.intro === "string" ? data.intro.trim() : "";
+        if (!text) {
+            intro.innerHTML = "";
+            intro.hidden = true;
+            return;
+        }
+        intro.hidden = false;
+        intro.innerHTML = text.split(/\n\n+/).filter(Boolean).map(function (block) {
+            return "<p>" + escapeHtml(block).replace(/\n/g, "<br>") + "</p>";
+        }).join("");
+    }
+
     function renderCatalog(data) {
+        paintIntro(data);
         var list = root.querySelector(".ksl-svc-tabs");
         var host = list && list.parentElement;
         if (!list || !host) return;

@@ -180,7 +180,30 @@
         openProject(btn.getAttribute("data-project-more") || "");
     });
 
+    function paintIntro(data) {
+        var intro = document.querySelector(".project-intro");
+        if (!intro) return;
+        var kicker = data && data.kicker ? String(data.kicker).trim() : "";
+        var title = data && data.title ? String(data.title).trim() : "";
+        var body = data && data.intro ? String(data.intro).trim() : "";
+        if (!kicker && !title && !body) {
+            intro.innerHTML = "";
+            intro.hidden = true;
+            return;
+        }
+        intro.hidden = false;
+        intro.innerHTML =
+            (kicker ? '<p class="ksl-section-kicker">' + escapeHtml(kicker) + "</p>" : "") +
+            (title ? "<h2>" + escapeHtml(title) + "</h2>" : "") +
+            (body
+                ? body.split(/\n\n+/).filter(Boolean).map(function (block) {
+                    return "<p>" + escapeHtml(block).replace(/\n/g, "<br>") + "</p>";
+                }).join("")
+                : "");
+    }
+
     window.KSL_CONTENT.fetchJson("/api/public/projects", "data/projects.json").then(function (data) {
+        paintIntro(data);
         render(data);
         if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
     }).catch(function () {

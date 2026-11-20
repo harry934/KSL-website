@@ -21,9 +21,11 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
   const { toast, confirm } = useFeedback();
   const [items, setItems] = useState<ProjectRow[]>([]);
   const [groupOrder, setGroupOrder] = useState<string[]>([]);
+  const [pageText, setPageText] = useState({ kicker: "", title: "", intro: "" });
   const [editing, setEditing] = useState<Partial<ProjectRow> | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingIntro, setSavingIntro] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch(appPath("/api/projects"));
@@ -31,6 +33,11 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
     if (res.ok) {
       setItems(data.items ?? []);
       setGroupOrder(Array.isArray(data.group_order) ? data.group_order : []);
+      setPageText({
+        kicker: typeof data.kicker === "string" ? data.kicker : "",
+        title: typeof data.title === "string" ? data.title : "",
+        intro: typeof data.intro === "string" ? data.intro : "",
+      });
     } else toast(data.error ?? "Could not load the projects.", "error");
     setLoading(false);
   }, [toast]);
@@ -225,8 +232,37 @@ export function ProjectsEditor({ canPublish, canDelete }: { canPublish: boolean;
     );
   }
 
+  async function saveIntro() {
+    setSavingIntro(true);
+    try {
+      const saved = await sendJson("/api/projects", "POST", { scope: "settings", ...pageText });
+      toast(awaitingReview(saved) ? DRAFT_SAVED : "Introduction saved.");
+      window.setTimeout(() => document.getElementById("projects-intro")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setSavingIntro(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
+      <div id="projects-intro" className="scroll-mt-24">
+        <FormSection title="Page introduction" description="Shown at the top of the Projects page. Leave a blank line between paragraphs.">
+          <Field label="Small text above the heading" optional>
+            <Input value={pageText.kicker} onChange={(e) => setPageText({ ...pageText, kicker: e.target.value })} />
+          </Field>
+          <Field label="Heading" optional>
+            <Input value={pageText.title} onChange={(e) => setPageText({ ...pageText, title: e.target.value })} />
+          </Field>
+          <Field label="Introduction">
+            <Textarea className="min-h-[120px]" value={pageText.intro} onChange={(e) => setPageText({ ...pageText, intro: e.target.value })} />
+          </Field>
+          <Button onClick={() => void saveIntro()} disabled={savingIntro}>
+            {savingIntro ? "Saving…" : "Save introduction"}
+          </Button>
+        </FormSection>
+      </div>
       <div className="flex justify-end">
         <Button onClick={startNew}>
           <Plus className="h-4 w-4" /> New project

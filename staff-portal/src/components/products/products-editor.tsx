@@ -123,6 +123,7 @@ export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean;
           })),
       });
       toast("Page text saved.");
+      window.setTimeout(() => document.getElementById("products-page-text")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
     } catch (err) {
       toast((err as Error).message, "error");
     } finally {
@@ -324,7 +325,8 @@ export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean;
       </div>
 
 
-      <FormSection title="Page text" description="The words at the top of the Products page.">
+      <div id="products-page-text" className="scroll-mt-24">
+      <FormSection title="Page text" description="The words at the top of the Products page. Leave a blank line between paragraphs in the introduction.">
         <FieldGrid>
           <Field label="Small text above the heading" optional>
             <Input value={settings.kicker ?? ""} onChange={(e) => setS({ kicker: e.target.value })} />
@@ -373,6 +375,7 @@ export function ProductsEditor({ canPublish, canDelete }: { canPublish: boolean;
         <Button onClick={saveSettings} disabled={saving === "settings"}>
           {saving === "settings" ? "Saving…" : "Save page text"}
         </Button>
+      </div>
       </div>
     </div>
   );

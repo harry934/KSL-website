@@ -59,15 +59,22 @@
 
     function render(data) {
         var items = data.items || [];
-        if (!items.length) return;
 
         var intro = document.querySelector(".product-intro");
-        if (intro && (data.title || data.intro)) {
+        if (intro && (data.kicker || data.title || data.intro)) {
+            var body = String(data.intro || "").trim();
             intro.innerHTML =
                 (data.kicker ? '<p class="product-kicker">' + escapeHtml(data.kicker) + "</p>" : "") +
                 (data.title ? "<h2>" + escapeHtml(data.title) + "</h2>" : "") +
-                (data.intro ? "<p>" + escapeHtml(data.intro) + "</p>" : "");
+                (body
+                    ? body.split(/\n\n+/).filter(Boolean).map(function (block) {
+                        return "<p>" + escapeHtml(block).replace(/\n/g, "<br>") + "</p>";
+                    }).join("")
+                    : "");
+            intro.hidden = false;
         }
+
+        if (!items.length) return;
 
         var groups = data.rangeGroups || [];
         var filters = document.querySelector(".product-filters");

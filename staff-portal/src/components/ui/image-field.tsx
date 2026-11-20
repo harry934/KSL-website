@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ImageIcon, Images, Loader2, Upload, X } from "lucide-react";
 import type { ModuleKey } from "@/lib/modules";
 import { siteAssetUrl } from "@/lib/site-url";
@@ -28,30 +28,52 @@ export function ImageField({
   const [pending, setPending] = useState<File | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [gallery, setGallery] = useState<{ src: string; title: string }[] | null>(null);
+  const [localPreview, setLocalPreview] = useState<string>("");
+
+  useEffect(() => {
+    setBroken(false);
+  }, [value]);
+
+  useEffect(() => {
+    return () => {
+      if (localPreview) URL.revokeObjectURL(localPreview);
+    };
+  }, [localPreview]);
 
   async function upload(file: File) {
     setUploading(true);
     setError(null);
+    const blobUrl = URL.createObjectURL(file);
+    setLocalPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return blobUrl;
+    });
+    setBroken(false);
     try {
       const data = await uploadFile(module, file);
       setBroken(false);
-      onChange(data.public_url);
+      onChange(data.public_url || data.preview_url || "");
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setUploading(false);
+      setLocalPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return "";
+      });
     }
   }
 
-  const preview = value ? siteAssetUrl(value) : "";
+  const remotePreview = value ? siteAssetUrl(value) : "";
+  const preview = localPreview || remotePreview;
 
   return (
-    <div className="flex min-w-0 items-center gap-3">
+    <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start">
       <div
         className={cn(
           "flex shrink-0 items-center justify-center overflow-hidden rounded-[8px] border bg-[#f6f8fa] text-[#98a3b1]",
           broken ? "border-[#f0c08a] bg-[#fff8f1]" : "border-[#e3e8ee]",
-          compact ? "h-14 w-20" : "h-20 w-28"
+          compact ? "h-14 w-20" : "h-[88px] w-[132px]"
         )}
         title={broken ? "This image URL does not load. Re-upload or pick another photo." : undefined}
       >
@@ -63,23 +85,25 @@ export function ImageField({
             className="h-full w-full object-cover"
             loading="lazy"
             onLoad={() => setBroken(false)}
-            onError={() => setBroken(true)}
+            onError={() => {
+              if (!localPreview) setBroken(true);
+            }}
             key={preview}
           />
         ) : (
           <ImageIcon className="h-6 w-6" />
         )}
       </div>
-      <div className="min-w-0 flex-1 space-y-1.5">
+      <div className="min-w-0 flex-1 space-y-2">
         {broken ? (
-          <p className="text-[12.5px] font-medium text-[#9a3412]">
+          <p className="m-0 text-[12.5px] font-medium text-[#9a3412]">
             Image missing or broken — re-upload so the website can show it.
           </p>
         ) : null}
         <div className="flex flex-wrap items-center gap-2">
           <label
             className={cn(
-              "inline-flex h-[34px] cursor-pointer items-center gap-2 rounded-[6px] border border-[#d5dce4] bg-white px-3 text-[13px] font-semibold text-[#0b1f3a] transition-colors hover:bg-[#f4f6f8]",
+              "inline-flex h-9 cursor-pointer items-center gap-2 rounded-[6px] border border-[#d5dce4] bg-white px-3 text-[13px] font-semibold text-[#0b1f3a] transition-colors hover:bg-[#f4f6f8]",
               uploading && "pointer-events-none opacity-60"
             )}
           >
@@ -114,24 +138,33 @@ export function ImageField({
                   setError((e as Error).message);
                 }
               }}
-              className="inline-flex h-[34px] items-center gap-2 rounded-[6px] border border-[#d5dce4] bg-white px-3 text-[13px] font-semibold text-[#0b1f3a] transition-colors hover:bg-[#f4f6f8] disabled:opacity-60"
+              className="inline-flex h-9 items-center gap-2 rounded-[6px] border border-[#d5dce4] bg-white px-3 text-[13px] font-semibold text-[#0b1f3a] transition-colors hover:bg-[#f4f6f8] disabled:opacity-60"
             >
               <Images className="h-4 w-4" />
               From gallery
             </button>
           )}
           {value && !uploading && (
-            <button type="button" className="text-[13px] font-semibold text-[#b42318] hover:underline" onClick={() => onChange("")}>
+            <button
+              type="button"
+              className="inline-flex h-9 items-center px-1 text-[13px] font-semibold text-[#b42318] hover:underline"
+              onClick={() => {
+                setBroken(false);
+                onChange("");
+              }}
+            >
               Remove
             </button>
           )}
         </div>
         {!compact && (
-          <p className="text-[12px] text-[#6b7785]">
-            {fromGallery ? "Upload from this device, or choose a photo already in the gallery. JPG, PNG or WebP." : "JPG, PNG or WebP, up to 8 MB."}
+          <p className="m-0 text-[12px] leading-snug text-[#6b7785]">
+            {fromGallery
+              ? "Upload from this device, or choose a photo already in the gallery. JPG, PNG or WebP."
+              : "JPG, PNG or WebP, up to 8 MB."}
           </p>
         )}
-        {error && <p className="text-[12.5px] text-[#b42318]">{error}</p>}
+        {error && <p className="m-0 text-[12.5px] text-[#b42318]">{error}</p>}
       </div>
       {galleryOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(39,50,114,0.38)] p-4" onClick={() => window.setTimeout(() => setGalleryOpen(false), 0)}>
@@ -150,6 +183,7 @@ export function ImageField({
                   key={image.src}
                   type="button"
                   onClick={() => {
+                    setBroken(false);
                     onChange(image.src);
                     setGalleryOpen(false);
                     setError(null);
@@ -204,7 +238,7 @@ export function GalleryBrowser({ onPick, label = "From gallery" }: { onPick: (sr
       <button
         type="button"
         onClick={() => void show()}
-        className="inline-flex h-[34px] items-center gap-2 rounded-[6px] border border-[#d5dce4] bg-white px-3 text-[13px] font-semibold text-[#0b1f3a] transition-colors hover:bg-[#f4f6f8]"
+        className="inline-flex h-9 items-center gap-2 rounded-[6px] border border-[#d5dce4] bg-white px-3 text-[13px] font-semibold text-[#0b1f3a] transition-colors hover:bg-[#f4f6f8]"
       >
         <Images className="h-4 w-4" />
         {label}

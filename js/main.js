@@ -410,7 +410,16 @@
             var copy = intro.querySelector("p");
             var button = intro.querySelector("a.btn");
             if (heading && item.title) heading.innerHTML = titleWithAccent(item.title);
-            if (copy && item.subtitle) copy.textContent = item.subtitle;
+            if (copy) {
+                var sub = String(item.subtitle || "").trim();
+                if (sub) {
+                    copy.textContent = sub;
+                    copy.hidden = false;
+                } else {
+                    copy.textContent = "";
+                    copy.hidden = true;
+                }
+            }
             if (button) {
                 if (item.buttonLabel) button.textContent = item.buttonLabel;
                 if (item.buttonUrl) {
@@ -1330,11 +1339,15 @@
             var parts = detail.split(/\n\n+/).filter(function (p) {
                 return p && p.length > 1 && !/^our .+ services include:?\s*$/i.test(p);
             });
-            serviceModalBody.innerHTML = parts.map(function (p) {
+            serviceModalBody.innerHTML = "";
+            parts.forEach(function (p) {
                 var para = document.createElement("p");
-                para.textContent = p;
-                return para.outerHTML;
-            }).join("");
+                String(p).split(/\n/).forEach(function (line, index) {
+                    if (index) para.appendChild(document.createElement("br"));
+                    para.appendChild(document.createTextNode(line));
+                });
+                serviceModalBody.appendChild(para);
+            });
         }
         var scrollRegion = serviceModalEl && serviceModalEl.querySelector(".ksl-service-modal-scroll");
         if (scrollRegion) {

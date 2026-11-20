@@ -32,8 +32,18 @@ export function projectGroup(category: string | null | undefined, label?: string
   return PROJECT_GROUPS[0];
 }
 
-export function toPublicProjects(rows: ProjectRow[]) {
+export type ProjectsSettings = {
+  kicker?: string | null;
+  title?: string | null;
+  intro?: string | null;
+  group_order?: string[] | null;
+};
+
+export function toPublicProjects(rows: ProjectRow[], settings?: ProjectsSettings | null) {
   return {
+    kicker: settings?.kicker ?? "",
+    title: settings?.title ?? "",
+    intro: settings?.intro ?? "",
     items: rows
       .filter((row) => row.status === "published")
       .sort((a, b) => a.sort_order - b.sort_order)

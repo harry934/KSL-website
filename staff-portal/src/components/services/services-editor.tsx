@@ -115,6 +115,8 @@ export function ServicesEditor() {
       toast(awaitingReview(saved) ? DRAFT_SAVED : what === "intro" ? "Introduction saved." : "Documents saved.");
       setSavedCatalog(download_catalog);
       if (what === "documents") setDocs(catalogToRows(download_catalog));
+      const anchor = what === "intro" ? "services-intro" : "services-documents";
+      window.setTimeout(() => document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
     } catch (err) {
       toast((err as Error).message, "error");
     } finally {
@@ -325,13 +327,16 @@ export function ServicesEditor() {
 
 
       <div className="grid items-start gap-4 xl:grid-cols-2">
-        <FormSection title="Page introduction" description="The paragraph at the top of the Services page.">
+        <div id="services-intro" className="scroll-mt-24">
+        <FormSection title="Page introduction" description="The paragraph at the top of the Services page. Leave a blank line between paragraphs.">
           <Textarea className="min-h-[120px]" value={intro} onChange={(e) => setIntro(e.target.value)} />
           <Button onClick={() => saveSettings("intro")} disabled={saving === "intro"}>
             {saving === "intro" ? "Saving…" : "Save introduction"}
           </Button>
         </FormSection>
+        </div>
 
+        <div id="services-documents" className="scroll-mt-24">
         <FormSection title="Documents" description="Brochures, charters and forms that can be attached to services.">
           <RowList
             items={docs}
@@ -352,6 +357,7 @@ export function ServicesEditor() {
             {saving === "documents" ? "Saving…" : "Save documents"}
           </Button>
         </FormSection>
+        </div>
       </div>
     </div>
   );

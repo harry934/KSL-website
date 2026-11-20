@@ -139,7 +139,7 @@ function heroFromOverride(override: Override | undefined) {
       crop: item.crop,
       trim: item.trim,
       title: item.title || DEFAULT_HERO_COPY.title,
-      subtitle: item.subtitle || DEFAULT_HERO_COPY.subtitle,
+      subtitle: item.subtitle ?? DEFAULT_HERO_COPY.subtitle,
       buttonLabel: item.buttonLabel || DEFAULT_HERO_COPY.buttonLabel,
       buttonUrl: item.buttonUrl || DEFAULT_HERO_COPY.buttonUrl,
     })),
@@ -158,6 +158,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   const [page, setPage] = useState("");
   const [picking, setPicking] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ percent: number; label: string } | null>(null);
   const [crop, setCrop] = useState<{ slotId: string; file: File } | null>(null);
   const [videoCrop, setVideoCrop] = useState<number | null>(null);
   const [videoTrim, setVideoTrim] = useState<number | null>(null);
@@ -356,11 +357,18 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     }
     if (!heroRoom()) return;
     setBusy(HOME_HERO_SLOT);
+    setUploadProgress({ percent: 0, label: "Starting video upload…" });
     try {
-      const uploaded = await uploadFile("site_settings", file, { "x-ksl-hero": "1" });
+      const uploaded = await uploadFile("site_settings", file, { "x-ksl-hero": "1" }, (state) => {
+        setUploadProgress({
+          percent: state.percent,
+          label: `Uploading video… ${state.percent}%`,
+        });
+      });
       if (!uploaded?.public_url) {
         throw new Error("The upload finished without a usable video address. Please try again.");
       }
+      setUploadProgress({ percent: 100, label: "Saving slide…" });
       const next = [
         ...heroItems,
         {
@@ -378,6 +386,8 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     } catch (err) {
       toast((err as Error).message || "The video upload did not work. Please try again.", "error");
       setBusy(null);
+    } finally {
+      setUploadProgress(null);
     }
   }
 
@@ -614,9 +624,11 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                       }}
                     />
                   </label>
-                  <label className="inline-flex h-10 cursor-pointer items-center gap-2 border border-[#d5dce4] bg-white px-4 text-[14px] font-semibold text-[#0b1f3a]">
-                    <Upload className="h-4 w-4" />
-                    Upload video
+                  <label
+                    className={`inline-flex h-10 cursor-pointer items-center gap-2 border border-[#d5dce4] bg-white px-4 text-[14px] font-semibold text-[#0b1f3a] ${busy !== null ? "pointer-events-none opacity-60" : ""}`}
+                  >
+                    {busy === HOME_HERO_SLOT && uploadProgress ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    {busy === HOME_HERO_SLOT && uploadProgress ? uploadProgress.label : "Upload video"}
                     <input
                       type="file"
                       accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"
@@ -639,6 +651,17 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                     </Button>
                   )}
                 </div>
+                {uploadProgress && (
+                  <div className="mt-3 space-y-1.5" aria-live="polite">
+                    <div className="h-2 overflow-hidden rounded-full bg-[#e8edf2]">
+                      <div
+                        className="h-full rounded-full bg-[#0b1f3a] transition-[width] duration-200"
+                        style={{ width: `${Math.max(4, uploadProgress.percent)}%` }}
+                      />
+                    </div>
+                    <p className="m-0 text-[12.5px] text-[#5b6775]">{uploadProgress.label}</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -689,11 +712,16 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                       onBlur={() => canEdit && saveHeroCopy(selectedHeroIndex)}
                     />
                   </Field>
-                  <Field label="Subtitle" className="sm:col-span-2">
+                  <Field
+                    label="Subtitle"
+                    hint="Optional. Clear this box and save to hide the line under the title on the website."
+                    className="sm:col-span-2"
+                  >
                     <Input
                       value={selectedHero.subtitle}
                       disabled={!canEdit || busy !== null}
                       maxLength={220}
+                      placeholder="Leave empty to hide on the website"
                       onChange={(event) => patchHero(selectedHeroIndex, { subtitle: event.target.value })}
                       onBlur={() => canEdit && saveHeroCopy(selectedHeroIndex)}
                     />

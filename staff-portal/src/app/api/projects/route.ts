@@ -15,17 +15,23 @@ export async function GET() {
   const admin = createDatabaseClient();
   const [itemsRes, settingsRes] = await Promise.all([
     admin.from("projects").select("*").order("sort_order", { ascending: true }),
-    admin.from("projects_settings").select("group_order").eq("id", "default").maybeSingle(),
+    admin.from("projects_settings").select("group_order, kicker, title, intro").eq("id", "default").maybeSingle(),
   ]);
   if (itemsRes.error) return NextResponse.json({ error: dbError(itemsRes.error) }, { status: 500 });
   const split = splitRemoved(itemsRes.data ?? []);
   const groups = await overlaySettings(admin, "projects_settings", "default", {
     group_order: Array.isArray(settingsRes.data?.group_order) ? settingsRes.data.group_order : [],
+    kicker: settingsRes.data?.kicker ?? "",
+    title: settingsRes.data?.title ?? "",
+    intro: settingsRes.data?.intro ?? "",
   });
   return NextResponse.json({
     items: await overlayDrafts(admin, "projects", split.items),
     removed: split.removed,
     group_order: Array.isArray(groups?.group_order) ? groups.group_order : [],
+    kicker: typeof groups?.kicker === "string" ? groups.kicker : "",
+    title: typeof groups?.title === "string" ? groups.title : "",
+    intro: typeof groups?.intro === "string" ? groups.intro : "",
   });
 }
 
@@ -54,6 +60,32 @@ export async function POST(req: NextRequest) {
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     await clearReviewDraft(admin, "projects_settings", null, "default");
     await logActivity(session.userId, "projects", "reorder", "projects_settings", "groups");
+    return NextResponse.json(saveBody(session, "projects"));
+  }
+
+  if (body.scope === "settings") {
+    const plan = await editorSavePlan(admin, session, "projects", "projects_settings", {
+      settings: true,
+      key: "default",
+      title: "Projects introduction",
+      payload: body,
+    });
+    if (plan.held) return plan.held;
+    const { data: current } = await admin.from("projects_settings").select("group_order").eq("id", "default").maybeSingle();
+    const { error: upErr } = await admin.from("projects_settings").upsert({
+      id: "default",
+      group_order: Array.isArray(current?.group_order) ? current.group_order : [],
+      kicker: String(body.kicker ?? "").trim().slice(0, 80) || null,
+      title: String(body.title ?? "").trim().slice(0, 160) || null,
+      intro: String(body.intro ?? "")
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n")
+        .trim()
+        .slice(0, 4000) || null,
+    });
+    if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+    await clearReviewDraft(admin, "projects_settings", null, "default");
+    await logActivity(session.userId, "projects", "upsert", "projects_settings", "default");
     return NextResponse.json(saveBody(session, "projects"));
   }
 

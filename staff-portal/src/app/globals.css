@@ -1415,6 +1415,45 @@ body {
   animation: ksl-progress 0.9s linear infinite;
 }
 
+.app-busy-chip {
+  position: fixed;
+  top: calc(var(--stripe-h) + 10px);
+  right: 16px;
+  z-index: 2501;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #d5dde8;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(11, 31, 58, 0.12);
+  color: #0b1f3a;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 8px 12px;
+}
+
+.app-busy-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0b1f3a;
+  animation: ksl-busy-pulse 1s ease-in-out infinite;
+}
+
+@keyframes ksl-busy-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @keyframes ksl-progress {
   from {
     background-position: 100% 0;

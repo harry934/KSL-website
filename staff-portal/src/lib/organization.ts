@@ -218,12 +218,22 @@ function clip(value: unknown, max: number) {
   return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
+function clipParagraphs(value: unknown, max: number) {
+  return String(value ?? "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, max);
+}
+
 export function cleanIntro(value: unknown): OrgIntro {
   const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   return {
     kicker: clip(record.intro_kicker ?? record.kicker, 80),
     title: clip(record.intro_title ?? record.title, 160) || SHIPPED_INTRO.title,
-    body: clip(record.intro_body ?? record.body, 600),
+    body: clipParagraphs(record.intro_body ?? record.body, 2000),
   };
 }
 

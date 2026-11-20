@@ -41,7 +41,7 @@ export function WhatWeDoEditor({ canEdit }: { canEdit: boolean }) {
   const [cards, setCards] = useState<WhatWeDoCard[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (keepOpenId?: string | null) => {
     const res = await fetch(appPath("/api/what-we-do"));
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -52,7 +52,8 @@ export function WhatWeDoEditor({ canEdit }: { canEdit: boolean }) {
     const nextCards = Array.isArray(data.items) ? (data.items as WhatWeDoCard[]) : [];
     setLabel(typeof data.label === "string" && data.label.trim() ? data.label : "What we do");
     setCards(nextCards);
-    setOpenId(nextCards[0]?.id ?? null);
+    const keep = keepOpenId && nextCards.some((card) => card.id === keepOpenId) ? keepOpenId : null;
+    setOpenId(keep ?? nextCards[0]?.id ?? null);
     setLoading(false);
   }, [toast]);
 
@@ -103,11 +104,17 @@ export function WhatWeDoEditor({ canEdit }: { canEdit: boolean }) {
       setOpenId(blank.id);
       return;
     }
+    const stayOn = openId;
     setSaving(true);
     try {
       await sendJson("/api/what-we-do", "POST", { label, cards });
       toast("What we do cards saved.");
-      await load();
+      await load(stayOn);
+      if (stayOn) {
+        window.setTimeout(() => {
+          document.getElementById(`what-we-do-${stayOn}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 80);
+      }
     } catch (err) {
       toast((err as Error).message, "error");
     } finally {
@@ -155,8 +162,8 @@ export function WhatWeDoEditor({ canEdit }: { canEdit: boolean }) {
           {cards.map((card, index) => {
             const open = openId === card.id;
             return (
-              <div key={card.id} className="overflow-hidden rounded-xl border border-[#d5dde8] bg-white">
-                <div className="flex flex-wrap items-center gap-2 border-b border-[#eef2f7] px-3 py-2.5">
+              <div key={card.id} id={`what-we-do-${card.id}`} className="scroll-mt-24 overflow-hidden rounded-xl border border-[#d5dde8] bg-white">
+                <div className="flex flex-wrap items-center gap-2 border-b border-[#eef2f7] px-4 py-3">
                   <button
                     type="button"
                     className="min-w-0 flex-1 text-left text-[14px] font-semibold text-[#0b1f3a]"
@@ -186,8 +193,8 @@ export function WhatWeDoEditor({ canEdit }: { canEdit: boolean }) {
                   )}
                 </div>
                 {open && (
-                  <div className="grid gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_280px]">
-                    <div className="space-y-4">
+                  <div className="grid items-start gap-5 p-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+                    <div className="min-w-0 space-y-4">
                       <Field label="Title">
                         <Input value={card.title} onChange={(e) => patchCard(card.id, { title: e.target.value })} disabled={!canEdit} />
                       </Field>
@@ -246,7 +253,7 @@ export function WhatWeDoEditor({ canEdit }: { canEdit: boolean }) {
                         </Field>
                       )}
                     </div>
-                    <div className="space-y-4">
+                    <div className="min-w-0 space-y-4">
                       <FormSection title="Visibility">
                         <Switch
                           checked={card.enabled}
@@ -255,11 +262,11 @@ export function WhatWeDoEditor({ canEdit }: { canEdit: boolean }) {
                           label={card.enabled ? "Shown on the home page" : "Hidden from the home page"}
                         />
                       </FormSection>
-                      <FormSection title="Photo">
+                      <FormSection title="Photo" description="Shown behind the card title on the home page.">
                         <ImageField
                           module="site_settings"
                           value={card.image}
-                          onChange={(image) => patchCard(card.id, { image })}
+                          onChange={(image) => patchCard(card.id, { image, imageSlot: image ? "" : card.imageSlot })}
                         />
                       </FormSection>
                       <Field label="Icon">

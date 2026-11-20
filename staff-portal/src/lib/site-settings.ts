@@ -1,3 +1,5 @@
+import { safeImageUrl } from "@/lib/site-image-url";
+
 export type ContactSettings = {
   phone: string;
   email: string;
@@ -209,12 +211,9 @@ function cleanLink(value: unknown) {
 }
 
 function cleanPhoto(value: unknown) {
-  const url = String(value ?? "").trim();
-  if (url.length > 500 || /[\s"'()\\]/.test(url)) return "";
-  if (/^https:\/\/[^/]+\/.+/i.test(url)) return url;
-  if (url.startsWith("/") && !url.startsWith("//")) return url;
-  if (/^(img|storage)\//i.test(url) && !url.includes("..")) return url;
-  return "";
+  // Same rules as hero/site images so portal /api/stored-file URLs
+  // (http on VPS, query strings, module paths) are kept — not blanked out.
+  return safeImageUrl(value) ?? "";
 }
 
 export function cleanYardPhotos(value: unknown): YardPhotos {
@@ -440,9 +439,14 @@ function cleanWhatWeDoCard(raw: Partial<WhatWeDoCard> | null | undefined, index:
     id,
     title: String(source.title ?? "").trim().slice(0, 80),
     excerpt: String(source.excerpt ?? "").trim().slice(0, 280),
-    detail: String(source.detail ?? "").trim().slice(0, 4000),
+    detail: String(source.detail ?? "")
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .trim()
+      .slice(0, 4000),
     image: cleanPhoto(source.image),
-    imageSlot: String(source.imageSlot ?? "").trim().slice(0, 120),
+    // Custom photo wins over the legacy site-image slot so admin changes stick.
+    imageSlot: cleanPhoto(source.image) ? "" : String(source.imageSlot ?? "").trim().slice(0, 120),
     link: cleanLink(source.link) || "service.html",
     linkLabel: String(source.linkLabel ?? "View all services").trim().slice(0, 40) || "View all services",
     buttonLabel: String(source.buttonLabel ?? "Read More").trim().slice(0, 30) || "Read More",

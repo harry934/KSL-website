@@ -10,6 +10,7 @@ export function ActivityIndicators() {
   const searchParams = useSearchParams();
   const [navigating, setNavigating] = useState(false);
   const [busyCount, setBusyCount] = useState(0);
+  const [busyMessage, setBusyMessage] = useState("");
 
   useEffect(() => {
     setNavigating(false);
@@ -27,7 +28,12 @@ export function ActivityIndicators() {
     }
     function onBusy(event: Event) {
       const detail = (event as CustomEvent<BusyDetail>).detail;
-      setBusyCount((count) => Math.max(0, count + detail.delta));
+      setBusyCount((count) => {
+        const next = Math.max(0, count + detail.delta);
+        if (next === 0) setBusyMessage("");
+        else if (detail.message) setBusyMessage(detail.message);
+        return next;
+      });
     }
     document.addEventListener("click", onClick);
     window.addEventListener(BUSY_EVENT, onBusy);
@@ -37,5 +43,17 @@ export function ActivityIndicators() {
     };
   }, []);
 
-  return (navigating || busyCount > 0) ? <div className="app-progress-bar" aria-hidden /> : null;
+  if (!(navigating || busyCount > 0)) return null;
+
+  return (
+    <>
+      <div className="app-progress-bar" aria-hidden />
+      {busyMessage ? (
+        <div className="app-busy-chip" role="status" aria-live="polite">
+          <span className="app-busy-chip-dot" aria-hidden />
+          {busyMessage}
+        </div>
+      ) : null}
+    </>
+  );
 }

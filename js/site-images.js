@@ -197,7 +197,16 @@
             if (heading && item.title) {
                 heading.innerHTML = escapeHeroText(item.title).replace(/Shipbuilding/i, '<span class="ksl-hero-accent">$&</span>');
             }
-            if (copy && item.subtitle) copy.textContent = item.subtitle;
+            if (copy) {
+                var sub = String(item.subtitle || "").trim();
+                if (sub) {
+                    copy.textContent = sub;
+                    copy.hidden = false;
+                } else {
+                    copy.textContent = "";
+                    copy.hidden = true;
+                }
+            }
             if (button) {
                 if (item.buttonLabel) button.textContent = item.buttonLabel;
                 var heroHref = (window.KSL_SAFE_LINK && window.KSL_SAFE_LINK(item.buttonUrl)) || "";

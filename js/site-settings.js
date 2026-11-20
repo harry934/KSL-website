@@ -22,6 +22,11 @@
             .replace(/'/g, "&#39;");
     }
 
+    /** Keep paragraph breaks when detail is stored in an HTML attribute. */
+    function escapeAttr(value) {
+        return escapeHtml(value).replace(/\r\n|\r|\n/g, "&#10;");
+    }
+
     function safeUrl(value) {
         var url = String(value || "").trim();
         return /^(https?:\/\/|mailto:|tel:)/i.test(url) || /^[\w./#?=&%-]+$/.test(url) ? url : "";
@@ -310,8 +315,10 @@
         var delays = ["0.1s", "0.3s", "0.5s", "0.1s", "0.3s", "0.5s"];
         grid.innerHTML = cards.map(function (card, index) {
             var icon = WHAT_WE_DO_ICONS[card.icon] || WHAT_WE_DO_ICONS.ship;
-            var image = safeUrl(card.image) || "img/ksl/yard.jpg";
-            var slot = card.imageSlot ? ' data-ksl-image="' + escapeHtml(card.imageSlot) + '"' : "";
+            var customImage = safeUrl(card.image);
+            var image = customImage || "img/ksl/yard.jpg";
+            // Only use the legacy site-image slot when no custom photo is set.
+            var slot = !customImage && card.imageSlot ? ' data-ksl-image="' + escapeHtml(card.imageSlot) + '"' : "";
             var link = safeUrl(card.link) || "service.html";
             var linkLabel = card.linkLabel || "View all services";
             var buttonLabel = card.buttonLabel || "Read More";
@@ -325,10 +332,10 @@
                 '<p class="mb-0 ksl-service-excerpt">' + escapeHtml(card.excerpt || "") + "</p>" +
                 '<div class="ksl-service-foot">' +
                 '<button type="button" class="btn px-3 ksl-service-more" aria-haspopup="dialog"' +
-                ' data-ksl-title="' + escapeHtml(card.title) + '"' +
-                ' data-ksl-detail="' + escapeHtml(card.detail || "") + '"' +
-                ' data-ksl-link="' + escapeHtml(link) + '"' +
-                ' data-ksl-link-label="' + escapeHtml(linkLabel) + '">' +
+                ' data-ksl-title="' + escapeAttr(card.title) + '"' +
+                ' data-ksl-detail="' + escapeAttr(card.detail || "") + '"' +
+                ' data-ksl-link="' + escapeAttr(link) + '"' +
+                ' data-ksl-link-label="' + escapeAttr(linkLabel) + '">' +
                 '<svg class="ksl-ico text-primary" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>' +
                 '<span class="ksl-service-more-text">' + escapeHtml(buttonLabel) + "</span></button>" +
                 "</div></div></div></div>"

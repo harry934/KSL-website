@@ -50,10 +50,15 @@
             return;
         }
         intro.hidden = false;
+        var bodyHtml = body
+            ? body.split(/\n\n+/).filter(Boolean).map(function (block) {
+                return "<p>" + esc(block).replace(/\n/g, "<br>") + "</p>";
+            }).join("")
+            : "";
         intro.innerHTML =
             (kicker ? '<p class="org-kicker">' + esc(kicker) + "</p>" : "") +
             (title ? '<h2 id="organization-title">' + esc(title) + "</h2>" : "") +
-            (body ? "<p>" + esc(body) + "</p>" : "");
+            bodyHtml;
     }
 
     function orgNode(esc, className, caption, title) {

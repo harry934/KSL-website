@@ -87,7 +87,11 @@ export function parseHeroMedia(value: unknown): HeroMediaItem[] {
       crop: kind === "video" ? parseHeroCrop(record.crop) : null,
       trim: kind === "video" ? parseHeroTrim(record.trim) : null,
       title: cleanHeroText(record.title, 90) || DEFAULT_HERO_TITLE,
-      subtitle: cleanHeroText(record.subtitle, 220) || DEFAULT_HERO_SUBTITLE,
+      // Empty subtitle is allowed — staff can hide the line under the title.
+      subtitle:
+        record.subtitle === undefined || record.subtitle === null
+          ? DEFAULT_HERO_SUBTITLE
+          : cleanHeroText(record.subtitle, 220),
       buttonLabel: cleanHeroText(record.buttonLabel ?? record.button_label, 40) || DEFAULT_HERO_BUTTON_LABEL,
       buttonUrl: cleanHeroLink(record.buttonUrl ?? record.button_url) || DEFAULT_HERO_BUTTON_URL,
     });
