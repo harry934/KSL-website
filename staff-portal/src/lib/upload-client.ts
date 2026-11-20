@@ -15,13 +15,10 @@ export async function withBusy<T>(message: string, work: () => Promise<T>): Prom
   }
 }
 
-async function uploadError(res: Response) {
+async function readError(res: Response) {
   const data = await res.json().catch(() => ({}));
   if (typeof data.error === "string" && data.error) return data.error;
   if (res.status === 413) return "That file is too large to send this way.";
-  if (res.status === 0 || res.type === "error") {
-    return "The upload was interrupted. Check your connection and try a smaller file.";
-  }
   return "The upload did not work. Please try again.";
 }
 
@@ -31,46 +28,90 @@ function networkUploadError(err: unknown) {
   }
   const message = err instanceof Error ? err.message : "";
   if (/failed to fetch|networkerror|load failed|connection/i.test(message)) {
-    return "The upload was interrupted. Check your connection and try again. Documents and videos can be up to 100 MB.";
+    return "The upload was interrupted. Check your connection and try again.";
   }
   return message || "The upload did not work. Please try again.";
 }
 
+async function postJson(url: string, body: unknown, signal: AbortSignal) {
+  const res = await fetch(appPath(url), {
+    method: "POST",
+    signal,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : await readError(res));
+  return data;
+}
+
 /**
- * Send the file as a raw body. Multipart form-data through this VPS Nginx/Next path
- * resets the TCP connection (net::ERR_CONNECTION_RESET).
+ * Upload in small chunks so large brochures never hit the VPS/Next single-body hang
+ * (file saved, storage up, browser spinner forever).
  */
 async function postFile(module: ModuleKey, file: File, extraHeaders?: Record<string, string>) {
   const controller = new AbortController();
-  // Large PDFs on the VPS can take a few minutes; fail clearly instead of spinning forever.
-  const timeoutMs = Math.min(300_000, Math.max(60_000, Math.round(file.size / 1024) + 60_000));
+  const timeoutMs = Math.min(300_000, Math.max(90_000, Math.round(file.size / 512) + 90_000));
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
-  let res: Response;
+
   try {
-    res = await fetch(appPath("/api/upload"), {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        "Content-Type": "application/octet-stream",
-        "x-ksl-module": module,
-        // Percent-encode so non-ASCII / spaces never break ByteString headers.
-        "x-ksl-filename": encodeURIComponent(file.name),
-        "x-ksl-content-type": file.type || "application/octet-stream",
-        ...extraHeaders,
+    const heroVideo = extraHeaders?.["x-ksl-hero"] === "1";
+    const galleryVideo = extraHeaders?.["x-ksl-gallery-video"] === "1";
+    const init = await postJson(
+      "/api/upload/init",
+      {
+        module,
+        name: file.name,
+        contentType: file.type || "application/octet-stream",
+        size: file.size,
+        heroVideo,
+        galleryVideo,
       },
-      body: file,
-    });
+      controller.signal
+    );
+
+    const uploadId = String(init.uploadId || "");
+    const signature = String(init.signature || "");
+    const chunkSize = Math.max(256 * 1024, Math.min(2 * 1024 * 1024, Number(init.chunkSize) || 2 * 1024 * 1024));
+    if (!uploadId || !signature) throw new Error("The upload did not start correctly. Please try again.");
+
+    let offset = 0;
+    while (offset < file.size) {
+      const piece = file.slice(offset, offset + chunkSize);
+      const res = await fetch(appPath("/api/upload/chunk"), {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "x-ksl-module": module,
+          "x-ksl-upload-id": uploadId,
+          "x-ksl-upload-sig": signature,
+          "x-ksl-offset": String(offset),
+        },
+        body: piece,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : await readError(res));
+      offset = Number(data.received);
+      if (!Number.isFinite(offset) || offset <= 0) {
+        throw new Error("The upload stalled. Please try again.");
+      }
+    }
+
+    const finished = await postJson(
+      "/api/upload/finish",
+      { module, uploadId, signature },
+      controller.signal
+    );
+    if (!finished || typeof finished.public_url !== "string") {
+      throw new Error("The upload finished but the portal did not return a file link. Please try again.");
+    }
+    return finished as { public_url: string; storage_path: string; preview_url?: string };
   } catch (err) {
     throw new Error(networkUploadError(err));
   } finally {
     window.clearTimeout(timer);
   }
-  if (!res.ok) throw new Error(await uploadError(res));
-  const data = await res.json().catch(() => null);
-  if (!data || typeof data !== "object" || typeof (data as { public_url?: unknown }).public_url !== "string") {
-    throw new Error("The upload finished but the portal did not return a file link. Please try again.");
-  }
-  return data as { public_url: string; storage_path: string; preview_url?: string; ok?: boolean };
 }
 
 export async function uploadFile(
