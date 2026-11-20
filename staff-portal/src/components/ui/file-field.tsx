@@ -6,6 +6,7 @@ import type { ModuleKey } from "@/lib/modules";
 import { uploadFile } from "@/lib/upload-client";
 import { siteAssetUrl } from "@/lib/site-url";
 import { appPath } from "@/lib/base-path";
+import { formatBytes } from "@/lib/downloads";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/cn";
 
@@ -38,6 +39,8 @@ export function FileField({
   allowLink?: boolean;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pasting, setPasting] = useState(false);
@@ -64,14 +67,24 @@ export function FileField({
     setUploading(true);
     setError(null);
     setSuccess(null);
+    setProgress(0);
+    setProgressLabel(`0% · 0 B of ${formatBytes(file.size) || "0 B"}`);
     try {
-      const data = await uploadFile(module, file);
+      const data = await uploadFile(module, file, undefined, (state) => {
+        setProgress(state.percent);
+        setProgressLabel(
+          `${state.percent}% · ${formatBytes(state.sentBytes) || "0 B"} of ${formatBytes(state.totalBytes) || "0 B"}`
+        );
+      });
       onChange(data.public_url, file);
       if (data.preview_url) setOpenHref(data.preview_url);
       setPasting(false);
+      setProgress(100);
       setSuccess("File uploaded successfully. Click Save to add it to the list.");
     } catch (e) {
       setError((e as Error).message);
+      setProgress(0);
+      setProgressLabel("");
     } finally {
       setUploading(false);
     }
@@ -134,6 +147,17 @@ export function FileField({
           </button>
         )}
       </div>
+      {uploading && (
+        <div className="space-y-1.5" aria-live="polite">
+          <div className="h-2 overflow-hidden rounded-full bg-[#e8edf2]">
+            <div
+              className="h-full rounded-full bg-[#0b1f3a] transition-[width] duration-200"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="text-[12px] text-[#5b6775]">{progressLabel || "Starting upload…"}</p>
+        </div>
+      )}
       <p className="text-[12px] text-[#6b7785]">
         {allowImages ? "PDF, Word or an image (JPG, PNG, WebP)." : "PDF or Word, up to 100 MB."} A file whose contents do not match its extension is refused.
       </p>

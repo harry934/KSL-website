@@ -53,11 +53,36 @@ export function SpareFilesPage() {
     }
   }
 
+  async function removeAll() {
+    const total = files.reduce((sum, file) => sum + file.bytes, 0);
+    const ok = await confirm({
+      title: "Delete all unused files?",
+      message: `This permanently deletes ${files.length} unused file${files.length === 1 ? "" : "s"} (${formatBytes(total) || "0 B"}). Linked brochure/documents are kept.`,
+      confirmLabel: "Delete all unused",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      const data = await sendJson("/api/storage/spare", "DELETE", { all: true });
+      toast(`Deleted ${data.deleted ?? 0} unused file(s).`);
+      load();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    }
+  }
+
   return (
     <>
       <PageHeader
         title="Files not linked"
-        description="These files are in storage, but no page and nothing in the recycle bin points at them. Deleting one frees that space."
+        description="These files are in storage, but no page and nothing in the recycle bin points at them. Failed uploads often land here — delete them to free space."
+        actions={
+          files.length > 0 ? (
+            <Button variant="danger" onClick={removeAll}>
+              Delete all unused
+            </Button>
+          ) : null
+        }
       />
       {loading ? (
         <div className="flex items-center gap-2 text-[14px] text-[#5b6775]">
@@ -72,7 +97,7 @@ export function SpareFilesPage() {
               <div className="min-w-[200px] flex-1">
                 <p className="break-all text-[14px] font-semibold text-[#0b1f3a]">{file.name}</p>
                 <p className="mt-0.5 text-[12.5px] text-[#6b7785]">
-                  {BUCKETS[file.bucket] || file.bucket} · {formatBytes(file.bytes) || "0 B"}
+                  {BUCKETS[file.bucket] || file.bucket} · {formatBytes(file.bytes) || "0 B"} · {file.path}
                 </p>
               </div>
               <Button variant="danger" onClick={() => remove(file)}>

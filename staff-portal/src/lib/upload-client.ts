@@ -55,17 +55,34 @@ async function postJson(url: string, body: unknown, signal: AbortSignal) {
   return data;
 }
 
+export type UploadProgress = {
+  percent: number;
+  sentBytes: number;
+  totalBytes: number;
+};
+
 /**
  * Upload in small base64 JSON chunks so large brochures work reliably behind Nginx/Next.
  */
-async function postFile(module: ModuleKey, file: File, extraHeaders?: Record<string, string>) {
+async function postFile(
+  module: ModuleKey,
+  file: File,
+  extraHeaders?: Record<string, string>,
+  onProgress?: (progress: UploadProgress) => void
+) {
   const controller = new AbortController();
   const timeoutMs = Math.min(300_000, Math.max(90_000, Math.round(file.size / 256) + 90_000));
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  const report = (sentBytes: number) => {
+    const totalBytes = file.size || 1;
+    const percent = Math.max(0, Math.min(100, Math.round((sentBytes / totalBytes) * 100)));
+    onProgress?.({ percent, sentBytes, totalBytes });
+  };
 
   try {
     const heroVideo = extraHeaders?.["x-ksl-hero"] === "1";
     const galleryVideo = extraHeaders?.["x-ksl-gallery-video"] === "1";
+    report(0);
     const init = await postJson(
       "/api/upload/init",
       {
@@ -104,6 +121,7 @@ async function postFile(module: ModuleKey, file: File, extraHeaders?: Record<str
         throw new Error("The upload stalled. Please try again.");
       }
       offset = received;
+      report(offset);
     }
 
     const finished = await postJson(
@@ -114,6 +132,7 @@ async function postFile(module: ModuleKey, file: File, extraHeaders?: Record<str
     if (!finished || typeof finished.public_url !== "string") {
       throw new Error("The upload finished but the portal did not return a file link. Please try again.");
     }
+    report(file.size);
     return finished as { public_url: string; storage_path: string; preview_url?: string };
   } catch (err) {
     throw new Error(networkUploadError(err));
@@ -125,9 +144,10 @@ async function postFile(module: ModuleKey, file: File, extraHeaders?: Record<str
 export async function uploadFile(
   module: ModuleKey,
   file: File,
-  extraHeaders?: Record<string, string>
+  extraHeaders?: Record<string, string>,
+  onProgress?: (progress: UploadProgress) => void
 ): Promise<{ public_url: string; storage_path: string; preview_url?: string }> {
-  return withBusy("Uploading…", () => postFile(module, file, extraHeaders));
+  return withBusy("Uploading…", () => postFile(module, file, extraHeaders, onProgress));
 }
 
 const BUSY_WORDS: Record<string, string> = { DELETE: "Deleting…", GET: "" };
