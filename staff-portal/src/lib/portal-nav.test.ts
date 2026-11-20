@@ -43,11 +43,11 @@ test("organisation access adds a Board destination", () => {
   );
 });
 
-test("site settings adds banner and website images", () => {
+test("site settings adds banner, what we do, and website images", () => {
   const links = permissionNavLinks(access(["site_settings"]));
   assert.deepEqual(
     links.map((link) => link.label),
-    ["Site settings", "Banner", "Website images", "Audit log"]
+    ["Site settings", "Banner", "What we do", "Website images", "Audit log"]
   );
   assert.equal(usesSidebar(access(["site_settings"])), false);
 });

@@ -14,12 +14,24 @@
   },
   "footer": {
     "tagline": "Catalyzing Shipbuilding Industry",
-    "copyright": "© 2025, All Rights Reserved by Kenya Shipyards Limited.",
+    "copyright": "\u00a9 2025, All Rights Reserved by Kenya Shipyards Limited.",
     "locations": [
-      { "name": "Nairobi Head Office", "address": "Herufi House, Treasury Buildings." },
-      { "name": "Mombasa Shipyard", "address": "Next to Kenya Navy Base, Mtongwe." },
-      { "name": "Kisumu Shipyard", "address": "Next to Kisumu Port, along Marine Drive." },
-      { "name": "Kenya Railways", "address": "Locomotive workshop with KRC, Nairobi." }
+      {
+        "name": "Nairobi Head Office",
+        "address": "Herufi House, Treasury Buildings."
+      },
+      {
+        "name": "Mombasa Shipyard",
+        "address": "Next to Kenya Navy Base, Mtongwe."
+      },
+      {
+        "name": "Kisumu Shipyard",
+        "address": "Next to Kisumu Port, along Marine Drive."
+      },
+      {
+        "name": "Kenya Railways",
+        "address": "Locomotive workshop with KRC, Nairobi."
+      }
     ],
     "qualitySystem": "ISO 9001:2015 certified quality management system"
   },
@@ -32,5 +44,75 @@
     "style": "navy",
     "scroll": false,
     "endsOn": ""
+  },
+  "what_we_do": {
+    "label": "What we do",
+    "cards": [
+      {
+        "id": "ship-construction",
+        "title": "Ship Construction",
+        "excerpt": "Patrol craft, ferries, and support vessels, designed and built for the Kenya Navy, MDAs, and regional partners.",
+        "detail": "Kenya Shipyards Limited delivers end-to-end new construction from concept and class design through steel work, outfitting, and sea trials. Projects include naval patrol boats, passenger ferries, landing craft, and specialist vessels for ministries, departments and agencies with maritime assets. Builds are managed under ISO 9001 with quality checks at each stage. KSL yards at Mtongwe and Kisumu provide dry berths, fabrication, and skilled trades for GRP, aluminium and steel hulls.",
+        "image": "img/ksl/yard.jpg",
+        "imageSlot": "index.9-ship-construction",
+        "link": "service.html",
+        "linkLabel": "View all services",
+        "buttonLabel": "Read More",
+        "icon": "ship",
+        "enabled": true
+      },
+      {
+        "id": "civil-modular",
+        "title": "Civil and Modular Works",
+        "excerpt": "Marine civil works, piers, jetties, linkspans, and modular structures that keep ports and yards operating.",
+        "detail": "Beyond the slipway, KSL engineers and installs shore-side infrastructure: reinforced quays, finger piers, linkspans, fender systems, and modular buildings for workshops and stores. Teams coordinate civil, structural, and electrical scopes so naval bases and commercial harbours gain reliable access for vessels and cargo. Modular approaches shorten on-site time while meeting defence and port authority standards.",
+        "image": "img/ksl/linkspan.webp",
+        "imageSlot": "index.10-civil-and-modular-works",
+        "link": "service.html",
+        "linkLabel": "View all services",
+        "buttonLabel": "Read More",
+        "icon": "civil",
+        "enabled": true
+      },
+      {
+        "id": "heavy-engineering",
+        "title": "Heavy Engineering",
+        "excerpt": "Remanufacture, rehabilitation and fabrication of locomotives for Kenya Railways Corporation.",
+        "detail": "KSL applies shipyard-grade welding, machining, and project controls to heavy engineering on land. Capabilities include locomotive remanufacture, rehabilitation, refurbishment, structural steel for locomotives, and bespoke mechanical assemblies. The same quality systems used for naval contracts support ministries, parastatals, and private industry that need proven fabrication capacity in Eastern Africa.",
+        "image": "img/ksl/mombasa.webp",
+        "imageSlot": "index.11-heavy-engineering",
+        "link": "service.html",
+        "linkLabel": "View all services",
+        "buttonLabel": "Read More",
+        "icon": "heavy",
+        "enabled": true
+      },
+      {
+        "id": "mro",
+        "title": "Maintenance Repair and Overhaul",
+        "excerpt": "Scheduled refits, emergency repairs, and dry docking to keep fleets mission ready and class compliant.",
+        "detail": "MRO services cover hull and superstructure repairs, corrosion protection, propulsion, auxiliary overhauls, shaft alignment, navigation and weapon systems support for naval vessels. Docking at Mtongwe and Kisumu includes blasting, coating, and steel renewal to class and military specifications. KSL plans maintenance windows with operators to minimise downtime while extending vessel life.",
+        "image": "img/ksl/kisumu.webp",
+        "imageSlot": "index.12-maintenance-repair-and-overhaul",
+        "link": "service.html",
+        "linkLabel": "View all services",
+        "buttonLabel": "Read More",
+        "icon": "mro",
+        "enabled": true
+      },
+      {
+        "id": "grp-boats",
+        "title": "GRP Boats",
+        "excerpt": "Light, durable GRP hulls for patrol, fisheries, ambulance response, and county water transport.",
+        "detail": "Glass-reinforced plastic boats are moulded and finished in-house for roles that need speed, shallow draft, and low maintenance. Standard and custom layouts serve Kenya Navy auxiliaries, county governments, fisheries cooperatives, and emergency medical transport on lakes and coastal waters. KSL supports operators with spares, repairs, and training for safe day-to-day use.",
+        "image": "img/ksl/fishing.jpg",
+        "imageSlot": "index.13-grp-boats",
+        "link": "products.html",
+        "linkLabel": "Browse products",
+        "buttonLabel": "Read More",
+        "icon": "grp",
+        "enabled": true
+      }
+    ]
   }
 }

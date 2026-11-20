@@ -290,6 +290,65 @@
         }
     }
 
+    var WHAT_WE_DO_ICONS = {
+        ship: '<path d="M8 30h32l-4 8H12z"/><path d="M16 30V18h8l8 8h4v4"/><path d="M20 18V12h6"/>',
+        civil: '<path d="M6 36V16l8 6V16l8 6V14l14 8v14H6z"/><path d="M14 36v-6M22 36v-6M30 36v-6"/>',
+        heavy: '<path d="m30 14 6-6 6 6-6 6"/><path d="M8 40 28 20"/><path d="m16 28 6 6"/>',
+        mro: '<path d="M5 29h38l-5 9H10z"/><path d="M13 29v-6h12v6"/><path d="M17 23v-4h5"/><path d="M11 42h8M29 42h8M14 38v4M34 38v4"/><g transform="translate(27 25) rotate(-45) scale(.6)"><path stroke-width="2.8" d="M28.5-2.4A6 6 0 0 1 39.58-2.2H34v4.4h5.58A6 6 0 0 1 28.5 2.4H2.4a2.4 2.4 0 0 1 0-4.8z"/></g>',
+        grp: '<path d="M6 30c4 4 8 4 12 0s8-4 12 0 8 4 12 0"/><path d="M6 20c4 4 8 4 12 0s8-4 12 0 8 4 12 0"/><path d="M18 12h6l4 6H14z"/>'
+    };
+
+    function applyWhatWeDo(settings) {
+        var grid = document.querySelector("[data-ksl-what-we-do]");
+        if (!grid || !settings) return;
+        var label = document.querySelector("[data-ksl-what-we-do-label]");
+        if (label && settings.label) label.textContent = settings.label;
+        var cards = (settings.cards || []).filter(function (card) {
+            return card && card.enabled !== false && String(card.title || "").trim();
+        });
+        if (!cards.length) return;
+        var delays = ["0.1s", "0.3s", "0.5s", "0.1s", "0.3s", "0.5s"];
+        grid.innerHTML = cards.map(function (card, index) {
+            var icon = WHAT_WE_DO_ICONS[card.icon] || WHAT_WE_DO_ICONS.ship;
+            var image = safeUrl(card.image) || "img/ksl/yard.jpg";
+            var slot = card.imageSlot ? ' data-ksl-image="' + escapeHtml(card.imageSlot) + '"' : "";
+            var link = safeUrl(card.link) || "service.html";
+            var linkLabel = card.linkLabel || "View all services";
+            var buttonLabel = card.buttonLabel || "Read More";
+            return (
+                '<div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="' + delays[index % delays.length] + '">' +
+                '<div class="service-item rounded d-flex h-100">' +
+                '<div class="service-img rounded"><img' + slot + ' class="img-fluid" src="' + escapeHtml(image) + '" alt="' + escapeHtml(card.title) + '"></div>' +
+                '<div class="service-text rounded p-5">' +
+                '<svg class="ksl-svc" viewBox="0 0 48 48" aria-hidden="true">' + icon + "</svg>" +
+                '<h4 class="mb-3">' + escapeHtml(card.title) + "</h4>" +
+                '<p class="mb-0 ksl-service-excerpt">' + escapeHtml(card.excerpt || "") + "</p>" +
+                '<div class="ksl-service-foot">' +
+                '<button type="button" class="btn px-3 ksl-service-more" aria-haspopup="dialog"' +
+                ' data-ksl-title="' + escapeHtml(card.title) + '"' +
+                ' data-ksl-detail="' + escapeHtml(card.detail || "") + '"' +
+                ' data-ksl-link="' + escapeHtml(link) + '"' +
+                ' data-ksl-link-label="' + escapeHtml(linkLabel) + '">' +
+                '<svg class="ksl-ico text-primary" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>' +
+                '<span class="ksl-service-more-text">' + escapeHtml(buttonLabel) + "</span></button>" +
+                "</div></div></div></div>"
+            );
+        }).join("");
+        grid.querySelectorAll(".service-item").forEach(function (card) {
+            var readMore = card.querySelector(".ksl-service-more");
+            if (!readMore) return;
+            var showPhoto = function () { card.classList.add("is-held"); };
+            var hidePhoto = function () { card.classList.remove("is-held"); };
+            readMore.addEventListener("mouseenter", showPhoto);
+            readMore.addEventListener("mouseleave", hidePhoto);
+            readMore.addEventListener("focus", showPhoto);
+            readMore.addEventListener("blur", hidePhoto);
+        });
+        if (window.KSL_SITE_IMAGES && typeof window.KSL_SITE_IMAGES.refresh === "function") {
+            window.KSL_SITE_IMAGES.refresh(grid);
+        }
+    }
+
     window.KSL_CONTENT.fetchJson("/api/public/settings", "data/settings.json").then(function (data) {
         if (!data) {
             revealSettings();
@@ -299,6 +358,7 @@
         applySocial(data.social);
         applyFooter(data.footer);
         applyAnnouncement(activeBanner(data.announcement));
+        applyWhatWeDo(data.what_we_do);
         revealSettings();
     }).catch(revealSettings);
 })();

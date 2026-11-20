@@ -2152,7 +2152,7 @@ body {
 }
 
 #about .about-split {
-    align-items: center;
+    align-items: start;
 }
 
 #about .about-copy {
@@ -2163,12 +2163,12 @@ body {
     content: "";
     position: absolute;
     left: 50%;
-    top: 50%;
-    width: min(280px, 62%);
+    top: 12%;
+    width: min(240px, 52%);
     aspect-ratio: 1;
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%);
     background: url("../img/ksl/logo-watermark.webp") center / contain no-repeat;
-    opacity: .05;
+    opacity: .045;
     pointer-events: none;
     z-index: 0;
 }
@@ -2178,23 +2178,44 @@ body {
     z-index: 1;
 }
 
-#about .about-copy p {
-    font-size: 1.0625rem;
-    line-height: 1.72;
+#about .about-copy-body {
+    display: grid;
+    gap: 1rem;
+    margin: 0 0 1.25rem;
+}
+
+#about .about-copy-body p,
+#about .about-copy > p {
+    margin: 0;
+    color: #3d4a63;
+    font-size: 1.05rem;
+    line-height: 1.75;
+    text-wrap: pretty;
+}
+
+#about .about-copy .fs-5 {
+    margin-bottom: .75rem;
+}
+
+#about .about-facts {
+    margin-top: .25rem;
 }
 
 @media (min-width: 992px) {
     #about .about-gallery.is-single {
-        height: 100%;
+        height: auto;
         min-height: 520px;
-        max-height: 680px;
+        max-height: none;
+        position: sticky;
+        top: 96px;
     }
 
     #about .about-copy {
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: flex-start;
         padding-left: clamp(12px, 2vw, 28px);
+        padding-top: 4px;
     }
 }
 

@@ -47,6 +47,7 @@ export const MODULE_ICONS: Record<ModuleKey, IconType> = {
 export function iconForNav(link: Pick<PortalNavLink, "kind" | "module">): IconType {
   if (link.module) return MODULE_ICONS[link.module];
   if (link.kind === "banner") return Megaphone;
+  if (link.kind === "what_we_do") return Wrench;
   if (link.kind === "board") return Users;
   if (link.kind === "images") return ImageIcon;
   if (link.kind === "drafts") return FilePenLine;

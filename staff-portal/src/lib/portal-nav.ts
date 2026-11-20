@@ -9,7 +9,7 @@ export type PortalAccess = {
   permissions: ModulePermission[];
 };
 
-export type PortalNavKind = "dashboard" | "module" | "banner" | "images" | "board" | "drafts" | "recycle" | "audit";
+export type PortalNavKind = "dashboard" | "module" | "banner" | "what_we_do" | "images" | "board" | "drafts" | "recycle" | "audit";
 
 export type PortalNavLink = {
   href: string;
@@ -84,6 +84,7 @@ export function portalNavGroups(access: PortalAccess): PortalNavGroup[] {
     if (group.label === "Website" && canSee(access, "site_settings")) {
       links.push(
         { href: "/banner", label: "Banner", kind: "banner", group: group.label },
+        { href: "/what-we-do", label: "What we do", kind: "what_we_do", group: group.label },
         { href: "/images", label: "Website images", kind: "images", group: group.label }
       );
     }

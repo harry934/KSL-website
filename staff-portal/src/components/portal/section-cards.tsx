@@ -8,6 +8,7 @@ import type { PortalNavLink } from "@/lib/portal-nav";
 
 function noteFor(link: PortalNavLink) {
   if (link.kind === "banner") return "Website announcement";
+  if (link.kind === "what_we_do") return "Home page What we do cards";
   if (link.kind === "board") return "Directors on the KSL Board page";
   if (link.kind === "images") return "Photos on the website";
   if (link.kind === "drafts") return "Saved by staff who cannot publish";

@@ -5,6 +5,7 @@ import {
   mergeSiteSettings,
   normalizeAnnouncement,
   normalizeMaintenance,
+  normalizeWhatWeDo,
   SITE_SETTING_KEYS,
   type AnnouncementSettings,
   type SiteSettingKey,
@@ -46,12 +47,21 @@ export async function POST(req: NextRequest) {
       ? normalizeAnnouncement(body.value as AnnouncementSettings, hasQueue)
       : key === "maintenance"
         ? normalizeMaintenance(body.value)
-        : body.value;
+        : key === "what_we_do"
+          ? normalizeWhatWeDo(body.value)
+          : body.value;
   const admin = createDatabaseClient();
   const plan = await editorSavePlan(admin, session, "site_settings", "site_settings", {
     settings: true,
     key,
-    title: key === "announcement" ? "Banner" : key === "maintenance" ? "Maintenance" : "Site settings",
+    title:
+      key === "announcement"
+        ? "Banner"
+        : key === "maintenance"
+          ? "Maintenance"
+          : key === "what_we_do"
+            ? "What we do"
+            : "Site settings",
     payload: { key, value },
   });
   if (plan.held) return plan.held;

@@ -213,6 +213,7 @@ function cleanPhoto(value: unknown) {
   if (url.length > 500 || /[\s"'()\\]/.test(url)) return "";
   if (/^https:\/\/[^/]+\/.+/i.test(url)) return url;
   if (url.startsWith("/") && !url.startsWith("//")) return url;
+  if (/^(img|storage)\//i.test(url) && !url.includes("..")) return url;
   return "";
 }
 
@@ -295,6 +296,25 @@ export function normalizeAnnouncement(input: Partial<AnnouncementSettings> | nul
   };
 }
 
+export type WhatWeDoCard = {
+  id: string;
+  title: string;
+  excerpt: string;
+  detail: string;
+  image: string;
+  imageSlot: string;
+  link: string;
+  linkLabel: string;
+  buttonLabel: string;
+  icon: string;
+  enabled: boolean;
+};
+
+export type WhatWeDoSettings = {
+  label: string;
+  cards: WhatWeDoCard[];
+};
+
 export type SiteSettings = {
   contact: ContactSettings;
   social: SocialSettings;
@@ -302,10 +322,139 @@ export type SiteSettings = {
   announcement: AnnouncementSettings;
   appearance: AppearanceSettings;
   maintenance: MaintenanceSettings;
+  what_we_do: WhatWeDoSettings;
 };
 
-export const SITE_SETTING_KEYS = ["contact", "social", "footer", "announcement", "appearance", "maintenance"] as const;
+export const SITE_SETTING_KEYS = ["contact", "social", "footer", "announcement", "appearance", "maintenance", "what_we_do"] as const;
 export type SiteSettingKey = (typeof SITE_SETTING_KEYS)[number];
+
+export const WHAT_WE_DO_ICONS = [
+  "ship",
+  "civil",
+  "heavy",
+  "mro",
+  "grp",
+] as const;
+
+export type WhatWeDoIcon = (typeof WHAT_WE_DO_ICONS)[number];
+
+export const DEFAULT_WHAT_WE_DO_CARDS: WhatWeDoCard[] = [
+  {
+    id: "ship-construction",
+    title: "Ship Construction",
+    excerpt: "Patrol craft, ferries, and support vessels, designed and built for the Kenya Navy, MDAs, and regional partners.",
+    detail:
+      "Kenya Shipyards Limited delivers end-to-end new construction from concept and class design through steel work, outfitting, and sea trials. Projects include naval patrol boats, passenger ferries, landing craft, and specialist vessels for ministries, departments and agencies with maritime assets. Builds are managed under ISO 9001 with quality checks at each stage. KSL yards at Mtongwe and Kisumu provide dry berths, fabrication, and skilled trades for GRP, aluminium and steel hulls.",
+    image: "img/ksl/yard.jpg",
+    imageSlot: "index.9-ship-construction",
+    link: "service.html",
+    linkLabel: "View all services",
+    buttonLabel: "Read More",
+    icon: "ship",
+    enabled: true,
+  },
+  {
+    id: "civil-modular",
+    title: "Civil and Modular Works",
+    excerpt: "Marine civil works, piers, jetties, linkspans, and modular structures that keep ports and yards operating.",
+    detail:
+      "Beyond the slipway, KSL engineers and installs shore-side infrastructure: reinforced quays, finger piers, linkspans, fender systems, and modular buildings for workshops and stores. Teams coordinate civil, structural, and electrical scopes so naval bases and commercial harbours gain reliable access for vessels and cargo. Modular approaches shorten on-site time while meeting defence and port authority standards.",
+    image: "img/ksl/linkspan.webp",
+    imageSlot: "index.10-civil-and-modular-works",
+    link: "service.html",
+    linkLabel: "View all services",
+    buttonLabel: "Read More",
+    icon: "civil",
+    enabled: true,
+  },
+  {
+    id: "heavy-engineering",
+    title: "Heavy Engineering",
+    excerpt: "Remanufacture, rehabilitation and fabrication of locomotives for Kenya Railways Corporation.",
+    detail:
+      "KSL applies shipyard-grade welding, machining, and project controls to heavy engineering on land. Capabilities include locomotive remanufacture, rehabilitation, refurbishment, structural steel for locomotives, and bespoke mechanical assemblies. The same quality systems used for naval contracts support ministries, parastatals, and private industry that need proven fabrication capacity in Eastern Africa.",
+    image: "img/ksl/mombasa.webp",
+    imageSlot: "index.11-heavy-engineering",
+    link: "service.html",
+    linkLabel: "View all services",
+    buttonLabel: "Read More",
+    icon: "heavy",
+    enabled: true,
+  },
+  {
+    id: "mro",
+    title: "Maintenance Repair and Overhaul",
+    excerpt: "Scheduled refits, emergency repairs, and dry docking to keep fleets mission ready and class compliant.",
+    detail:
+      "MRO services cover hull and superstructure repairs, corrosion protection, propulsion, auxiliary overhauls, shaft alignment, navigation and weapon systems support for naval vessels. Docking at Mtongwe and Kisumu includes blasting, coating, and steel renewal to class and military specifications. KSL plans maintenance windows with operators to minimise downtime while extending vessel life.",
+    image: "img/ksl/kisumu.webp",
+    imageSlot: "index.12-maintenance-repair-and-overhaul",
+    link: "service.html",
+    linkLabel: "View all services",
+    buttonLabel: "Read More",
+    icon: "mro",
+    enabled: true,
+  },
+  {
+    id: "grp-boats",
+    title: "GRP Boats",
+    excerpt: "Light, durable GRP hulls for patrol, fisheries, ambulance response, and county water transport.",
+    detail:
+      "Glass-reinforced plastic boats are moulded and finished in-house for roles that need speed, shallow draft, and low maintenance. Standard and custom layouts serve Kenya Navy auxiliaries, county governments, fisheries cooperatives, and emergency medical transport on lakes and coastal waters. KSL supports operators with spares, repairs, and training for safe day-to-day use.",
+    image: "img/ksl/fishing.jpg",
+    imageSlot: "index.13-grp-boats",
+    link: "products.html",
+    linkLabel: "Browse products",
+    buttonLabel: "Read More",
+    icon: "grp",
+    enabled: true,
+  },
+];
+
+export function blankWhatWeDoCard(): WhatWeDoCard {
+  return {
+    id: `card-${Date.now().toString(36)}`,
+    title: "",
+    excerpt: "",
+    detail: "",
+    image: "",
+    imageSlot: "",
+    link: "service.html",
+    linkLabel: "View all services",
+    buttonLabel: "Read More",
+    icon: "ship",
+    enabled: true,
+  };
+}
+
+function cleanWhatWeDoCard(raw: Partial<WhatWeDoCard> | null | undefined, index: number): WhatWeDoCard {
+  const source = raw ?? {};
+  const id =
+    typeof source.id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(source.id) ? source.id : `card-${index + 1}`;
+  const icon = WHAT_WE_DO_ICONS.includes(source.icon as WhatWeDoIcon) ? (source.icon as WhatWeDoIcon) : "ship";
+  return {
+    id,
+    title: String(source.title ?? "").trim().slice(0, 80),
+    excerpt: String(source.excerpt ?? "").trim().slice(0, 280),
+    detail: String(source.detail ?? "").trim().slice(0, 4000),
+    image: cleanPhoto(source.image),
+    imageSlot: String(source.imageSlot ?? "").trim().slice(0, 120),
+    link: cleanLink(source.link) || "service.html",
+    linkLabel: String(source.linkLabel ?? "View all services").trim().slice(0, 40) || "View all services",
+    buttonLabel: String(source.buttonLabel ?? "Read More").trim().slice(0, 30) || "Read More",
+    icon,
+    enabled: typeof source.enabled === "boolean" ? source.enabled : true,
+  };
+}
+
+export function normalizeWhatWeDo(input?: unknown): WhatWeDoSettings {
+  const raw = input && typeof input === "object" ? (input as Partial<WhatWeDoSettings>) : null;
+  const cards = Array.isArray(raw?.cards) ? raw.cards.map((card, index) => cleanWhatWeDoCard(card, index)).slice(0, 12) : [];
+  return {
+    label: String(raw?.label ?? "What we do").trim().slice(0, 40) || "What we do",
+    cards: cards.length ? cards : structuredClone(DEFAULT_WHAT_WE_DO_CARDS),
+  };
+}
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   contact: {
@@ -350,6 +499,10 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     enabled: false,
     endsAt: "",
     message: "",
+  },
+  what_we_do: {
+    label: "What we do",
+    cards: DEFAULT_WHAT_WE_DO_CARDS,
   },
 };
 
@@ -402,5 +555,7 @@ export function mergeSiteSettings(rows: { key: string; value: unknown }[]): Site
     hasQueue
   );
   merged.maintenance = normalizeMaintenance(merged.maintenance);
+  const rawWhatWeDo = rows.find((row) => row.key === "what_we_do")?.value;
+  merged.what_we_do = normalizeWhatWeDo(rawWhatWeDo ?? merged.what_we_do);
   return merged;
 }
