@@ -1434,6 +1434,32 @@ body {
   padding: 8px 12px;
 }
 
+.app-busy-chip-text {
+  max-width: min(52vw, 280px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-busy-chip-cancel {
+  margin: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #eef2f6;
+  color: #0b1f3a;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 6px 9px;
+}
+
+.app-busy-chip-cancel:hover,
+.app-busy-chip-cancel:focus-visible {
+  background: #e2e8f0;
+}
+
 .app-busy-chip-dot {
   width: 8px;
   height: 8px;

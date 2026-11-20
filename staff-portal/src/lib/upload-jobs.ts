@@ -1,9 +1,9 @@
 "use client";
 
 import type { ModuleKey } from "@/lib/modules";
-import { uploadFile, type UploadProgress } from "@/lib/upload-client";
+import { UploadCancelledError, uploadFile, type UploadProgress } from "@/lib/upload-client";
 
-export type UploadJobStatus = "uploading" | "finishing" | "done" | "error";
+export type UploadJobStatus = "uploading" | "finishing" | "done" | "error" | "cancelled";
 
 export type UploadJob = {
   id: string;
@@ -21,7 +21,9 @@ export type UploadJob = {
 
 type Listener = () => void;
 
-const jobs = new Map<string, UploadJob>();
+type InternalJob = UploadJob & { controller: AbortController };
+
+const jobs = new Map<string, InternalJob>();
 const listeners = new Set<Listener>();
 
 function emit() {
@@ -35,6 +37,11 @@ function patch(id: string, partial: Partial<UploadJob>) {
   emit();
 }
 
+function publicJob(job: InternalJob): UploadJob {
+  const { controller: _controller, ...rest } = job;
+  return rest;
+}
+
 export function subscribeUploadJobs(listener: Listener) {
   listeners.add(listener);
   return () => {
@@ -43,11 +50,14 @@ export function subscribeUploadJobs(listener: Listener) {
 }
 
 export function getUploadJobs() {
-  return Array.from(jobs.values()).sort((a, b) => b.startedAt - a.startedAt);
+  return Array.from(jobs.values())
+    .map(publicJob)
+    .sort((a, b) => b.startedAt - a.startedAt);
 }
 
 export function getUploadJob(id: string) {
-  return jobs.get(id) ?? null;
+  const job = jobs.get(id);
+  return job ? publicJob(job) : null;
 }
 
 export function getActiveUploadJobs(key?: string) {
@@ -64,11 +74,26 @@ export function clearUploadJob(id: string) {
 
 export function clearFinishedUploadJobs(key?: string) {
   for (const [id, job] of jobs) {
-    if (job.status !== "done" && job.status !== "error") continue;
+    if (job.status !== "done" && job.status !== "error" && job.status !== "cancelled") continue;
     if (key && job.key !== key) continue;
     jobs.delete(id);
   }
   emit();
+}
+
+/** Abort an in-flight upload. Safe to call more than once. */
+export function cancelUploadJob(id: string) {
+  const job = jobs.get(id);
+  if (!job) return;
+  if (job.status !== "uploading" && job.status !== "finishing") return;
+  patch(id, { status: "cancelled", label: "Cancelling upload…", error: "Upload cancelled." });
+  job.controller.abort();
+}
+
+export function cancelActiveUploadJobs(key?: string) {
+  for (const job of getActiveUploadJobs(key)) {
+    cancelUploadJob(job.id);
+  }
 }
 
 type StartUploadJobInput = {
@@ -89,7 +114,8 @@ export function startUploadJob(input: StartUploadJobInput) {
       ? crypto.randomUUID()
       : `upload-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-  const job: UploadJob = {
+  const controller = new AbortController();
+  const job: InternalJob = {
     id,
     key: input.key,
     module: input.module,
@@ -99,24 +125,43 @@ export function startUploadJob(input: StartUploadJobInput) {
     fileName: input.file.name,
     returnPath: input.returnPath,
     startedAt: Date.now(),
+    controller,
   };
   jobs.set(id, job);
   emit();
 
   const work = (async () => {
     try {
-      const uploaded = await uploadFile(input.module, input.file, input.extraHeaders, (state: UploadProgress) => {
-        patch(id, {
-          percent: state.percent,
-          label: `${input.label} ${state.percent}%`,
-          status: "uploading",
-        });
-      });
+      const uploaded = await uploadFile(
+        input.module,
+        input.file,
+        input.extraHeaders,
+        (state: UploadProgress) => {
+          const current = jobs.get(id);
+          if (!current || current.status === "cancelled") return;
+          patch(id, {
+            percent: state.percent,
+            label: `${input.label} ${state.percent}%`,
+            status: "uploading",
+          });
+        },
+        controller.signal
+      );
+      if (jobs.get(id)?.status === "cancelled" || controller.signal.aborted) {
+        throw new UploadCancelledError();
+      }
       patch(id, { percent: 100, label: "Saving…", status: "finishing", result: uploaded });
       if (input.afterUpload) await input.afterUpload(uploaded);
+      if (jobs.get(id)?.status === "cancelled" || controller.signal.aborted) {
+        throw new UploadCancelledError();
+      }
       patch(id, { percent: 100, label: "Uploaded", status: "done", result: uploaded });
       return uploaded;
     } catch (err) {
+      if (err instanceof UploadCancelledError || controller.signal.aborted || jobs.get(id)?.status === "cancelled") {
+        patch(id, { status: "cancelled", label: "Upload cancelled", error: "Upload cancelled." });
+        throw new UploadCancelledError();
+      }
       const message = err instanceof Error ? err.message : "The upload did not work. Please try again.";
       patch(id, { status: "error", error: message, label: message });
       throw err;

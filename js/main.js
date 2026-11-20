@@ -533,13 +533,28 @@
             });
         }
 
+        function clearCustomMedia() {
+            pauseCustom();
+            window.removeEventListener("resize", placeFramedClips);
+            if (customHost && customHost.parentNode) customHost.parentNode.removeChild(customHost);
+            if (customDots && customDots.parentNode) customDots.parentNode.removeChild(customDots);
+            customHost = null;
+            customDots = null;
+            customMedia = null;
+            customIndex = 0;
+            framedClips = [];
+            hero.classList.remove("has-custom-media");
+        }
+
         function takeCustom(items) {
-            if (!items || !items.length || customMedia) return;
+            if (!items || !items.length) return;
             var usable = items;
             if (reduceMotion.matches) {
                 usable = items.filter(function (item) { return item.kind === "image"; });
                 if (!usable.length) return;
             }
+            // Replace an existing carousel when CMS sends an updated hero list (e.g. new video slide).
+            if (customMedia) clearCustomMedia();
             customMedia = usable;
             hero.classList.add("has-custom-media");
             heroVideo.pause();

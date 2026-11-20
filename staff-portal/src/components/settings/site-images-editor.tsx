@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, Notice, Select } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
-import { sendJson, uploadFile } from "@/lib/upload-client";
+import { awaitingReview, sendJson, uploadFile } from "@/lib/upload-client";
 import {
+  cancelActiveUploadJobs,
   clearUploadJob,
   getActiveUploadJobs,
   getUploadJobs,
@@ -19,7 +20,7 @@ import { VideoCropDialog } from "@/components/ui/video-crop";
 import { VideoTrimDialog } from "@/components/ui/video-trim";
 import { heroFrameOffset, type HeroCrop, type HeroTrim } from "@/lib/hero-frame";
 import { siteAssetUrl } from "@/lib/site-url";
-import { HERO_MEDIA_LIMIT, HOME_HERO_SLOT, isImagePath, parseHeroMedia, type SiteImageSlot } from "@/lib/site-images";
+import { HERO_MEDIA_LIMIT, HOME_HERO_SLOT, isImagePath, isVideoPath, parseHeroMedia, type SiteImageSlot } from "@/lib/site-images";
 import { appPath } from "@/lib/base-path";
 
 type Override = { slot_id: string; source: string; public_url: string | null; storage_path: string | null; media?: unknown };
@@ -208,7 +209,9 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       }
 
       const finished = getUploadJobs().find(
-        (job) => job.key === HOME_HERO_SLOT && (job.status === "done" || job.status === "error")
+        (job) =>
+          job.key === HOME_HERO_SLOT &&
+          (job.status === "done" || job.status === "error" || job.status === "cancelled")
       );
       if (!finished) {
         setUploadProgress((current) => (current ? null : current));
@@ -216,8 +219,10 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       }
 
       if (finished.status === "done") {
-        toast("Home hero updated.");
+        toast("Video added to the home carousel.");
         void load();
+      } else if (finished.status === "cancelled") {
+        toast("Upload cancelled.");
       } else {
         toast(finished.error || "The video upload did not work. Please try again.", "error");
       }
@@ -415,6 +420,9 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
         if (!uploaded?.public_url) {
           throw new Error("The upload finished without a usable video address. Please try again.");
         }
+        if (!isVideoPath(uploaded.public_url) && !/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(uploaded.public_url)) {
+          throw new Error("The upload finished but the file was not saved as a playable video.");
+        }
         const data = await sendJson("/api/site-images", "GET");
         const rows: Override[] = data.overrides ?? [];
         const hero = heroFromOverride(rows.find((row) => row.slot_id === HOME_HERO_SLOT));
@@ -433,7 +441,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
             ...DEFAULT_HERO_COPY,
           },
         ];
-        await sendJson("/api/site-images", "POST", {
+        const saved = await sendJson("/api/site-images", "POST", {
           slotId: HOME_HERO_SLOT,
           source: "storage",
           items: next.map((item) => ({
@@ -448,10 +456,19 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
             buttonUrl: item.buttonUrl,
           })),
         });
+        if (awaitingReview(saved)) {
+          throw new Error(
+            "Video uploaded, but it is waiting for someone who can publish before it appears on the homepage carousel."
+          );
+        }
       },
     }).promise.catch(() => {
-      // Errors are stored on the job and surfaced by the upload-jobs subscription.
+      // Errors / cancel are stored on the job and surfaced by the upload-jobs subscription.
     });
+  }
+
+  function cancelHeroVideoUpload() {
+    cancelActiveUploadJobs(HOME_HERO_SLOT);
   }
 
   function moveHero(from: number, to: number) {
@@ -722,7 +739,12 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                         style={{ width: `${Math.max(4, uploadProgress.percent)}%` }}
                       />
                     </div>
-                    <p className="m-0 text-[12.5px] text-[#5b6775]">{uploadProgress.label}</p>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="m-0 text-[12.5px] text-[#5b6775]">{uploadProgress.label}</p>
+                      <Button type="button" variant="ghost" size="sm" onClick={cancelHeroVideoUpload}>
+                        Cancel upload
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

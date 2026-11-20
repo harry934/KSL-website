@@ -23,7 +23,15 @@ async function readError(res: Response) {
   return `The upload did not work (${res.status}). Please try again.`;
 }
 
+export class UploadCancelledError extends Error {
+  constructor(message = "Upload cancelled.") {
+    super(message);
+    this.name = "UploadCancelledError";
+  }
+}
+
 function networkUploadError(err: unknown) {
+  if (err instanceof UploadCancelledError) return err.message;
   if (err instanceof DOMException && err.name === "AbortError") {
     return "The upload timed out. Try again, or use a smaller file.";
   }
@@ -342,9 +350,11 @@ async function postFile(
   module: ModuleKey,
   file: File,
   extraHeaders?: Record<string, string>,
-  onProgress?: (progress: UploadProgress) => void
+  onProgress?: (progress: UploadProgress) => void,
+  externalSignal?: AbortSignal
 ) {
   const controller = new AbortController();
+  const unlinkExternal = externalSignal ? linkSignals(externalSignal, controller) : () => undefined;
   // Allow slow uplinks: assume ~16 KB/s floor, plus 2 minutes headroom; videos up to 20 min.
   const timeoutMs = Math.min(
     1_200_000,
@@ -359,9 +369,11 @@ async function postFile(
     }
     return await postFileChunked(module, file, extraHeaders, controller.signal, onProgress);
   } catch (err) {
+    if (externalSignal?.aborted) throw new UploadCancelledError();
     throw new Error(networkUploadError(err));
   } finally {
     window.clearTimeout(timer);
+    unlinkExternal();
   }
 }
 
@@ -369,9 +381,10 @@ export async function uploadFile(
   module: ModuleKey,
   file: File,
   extraHeaders?: Record<string, string>,
-  onProgress?: (progress: UploadProgress) => void
+  onProgress?: (progress: UploadProgress) => void,
+  signal?: AbortSignal
 ): Promise<{ public_url: string; storage_path: string; preview_url?: string }> {
-  return withBusy("Uploading…", () => postFile(module, file, extraHeaders, onProgress));
+  return withBusy("Uploading…", () => postFile(module, file, extraHeaders, onProgress, signal));
 }
 
 const BUSY_WORDS: Record<string, string> = { DELETE: "Deleting…", GET: "" };

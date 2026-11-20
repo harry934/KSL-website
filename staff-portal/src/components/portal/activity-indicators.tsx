@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { BUSY_EVENT, type BusyDetail } from "@/lib/upload-client";
-import { getActiveUploadJobs, subscribeUploadJobs } from "@/lib/upload-jobs";
+import { cancelUploadJob, getActiveUploadJobs, subscribeUploadJobs } from "@/lib/upload-jobs";
 
 /** Thin loading bar under the flag stripe. Button labels and ding toasts carry the save/delete feedback. */
 export function ActivityIndicators() {
@@ -13,6 +13,7 @@ export function ActivityIndicators() {
   const [busyCount, setBusyCount] = useState(0);
   const [busyMessage, setBusyMessage] = useState("");
   const [uploadLabel, setUploadLabel] = useState("");
+  const [uploadJobId, setUploadJobId] = useState<string | null>(null);
 
   useEffect(() => {
     setNavigating(false);
@@ -22,6 +23,7 @@ export function ActivityIndicators() {
     function syncUploads() {
       const active = getActiveUploadJobs()[0];
       setUploadLabel(active ? active.label : "");
+      setUploadJobId(active ? active.id : null);
     }
     syncUploads();
     return subscribeUploadJobs(syncUploads);
@@ -63,7 +65,16 @@ export function ActivityIndicators() {
       {chipMessage ? (
         <div className="app-busy-chip" role="status" aria-live="polite">
           <span className="app-busy-chip-dot" aria-hidden />
-          {chipMessage}
+          <span className="app-busy-chip-text">{chipMessage}</span>
+          {uploadJobId ? (
+            <button
+              type="button"
+              className="app-busy-chip-cancel"
+              onClick={() => cancelUploadJob(uploadJobId)}
+            >
+              Cancel
+            </button>
+          ) : null}
         </div>
       ) : null}
     </>
