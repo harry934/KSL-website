@@ -8,7 +8,7 @@ import { PUBLIC_CMS_CACHE } from "@/lib/public-cache";
 export async function GET() {
   const admin = createDatabaseClient();
   const [settingsRes, itemsRes] = await Promise.all([
-    admin.from("services_settings").select("intro, download_catalog, group_order").eq("id", "default").maybeSingle(),
+    admin.from("services_settings").select("*").eq("id", "default").maybeSingle(),
     admin.from("service_items").select("*").eq("status", "published").order("sort_order", { ascending: true }),
   ]);
 
@@ -19,15 +19,9 @@ export async function GET() {
     settingsRes.data as ServicesSettings | null,
     kept((itemsRes.data ?? []) as Array<ServiceRow & { deleted_at?: string | null }>)
   );
-  await Promise.all(payload.items.map(async (item) => {
-    if (Array.isArray(item.downloads)) {
-      item.downloads = await Promise.all(item.downloads.map((href) =>
-        typeof href === "string" ? openStoredUrl(href) : href
-      ));
-    }
-  }));
+  // item.downloads are catalog keys (e.g. "brochure"), not file paths — do not rewrite them.
   for (const item of Object.values(payload.downloadCatalog)) {
-    item.href = await openStoredUrl(item.href) || "";
+    item.href = (await openStoredUrl(item.href)) || "";
   }
   const safePayload = await signPayload(payload);
 

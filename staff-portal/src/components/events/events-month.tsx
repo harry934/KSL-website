@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { EventRow } from "@/lib/events";
+import { calendarDay, type EventRow } from "@/lib/events";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -35,7 +35,8 @@ export function EventsMonth({ items, onOpen }: { items: EventRow[]; onOpen: (ite
   const byDay = useMemo(() => {
     const map = new Map<string, EventRow[]>();
     for (const item of items) {
-      const key = String(item.event_date).slice(0, 10);
+      const key = calendarDay(item.event_date);
+      if (!key) continue;
       map.set(key, [...(map.get(key) ?? []), item]);
     }
     return map;

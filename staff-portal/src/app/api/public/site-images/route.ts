@@ -22,13 +22,13 @@ export async function GET() {
     buttonLabel: string;
     buttonUrl: string;
   }[] = [];
-  let heroMode: "video_and_images" | "images_only" = "video_and_images";
+  let heroMode: "video_only" | "video_and_images" | "images_only" = "video_and_images";
   for (const row of data ?? []) {
     if (row.slot_id === HOME_HERO_SLOT) {
       const bundle = parseHeroBundle(row.media);
+      heroMode = bundle.mode;
       const items = bundle.items.filter((item) => item.kind === "image");
       if (items.length) {
-        heroMode = bundle.mode;
         hero = items.map((item) => ({
           kind: "image" as const,
           url: item.public_url,
@@ -42,6 +42,8 @@ export async function GET() {
         images[HOME_HERO_SLOT] = hero[0].url;
         continue;
       }
+      // video_only (or empty slides) still publishes the chosen mode.
+      continue;
     }
     const url = safeImageUrl(row.public_url);
     if (row.slot_id && url && isImagePath(url)) images[row.slot_id] = url;

@@ -519,6 +519,12 @@
             } else {
                 beginPlayback();
             }
+            // In film+photos carousel, advance after a short dwell so photos are not stuck behind a long film.
+            if (count > 1) {
+                customTimer = window.setTimeout(function () {
+                    if (customIndex === shown) showCustom(shown + 1);
+                }, 10000);
+            }
         }
 
         function playCustom() {
@@ -565,76 +571,109 @@
             var mode = window.KSL_HERO_MODE || "video_and_images";
             if (payload && !Array.isArray(payload) && typeof payload === "object") {
                 list = payload.items;
-                if (payload.mode === "images_only" || payload.mode === "video_and_images") mode = payload.mode;
+                if (payload.mode === "images_only" || payload.mode === "video_and_images" || payload.mode === "video_only") {
+                    mode = payload.mode;
+                }
             }
+            window.KSL_HERO_MODE = mode;
             var photos = (list || []).filter(function (item) {
                 return item && item.kind === "image" && item.url;
             });
+            // Prefer photos-only when the visitor asked to reduce motion.
+            if (reduceMotion.matches && mode !== "video_only") mode = "images_only";
+
+            // Film only — clear any carousel and play the shipped hero video.
+            if (mode === "video_only" || (!photos.length && mode !== "images_only")) {
+                if (customMedia) clearCustomMedia();
+                heroMediaMode = "video_only";
+                sideBySide = false;
+                hero.classList.remove("has-side-carousel");
+                hero.classList.remove("is-images-only");
+                hero.classList.remove("has-custom-media");
+                if (!heroVideo.getAttribute("data-src") && !heroVideo.getAttribute("src")) {
+                    heroVideo.setAttribute("data-src", "/img/ksl/hero.mp4");
+                }
+                heroVideoAttached = false;
+                if (heroVideoEnabled && !reduceMotion.matches) playHeroVideo();
+                return;
+            }
+
             if (!photos.length) {
                 if (customMedia) clearCustomMedia();
                 return;
             }
-            // Prefer photos-only when the visitor asked to reduce motion.
-            if (reduceMotion.matches) mode = "images_only";
-            heroMediaMode = mode;
-            sideBySide = mode === "video_and_images";
-            var usable = photos.slice();
-            if (!usable.length) return;
+
             // Replace an existing carousel when CMS sends an updated hero list.
             if (customMedia) clearCustomMedia();
             heroMediaMode = mode;
-            sideBySide = mode === "video_and_images";
+            // Never show film and photos side by side — one full-bleed carousel only.
+            sideBySide = false;
+            hero.classList.remove("has-side-carousel");
+
+            var filmSrc = heroVideo.getAttribute("data-src") || heroVideo.getAttribute("src") || "/img/ksl/hero.mp4";
+            var usable = [];
+            if (mode === "video_and_images" && !reduceMotion.matches) {
+                usable.push({
+                    kind: "video",
+                    url: filmSrc,
+                    start: heroVideoStart,
+                    title: photos[0] && photos[0].title ? photos[0].title : "",
+                    subtitle: photos[0] && photos[0].subtitle ? photos[0].subtitle : "",
+                    buttonLabel: photos[0] && photos[0].buttonLabel ? photos[0].buttonLabel : "",
+                    buttonUrl: photos[0] && photos[0].buttonUrl ? photos[0].buttonUrl : ""
+                });
+            }
+            usable = usable.concat(photos);
             customMedia = usable;
             customIndex = 0;
             hero.classList.add("has-custom-media");
-            hero.classList.toggle("has-side-carousel", sideBySide);
-            hero.classList.toggle("is-images-only", !sideBySide);
+            hero.classList.toggle("is-images-only", mode === "images_only");
             hero.classList.remove("is-slide-ready");
             hero.classList.add("is-photo-ready");
-            if (sideBySide) {
-                // Keep the shipped film playing beside the photo carousel.
-                heroVideoAttached = false;
-                if (!heroVideo.getAttribute("data-src") && !heroVideo.getAttribute("src")) {
-                    heroVideo.setAttribute("data-src", "/img/ksl/hero.mp4");
-                }
-            } else {
-                heroVideo.pause();
-                heroVideo.removeAttribute("src");
-                heroVideo.removeAttribute("data-src");
-                heroVideoAttached = true;
-            }
+
+            // Hide the dedicated film element; carousel slides own playback.
+            heroVideo.pause();
+            heroVideo.removeAttribute("src");
+            heroVideo.removeAttribute("data-src");
+            heroVideoAttached = true;
+
             customHost = document.createElement("div");
-            customHost.className = "ksl-hero-slides" + (sideBySide ? " is-side" : "");
+            customHost.className = "ksl-hero-slides";
             customHost.setAttribute("aria-hidden", "true");
             usable.forEach(function (item, itemIndex) {
                 var slide = document.createElement("div");
                 slide.className = "ksl-hero-slide" + (itemIndex === 0 ? " is-active" : "");
-                var img = document.createElement("img");
-                img.alt = "";
-                img.src = item.url;
-                if (itemIndex === 0) {
-                    img.addEventListener("load", function () { hero.classList.add("is-slide-ready"); }, { once: true });
+                if (item.kind === "video") {
+                    var clip = document.createElement("video");
+                    clip.muted = true;
+                    clip.playsInline = true;
+                    clip.setAttribute("playsinline", "");
+                    clip.preload = "auto";
+                    clip.setAttribute("aria-hidden", "true");
+                    slide.appendChild(clip);
+                } else {
+                    var img = document.createElement("img");
+                    img.alt = "";
+                    img.src = item.url;
+                    if (itemIndex === 0) {
+                        img.addEventListener("load", function () { hero.classList.add("is-slide-ready"); }, { once: true });
+                    }
+                    slide.appendChild(img);
                 }
-                slide.appendChild(img);
                 customHost.appendChild(slide);
             });
-            // Keep the poster hold under slides; insert the carousel above it.
             var hold = hero.querySelector(".ksl-hero-hold");
-            if (sideBySide) {
-                hero.insertBefore(customHost, heroVideo.nextSibling || null);
-            } else {
-                hero.insertBefore(customHost, hold && hold.nextSibling ? hold.nextSibling : heroVideo);
-            }
+            hero.insertBefore(customHost, hold && hold.nextSibling ? hold.nextSibling : heroVideo);
             if (usable.length > 1) {
                 customDots = document.createElement("div");
-                customDots.className = "ksl-hero-dots" + (sideBySide ? " is-side" : "");
+                customDots.className = "ksl-hero-dots";
                 customDots.setAttribute("role", "group");
-                customDots.setAttribute("aria-label", "Hero photos");
+                customDots.setAttribute("aria-label", "Hero slides");
                 usable.forEach(function (item, itemIndex) {
                     var dot = document.createElement("button");
                     dot.type = "button";
                     dot.className = "ksl-hero-dot" + (itemIndex === 0 ? " is-active" : "");
-                    dot.setAttribute("aria-label", "Show photo " + (itemIndex + 1));
+                    dot.setAttribute("aria-label", "Show slide " + (itemIndex + 1));
                     if (itemIndex === 0) dot.setAttribute("aria-current", "true");
                     dot.addEventListener("click", function () {
                         customPlaying = true;
@@ -644,19 +683,20 @@
                 });
                 hero.appendChild(customDots);
             }
-            if (sideBySide && heroVideoEnabled && !reduceMotion.matches) {
-                playHeroVideo();
-                playCustom();
-            } else if (heroVideoEnabled && !reduceMotion.matches) {
+            if (heroVideoEnabled && !reduceMotion.matches) {
                 playCustom();
             } else {
                 showCustom(0);
             }
         }
 
-        var attachHeroVideo = function () {
+        var attachHeroVideo = function (forPlayback) {
             // In photos-only mode the film stays off; side-by-side keeps the film attached.
-            if ((customMedia && !sideBySide) || !heroVideoEnabled || heroVideoAttached || heroSlowNet) {
+            if ((customMedia && !sideBySide) || heroVideoAttached || heroSlowNet) {
+                return;
+            }
+            // Always buffer early (including during intro). Only gate playback separately.
+            if (forPlayback && !heroVideoEnabled) {
                 return;
             }
             heroVideoAttached = true;
@@ -666,6 +706,7 @@
                     src = "/" + src.replace(/^\.\//, "");
                 }
                 heroVideo.src = src;
+                heroVideo.setAttribute("preload", "auto");
                 heroVideo.load();
             }
             if (heroVideo.readyState >= 1 && heroVideoStart > 0) {
@@ -679,9 +720,11 @@
                 return;
             }
             if (!heroVideoEnabled) {
+                // Keep buffering while the intro covers the hero.
+                attachHeroVideo(false);
                 return;
             }
-            attachHeroVideo();
+            attachHeroVideo(true);
             var playPromise = heroVideo.play();
             if (playPromise && typeof playPromise.catch === "function") {
                 playPromise.catch(function () { });
@@ -710,14 +753,12 @@
                     }
                 });
             }, { threshold: 0.01 });
-            if (heroVideoEnabled) {
-                // Kick the film buffer immediately on the homepage — do not wait for scroll.
-                attachHeroVideo();
-                heroMediaObserver.observe(hero);
-                playHeroVideo();
-            }
-        } else if (heroVideoEnabled) {
-            attachHeroVideo();
+            // Start buffering immediately (even under the intro). Playback waits for enableHeroVideo.
+            attachHeroVideo(false);
+            heroMediaObserver.observe(hero);
+            playHeroVideo();
+        } else {
+            attachHeroVideo(false);
             playHeroVideo();
         }
 
@@ -754,10 +795,10 @@
         window.addEventListener("ksl-hero-media", function (event) {
             takeCustom(event.detail);
         });
-        if (window.KSL_HERO_MEDIA) {
+        if (window.KSL_HERO_MEDIA || window.KSL_HERO_MODE === "video_only") {
             takeCustom({
-                items: window.KSL_HERO_MEDIA,
-                mode: window.KSL_HERO_MODE === "images_only" ? "images_only" : "video_and_images"
+                items: window.KSL_HERO_MEDIA || [],
+                mode: window.KSL_HERO_MODE || "video_and_images"
             });
         }
     }
@@ -1337,6 +1378,17 @@
             document.body.style.overflow = "";
             document.body.style.paddingRight = "";
         });
+        // Prefetch services catalogue so popup buttons and related downloads are ready.
+        if (!window.kslServicesCatalog && window.KSL_CONTENT && window.KSL_CONTENT.fetchJson) {
+            window.KSL_CONTENT.fetchJson("/api/public/services", "data/services.json").then(function (data) {
+                if (!data) return;
+                window.kslServicesCatalog = data;
+                window.kslServicesBySlug = window.kslServicesBySlug || {};
+                (data.items || []).forEach(function (entry) {
+                    if (entry && entry.slug) window.kslServicesBySlug[entry.slug] = entry;
+                });
+            }).catch(function () { });
+        }
     }
     var showKslServiceModal = function (trigger, cardOverride) {
         if (!serviceModalEl || !trigger) {
@@ -1350,6 +1402,8 @@
         var serviceModalSummary = document.getElementById("kslServiceModalSummary");
         var serviceModalBody = document.getElementById("kslServiceModalBody");
         var serviceModalLink = document.getElementById("kslServiceModalLink");
+        var serviceModalSecondary = document.getElementById("kslServiceModalSecondary");
+        var serviceModalTertiary = document.getElementById("kslServiceModalTertiary");
         var serviceModalImg = document.getElementById("kslServiceModalImg");
         var serviceModalDownloads = document.getElementById("kslServiceModalDownloads");
         var serviceModalDownloadsList = document.getElementById("kslServiceModalDownloadsList");
@@ -1360,6 +1414,33 @@
         var slug = trigger.getAttribute("data-ksl-slug");
         var catalog = window.kslServicesCatalog;
         var item = slug && window.kslServicesBySlug ? window.kslServicesBySlug[slug] : null;
+        var defaults = {
+            primary: { label: "Request a quote", href: "contact.html" },
+            secondary: { label: "View projects", href: "project.html" },
+            tertiary: { label: "All corporate documents", href: "downloads.html" }
+        };
+        var actions;
+        if (item && item.actions) {
+            actions = item.actions;
+        } else if (item) {
+            actions = (catalog && catalog.modalActions) || defaults;
+        } else {
+            // Home What we do cards: only buttons set on the card (all optional).
+            actions = {
+                primary: {
+                    label: trigger.getAttribute("data-ksl-link-label") || "",
+                    href: trigger.getAttribute("data-ksl-link") || ""
+                },
+                secondary: {
+                    label: trigger.getAttribute("data-ksl-link-label-2") || "",
+                    href: trigger.getAttribute("data-ksl-link-2") || ""
+                },
+                tertiary: {
+                    label: trigger.getAttribute("data-ksl-link-label-3") || "",
+                    href: trigger.getAttribute("data-ksl-link-3") || ""
+                }
+            };
+        }
 
         if (item) {
             title = item.title || title;
@@ -1408,10 +1489,33 @@
         if (scrollRegion) {
             scrollRegion.scrollTop = 0;
         }
-        if (serviceModalLink) {
-            serviceModalLink.href = trigger.getAttribute("data-ksl-link") || "contact.html";
-            serviceModalLink.textContent = trigger.getAttribute("data-ksl-link-label") || "Request a quote";
+
+        function applyModalAction(node, slot) {
+            if (!node) return;
+            var conf = actions[slot] || {};
+            var label = conf && conf.label ? String(conf.label).trim() : "";
+            var href = conf && conf.href ? String(conf.href).trim() : "";
+            // Empty label = optional button hidden.
+            if (!label) {
+                node.textContent = "";
+                node.removeAttribute("href");
+                node.classList.add("d-none");
+                return;
+            }
+            if (window.KSL_SAFE_LINK) {
+                href = window.KSL_SAFE_LINK(href) || href || "#";
+            } else if (!href) {
+                href = "#";
+            }
+            node.href = href;
+            node.textContent = label;
+            node.classList.remove("d-none");
         }
+
+        applyModalAction(serviceModalLink, "primary");
+        applyModalAction(serviceModalSecondary, "secondary");
+        applyModalAction(serviceModalTertiary, "tertiary");
+
         if (serviceModalImg && imgNode && !(item && item.image)) {
             serviceModalImg.src = imgNode.getAttribute("src") || "";
             serviceModalImg.alt = imgNode.getAttribute("alt") || title;
@@ -1419,18 +1523,34 @@
 
         if (serviceModalDownloads && serviceModalDownloadsList) {
             serviceModalDownloadsList.innerHTML = "";
-            var downloadIds = item && item.downloads ? item.downloads : [];
+            var downloadIds = item && Array.isArray(item.downloads) ? item.downloads : [];
             var downloadCatalog = catalog && catalog.downloadCatalog ? catalog.downloadCatalog : {};
-            if (downloadIds.length) {
-                downloadIds.forEach(function (id) {
-                    var file = downloadCatalog[id];
-                    if (!file) {
-                        return;
+            var catalogKeys = Object.keys(downloadCatalog);
+            var shown = 0;
+
+            function resolveDownload(id) {
+                if (!id || typeof id !== "string") return null;
+                if (downloadCatalog[id]) return downloadCatalog[id];
+                var norm = id.replace(/\s+/g, "-").toLowerCase();
+                if (downloadCatalog[norm]) return downloadCatalog[norm];
+                for (var i = 0; i < catalogKeys.length; i++) {
+                    var key = catalogKeys[i];
+                    if (String(key).replace(/\s+/g, "-").toLowerCase() === norm) {
+                        return downloadCatalog[key];
                     }
-                    var li = document.createElement("li");
-                    li.innerHTML = window.kslDocButton(file.href, file.title);
-                    serviceModalDownloadsList.appendChild(li);
-                });
+                }
+                return null;
+            }
+
+            downloadIds.forEach(function (id) {
+                var file = resolveDownload(id);
+                if (!file || !file.href) return;
+                var li = document.createElement("li");
+                li.innerHTML = window.kslDocButton(file.href, file.title || "Download");
+                serviceModalDownloadsList.appendChild(li);
+                shown += 1;
+            });
+            if (shown) {
                 serviceModalDownloads.classList.remove("d-none");
             } else {
                 serviceModalDownloads.classList.add("d-none");

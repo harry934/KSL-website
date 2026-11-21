@@ -57,15 +57,18 @@
     var plus = '<svg class="ksl-ico text-primary" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
     var go = '<svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>';
 
-    function cardHtml(item) {
+    function cardHtml(item, actions) {
         var image = safeUrl(item.image);
+        var primary = (actions && actions.primary) || {};
+        var link = safeUrl(primary.href) || "contact.html";
+        var linkLabel = primary.label || "Request a quote";
         return '<div class="col-lg-4 col-md-6">' +
             '<div class="service-item rounded d-flex h-100">' +
             '<div class="service-img rounded">' + (image ? '<img class="img-fluid" src="' + escapeHtml(image) + '" alt="' + escapeHtml(item.title || "") + '">' : "") + "</div>" +
             '<div class="service-text rounded p-5">' +
             '<h4 class="mb-3">' + escapeHtml(item.title || "") + "</h4>" +
             '<p class="mb-0 ksl-service-excerpt">' + escapeHtml(item.excerpt || "") + "</p>" +
-            '<div class="ksl-service-foot"><button type="button" class="btn px-3 ksl-service-more" aria-haspopup="dialog" data-ksl-slug="' + escapeHtml(item.slug || "") + '" data-ksl-title="' + escapeHtml(item.title || "") + '" data-ksl-link="contact.html" data-ksl-link-label="Request a quote">' + plus + '<span class="ksl-service-more-text">Read More</span></button></div>' +
+            '<div class="ksl-service-foot"><button type="button" class="btn px-3 ksl-service-more" aria-haspopup="dialog" data-ksl-slug="' + escapeHtml(item.slug || "") + '" data-ksl-title="' + escapeHtml(item.title || "") + '" data-ksl-link="' + escapeHtml(link) + '" data-ksl-link-label="' + escapeHtml(linkLabel) + '">' + plus + '<span class="ksl-service-more-text">Read More</span></button></div>' +
             "</div></div></div>";
     }
 
@@ -127,7 +130,9 @@
             section.setAttribute("role", "tabpanel");
             section.setAttribute("aria-labelledby", "tab-" + id);
             if (index !== 0) section.hidden = true;
-            section.innerHTML = '<h2 class="ksl-service-category visually-hidden">' + escapeHtml(group.name) + '</h2><div class="row g-4 ksl-services-grid">' + group.items.map(cardHtml).join("") + "</div>";
+            section.innerHTML = '<h2 class="ksl-service-category visually-hidden">' + escapeHtml(group.name) + '</h2><div class="row g-4 ksl-services-grid">' + group.items.map(function (item) {
+                return cardHtml(item, data && data.modalActions);
+            }).join("") + "</div>";
             host.appendChild(section);
         });
         if (window.kslBindServiceTabs) window.kslBindServiceTabs();

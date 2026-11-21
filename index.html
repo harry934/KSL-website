@@ -38,6 +38,7 @@
     <script src="js/intro-boot.js?v=20261116-4"></script>
     <link href="css/intro-boot.css?v=20261107-1" rel="stylesheet">
     <link rel="preload" as="image" href="img/ksl/mombasa.webp" fetchpriority="high">
+    <link rel="preload" as="video" href="img/ksl/hero.mp4" type="video/mp4">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700&family=Open+Sans:wght@400;600&family=Poppins:wght@500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
@@ -48,7 +49,7 @@
     <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
-    <link href="css/ksl.css?v=20261121-heroside" rel="stylesheet">
+    <link href="css/ksl.css?v=20261121-events" rel="stylesheet">
     <script src="js/intro.js?v=20261116-1"></script>
     <script src="js/portal-host.js?v=20261111-1"></script>
     <script src="js/maintenance.js?v=20261116-5"></script>
@@ -607,8 +608,9 @@
 
     <div class="container-xxl ksl-events-band">
         <div class="container">
+            <p class="ksl-events-kicker">Upcoming gatherings</p>
             <h2 class="ksl-events-title">Events</h2>
-            <div id="ksl-home-events" data-ksl-await="page">
+            <div id="ksl-home-events" class="ksl-event-pack-grid" data-ksl-await="page">
                 <section class="ksl-empty-state" role="status"></section>
             </div>
         </div>
@@ -769,9 +771,9 @@
                             </div>
                         </div>
                         <div class="ksl-service-modal-actions">
-                            <a class="btn btn-primary" id="kslServiceModalLink" href="service.html">View all services</a>
-                            <a class="btn btn-outline-primary" href="contact.html">Request a quote</a>
-                            <a class="btn btn-link" href="downloads.html">All corporate documents</a>
+                            <a class="btn btn-primary" id="kslServiceModalLink" href="contact.html">Request a quote</a>
+                            <a class="btn btn-outline-primary" id="kslServiceModalSecondary" href="project.html">View projects</a>
+                            <a class="btn btn-link" id="kslServiceModalTertiary" href="downloads.html">All corporate documents</a>
                         </div>
                     </div>
                 </div>

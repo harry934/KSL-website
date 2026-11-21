@@ -237,13 +237,20 @@
                 try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Nairobi" }).format(new Date()); }
                 catch (e) { return new Date().toISOString().slice(0, 10); }
             })();
+            function day(value) {
+                if (window.KSL_EVENTS && window.KSL_EVENTS.calendarDay) return window.KSL_EVENTS.calendarDay(value);
+                var match = String(value || "").match(/^(\d{4}-\d{2}-\d{2})/);
+                return match ? match[1] : "";
+            }
             var all = (data.upcoming || []).concat(data.past || []).filter(function (item) {
-                return String(item.date || "") >= today;
+                return Boolean(day(item && item.date));
             }).sort(function (a, b) {
-                return String(b.date || "").localeCompare(String(a.date || ""));
+                return day(b.date).localeCompare(day(a.date));
             });
-            var evt = slug ? all.filter(function (e) { return e.slug === slug; })[0] : all[0];
-            if (evt && String(evt.date || "") >= today) {
+            var evt = slug
+                ? all.filter(function (e) { return e.slug === slug; })[0]
+                : all.filter(function (e) { return day(e.date) >= today; })[0] || all[0];
+            if (evt) {
                 render(evt, all);
             } else {
                 renderNotFound();

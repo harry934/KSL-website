@@ -43,21 +43,17 @@ export async function POST(req: NextRequest) {
   if (plan.held) return plan.held;
   const slug = (body.slug || slugify(body.title || "event")).trim();
   const status = plan.status;
-  const imageAlt = String(body.image_alt ?? "").trim();
-  if (status === "published" && String(body.image_path ?? "").trim() && !imageAlt) {
-    return NextResponse.json(
-      { error: "Write a short description of the cover photo before the event can go on the website." },
-      { status: 400 }
-    );
-  }
+  const title = String(body.title ?? "").trim();
+  // Auto-fill alt text from the title so a missing caption cannot hide a published event.
+  const imageAlt = String(body.image_alt ?? "").trim() || (body.image_path ? title : "");
   const row = {
     id: body.id || crypto.randomUUID(),
     slug,
     title: body.title,
     theme: body.theme ?? null,
-    event_date: body.event_date,
-    time_start: body.time_start ?? null,
-    time_end: body.time_end ?? null,
+    event_date: String(body.event_date ?? "").slice(0, 10),
+    time_start: body.time_start ? String(body.time_start).slice(0, 5) : null,
+    time_end: body.time_end ? String(body.time_end).slice(0, 5) : null,
     timezone: body.timezone ?? "Africa/Nairobi",
     venue: body.venue ?? null,
     description: body.description ?? null,
@@ -66,7 +62,7 @@ export async function POST(req: NextRequest) {
     image_alt: imageAlt || null,
     body_html: body.body_html ? sanitizeRichHtml(body.body_html) : null,
     status,
-    go_live_on: body.go_live_on ? String(body.go_live_on).slice(0, 10) : null,
+    go_live_on: body.go_live_on ? String(body.go_live_on).slice(0, 10) || null : null,
     published_at: status === "published" ? new Date().toISOString() : null,
     updated_by: session.userId,
   };

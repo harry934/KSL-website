@@ -215,43 +215,60 @@ export function WhatWeDoEditor({ canEdit }: { canEdit: boolean }) {
                           disabled={!canEdit}
                         />
                       </Field>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <Field label="Button label">
-                          <Input
-                            value={card.buttonLabel}
-                            onChange={(e) => patchCard(card.id, { buttonLabel: e.target.value })}
-                            disabled={!canEdit}
-                          />
-                        </Field>
-                        <Field label="Link label" hint="Inside the detail popup.">
-                          <Input
-                            value={card.linkLabel}
-                            onChange={(e) => patchCard(card.id, { linkLabel: e.target.value })}
-                            disabled={!canEdit}
-                          />
-                        </Field>
-                      </div>
-                      <Field label="Link page">
-                        <Select
-                          value={PAGE_OPTIONS.some((option) => option.value === card.link) ? card.link : ""}
-                          onChange={(e) => {
-                            if (e.target.value) patchCard(card.id, { link: e.target.value });
-                          }}
+                      <Field label="Card button label" hint="The Read More control on the card face.">
+                        <Input
+                          value={card.buttonLabel}
+                          onChange={(e) => patchCard(card.id, { buttonLabel: e.target.value })}
                           disabled={!canEdit}
-                        >
-                          <option value="">Custom path…</option>
-                          {PAGE_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </Select>
+                        />
                       </Field>
-                      {!PAGE_OPTIONS.some((option) => option.value === card.link) && (
-                        <Field label="Custom link">
-                          <Input value={card.link} onChange={(e) => patchCard(card.id, { link: e.target.value })} disabled={!canEdit} />
-                        </Field>
-                      )}
+                      <FormSection title="Popup buttons" description="Optional. Leave a label blank to hide that button in the Read More popup.">
+                        <div className="grid gap-4 sm:grid-cols-3">
+                          {(
+                            [
+                              { labelKey: "linkLabel" as const, linkKey: "link" as const, title: "Main button" },
+                              { labelKey: "secondaryLabel" as const, linkKey: "secondaryLink" as const, title: "Second button" },
+                              { labelKey: "tertiaryLabel" as const, linkKey: "tertiaryLink" as const, title: "Text link" },
+                            ] as const
+                          ).map((slot) => (
+                            <div key={slot.labelKey} className="space-y-2 rounded-lg border border-[#e4e9ef] p-3">
+                              <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5b6775]">{slot.title}</p>
+                              <Field label="Label">
+                                <Input
+                                  value={card[slot.labelKey]}
+                                  onChange={(e) => patchCard(card.id, { [slot.labelKey]: e.target.value })}
+                                  disabled={!canEdit}
+                                  placeholder="Leave blank to hide"
+                                />
+                              </Field>
+                              <Field label="Goes to">
+                                <Select
+                                  value={PAGE_OPTIONS.some((option) => option.value === card[slot.linkKey]) ? card[slot.linkKey] : ""}
+                                  onChange={(e) => patchCard(card.id, { [slot.linkKey]: e.target.value })}
+                                  disabled={!canEdit}
+                                >
+                                  <option value="">Custom path…</option>
+                                  {PAGE_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </Select>
+                              </Field>
+                              {!PAGE_OPTIONS.some((option) => option.value === card[slot.linkKey]) && (
+                                <Field label="Custom link">
+                                  <Input
+                                    value={card[slot.linkKey]}
+                                    onChange={(e) => patchCard(card.id, { [slot.linkKey]: e.target.value })}
+                                    disabled={!canEdit}
+                                    placeholder="e.g. contact.html"
+                                  />
+                                </Field>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </FormSection>
                     </div>
                     <div className="min-w-0 space-y-4">
                       <FormSection title="Visibility">

@@ -319,8 +319,12 @@
             var image = customImage || "img/ksl/yard.jpg";
             // Only use the legacy site-image slot when no custom photo is set.
             var slot = !customImage && card.imageSlot ? ' data-ksl-image="' + escapeHtml(card.imageSlot) + '"' : "";
-            var link = safeUrl(card.link) || "service.html";
-            var linkLabel = card.linkLabel || "View all services";
+            var link = safeUrl(card.link) || "";
+            var linkLabel = card.linkLabel || "";
+            var link2 = safeUrl(card.secondaryLink) || "";
+            var linkLabel2 = card.secondaryLabel || "";
+            var link3 = safeUrl(card.tertiaryLink) || "";
+            var linkLabel3 = card.tertiaryLabel || "";
             var buttonLabel = card.buttonLabel || "Read More";
             return (
                 '<div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="' + delays[index % delays.length] + '">' +
@@ -335,7 +339,11 @@
                 ' data-ksl-title="' + escapeAttr(card.title) + '"' +
                 ' data-ksl-detail="' + escapeAttr(card.detail || "") + '"' +
                 ' data-ksl-link="' + escapeAttr(link) + '"' +
-                ' data-ksl-link-label="' + escapeAttr(linkLabel) + '">' +
+                ' data-ksl-link-label="' + escapeAttr(linkLabel) + '"' +
+                ' data-ksl-link-2="' + escapeAttr(link2) + '"' +
+                ' data-ksl-link-label-2="' + escapeAttr(linkLabel2) + '"' +
+                ' data-ksl-link-3="' + escapeAttr(link3) + '"' +
+                ' data-ksl-link-label-3="' + escapeAttr(linkLabel3) + '">' +
                 '<svg class="ksl-ico text-primary" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>' +
                 '<span class="ksl-service-more-text">' + escapeHtml(buttonLabel) + "</span></button>" +
                 "</div></div></div></div>"

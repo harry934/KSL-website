@@ -26,8 +26,13 @@ export function isSiteImageSlot(id: string) {
 export const HOME_HERO_SLOT = "chrome.home-hero";
 export const HERO_MEDIA_LIMIT = 8;
 
-/** How the homepage pairs the shipped film with CMS photos. */
-export type HeroMode = "video_and_images" | "images_only";
+/**
+ * Homepage hero display:
+ * - video_only — film only
+ * - video_and_images — one carousel that rotates film then photos (not side-by-side)
+ * - images_only — photos carousel only
+ */
+export type HeroMode = "video_only" | "video_and_images" | "images_only";
 
 export type HeroMediaItem = {
   kind: "image" | "video";
@@ -47,7 +52,9 @@ export type HeroBundle = {
 };
 
 export function parseHeroMode(value: unknown): HeroMode {
-  return value === "images_only" ? "images_only" : "video_and_images";
+  if (value === "images_only") return "images_only";
+  if (value === "video_only") return "video_only";
+  return "video_and_images";
 }
 
 /** Stored `media` may be a legacy photo array or `{ mode, items }`. */

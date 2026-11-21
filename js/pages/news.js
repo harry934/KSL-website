@@ -104,23 +104,32 @@
         }
         var today = todayNairobi();
 
+        function eventDay(value) {
+            if (window.KSL_EVENTS && window.KSL_EVENTS.calendarDay) return window.KSL_EVENTS.calendarDay(value);
+            var match = String(value || "").match(/^(\d{4}-\d{2}-\d{2})/);
+            return match ? match[1] : "";
+        }
+
         function eventItem(item) {
-            var when = item.date ? formatDate(item.date) : "";
+            var day = eventDay(item.date);
+            var when = day ? formatDate(day) : "";
             if (item.timeStart) {
                 var hm = item.timeStart.split(":");
                 var h = parseInt(hm[0], 10);
                 when += (when ? " · " : "") + ((h % 12) || 12) + ":" + (hm[1] || "00") + (h >= 12 ? " pm" : " am");
             }
             if (item.venue) when += (when ? " · " : "") + item.venue;
+            var upcoming = day && day >= today;
             return {
                 href: "event.html?slug=" + encodeURIComponent(item.slug),
                 image: item.image || "img/ksl/yard.jpg",
                 standIn: !item.image,
-                label: String(item.date || "") >= today ? "Event" : "Past event",
+                label: upcoming ? "Event" : "Past event",
                 title: item.title,
                 imageAlt: item.imageAlt || item.title || "",
                 meta: when || item.summary || "",
-                sortDate: item.date || "",
+                // Upcoming first (prefix 1), then past (prefix 0), newest/soonest within each group.
+                sortDate: (upcoming ? "1-" : "0-") + day,
                 excerpt: item.description || item.summary || item.theme || "",
                 raw: item
             };
@@ -202,13 +211,14 @@
             var slice = filtered.slice(start, start + PAGE_SIZE);
             if (activeTab === "events" && window.KSL_EVENTS) {
                 grid.classList.add("ksl-count-grid");
+                grid.classList.add("ksl-event-pack-grid");
                 grid.innerHTML = slice.map(function (item) {
-                    if (item.raw && String(item.sortDate || "") >= today) return window.KSL_EVENTS.card(item.raw);
-                    return feedCard(item);
+                    return item.raw ? window.KSL_EVENTS.card(item.raw) : feedCard(item);
                 }).join("");
                 window.KSL_EVENTS.watch(grid);
             } else {
                 grid.classList.remove("ksl-count-grid");
+                grid.classList.remove("ksl-event-pack-grid");
                 grid.innerHTML = slice.map(feedCard).join("");
             }
             renderPages(filtered.length);
@@ -235,8 +245,9 @@
                 var news = pair[0];
                 var events = pair[1];
                 collections.news = sortByDate((Array.isArray(news.items) ? news.items : []).map(newsItem));
-                collections.events = sortByDate((events.upcoming || []).filter(function (item) {
-                    return String(item.date || "") >= today;
+                var allEvents = (events && events.upcoming || []).concat(events && events.past || []);
+                collections.events = sortByDate(allEvents.filter(function (item) {
+                    return Boolean(eventDay(item && item.date));
                 }).map(eventItem));
                 renderActive();
             }).catch(function () {

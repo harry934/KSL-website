@@ -16,3 +16,4 @@ staff-portal/node_modules/
 *.key
 !deploy/vps/nginx/*.conf
 staff-portal/.env.production
+img/ksl/hero-original.mp4

@@ -10,22 +10,33 @@
         } catch (e) {
             today = new Date().toISOString().slice(0, 10);
         }
+        function day(value) {
+            if (window.KSL_EVENTS && window.KSL_EVENTS.calendarDay) return window.KSL_EVENTS.calendarDay(value);
+            var match = String(value || "").match(/^(\d{4}-\d{2}-\d{2})/);
+            return match ? match[1] : "";
+        }
         window.KSL_CONTENT.fetchJson("/api/public/events", "data/events.json").then(function (data) {
-            var upcoming = data ? ((data.upcoming || []).concat(data.past || [])).filter(function (item) {
-                return String(item.date || "") >= today;
+            var list = data ? (data.upcoming || []).concat(data.past || []) : [];
+            var upcoming = list.filter(function (item) {
+                var d = day(item && item.date);
+                return d && d >= today;
             }).sort(function (a, b) {
-                return String(a.date || "").localeCompare(String(b.date || ""));
-            }).slice(0, 3) : [];
-            if (upcoming.length) {
+                return day(a.date).localeCompare(day(b.date));
+            }).slice(0, 3);
+            if (upcoming.length && window.KSL_EVENTS) {
+                eventsMount.classList.add("ksl-event-pack-grid");
                 eventsMount.innerHTML = upcoming.map(function (item) {
-                    return window.KSL_EVENTS ? window.KSL_EVENTS.card(item) : "";
+                    return window.KSL_EVENTS.card(item);
                 }).join("");
-                if (window.KSL_EVENTS) window.KSL_EVENTS.watch(eventsMount);
+                window.KSL_EVENTS.watch(eventsMount);
+            } else if (upcoming.length) {
+                eventsMount.innerHTML = '<section class="ksl-empty-state" role="status"><h3>Events are loading</h3><p>Refresh the page in a moment.</p></section>';
             } else {
-                eventsMount.innerHTML = '<section class="ksl-empty-state" role="status"><h3>No events available</h3><p>There are no upcoming events to show.</p></section>';
+                eventsMount.innerHTML = '<section class="ksl-empty-state" role="status"><h3>No upcoming events</h3><p>Published events with a date from today onward will appear here.</p><div class="ksl-empty-state-actions"><a class="btn btn-outline-primary" href="news.html?tab=events">Browse events</a></div></section>';
             }
             if (window.KSL_LIVE) window.KSL_LIVE.show(eventsMount);
         }).catch(function () {
+            eventsMount.innerHTML = '<section class="ksl-empty-state" role="status"><h3>Events unavailable</h3><p>Could not reach the events list. Try again shortly.</p></section>';
             if (window.KSL_LIVE) window.KSL_LIVE.show(eventsMount);
         });
     }

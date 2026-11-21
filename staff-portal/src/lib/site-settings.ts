@@ -304,6 +304,10 @@ export type WhatWeDoCard = {
   imageSlot: string;
   link: string;
   linkLabel: string;
+  secondaryLink: string;
+  secondaryLabel: string;
+  tertiaryLink: string;
+  tertiaryLabel: string;
   buttonLabel: string;
   icon: string;
   enabled: boolean;
@@ -348,6 +352,10 @@ export const DEFAULT_WHAT_WE_DO_CARDS: WhatWeDoCard[] = [
     imageSlot: "index.9-ship-construction",
     link: "service.html",
     linkLabel: "View all services",
+    secondaryLink: "",
+    secondaryLabel: "",
+    tertiaryLink: "",
+    tertiaryLabel: "",
     buttonLabel: "Read More",
     icon: "ship",
     enabled: true,
@@ -362,6 +370,10 @@ export const DEFAULT_WHAT_WE_DO_CARDS: WhatWeDoCard[] = [
     imageSlot: "index.10-civil-and-modular-works",
     link: "service.html",
     linkLabel: "View all services",
+    secondaryLink: "",
+    secondaryLabel: "",
+    tertiaryLink: "",
+    tertiaryLabel: "",
     buttonLabel: "Read More",
     icon: "civil",
     enabled: true,
@@ -376,6 +388,10 @@ export const DEFAULT_WHAT_WE_DO_CARDS: WhatWeDoCard[] = [
     imageSlot: "index.11-heavy-engineering",
     link: "service.html",
     linkLabel: "View all services",
+    secondaryLink: "",
+    secondaryLabel: "",
+    tertiaryLink: "",
+    tertiaryLabel: "",
     buttonLabel: "Read More",
     icon: "heavy",
     enabled: true,
@@ -390,6 +406,10 @@ export const DEFAULT_WHAT_WE_DO_CARDS: WhatWeDoCard[] = [
     imageSlot: "index.12-maintenance-repair-and-overhaul",
     link: "service.html",
     linkLabel: "View all services",
+    secondaryLink: "",
+    secondaryLabel: "",
+    tertiaryLink: "",
+    tertiaryLabel: "",
     buttonLabel: "Read More",
     icon: "mro",
     enabled: true,
@@ -404,6 +424,10 @@ export const DEFAULT_WHAT_WE_DO_CARDS: WhatWeDoCard[] = [
     imageSlot: "index.13-grp-boats",
     link: "products.html",
     linkLabel: "Browse products",
+    secondaryLink: "",
+    secondaryLabel: "",
+    tertiaryLink: "",
+    tertiaryLabel: "",
     buttonLabel: "Read More",
     icon: "grp",
     enabled: true,
@@ -420,6 +444,10 @@ export function blankWhatWeDoCard(): WhatWeDoCard {
     imageSlot: "",
     link: "service.html",
     linkLabel: "View all services",
+    secondaryLink: "",
+    secondaryLabel: "",
+    tertiaryLink: "",
+    tertiaryLabel: "",
     buttonLabel: "Read More",
     icon: "ship",
     enabled: true,
@@ -447,8 +475,12 @@ function cleanWhatWeDoCard(raw: Partial<WhatWeDoCard> | null | undefined, index:
     image: cleanPhoto(source.image),
     // Custom photo wins over the legacy site-image slot so admin changes stick.
     imageSlot: cleanPhoto(source.image) ? "" : String(source.imageSlot ?? "").trim().slice(0, 120),
-    link: cleanLink(source.link) || "service.html",
-    linkLabel: String(source.linkLabel ?? "View all services").trim().slice(0, 40) || "View all services",
+    link: cleanLink(source.link) || "",
+    linkLabel: String(source.linkLabel ?? "").trim().slice(0, 40),
+    secondaryLink: cleanLink(source.secondaryLink) || "",
+    secondaryLabel: String(source.secondaryLabel ?? "").trim().slice(0, 40),
+    tertiaryLink: cleanLink(source.tertiaryLink) || "",
+    tertiaryLabel: String(source.tertiaryLabel ?? "").trim().slice(0, 40),
     buttonLabel: String(source.buttonLabel ?? "Read More").trim().slice(0, 30) || "Read More",
     icon,
     enabled: typeof source.enabled === "boolean" ? source.enabled : true,
@@ -482,6 +514,10 @@ export type WhatWeDoItemRow = {
   image_slot: string | null;
   link: string;
   link_label: string;
+  secondary_link?: string | null;
+  secondary_label?: string | null;
+  tertiary_link?: string | null;
+  tertiary_label?: string | null;
   button_label: string;
   icon: string;
   sort_order: number;
@@ -500,6 +536,10 @@ export function whatWeDoCardFromRow(row: WhatWeDoItemRow): WhatWeDoCard {
       imageSlot: row.image_slot ?? "",
       link: row.link,
       linkLabel: row.link_label,
+      secondaryLink: row.secondary_link ?? "",
+      secondaryLabel: row.secondary_label ?? "",
+      tertiaryLink: row.tertiary_link ?? "",
+      tertiaryLabel: row.tertiary_label ?? "",
       buttonLabel: row.button_label,
       icon: row.icon,
       enabled: row.status === "published",
@@ -517,8 +557,12 @@ export function whatWeDoRowFromCard(card: WhatWeDoCard, sortOrder: number, userI
     detail: cleaned.detail || null,
     image_path: cleaned.image || null,
     image_slot: cleaned.imageSlot || null,
-    link: cleaned.link,
-    link_label: cleaned.linkLabel,
+    link: cleaned.link || "",
+    link_label: cleaned.linkLabel || "",
+    secondary_link: cleaned.secondaryLink || null,
+    secondary_label: cleaned.secondaryLabel || null,
+    tertiary_link: cleaned.tertiaryLink || null,
+    tertiary_label: cleaned.tertiaryLabel || null,
     button_label: cleaned.buttonLabel,
     icon: cleaned.icon,
     sort_order: sortOrder,

@@ -15,12 +15,13 @@ import { useOpenEdit } from "@/lib/open-edit";
 import { uniqueSlug } from "@/lib/list-utils";
 import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { EventsMonth } from "@/components/events/events-month";
-import { nairobiToday } from "@/lib/dates";
+import { formatDay, nairobiToday } from "@/lib/dates";
+import { calendarDay } from "@/lib/events";
 import { appPath } from "@/lib/base-path";
 
-function formatDate(value: string | null) {
-  if (!value) return "";
-  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(new Date(value));
+function formatDate(value: string | null | undefined) {
+  const day = calendarDay(value);
+  return day ? formatDay(day) : "";
 }
 
 export function EventsEditor() {
@@ -54,7 +55,7 @@ export function EventsEditor() {
       title: "",
       slug: "",
       theme: "",
-      event_date: new Date().toISOString().slice(0, 10),
+      event_date: nairobiToday(),
       time_start: "",
       time_end: "",
       timezone: "Africa/Nairobi",
@@ -77,7 +78,8 @@ export function EventsEditor() {
       toast("Give the event a name.", "error");
       return;
     }
-    if (!editing.event_date) {
+    const eventDay = calendarDay(editing.event_date);
+    if (!eventDay) {
       toast("Choose the date of the event.", "error");
       return;
     }
@@ -86,15 +88,25 @@ export function EventsEditor() {
       const slug =
         editing.slug?.trim() ||
         uniqueSlug(editing.title, items.filter((i) => i.id !== editing.id).map((i) => i.slug), "event");
-      const saved = await sendJson("/api/events", "POST", { ...editing, slug, go_live_on: editing.go_live_on || null });
-      const waiting = !awaitingReview(saved) && editing.status === "published" && editing.go_live_on && editing.go_live_on > nairobiToday();
+      const goLive = calendarDay(editing.go_live_on) || null;
+      const saved = await sendJson("/api/events", "POST", {
+        ...editing,
+        slug,
+        event_date: eventDay,
+        go_live_on: goLive,
+      });
+      const today = nairobiToday();
+      const waiting = !awaitingReview(saved) && editing.status === "published" && Boolean(goLive && goLive > today);
+      const pastDate = Boolean(eventDay && eventDay < today);
       toast(
         awaitingReview(saved)
           ? DRAFT_SAVED
           : waiting
             ? "Saved. Visitors will see it on the morning you chose."
             : editing.status === "published"
-              ? "Event saved and shown on the website."
+              ? pastDate
+                ? "Event saved. Because the date is in the past, it appears under Past events."
+                : "Event saved and shown on the website."
               : "Event saved as hidden (draft)."
       );
       setEditing(null);
@@ -139,19 +151,23 @@ export function EventsEditor() {
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-4">
             <FormSection title={editing.id ? "Edit event" : "New event"}>
-              <Field label="Event name">
+              <Field label="Event name" hint="Card title and event page heading.">
                 <Input value={editing.title ?? ""} onChange={(e) => set({ title: e.target.value })} autoFocus={!editing.id} />
               </Field>
-              <Field label="Theme or tagline" optional>
-                <Input value={editing.theme ?? ""} onChange={(e) => set({ theme: e.target.value })} />
+              <Field
+                label="Focus / theme"
+                optional
+                hint="Shows as the Focus fact on the card (e.g. Community, Training)."
+              >
+                <Input value={editing.theme ?? ""} onChange={(e) => set({ theme: e.target.value })} placeholder="e.g. Community" />
               </Field>
-              <Field label="Short description" hint="Shown on the events list before the event takes place.">
+              <Field label="Short description" hint="Used on the event detail page and related links — not on the card itself.">
                 <Textarea rows={2} className="min-h-[70px]" value={editing.description ?? ""} onChange={(e) => set({ description: e.target.value })} />
               </Field>
-              <Field label="What happened" optional hint="A short recap shown once the event is over.">
+              <Field label="What happened" optional hint="Recap on the event page after the date has passed.">
                 <Textarea rows={2} className="min-h-[70px]" value={editing.summary ?? ""} onChange={(e) => set({ summary: e.target.value })} />
               </Field>
-              <Field label="Full details" optional>
+              <Field label="Full details" optional hint="Long programme text on the event page.">
                 <RichText value={editing.body_html ?? ""} onChange={(html) => set({ body_html: html })} placeholder="Programme, speakers, how to attend…" />
               </Field>
             </FormSection>
@@ -161,28 +177,35 @@ export function EventsEditor() {
               <VisibilitySwitch status={editing.status ?? "draft"} canPublish={canPublish} onChange={(status) => set({ status })} />
             </FormSection>
             <FormSection title="When and where">
-              <Field label="Date">
-                <Input type="date" value={editing.event_date ?? ""} onChange={(e) => set({ event_date: e.target.value })} />
+              <Field label="Date" hint="Drives Upcoming/Past, the date line on the card, and the countdown.">
+                <Input type="date" value={calendarDay(editing.event_date) || ""} onChange={(e) => set({ event_date: e.target.value })} />
               </Field>
-              <Field label="Show on the website from" hint="Leave this blank to show the event as soon as it is published.">
-                <Input type="date" value={editing.go_live_on ?? ""} onChange={(e) => set({ go_live_on: e.target.value })} />
+              <Field
+                label="Show on the website from"
+                hint="Leave blank to show as soon as it is published. The event date itself must be today or later for it to appear under Upcoming."
+              >
+                <Input type="date" value={calendarDay(editing.go_live_on) || ""} onChange={(e) => set({ go_live_on: e.target.value || null })} />
               </Field>
               <FieldGrid>
-                <Field label="Starts" optional>
-                  <Input type="time" value={editing.time_start ?? ""} onChange={(e) => set({ time_start: e.target.value })} />
+                <Field label="Starts" optional hint="Shown on the card date line and as the Time fact.">
+                  <Input type="time" value={String(editing.time_start ?? "").slice(0, 5)} onChange={(e) => set({ time_start: e.target.value })} />
                 </Field>
-                <Field label="Ends" optional>
-                  <Input type="time" value={editing.time_end ?? ""} onChange={(e) => set({ time_end: e.target.value })} />
+                <Field label="Ends" optional hint="Used for the live window and calendar downloads.">
+                  <Input type="time" value={String(editing.time_end ?? "").slice(0, 5)} onChange={(e) => set({ time_end: e.target.value })} />
                 </Field>
               </FieldGrid>
-              <Field label="Venue" optional>
+              <Field
+                label="Venue"
+                optional
+                hint="Uppercase place label on the card and the Venue fact. Blank defaults to Kenya Shipyards."
+              >
                 <Input value={editing.venue ?? ""} onChange={(e) => set({ venue: e.target.value })} placeholder="e.g. KSL Mombasa Shipyard" />
               </Field>
             </FormSection>
             <FormSection title="Cover photo">
               <ImageField module="events" value={editing.image_path ?? ""} onChange={(image_path) => set({ image_path })} />
               {editing.image_path ? (
-                <Field label="What the photo shows" hint="Required before an event with a photo can go on the website.">
+                <Field label="What the photo shows" hint="Optional. If blank, the event name is used.">
                   <Input value={editing.image_alt ?? ""} onChange={(e) => set({ image_alt: e.target.value })} />
                 </Field>
               ) : null}
@@ -223,7 +246,13 @@ export function EventsEditor() {
           id: i.id,
           title: i.title,
           subtitle: [
-            i.go_live_on && i.go_live_on > nairobiToday() ? `Appears ${formatDate(i.go_live_on)}` : formatDate(i.event_date),
+            (() => {
+              const goLive = calendarDay(i.go_live_on);
+              const eventDay = calendarDay(i.event_date);
+              if (goLive && goLive > nairobiToday()) return `Appears ${formatDate(goLive)}`;
+              if (eventDay && eventDay < nairobiToday()) return `Past · ${formatDate(eventDay)}`;
+              return formatDate(eventDay);
+            })(),
             i.venue,
           ]
             .filter(Boolean)

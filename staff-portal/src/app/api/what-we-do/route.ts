@@ -140,7 +140,22 @@ export async function POST(req: NextRequest) {
       }
       const row = whatWeDoRowFromCard(card, index, session.userId);
       const previous = await rememberFiles(admin, "home_what_we_do_items", row.id, ["image_path"]);
-      const { error: upErr } = await admin.from("home_what_we_do_items").upsert(row);
+      let { error: upErr } = await admin.from("home_what_we_do_items").upsert(row);
+      if (upErr && /secondary_|tertiary_/i.test(String(upErr.message || ""))) {
+        const {
+          secondary_link: _s1,
+          secondary_label: _s2,
+          tertiary_link: _t1,
+          tertiary_label: _t2,
+          ...legacy
+        } = row;
+        ({ error: upErr } = await admin.from("home_what_we_do_items").upsert(legacy));
+        if (!upErr) {
+          return NextResponse.json({
+            error: "Extra popup buttons need migration 007_popup_actions_optional. On the VPS run: cd staff-portal && npm run db:migrate",
+          }, { status: 500 });
+        }
+      }
       if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
       await releaseUnusedValues(admin, previous);
     }

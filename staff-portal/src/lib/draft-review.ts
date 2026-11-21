@@ -523,6 +523,7 @@ const FIELD_LABELS: Record<string, string> = {
   board_groups: "Board groups",
   board_group: "Group",
   group_order: "Group order",
+  modal_actions: "Popup buttons",
   media: "Photos",
   featured: "Featured",
 };

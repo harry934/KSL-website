@@ -430,50 +430,49 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
               <p className="m-0 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8a96a5]">Home page</p>
               <h3 className="m-0 mt-1 text-[15px] font-bold text-[#0b1f3a]">Hero slides</h3>
               <p className="mb-0 mt-1 text-[13px] text-[#5b6775]">
-                {heroListLive
-                  ? heroMode === "images_only"
+                {heroMode === "video_only"
+                  ? "Film only — photos stay saved but are not shown until you change mode."
+                  : heroMode === "images_only"
                     ? "Photos only — the film is off. Drag to reorder. Click a photo to edit its words."
-                    : "Film stays on the left; photos rotate on the right. Drag to reorder. Click a photo to edit its words."
-                  : "The original film is showing full width. Add photos, then choose film + photos or photos only."}
+                    : heroListLive
+                      ? "One carousel: film, then photos in order (not side by side). Drag to reorder photos."
+                      : "Add photos, then choose film only, film + photos carousel, or photos only."}
               </p>
             </div>
 
-            {canEdit && heroItems.length > 0 && (
+            {canEdit && (
               <div className="mt-4">
                 <p className="m-0 mb-2 text-[13px] font-semibold text-[#0b1f3a]">Display mode</p>
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={busy !== null}
-                    onClick={() => {
-                      if (heroMode === "video_and_images") return;
-                      setHeroMode("video_and_images");
-                      void persistHero(heroItems, undefined, "video_and_images");
-                    }}
-                    className={`h-10 border px-4 text-[14px] font-semibold ${
-                      heroMode === "video_and_images"
-                        ? "border-[#0b1f3a] bg-[#0b1f3a] text-white"
-                        : "border-[#d5dce4] bg-white text-[#0b1f3a]"
-                    }`}
-                  >
-                    Film + photos
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy !== null}
-                    onClick={() => {
-                      if (heroMode === "images_only") return;
-                      setHeroMode("images_only");
-                      void persistHero(heroItems, undefined, "images_only");
-                    }}
-                    className={`h-10 border px-4 text-[14px] font-semibold ${
-                      heroMode === "images_only"
-                        ? "border-[#0b1f3a] bg-[#0b1f3a] text-white"
-                        : "border-[#d5dce4] bg-white text-[#0b1f3a]"
-                    }`}
-                  >
-                    Photos only
-                  </button>
+                  {(
+                    [
+                      { value: "video_only" as const, label: "Film only" },
+                      { value: "video_and_images" as const, label: "Film + photos carousel" },
+                      { value: "images_only" as const, label: "Photos only" },
+                    ] as const
+                  ).map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      disabled={busy !== null || (option.value !== "video_only" && heroItems.length === 0)}
+                      onClick={() => {
+                        if (heroMode === option.value) return;
+                        if (option.value !== "video_only" && heroItems.length === 0) {
+                          toast("Add at least one photo before choosing a photo mode.", "error");
+                          return;
+                        }
+                        setHeroMode(option.value);
+                        void persistHero(heroItems, undefined, option.value);
+                      }}
+                      className={`h-10 border px-4 text-[14px] font-semibold ${
+                        heroMode === option.value
+                          ? "border-[#0b1f3a] bg-[#0b1f3a] text-white"
+                          : "border-[#d5dce4] bg-white text-[#0b1f3a]"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -523,7 +522,11 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                           <p className="m-0 text-[14px] font-semibold text-[#0b1f3a]">
                             Photo {index + 1}
                             <span className="ml-2 text-[12.5px] font-medium text-[#6b7785]">
-                              {heroMode === "images_only" ? "carousel" : "beside film"}
+                              {heroMode === "video_only"
+                                ? "saved, not shown"
+                                : heroMode === "images_only"
+                                  ? "carousel"
+                                  : "carousel after film"}
                             </span>
                           </p>
                           <p className="m-0 mt-0.5 truncate text-[12.5px] text-[#5b6775]">{item.title}</p>

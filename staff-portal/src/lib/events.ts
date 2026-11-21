@@ -24,16 +24,32 @@ export type EventRow = {
 
 export { slugify };
 
+/** Normalize pg date / Date / ISO strings to YYYY-MM-DD for safe compares. */
+export function calendarDay(value: unknown): string {
+  if (value == null || value === "") return "";
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    // Postgres `date` arrives as UTC midnight; keep the calendar day.
+    return value.toISOString().slice(0, 10);
+  }
+  const text = String(value).trim();
+  const iso = text.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (iso) return iso[1];
+  const parsed = new Date(text);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  return "";
+}
+
 export function toPublicEvent(row: EventRow) {
+  const date = calendarDay(row.event_date);
   const item: Record<string, string | undefined> = {
     slug: row.slug,
     title: row.title,
-    date: row.event_date,
+    date,
     timezone: row.timezone ?? "Africa/Nairobi",
   };
   if (row.theme) item.theme = row.theme;
-  if (row.time_start) item.timeStart = row.time_start;
-  if (row.time_end) item.timeEnd = row.time_end;
+  if (row.time_start) item.timeStart = String(row.time_start).slice(0, 5);
+  if (row.time_end) item.timeEnd = String(row.time_end).slice(0, 5);
   if (row.venue) item.venue = row.venue;
   if (row.description) item.description = row.description;
   if (row.summary) item.summary = row.summary;
@@ -43,13 +59,22 @@ export function toPublicEvent(row: EventRow) {
   return item;
 }
 
+export function isEventLive(row: EventRow, todayIso: string) {
+  if (row.deleted_at) return false;
+  if (row.status !== "published") return false;
+  const goLive = calendarDay(row.go_live_on);
+  if (goLive && goLive > todayIso) return false;
+  return Boolean(calendarDay(row.event_date));
+}
+
 export function splitEventsByDate(rows: EventRow[], todayIso: string) {
-  const published = rows.filter((r) => r.status === "published");
   const upcoming: ReturnType<typeof toPublicEvent>[] = [];
   const past: ReturnType<typeof toPublicEvent>[] = [];
-  for (const row of published) {
+  for (const row of rows) {
+    if (!isEventLive(row, todayIso)) continue;
     const pub = toPublicEvent(row);
-    if (String(row.event_date) >= todayIso) upcoming.push(pub);
+    if (!pub.date) continue;
+    if (pub.date >= todayIso) upcoming.push(pub);
     else past.push(pub);
   }
   upcoming.sort((a, b) => String(a.date).localeCompare(String(b.date)));

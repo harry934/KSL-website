@@ -10,7 +10,7 @@
       "image": "img/ksl/yard.jpg",
       "downloads": [
         "brochure",
-        "charter en",
+        "charter-en",
         "complaints"
       ],
       "sourcePopupId": "1900"
@@ -24,7 +24,7 @@
       "image": "img/ksl/mombasa.webp",
       "downloads": [
         "brochure",
-        "charter en"
+        "charter-en"
       ],
       "sourcePopupId": "1903"
     },
@@ -36,7 +36,7 @@
       "detail": "At KSL, our engineering capabilities extend beyond marine vessels to include the repair and maintenance of locomotives supporting the critical connection between inland transport networks and maritime logistics. This service plays a vital role in enhancing port operations, especially for cargo movement between ports and inland depots.\n\nOur locomotive workshop at KRC is equipped to handle diesel electric and diesel hydraulic locomotives commonly used by Kenya Railways Corporation in Kenya and Africa. Services include detailed mechanical inspections, complete engine overhauls, wheelset replacements, transmission system repairs, Rehabilitation and Remanufacturing. We also perform fuel injection tuning, cooling system upgrades, and turbocharger maintenance to enhance engine efficiency and performance.\n\nElectrical system diagnostics and maintenance are key aspects of our locomotive services. Our experts repair or replace control modules, traction motors, wiring harnesses, alternators, and battery systems to restore electrical reliability and automation. We also calibrate braking systems and conduct air compressor repairs to ensure compliance with railway safety regulations.\n\nKSL offers bogie inspections and alignment services, bearing replacements, suspension tuning, and frame straightening. These services reduce vibration, improve ride quality, and ensure smooth rail operations. Our team utilizes ultrasonic and magnetic particle testing to detect structural defects early, helping to prevent catastrophic failures.\n\nOur preventive maintenance programs are designed to minimize breakdowns, extend asset life, and keep locomotives operational throughout the year. Whether supporting port railways or regional transport authorities, KSL delivers cost effective and technically sound locomotive repair solutions tailored to enhance freight and passenger connectivity across the region.",
       "image": "img/ksl/kisumu.webp",
       "downloads": [
-        "strategic plan",
+        "strategic-plan",
         "brochure"
       ],
       "sourcePopupId": "1906"
@@ -49,7 +49,7 @@
       "detail": "Kenya Shipyards Limited (KSL) is committed to maintaining world class operational standards through continuous upgrade and maintenance of its shipyard facilities in Mombasa, and Kisumu. These infrastructure improvements are critical to supporting large scale shipbuilding, vessel repairs, maritime engineering, and heavy fabrication projects that meet both domestic and regional demand.\n\nOur shipyard upgrade services include modernization of dry docks, slipways, workshops, fabrication sheds, and quay areas to accommodate larger vessels and advanced technology. Structural assessments are conducted periodically on critical infrastructure such as launching platforms, cranes, and pier foundations to ensure safety, compliance, and longevity.\n\nKSL integrates automation, digital control systems, and energy efficient lighting and ventilation solutions to optimize production lines and reduce operational costs. Our upgrades also cover electrical reticulation, network cabling, compressed air systems, and power supply panels to support high performance marine tools and machinery.\n\nIn addition to infrastructure enhancements, we maintain and upgrade our workshops with modern equipment such as CNC cutting machines, hydraulic presses, welding machines, and lathe systems. These investments ensure precision in fabrication and faster turnaround times in both shipbuilding and repairs.\n\nEnvironmental compliance is a priority in our maintenance activities. We regularly service wastewater treatment units, paint shops, and blast yards to ensure they operate within NEMA and IMO safety and environmental standards.\n\nThrough continuous facility assessment, maintenance scheduling, and phased modernization, KSL ensures our shipyards remain resilient, efficient, and capable of supporting Kenya’s growing maritime ambitions and the broader Blue Economy strategy.",
       "image": "img/ksl/linkspan.webp",
       "downloads": [
-        "strategic plan",
+        "strategic-plan",
         "brochure"
       ],
       "sourcePopupId": "1908"
@@ -63,7 +63,7 @@
       "image": "img/ksl/ferry.jpg",
       "downloads": [
         "brochure",
-        "charter en"
+        "charter-en"
       ],
       "sourcePopupId": "1912"
     },
@@ -76,7 +76,7 @@
       "image": "img/ksl/fishing.jpg",
       "downloads": [
         "brochure",
-        "product catalogue"
+        "product-catalogue"
       ],
       "sourcePopupId": "1916"
     },
@@ -89,7 +89,7 @@
       "image": "img/ksl/ambulance.jpg",
       "downloads": [
         "brochure",
-        "charter en",
+        "charter-en",
         "complaints"
       ],
       "sourcePopupId": "1915"
@@ -102,7 +102,7 @@
       "detail": "Kenya Shipyards Limited (KSL) provides specialized dredging services to ensure the navigability, safety, and functionality of Kenya’s ports, inland harbors, and waterways. Dredging plays a critical role in supporting maritime trade, preventing siltation, and maintaining sufficient water depths for vessel access, particularly in high traffic areas like the Port of Mombasa, Lake Victoria, and industrial jetties.\n\nOur dredging operations cover both capital dredging (for creating new channels or basins) and maintenance dredging (to restore existing water depths). We utilize a combination of mechanical and hydraulic dredging techniques, including cutter suction dredgers, backhoe dredgers, and grab dredgers, depending on the specific project requirements. Our technical team conducts pre dredging hydrographic surveys to assess sediment buildup and channel contours using sonar and GPS mapping systems.\n\nThe dredged material is carefully evaluated for environmental impact and disposed of in accordance with NEMA and IMO guidelines, ensuring ecological balance and sustainability. In areas where sediment can be reused for land reclamation or construction fill, we offer reclamation services as an added value.\n\nKSL also provides emergency dredging support in cases where waterways are blocked by sedimentation, floating debris, or storm damage, thereby restoring port access and minimizing vessel delays. Our services are critical for ferry terminals, cargo berths, naval bases, fishing harbors, and inland port facilities.\n\nWith a commitment to maintaining open and efficient waterways, KSL’s dredging solutions help boost maritime logistics, enhance regional connectivity, and support the long term growth of the Blue Economy.",
       "image": "img/ksl/yard.jpg",
       "downloads": [
-        "strategic plan",
+        "strategic-plan",
         "brochure"
       ],
       "sourcePopupId": "1922"
@@ -116,7 +116,7 @@
       "image": "img/ksl/mombasa.webp",
       "downloads": [
         "brochure",
-        "charter en"
+        "charter-en"
       ],
       "sourcePopupId": "1921"
     },
@@ -129,7 +129,7 @@
       "image": "img/ksl/kisumu.webp",
       "downloads": [
         "brochure",
-        "charter en",
+        "charter-en",
         "complaints"
       ],
       "sourcePopupId": "1928"
@@ -143,7 +143,7 @@
       "image": "img/ksl/linkspan.webp",
       "downloads": [
         "brochure",
-        "product catalogue"
+        "product-catalogue"
       ],
       "sourcePopupId": "1927"
     },
@@ -156,8 +156,8 @@
       "image": "img/ksl/ferry.jpg",
       "downloads": [
         "brochure",
-        "strategic plan",
-        "charter en"
+        "strategic-plan",
+        "charter-en"
       ],
       "sourcePopupId": "1991"
     }
@@ -184,5 +184,19 @@
       "href": "docs/Complaints-lodging-form.docx"
     }
   },
-  "source": "http://10.104.4.139/services/ (Elementor popups)"
+  "source": "http://10.104.4.139/services/ (Elementor popups)",
+  "modalActions": {
+    "primary": {
+      "label": "Request a quote",
+      "href": "contact.html"
+    },
+    "secondary": {
+      "label": "View projects",
+      "href": "project.html"
+    },
+    "tertiary": {
+      "label": "All corporate documents",
+      "href": "downloads.html"
+    }
+  }
 }

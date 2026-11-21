@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (slotId === HOME_HERO_SLOT && Array.isArray(body.items)) {
-    // Hero CMS slides are photos only; mode chooses film+photos side-by-side or photos only.
+    // Hero CMS slides are photos; mode is film only, film+photos carousel, or photos only.
     const items = parseHeroMedia(body.items).filter((item) => item.kind === "image");
     const mode = parseHeroMode(body.mode);
     if (!items.length && body.items.length > 0) {

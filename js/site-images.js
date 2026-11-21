@@ -153,32 +153,36 @@
     }
 
     function publishHero(data) {
+        var mode = "video_and_images";
+        if (data && data.heroMode === "images_only") mode = "images_only";
+        if (data && data.heroMode === "video_only") mode = "video_only";
         var list = data && data.hero;
-        if (!Array.isArray(list) || !list.length) return;
-        var mode = data && data.heroMode === "images_only" ? "images_only" : "video_and_images";
         var clean = [];
-        list.forEach(function (item) {
-            var url = safeUrl(item && item.url);
-            if (!url || !isImageUrl(url)) return;
-            if (item && item.kind === "video") return;
-            clean.push({
-                kind: "image",
-                url: url,
-                crop: null,
-                trim: null,
-                title: item && typeof item.title === "string" ? item.title : "",
-                subtitle: item && typeof item.subtitle === "string" ? item.subtitle : "",
-                buttonLabel: item && typeof item.buttonLabel === "string" ? item.buttonLabel : "",
-                buttonUrl: item && typeof item.buttonUrl === "string" ? item.buttonUrl : ""
+        if (Array.isArray(list)) {
+            list.forEach(function (item) {
+                var url = safeUrl(item && item.url);
+                if (!url || !isImageUrl(url)) return;
+                if (item && item.kind === "video") return;
+                clean.push({
+                    kind: "image",
+                    url: url,
+                    crop: null,
+                    trim: null,
+                    title: item && typeof item.title === "string" ? item.title : "",
+                    subtitle: item && typeof item.subtitle === "string" ? item.subtitle : "",
+                    buttonLabel: item && typeof item.buttonLabel === "string" ? item.buttonLabel : "",
+                    buttonUrl: item && typeof item.buttonUrl === "string" ? item.buttonUrl : ""
+                });
             });
-        });
-        if (!clean.length) return;
+        }
         window.KSL_HERO_MODE = mode;
         window.KSL_HERO_MEDIA = clean;
-        primeHero();
-        try {
-            window.dispatchEvent(new CustomEvent("ksl-hero-media", { detail: { items: clean, mode: mode } }));
-        } catch (err) {}
+        if (mode === "video_only" || clean.length) {
+            primeHero();
+            try {
+                window.dispatchEvent(new CustomEvent("ksl-hero-media", { detail: { items: clean, mode: mode } }));
+            } catch (err) {}
+        }
     }
 
     function escapeHeroText(value) {

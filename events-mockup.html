@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Events card mockup — approve before deploy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0b1f3a;
+      --ink: #111827;
+      --muted: #5b6775;
+      --place: #8a96a5;
+      --line: #eef1f5;
+      --gold: #e2c985;
+      --accent: #c48a1a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(1200px 500px at 10% -10%, #e8eef6 0%, transparent 55%),
+        radial-gradient(900px 400px at 100% 0%, #f3efe6 0%, transparent 50%),
+        #f4f7fb;
+      color: var(--navy);
+      font-family: Manrope, system-ui, sans-serif;
+    }
+    .wrap {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 64px;
+    }
+    .note {
+      margin: 0 0 28px;
+      padding: 14px 16px;
+      border: 1px solid #d7e0ea;
+      border-radius: 12px;
+      background: #fff;
+      color: var(--muted);
+      font: 600 .92rem/1.45 Manrope, sans-serif;
+    }
+    .note strong { color: var(--navy); }
+    .kicker {
+      margin: 0 0 .35rem;
+      color: var(--muted);
+      font: 700 .72rem/1.2 Manrope, sans-serif;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .title {
+      position: relative;
+      margin: 0 0 1.4rem;
+      padding-top: .75rem;
+      font: 700 2rem/1.2 Poppins, sans-serif;
+    }
+    .title::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0;
+      width: 72px; height: 3px;
+      background: var(--gold);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 22px;
+    }
+    @media (max-width: 991px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 639px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .pack {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #e6ebf1;
+      border-radius: 22px;
+      background: #fff;
+      box-shadow: 0 18px 40px rgba(11, 31, 58, .08);
+    }
+    .photo {
+      position: relative;
+      display: block;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      background: var(--navy);
+    }
+    .photo img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .chip {
+      position: absolute;
+      top: 14px; left: 14px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: var(--navy);
+      color: #fff;
+      font: 700 11px/1 Manrope, sans-serif;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .chip.past {
+      background: rgba(255,255,255,.92);
+      color: var(--muted);
+    }
+    .badge {
+      position: absolute;
+      top: 14px; right: 14px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: var(--gold);
+      color: var(--navy);
+      font: 700 11px/1 Manrope, sans-serif;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .body {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: 10px;
+      padding: 18px 18px 16px;
+    }
+    .place {
+      margin: 0;
+      color: var(--place);
+      font: 700 .72rem/1.2 Manrope, sans-serif;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .name {
+      margin: 0;
+      font: 700 1.28rem/1.25 Poppins, sans-serif;
+      color: var(--ink);
+    }
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      color: var(--muted);
+      font: 600 .9rem/1.35 Manrope, sans-serif;
+    }
+    .meta svg {
+      width: 16px; height: 16px;
+      stroke: var(--accent);
+      stroke-width: 1.8;
+      fill: none;
+      flex: 0 0 auto;
+    }
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 4px 0 0;
+      padding: 12px 0 0;
+      border-top: 1px solid var(--line);
+      list-style: none;
+    }
+    .facts li {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+      color: #6b7785;
+      font: 600 .68rem/1.2 Manrope, sans-serif;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .facts svg {
+      width: 18px; height: 18px;
+      margin-bottom: 2px;
+      stroke: var(--navy);
+      stroke-width: 1.7;
+      fill: none;
+    }
+    .facts strong {
+      color: var(--navy);
+      font: 700 .82rem/1.25 Manrope, sans-serif;
+      letter-spacing: 0;
+      text-transform: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .clock { margin-top: 2px; }
+    .clock-label {
+      margin: 0;
+      color: var(--muted);
+      font: 700 .78rem/1.3 Manrope, sans-serif;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .units {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .units div {
+      padding: 10px 4px;
+      border: 1px solid #e3e8ee;
+      background: #f6f8fa;
+      text-align: center;
+    }
+    .units strong {
+      display: block;
+      color: var(--navy);
+      font: 700 1.15rem/1 Poppins, sans-serif;
+      font-variant-numeric: tabular-nums;
+    }
+    .units span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font: 700 .66rem/1.2 Manrope, sans-serif;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .foot { margin-top: auto; padding-top: 8px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      min-height: 46px;
+      border-radius: 12px;
+      background: var(--navy);
+      color: #fff;
+      font: 700 .95rem/1 Manrope, sans-serif;
+      text-decoration: none;
+    }
+    .btn svg {
+      width: 18px; height: 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="note"><strong>Mockup only</strong> — this is the Events card layout based on your template A (clean white card). Reply <strong>approve</strong> when you are happy, and I will send the exact files/commands for your PC and the VPS.</p>
+    <p class="kicker">Upcoming gatherings</p>
+    <h1 class="title">Events</h1>
+    <div class="grid">
+
+      <article class="pack">
+        <div class="photo">
+          <img src="https://images.unsplash.com/photo-1569263979104-865ab7cd8d13?auto=format&fit=crop&w=900&q=80" alt="Ship in harbour">
+          <span class="chip">Upcoming</span>
+          <span class="badge">Starts soon</span>
+        </div>
+        <div class="body">
+          <p class="place">KSL Mombasa Shipyard</p>
+          <h2 class="name">Fleet Open Day</h2>
+          <p class="meta">
+            <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg>
+            <span>Sat, 5 Dec 2026 | 9:00 am</span>
+          </p>
+          <ul class="facts">
+            <li>
+              <svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+              <span>Venue</span><strong>Mombasa</strong>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+              <span>Time</span><strong>9:00 am</strong>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg>
+              <span>Focus</span><strong>Community</strong>
+            </li>
+          </ul>
+          <div class="clock">
+            <p class="clock-label">Event starts in</p>
+            <div class="units">
+              <div><strong>13</strong><span>Days</span></div>
+              <div><strong>08</strong><span>Hours</span></div>
+              <div><strong>42</strong><span>Min</span></div>
+              <div><strong>17</strong><span>Sec</span></div>
+            </div>
+          </div>
+          <div class="foot"><a class="btn" href="#"><span>View event</span><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+        </div>
+      </article>
+
+      <article class="pack">
+        <div class="photo">
+          <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=900&q=80" alt="Workshop deck">
+          <span class="chip">Upcoming</span>
+        </div>
+        <div class="body">
+          <p class="place">Kisumu Yard</p>
+          <h2 class="name">Blue Economy Forum</h2>
+          <p class="meta">
+            <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg>
+            <span>Thu, 18 Dec 2026 | 10:30 am</span>
+          </p>
+          <ul class="facts">
+            <li>
+              <svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+              <span>Venue</span><strong>Kisumu</strong>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+              <span>Time</span><strong>10:30 am</strong>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg>
+              <span>Focus</span><strong>Industry</strong>
+            </li>
+          </ul>
+          <div class="clock">
+            <p class="clock-label">Event starts in</p>
+            <div class="units">
+              <div><strong>26</strong><span>Days</span></div>
+              <div><strong>11</strong><span>Hours</span></div>
+              <div><strong>05</strong><span>Min</span></div>
+              <div><strong>44</strong><span>Sec</span></div>
+            </div>
+          </div>
+          <div class="foot"><a class="btn" href="#"><span>View event</span><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+        </div>
+      </article>
+
+      <article class="pack">
+        <div class="photo">
+          <img src="https://images.unsplash.com/photo-1524522173746-f628baad3644?auto=format&fit=crop&w=900&q=80" alt="Naval vessel">
+          <span class="chip past">Past event</span>
+        </div>
+        <div class="body">
+          <p class="place">Kenya Shipyards</p>
+          <h2 class="name">Cadet Graduation</h2>
+          <p class="meta">
+            <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg>
+            <span>Fri, 7 Nov 2026 | 2:00 pm</span>
+          </p>
+          <ul class="facts">
+            <li>
+              <svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+              <span>Venue</span><strong>HQ</strong>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+              <span>Time</span><strong>2:00 pm</strong>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg>
+              <span>Focus</span><strong>Training</strong>
+            </li>
+          </ul>
+          <div class="clock">
+            <p class="clock-label" style="color:#5b6775">This event has ended</p>
+          </div>
+          <div class="foot"><a class="btn" href="#"><span>View event</span><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</body>
+</html>

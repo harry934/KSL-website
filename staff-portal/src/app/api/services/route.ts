@@ -1,7 +1,7 @@
 import { createDatabaseClient } from "@/lib/db-client";
 import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { clearReviewDraft, editorSavePlan, overlayDrafts, overlaySettings, saveBody } from "@/lib/draft-review";
-import { slugify } from "@/lib/services";
+import { cleanModalActions, cleanOptionalAction, DEFAULT_SERVICE_MODAL_ACTIONS, slugify, type ServiceModalActions } from "@/lib/services";
 import { cleanGroupOrder, rememberGroup } from "@/lib/group-order";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
@@ -28,6 +28,7 @@ export async function GET() {
   return NextResponse.json({
     intro: settings?.intro ?? "",
     download_catalog: settings?.download_catalog ?? {},
+    modal_actions: cleanModalActions(settings?.modal_actions ?? settingsRes.data?.modal_actions),
     group_order: Array.isArray(groups?.group_order) ? groups.group_order : [],
     items: await overlayDrafts(admin, "service_items", split.items),
     removed: split.removed,
@@ -66,15 +67,30 @@ export async function POST(req: NextRequest) {
     const plan = await editorSavePlan(admin, session, "services", "services_settings", {
       settings: true,
       key: "default",
-      title: "Services introduction",
+      title: "Services page settings",
       payload: body,
     });
     if (plan.held) return plan.held;
-    const { error: upErr } = await admin.from("services_settings").upsert({
+    const existing = await admin.from("services_settings").select("intro, download_catalog, modal_actions").eq("id", "default").maybeSingle();
+    const row = {
       id: "default",
-      intro: body.intro ?? "",
-      download_catalog: body.download_catalog ?? {},
-    });
+      intro: body.intro ?? existing.data?.intro ?? "",
+      download_catalog: body.download_catalog ?? existing.data?.download_catalog ?? {},
+      modal_actions: body.modal_actions
+        ? cleanModalActions(body.modal_actions)
+        : cleanModalActions(existing.data?.modal_actions ?? DEFAULT_SERVICE_MODAL_ACTIONS),
+    };
+    let { error: upErr } = await admin.from("services_settings").upsert(row);
+    // Older databases may not have migration 006 yet — still save intro/documents.
+    if (upErr && /modal_actions/i.test(String(upErr.message || upErr.code || ""))) {
+      const { modal_actions: _unused, ...withoutActions } = row;
+      ({ error: upErr } = await admin.from("services_settings").upsert(withoutActions));
+      if (!upErr && body.force_modal_actions) {
+        return NextResponse.json({
+          error: "Popup buttons need database migration 006_service_modal_actions. On the VPS run: cd staff-portal && npm run db:migrate",
+        }, { status: 500 });
+      }
+    }
     if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
     await clearReviewDraft(admin, "services_settings", null, "default");
     await logActivity(session.userId, "services", "upsert", "services_settings", "default");
@@ -90,7 +106,18 @@ export async function POST(req: NextRequest) {
   if (plan.held) return plan.held;
   const slug = (body.slug || slugify(body.title || "service")).trim();
   const status = plan.status;
-  const row = {
+  const actions: ServiceModalActions | null =
+    body.actions && typeof body.actions === "object"
+      ? {
+          primary: cleanOptionalAction((body.actions as ServiceModalActions).primary),
+          secondary: cleanOptionalAction((body.actions as ServiceModalActions).secondary),
+          tertiary: cleanOptionalAction((body.actions as ServiceModalActions).tertiary),
+        }
+      : body.actions === null
+        ? null
+        : undefined;
+
+  const row: Record<string, unknown> = {
     id: body.id || crypto.randomUUID(),
     slug,
     category: String(body.category ?? "").trim() || null,
@@ -98,15 +125,25 @@ export async function POST(req: NextRequest) {
     excerpt: body.excerpt ?? null,
     detail: body.detail ?? null,
     image_path: body.image_path ?? null,
-    downloads: body.downloads ?? [],
+    downloads: Array.isArray(body.downloads) ? body.downloads : [],
     source_popup_id: body.source_popup_id ?? null,
     sort_order: body.sort_order ?? 0,
     status,
     updated_by: session.userId,
   };
+  if (actions !== undefined) row.actions = actions;
 
   const previous = await rememberFiles(admin, "service_items", body.id, ["image_path"]);
-  const { data, error: upErr } = await admin.from("service_items").upsert(row).select("id").single();
+  let { data, error: upErr } = await admin.from("service_items").upsert(row).select("id").single();
+  if (upErr && /actions/i.test(String(upErr.message || upErr.code || ""))) {
+    const { actions: _a, ...withoutActions } = row;
+    ({ data, error: upErr } = await admin.from("service_items").upsert(withoutActions).select("id").single());
+    if (!upErr && actions !== undefined) {
+      return NextResponse.json({
+        error: "Popup buttons need database migration 007_popup_actions_optional. On the VPS run: cd staff-portal && npm run db:migrate",
+      }, { status: 500 });
+    }
+  }
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
   if (row.category) await rememberGroup(admin, "services_settings", row.category);
   await releaseUnusedValues(admin, previous);

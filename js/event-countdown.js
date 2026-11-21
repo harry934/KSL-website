@@ -1,4 +1,4 @@
-/* Live countdown for public event cards. Times are East Africa Time. */
+/* Live countdown and event cards for the public site. Times are East Africa Time. */
 (function () {
     "use strict";
 
@@ -21,9 +21,15 @@
         return /^\d{2}:\d{2}/.test(String(value || "")) ? String(value).slice(0, 5) : fallback;
     }
 
+    function calendarDay(value) {
+        var text = String(value || "").trim();
+        var match = text.match(/^(\d{4}-\d{2}-\d{2})/);
+        return match ? match[1] : "";
+    }
+
     function bounds(evt) {
-        var date = String((evt && evt.date) || "");
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+        var date = calendarDay(evt && evt.date);
+        if (!date) return null;
         var start = new Date(date + "T" + clockTime(evt.timeStart, "00:00") + ":00+03:00");
         var end = evt.timeEnd
             ? new Date(date + "T" + clockTime(evt.timeEnd, "23:59") + ":00+03:00")
@@ -83,41 +89,89 @@
         );
     }
 
-    function dateParts(iso) {
+    function formatDate(iso, opts) {
         try {
-            var parsed = new Date(iso + "T12:00:00");
-            if (isNaN(parsed.getTime())) throw new Error("date");
-            return {
-                day: pad(parsed.getDate()),
-                month: parsed.toLocaleDateString("en-KE", { month: "short", year: "numeric" })
-            };
+            return new Date(calendarDay(iso) + "T12:00:00").toLocaleDateString("en-KE", opts || {
+                year: "numeric",
+                month: "short",
+                day: "numeric"
+            });
         } catch (e) {
-            return { day: "", month: iso || "" };
+            return iso || "";
         }
     }
 
+    function formatTime(hhmm) {
+        var parts = String(hhmm || "").split(":");
+        var h = parseInt(parts[0], 10);
+        if (isNaN(h)) return "";
+        var suffix = h >= 12 ? "pm" : "am";
+        return ((h % 12) || 12) + ":" + (parts[1] || "00") + " " + suffix;
+    }
+
+    function timeLabel(evt) {
+        if (!evt.timeStart) return "";
+        return formatTime(evt.timeStart) + (evt.timeEnd ? " – " + formatTime(evt.timeEnd) : "");
+    }
+
+    function safeImage(url) {
+        if (window.KSL_CONTENT && window.KSL_CONTENT.safeMediaUrl) {
+            return window.KSL_CONTENT.safeMediaUrl(url) || "img/ksl/yard.jpg";
+        }
+        return url || "img/ksl/yard.jpg";
+    }
+
+    var ICONS = {
+        calendar: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3.5v3M16 3.5v3M3.5 9.5h17"/></svg>',
+        clock: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+        pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg>',
+        arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
+    };
+
     function card(evt) {
         var href = "event.html?slug=" + encodeURIComponent(evt.slug || "");
-        var photo = evt.image || "img/ksl/yard.jpg";
+        var photo = safeImage(evt.image);
         var stand = evt.image ? "" : ' data-ksl-image="content.missing-photo"';
         var when = bounds(evt);
-        var parts = dateParts(evt.date);
-        var venue = evt.venue ? '<p class="ksl-count-venue">' + escapeHtml(evt.venue) + "</p>" : "";
-        var stamp = parts.day
-            ? '<time class="ksl-count-stamp" datetime="' + escapeHtml(evt.date || "") + '"><strong>' + escapeHtml(parts.day) + "</strong><span>" + escapeHtml(parts.month) + "</span></time>"
-            : "";
+        var info = phase(evt);
+        var past = info.state === "ended";
+        var venue = String(evt.venue || "").trim();
+        var theme = String(evt.theme || "").trim();
+        var time = timeLabel(evt);
+        var dateText = formatDate(evt.date, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+        var metaBits = [];
+        if (dateText) metaBits.push(dateText);
+        if (time) metaBits.push(time);
+
+        var facts = "";
+        if (venue) {
+            facts += '<li>' + ICONS.pin + "<span>Venue</span><strong>" + escapeHtml(venue) + "</strong></li>";
+        }
+        if (time) {
+            facts += '<li>' + ICONS.clock + "<span>Time</span><strong>" + escapeHtml(time) + "</strong></li>";
+        }
+        if (theme) {
+            facts += '<li>' + ICONS.calendar + "<span>Focus</span><strong>" + escapeHtml(theme) + "</strong></li>";
+        }
+
         return (
-            '<article class="ksl-count-card" data-ksl-count data-start="' + (when ? when.start.toISOString() : "") + '" data-end="' + (when ? when.end.toISOString() : "") + '">' +
-            '<a class="ksl-count-photo" href="' + href + '" aria-label="' + escapeHtml(evt.title || "Event") + '">' +
-            "<img" + stand + ' src="' + escapeHtml(photo) + '" alt="" loading="lazy" decoding="async">' +
-            stamp +
-            '<span class="ksl-count-badge" data-ksl-badge hidden>Starts soon</span>' +
+            '<article class="ksl-event-pack" data-ksl-count data-start="' + (when ? when.start.toISOString() : "") + '" data-end="' + (when ? when.end.toISOString() : "") + '" data-state="' + info.state + '">' +
+            '<a class="ksl-event-pack-photo" href="' + href + '" aria-label="' + escapeHtml(evt.title || "Event") + '">' +
+            "<img" + stand + ' src="' + escapeHtml(photo) + '" alt="' + escapeHtml(evt.imageAlt || evt.title || "") + '" loading="lazy" decoding="async">' +
+            '<span class="ksl-event-pack-badge" data-ksl-badge' + (info.state === "soon" ? "" : " hidden") + ">Starts soon</span>" +
+            (past ? '<span class="ksl-event-pack-chip">Past event</span>' : '<span class="ksl-event-pack-chip is-live">Upcoming</span>') +
             "</a>" +
-            '<div class="ksl-count-body">' +
-            '<h3><a href="' + href + '">' + escapeHtml(evt.title || "Event") + "</a></h3>" +
-            venue +
+            '<div class="ksl-event-pack-body">' +
+            (venue ? '<p class="ksl-event-pack-place">' + escapeHtml(venue) + "</p>" : '<p class="ksl-event-pack-place">Kenya Shipyards</p>') +
+            '<h3 class="ksl-event-pack-title"><a href="' + href + '">' + escapeHtml(evt.title || "Event") + "</a></h3>" +
+            (metaBits.length
+                ? '<p class="ksl-event-pack-meta">' + ICONS.calendar + "<span>" + escapeHtml(metaBits.join(" | ")) + "</span></p>"
+                : "") +
+            (facts ? '<ul class="ksl-event-pack-facts">' + facts + "</ul>" : "") +
             clockMarkup() +
-            '<a class="ksl-count-btn" href="' + href + '">Event details</a>' +
+            '<div class="ksl-event-pack-foot">' +
+            '<a class="ksl-event-pack-btn" href="' + href + '"><span>View event</span>' + ICONS.arrow + "</a>" +
+            "</div>" +
             "</div></article>"
         );
     }
@@ -185,6 +239,7 @@
         phase: phase,
         card: card,
         clockMarkup: clockMarkup,
-        watch: watch
+        watch: watch,
+        calendarDay: calendarDay
     };
 })();

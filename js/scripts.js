@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261121-heroside";
+    var ASSET_V = "20261121-events";
 
     var BUNDLES = {
         wow: [
