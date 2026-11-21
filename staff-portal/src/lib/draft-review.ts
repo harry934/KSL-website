@@ -689,17 +689,16 @@ async function acceptSiteImage(admin: Admin, userId: string, slotId: string, pay
     return error ? "Could not accept this draft." : null;
   }
   if (slotId === HOME_HERO_SLOT && Array.isArray(payload.items)) {
-    const items = parseHeroMedia(payload.items);
+    const items = parseHeroMedia(payload.items).filter((item) => item.kind === "image");
     if (!items.length) {
       const { error } = await admin.from("site_image_overrides").delete().eq("slot_id", slotId);
       return error ? "Could not accept this draft." : null;
     }
-    const poster = items.find((item) => item.kind === "image") ?? null;
     const { error } = await admin.from("site_image_overrides").upsert({
       slot_id: slotId,
       source: "storage",
-      public_url: poster?.public_url ?? null,
-      storage_path: poster?.storage_path ?? items[0].storage_path,
+      public_url: items[0].public_url,
+      storage_path: items[0].storage_path,
       media: items,
       updated_by: userId,
     });

@@ -1,37 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Crop, GripVertical, Loader2, Scissors, Trash2, Upload, X } from "lucide-react";
+import { GripVertical, Loader2, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, Notice, Select } from "@/components/ui/form-bits";
 import { useFeedback } from "@/components/ui/feedback";
-import { awaitingReview, sendJson, uploadFile } from "@/lib/upload-client";
-import {
-  cancelActiveUploadJobs,
-  clearUploadJob,
-  getActiveUploadJobs,
-  getUploadJobs,
-  startUploadJob,
-  subscribeUploadJobs,
-} from "@/lib/upload-jobs";
+import { sendJson, uploadFile } from "@/lib/upload-client";
 import { PhotoCropDialog } from "@/components/ui/photo-crop";
-import { VideoCropDialog } from "@/components/ui/video-crop";
-import { VideoTrimDialog } from "@/components/ui/video-trim";
-import { heroFrameOffset, type HeroCrop, type HeroTrim } from "@/lib/hero-frame";
 import { siteAssetUrl } from "@/lib/site-url";
-import { HERO_MEDIA_LIMIT, HOME_HERO_SLOT, isImagePath, isVideoPath, parseHeroMedia, type SiteImageSlot } from "@/lib/site-images";
-import { appPath } from "@/lib/base-path";
+import { HERO_MEDIA_LIMIT, HOME_HERO_SLOT, isImagePath, parseHeroMedia, type SiteImageSlot } from "@/lib/site-images";
 
 type Override = { slot_id: string; source: string; public_url: string | null; storage_path: string | null; media?: unknown };
 type LibraryImage = { url: string; storagePath: string | null; label: string };
 type HeroItem = {
-  kind: "image" | "video";
+  kind: "image";
   url: string;
   storagePath: string | null;
   label: string;
-  crop: HeroCrop | null;
-  trim: HeroTrim | null;
   title: string;
   subtitle: string;
   buttonLabel: string;
@@ -62,53 +48,8 @@ const HERO_PAGES = [
   { value: "contact.html", label: "Contact" },
 ];
 
-function clock(seconds: number) {
-  const whole = Math.max(0, Math.round(seconds));
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
-}
-
-function heroFrameUrl(url: string, kind: HeroItem["kind"]) {
-  const full = siteAssetUrl(url);
-  if (kind !== "video" || full.includes("#")) return full;
-  return `${full}#t=0.1`;
-}
-
 function HeroPreview({ item }: { item: HeroItem }) {
-  const frame = useRef<HTMLDivElement>(null);
-  const video = useRef<HTMLVideoElement>(null);
-  const place = useCallback(() => {
-    const box = frame.current;
-    const clip = video.current;
-    if (!box || !clip || !item.crop || !clip.videoWidth || !clip.videoHeight) return;
-    const next = heroFrameOffset(box.clientWidth, box.clientHeight, clip.videoWidth, clip.videoHeight, item.crop);
-    clip.style.position = "absolute";
-    clip.style.width = `${next.width}px`;
-    clip.style.height = `${next.height}px`;
-    clip.style.left = `${next.left}px`;
-    clip.style.top = `${next.top}px`;
-  }, [item.crop]);
-
-  if (item.kind !== "video") {
-    return <img src={heroFrameUrl(item.url, item.kind)} alt="" className="block h-[90px] w-[144px] shrink-0 bg-[#eef1f4] object-cover" />;
-  }
-  return (
-    <div ref={frame} className="relative h-[90px] w-[144px] shrink-0 overflow-hidden bg-[#0b1f3a]">
-      <video
-        ref={video}
-        src={heroFrameUrl(item.url, item.kind)}
-        muted
-        playsInline
-        preload="metadata"
-        onLoadedMetadata={(event) => {
-          const clip = event.currentTarget;
-          if (clip.currentTime < 0.1) clip.currentTime = 0.1;
-          place();
-        }}
-        draggable={false}
-        className={item.crop ? "absolute max-w-none" : "block h-full w-full object-cover"}
-      />
-    </div>
-  );
+  return <img src={siteAssetUrl(item.url)} alt="" className="block h-[90px] w-[144px] shrink-0 bg-[#eef1f4] object-cover" />;
 }
 
 function SectionTitle({ step, title, note }: { step: string; title: string; note?: string }) {
@@ -122,7 +63,7 @@ function SectionTitle({ step, title, note }: { step: string; title: string; note
 }
 
 function heroFromOverride(override: Override | undefined) {
-  const parsed = parseHeroMedia(override?.media);
+  const parsed = parseHeroMedia(override?.media).filter((item) => item.kind === "image");
   const source =
     parsed.length > 0
       ? parsed
@@ -136,17 +77,15 @@ function heroFromOverride(override: Override | undefined) {
               trim: null,
               ...DEFAULT_HERO_COPY,
             },
-          ])
+          ]).filter((item) => item.kind === "image")
         : [];
   return {
     live: parsed.length > 0,
     items: source.map((item) => ({
-      kind: item.kind,
+      kind: "image" as const,
       url: item.public_url,
       storagePath: item.storage_path,
-      label: item.kind === "video" ? "Video" : "Photo",
-      crop: item.crop,
-      trim: item.trim,
+      label: "Photo",
       title: item.title || DEFAULT_HERO_COPY.title,
       subtitle: item.subtitle ?? DEFAULT_HERO_COPY.subtitle,
       buttonLabel: item.buttonLabel || DEFAULT_HERO_COPY.buttonLabel,
@@ -167,10 +106,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   const [page, setPage] = useState("");
   const [picking, setPicking] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<{ percent: number; label: string } | null>(null);
   const [crop, setCrop] = useState<{ slotId: string; file: File } | null>(null);
-  const [videoCrop, setVideoCrop] = useState<number | null>(null);
-  const [videoTrim, setVideoTrim] = useState<number | null>(null);
   const [lift, setLift] = useState<{ from: number; over: number; stride: number } | null>(null);
   const [customLinkFor, setCustomLinkFor] = useState<number | null>(null);
   const [selectedHeroIndex, setSelectedHeroIndex] = useState(0);
@@ -198,42 +134,6 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   useEffect(() => {
     load();
   }, [load]);
-
-  useEffect(() => {
-    function syncUploadJobs() {
-      const active = getActiveUploadJobs(HOME_HERO_SLOT)[0];
-      if (active) {
-        setBusy(HOME_HERO_SLOT);
-        setUploadProgress({ percent: active.percent, label: active.label });
-        return;
-      }
-
-      const finished = getUploadJobs().find(
-        (job) =>
-          job.key === HOME_HERO_SLOT &&
-          (job.status === "done" || job.status === "error" || job.status === "cancelled")
-      );
-      if (!finished) {
-        setUploadProgress((current) => (current ? null : current));
-        return;
-      }
-
-      if (finished.status === "done") {
-        toast("Video added to the home carousel.");
-        void load();
-      } else if (finished.status === "cancelled") {
-        toast("Upload cancelled.");
-      } else {
-        toast(finished.error || "The video upload did not work. Please try again.", "error");
-      }
-      clearUploadJob(finished.id);
-      setBusy(null);
-      setUploadProgress(null);
-    }
-
-    syncUploadJobs();
-    return subscribeUploadJobs(syncUploadJobs);
-  }, [load, toast]);
 
   useEffect(() => {
     if (loading || !slots.length) return;
@@ -298,17 +198,17 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
           slotId: HOME_HERO_SLOT,
           source: "storage",
           items: next.map((item) => ({
-            kind: item.kind,
+            kind: "image",
             publicUrl: item.url,
             storagePath: item.storagePath,
-            crop: item.kind === "video" ? item.crop : null,
-            trim: item.kind === "video" ? item.trim : null,
+            crop: null,
+            trim: null,
             title: item.title,
             subtitle: item.subtitle,
             buttonLabel: item.buttonLabel,
             buttonUrl: item.buttonUrl,
           })),
-          addToGallery: Boolean(gallery && gallery.kind === "image"),
+          addToGallery: Boolean(gallery),
           publicUrl: gallery?.url,
           storagePath: gallery?.storagePath,
           title: gallery?.label,
@@ -367,8 +267,6 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
         url: uploaded.public_url,
         storagePath: uploaded.storage_path,
         label: file.name.replace(/\.[a-z0-9]+$/i, "") || "Photo",
-        crop: null,
-        trim: null,
         ...DEFAULT_HERO_COPY,
       };
       const next = [...heroItems, item];
@@ -378,100 +276,6 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       toast((err as Error).message, "error");
       setBusy(null);
     }
-  }
-
-  function addHeroVideo(file: File) {
-    const named = /\.(mp4|webm|mov|m4v)$/i.test(file.name);
-    const typed =
-      file.type === "video/mp4" ||
-      file.type === "video/webm" ||
-      file.type === "video/quicktime" ||
-      file.type === "video/x-quicktime" ||
-      ((file.type === "" || file.type === "application/octet-stream") && named);
-    if (!typed) {
-      toast("Use an MP4 (H.264), WebM, or MOV video.", "error");
-      return;
-    }
-    if (file.size > 100 * 1024 * 1024) {
-      toast("Video is too large (max 100 MB). Compress it or export a shorter clip.", "error");
-      return;
-    }
-    if (file.size < 64) {
-      toast("That video file looks empty. Choose another file.", "error");
-      return;
-    }
-    if (!heroRoom()) return;
-    if (getActiveUploadJobs(HOME_HERO_SLOT).length) {
-      toast("A video is already uploading. Wait for it to finish.", "error");
-      return;
-    }
-
-    setBusy(HOME_HERO_SLOT);
-    setUploadProgress({ percent: 0, label: "Starting video upload…" });
-
-    startUploadJob({
-      key: HOME_HERO_SLOT,
-      module: "site_settings",
-      file,
-      label: "Uploading video…",
-      returnPath: appPath("/images"),
-      extraHeaders: { "x-ksl-hero": "1" },
-      // Upload the original file. Browser MediaRecorder re-encode caused
-      // fast-forward playback and muddy quality on the homepage carousel.
-      compress: false,
-      afterUpload: async (uploaded) => {
-        if (!uploaded?.public_url) {
-          throw new Error("The upload finished without a usable video address. Please try again.");
-        }
-        if (!isVideoPath(uploaded.public_url) && !/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(uploaded.public_url)) {
-          throw new Error("The upload finished but the file was not saved as a playable video.");
-        }
-        const data = await sendJson("/api/site-images", "GET");
-        const rows: Override[] = data.overrides ?? [];
-        const hero = heroFromOverride(rows.find((row) => row.slot_id === HOME_HERO_SLOT));
-        if (hero.items.length >= HERO_MEDIA_LIMIT) {
-          throw new Error(`You can add up to ${HERO_MEDIA_LIMIT} slides.`);
-        }
-        const next = [
-          ...hero.items,
-          {
-            kind: "video" as const,
-            url: uploaded.public_url,
-            storagePath: uploaded.storage_path,
-            label: file.name.replace(/\.[a-z0-9]+$/i, "") || "Video",
-            crop: null,
-            trim: null,
-            ...DEFAULT_HERO_COPY,
-          },
-        ];
-        const saved = await sendJson("/api/site-images", "POST", {
-          slotId: HOME_HERO_SLOT,
-          source: "storage",
-          items: next.map((item) => ({
-            kind: item.kind,
-            publicUrl: item.url,
-            storagePath: item.storagePath,
-            crop: item.kind === "video" ? item.crop : null,
-            trim: item.kind === "video" ? item.trim : null,
-            title: item.title,
-            subtitle: item.subtitle,
-            buttonLabel: item.buttonLabel,
-            buttonUrl: item.buttonUrl,
-          })),
-        });
-        if (awaitingReview(saved)) {
-          throw new Error(
-            "Video uploaded, but it is waiting for someone who can publish before it appears on the homepage carousel."
-          );
-        }
-      },
-    }).promise.catch(() => {
-      // Errors / cancel are stored on the job and surfaced by the upload-jobs subscription.
-    });
-  }
-
-  function cancelHeroVideoUpload() {
-    cancelActiveUploadJobs(HOME_HERO_SLOT);
   }
 
   function moveHero(from: number, to: number) {
@@ -539,7 +343,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     if (!heroRoom()) return;
     const next = [
       ...heroItems,
-      { kind: "image" as const, url: image.url, storagePath: image.storagePath, label: image.label, crop: null, trim: null, ...DEFAULT_HERO_COPY },
+      { kind: "image" as const, url: image.url, storagePath: image.storagePath, label: image.label, ...DEFAULT_HERO_COPY },
     ];
     setSelectedHeroIndex(next.length - 1);
     persistHero(next);
@@ -614,10 +418,8 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
               <h3 className="m-0 mt-1 text-[15px] font-bold text-[#0b1f3a]">Hero slides</h3>
               <p className="mb-0 mt-1 text-[13px] text-[#5b6775]">
                 {heroListLive
-                  ? "These slides play one after another on the homepage. Drag the handle to change order. Click a slide to edit its words."
-                  : heroItems.length
-                    ? "Add another slide to replace the original film."
-                    : "The original film is showing. Add a photo or video to take over."}
+                  ? "The original film always plays first, then these photos. Drag to reorder photos. Click a photo to edit its words."
+                  : "The original film is showing. Add photos to follow it on the homepage carousel."}
               </p>
             </div>
 
@@ -664,17 +466,10 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                         <HeroPreview item={item} />
                         <div className="min-w-0 flex-1">
                           <p className="m-0 text-[14px] font-semibold text-[#0b1f3a]">
-                            Slide {index + 1}
-                            <span className="ml-2 text-[12.5px] font-medium text-[#6b7785]">{item.kind === "video" ? "Video" : "Photo"}</span>
+                            Photo {index + 1}
+                            <span className="ml-2 text-[12.5px] font-medium text-[#6b7785]">after film</span>
                           </p>
                           <p className="m-0 mt-0.5 truncate text-[12.5px] text-[#5b6775]">{item.title}</p>
-                          {(item.crop || item.trim) && (
-                            <p className="m-0 mt-0.5 text-[12px] text-[#6b7785]">
-                              {item.crop ? "Cropped" : ""}
-                              {item.crop && item.trim ? " · " : ""}
-                              {item.trim ? `${clock(item.trim.start)}–${clock(item.trim.end)}` : ""}
-                            </p>
-                          )}
                         </div>
                         {selected && <span className="shrink-0 text-[12px] font-semibold text-[#0b1f3a]">Editing</span>}
                       </div>
@@ -707,49 +502,16 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                       }}
                     />
                   </label>
-                  <label
-                    className={`inline-flex h-10 cursor-pointer items-center gap-2 border border-[#d5dce4] bg-white px-4 text-[14px] font-semibold text-[#0b1f3a] ${busy !== null ? "pointer-events-none opacity-60" : ""}`}
-                  >
-                    {busy === HOME_HERO_SLOT && uploadProgress ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    {busy === HOME_HERO_SLOT && uploadProgress ? uploadProgress.label : "Upload video"}
-                    <input
-                      type="file"
-                      accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"
-                      className="sr-only"
-                      disabled={busy !== null}
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        event.target.value = "";
-                        if (file) addHeroVideo(file);
-                      }}
-                    />
-                  </label>
                   <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => setPicking(heroSlot.id)}>
                     {busy === heroSlot.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                     From gallery
                   </Button>
                   {heroItems.length > 0 && (
                     <Button type="button" variant="ghost" disabled={busy !== null} onClick={() => persistHero([])}>
-                      Back to original film
+                      Photos off — film only
                     </Button>
                   )}
                 </div>
-                {uploadProgress && (
-                  <div className="mt-3 space-y-1.5" aria-live="polite">
-                    <div className="h-2 overflow-hidden rounded-full bg-[#e8edf2]">
-                      <div
-                        className="h-full rounded-full bg-[#0b1f3a] transition-[width] duration-200"
-                        style={{ width: `${Math.max(4, uploadProgress.percent)}%` }}
-                      />
-                    </div>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="m-0 text-[12.5px] text-[#5b6775]">{uploadProgress.label}</p>
-                      <Button type="button" variant="ghost" size="sm" onClick={cancelHeroVideoUpload}>
-                        Cancel upload
-                      </Button>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -762,21 +524,9 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                   </div>
                   {canEdit && (
                     <div className="flex flex-wrap gap-2">
-                      {selectedHero.kind === "video" && (
-                        <>
-                          <Button type="button" variant="secondary" size="sm" disabled={busy !== null} onClick={() => setVideoCrop(selectedHeroIndex)}>
-                            <Crop className="h-4 w-4" />
-                            Crop video
-                          </Button>
-                          <Button type="button" variant="secondary" size="sm" disabled={busy !== null} onClick={() => setVideoTrim(selectedHeroIndex)}>
-                            <Scissors className="h-4 w-4" />
-                            Trim video
-                          </Button>
-                        </>
-                      )}
                       <Button type="button" variant="danger" size="sm" disabled={busy !== null} onClick={() => removeHero(selectedHeroIndex)}>
                         <Trash2 className="h-4 w-4" />
-                        Remove slide
+                        Remove photo
                       </Button>
                     </div>
                   )}
@@ -917,30 +667,6 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
         )}
       </section>
 
-      {videoTrim !== null && heroItems[videoTrim]?.kind === "video" && (
-        <VideoTrimDialog
-          url={siteAssetUrl(heroItems[videoTrim].url)}
-          initial={heroItems[videoTrim].trim}
-          onCancel={() => setVideoTrim(null)}
-          onDone={(nextTrim) => {
-            const index = videoTrim;
-            setVideoTrim(null);
-            persistHero(heroItems.map((item, itemIndex) => (itemIndex === index ? { ...item, trim: nextTrim } : item)));
-          }}
-        />
-      )}
-      {videoCrop !== null && heroItems[videoCrop]?.kind === "video" && (
-        <VideoCropDialog
-          url={siteAssetUrl(heroItems[videoCrop].url)}
-          initial={heroItems[videoCrop].crop}
-          onCancel={() => setVideoCrop(null)}
-          onDone={(nextCrop) => {
-            const index = videoCrop;
-            setVideoCrop(null);
-            persistHero(heroItems.map((item, itemIndex) => (itemIndex === index ? { ...item, crop: nextCrop } : item)));
-          }}
-        />
-      )}
       {crop && (
         <PhotoCropDialog
           file={crop.file}

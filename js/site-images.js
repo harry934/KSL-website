@@ -151,18 +151,17 @@
     function publishHero(data) {
         var list = data && data.hero;
         if (!Array.isArray(list) || !list.length) return;
+        // Photos only — the shipped hero.mp4 is always the first slide in main.js.
         var clean = [];
         list.forEach(function (item) {
             var url = safeUrl(item && item.url);
-            var kind = item && item.kind === "video" ? "video" : "image";
-            if (!url) return;
-            if (kind === "video" && !isVideoUrl(url)) return;
-            if (kind === "image" && !isImageUrl(url)) return;
+            if (!url || !isImageUrl(url)) return;
+            if (item && item.kind === "video") return;
             clean.push({
-                kind: kind,
+                kind: "image",
                 url: url,
-                crop: kind === "video" ? heroCrop(item && item.crop) : null,
-                trim: kind === "video" ? heroTrim(item && item.trim) : null,
+                crop: null,
+                trim: null,
                 title: item && typeof item.title === "string" ? item.title : "",
                 subtitle: item && typeof item.subtitle === "string" ? item.subtitle : "",
                 buttonLabel: item && typeof item.buttonLabel === "string" ? item.buttonLabel : "",

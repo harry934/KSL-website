@@ -24,20 +24,20 @@ export async function GET() {
   }[] = [];
   for (const row of data ?? []) {
     if (row.slot_id === HOME_HERO_SLOT) {
-      const items = parseHeroMedia(row.media);
+      // Public hero carousel is photos only; the shipped hero.mp4 plays first on the site.
+      const items = parseHeroMedia(row.media).filter((item) => item.kind === "image");
       if (items.length) {
         hero = items.map((item) => ({
-          kind: item.kind,
+          kind: "image" as const,
           url: item.public_url,
-          crop: item.crop,
-          trim: item.trim,
+          crop: null,
+          trim: null,
           title: item.title,
           subtitle: item.subtitle,
           buttonLabel: item.buttonLabel,
           buttonUrl: item.buttonUrl,
         }));
-        const poster = hero.find((item) => item.kind === "image");
-        if (poster) images[HOME_HERO_SLOT] = poster.url;
+        images[HOME_HERO_SLOT] = hero[0].url;
         continue;
       }
     }

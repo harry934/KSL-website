@@ -482,6 +482,7 @@
                 var bounds = trimBounds();
                 try {
                     if (bounds) clip.currentTime = bounds.start;
+                    else if (item.start > 0) clip.currentTime = item.start;
                     else if (clip.ended) clip.currentTime = 0;
                 } catch (e) { }
                 clip.loop = count === 1 && !bounds;
@@ -544,18 +545,46 @@
             customIndex = 0;
             framedClips = [];
             hero.classList.remove("has-custom-media");
+            // Restore the shipped homepage film when CMS photos are cleared.
+            heroVideoAttached = false;
+            if (heroVideo && !heroVideo.getAttribute("src") && !heroVideo.getAttribute("data-src")) {
+                heroVideo.setAttribute("data-src", "/img/ksl/hero.mp4");
+            }
         }
 
         function takeCustom(items) {
-            if (!items || !items.length) return;
-            var usable = items;
-            if (reduceMotion.matches) {
-                usable = items.filter(function (item) { return item.kind === "image"; });
-                if (!usable.length) return;
+            // CMS may only supply photos. The shipped hero.mp4 always plays first.
+            var photos = (items || []).filter(function (item) {
+                return item && item.kind === "image" && item.url;
+            });
+            if (!photos.length) {
+                if (customMedia) clearCustomMedia();
+                return;
             }
-            // Replace an existing carousel when CMS sends an updated hero list (e.g. new video slide).
+            if (reduceMotion.matches) {
+                // Prefer still photos only when motion is reduced.
+            }
+            var defaultSrc = (heroVideo.getAttribute("data-src") || heroVideo.getAttribute("src") || "/img/ksl/hero.mp4").trim();
+            if (defaultSrc.charAt(0) !== "/" && defaultSrc.indexOf("://") === -1) {
+                defaultSrc = "/" + defaultSrc.replace(/^\.\//, "");
+            }
+            var defaultStart = parseFloat(heroVideo.getAttribute("data-start"));
+            if (!Number.isFinite(defaultStart) || defaultStart < 0) defaultStart = heroVideoStart || 0;
+            var film = {
+                kind: "video",
+                url: defaultSrc,
+                start: defaultStart,
+                title: "Catalyzing Shipbuilding Industry",
+                subtitle: "",
+                buttonLabel: "Read our story",
+                buttonUrl: "about.html"
+            };
+            var usable = reduceMotion.matches ? photos.slice() : [film].concat(photos);
+            if (!usable.length) return;
+            // Replace an existing carousel when CMS sends an updated hero list.
             if (customMedia) clearCustomMedia();
             customMedia = usable;
+            customIndex = 0;
             hero.classList.add("has-custom-media");
             heroVideo.pause();
             heroVideo.removeAttribute("src");
@@ -611,7 +640,7 @@
                     var dot = document.createElement("button");
                     dot.type = "button";
                     dot.className = "ksl-hero-dot" + (itemIndex === 0 ? " is-active" : "");
-                    dot.setAttribute("aria-label", (item.kind === "video" ? "Play video " : "Show photo ") + (itemIndex + 1));
+                    dot.setAttribute("aria-label", (item.kind === "video" ? "Play film " : "Show photo ") + (itemIndex + 1));
                     if (itemIndex === 0) dot.setAttribute("aria-current", "true");
                     dot.addEventListener("click", function () {
                         customPlaying = true;

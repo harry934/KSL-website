@@ -145,9 +145,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (slotId === HOME_HERO_SLOT && Array.isArray(body.items)) {
-    const items = parseHeroMedia(body.items);
+    // Hero CMS slides are photos only — the hardcoded film stays first on the public site.
+    const items = parseHeroMedia(body.items).filter((item) => item.kind === "image");
     if (!items.length && body.items.length > 0) {
-      return NextResponse.json({ error: "Use a JPG, PNG, WebP, MP4, or WebM file." }, { status: 400 });
+      return NextResponse.json({ error: "Use a JPG, PNG, or WebP photo for hero slides." }, { status: 400 });
     }
     if (!items.length) {
       const { error: delErr } = await admin.from("site_image_overrides").delete().eq("slot_id", slotId);
