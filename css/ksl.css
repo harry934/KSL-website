@@ -2196,11 +2196,15 @@ body {
     width: 100%;
 }
 
+/* Shared homepage explanation copy — same as Who we are. */
+.ksl-prose > p,
 #about .about-copy-body p,
 #about .about-copy > p {
     margin: 0 0 0.85rem;
     color: #3d4a63;
+    font-family: "Open Sans", sans-serif;
     font-size: 1.02rem;
+    font-weight: 400;
     line-height: 1.62;
     letter-spacing: 0.01em;
     text-wrap: pretty;
@@ -2208,6 +2212,7 @@ body {
     -webkit-hyphens: none;
 }
 
+.ksl-prose > p:last-child,
 #about .about-copy-body p:last-child {
     margin-bottom: 0;
 }
