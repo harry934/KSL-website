@@ -416,7 +416,9 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       label: "Uploading video…",
       returnPath: appPath("/images"),
       extraHeaders: { "x-ksl-hero": "1" },
-      compress: true,
+      // Upload the original file. Browser MediaRecorder re-encode caused
+      // fast-forward playback and muddy quality on the homepage carousel.
+      compress: false,
       afterUpload: async (uploaded) => {
         if (!uploaded?.public_url) {
           throw new Error("The upload finished without a usable video address. Please try again.");

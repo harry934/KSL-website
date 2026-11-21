@@ -6,6 +6,14 @@ export type CompressProgress = {
   label: string;
 };
 
+/** Keep originals under this size — browser re-encode is always lossy. */
+const SKIP_UNDER_BYTES = 40 * 1024 * 1024;
+/** Only downscale when wider than this. */
+const MAX_WIDTH = 1920;
+/** Target encode rate for ~1080p hero clips (was 2.5 Mbps — soft and muddy). */
+const VIDEO_BITS_PER_SECOND = 8_000_000;
+const AUDIO_BITS_PER_SECOND = 160_000;
+
 function pickRecorderMime() {
   const options = [
     "video/webm;codecs=vp9,opus",
@@ -51,17 +59,19 @@ function waitForEvent(target: EventTarget, event: string, signal?: AbortSignal) 
 }
 
 /**
- * Shrinks large hero videos in the browser before upload.
- * Targets ~1280px / ~2.5 Mbps so slow uplinks send far fewer bytes.
+ * Optionally shrinks very large hero videos in the browser before upload.
+ *
+ * IMPORTANT: must record at playbackRate 1. Speeding playback (e.g. 3×) makes
+ * MediaRecorder stamp wall-clock time while content advances faster, so the
+ * saved file plays back fast-forwarded. That was the production bug.
  */
 export async function compressHeroVideo(
   file: File,
   onProgress?: (state: CompressProgress) => void,
   signal?: AbortSignal
 ): Promise<File> {
-  const SKIP_UNDER = 12 * 1024 * 1024;
-  if (file.size <= SKIP_UNDER) {
-    onProgress?.({ phase: "skipped", percent: 100, label: "Video is already small enough" });
+  if (file.size <= SKIP_UNDER_BYTES) {
+    onProgress?.({ phase: "skipped", percent: 100, label: "Keeping original video quality…" });
     return file;
   }
 
@@ -71,7 +81,7 @@ export async function compressHeroVideo(
     return file;
   }
 
-  onProgress?.({ phase: "compressing", percent: 2, label: "Preparing a smaller video…" });
+  onProgress?.({ phase: "compressing", percent: 2, label: "Preparing a web-friendly copy…" });
 
   const objectUrl = URL.createObjectURL(file);
   const video = document.createElement("video");
@@ -84,6 +94,7 @@ export async function compressHeroVideo(
   let raf = 0;
   let mediaStream: MediaStream | null = null;
   let canvasStream: MediaStream | null = null;
+  let recordStream: MediaStream | null = null;
 
   try {
     await waitForEvent(video, "loadedmetadata", signal);
@@ -91,8 +102,14 @@ export async function compressHeroVideo(
       return file;
     }
 
-    const maxWidth = 1280;
-    const scale = Math.min(1, maxWidth / video.videoWidth);
+    const needsDownscale = video.videoWidth > MAX_WIDTH;
+    // Huge file but already ≤1080p-ish: prefer original over a muddy re-encode.
+    if (!needsDownscale) {
+      onProgress?.({ phase: "skipped", percent: 100, label: "Keeping original video quality…" });
+      return file;
+    }
+
+    const scale = Math.min(1, MAX_WIDTH / video.videoWidth);
     const width = Math.max(2, Math.round((video.videoWidth * scale) / 2) * 2);
     const height = Math.max(2, Math.round((video.videoHeight * scale) / 2) * 2);
 
@@ -102,17 +119,19 @@ export async function compressHeroVideo(
     const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
     if (!ctx) return file;
 
+    // 30fps wall-clock capture; content must advance at 1× so duration stays correct.
     canvasStream = canvas.captureStream(30);
     mediaStream = (video as HTMLVideoElement & { captureStream?: () => MediaStream }).captureStream?.() || null;
+    recordStream = canvasStream;
     if (mediaStream) {
-      for (const track of mediaStream.getAudioTracks()) canvasStream.addTrack(track);
+      for (const track of mediaStream.getAudioTracks()) recordStream.addTrack(track);
     }
 
     const chunks: BlobPart[] = [];
-    const recorder = new MediaRecorder(canvasStream, {
+    const recorder = new MediaRecorder(recordStream, {
       mimeType: mime,
-      videoBitsPerSecond: 2_500_000,
-      audioBitsPerSecond: 96_000,
+      videoBitsPerSecond: VIDEO_BITS_PER_SECOND,
+      audioBitsPerSecond: AUDIO_BITS_PER_SECOND,
     });
     recorder.ondataavailable = (event) => {
       if (event.data.size) chunks.push(event.data);
@@ -133,8 +152,10 @@ export async function compressHeroVideo(
 
     video.currentTime = 0;
     await waitForEvent(video, "seeked", signal).catch(() => undefined);
+
+    // Must stay at 1×. Any rate > 1 shortens the recorded timeline (fast-forward).
     try {
-      video.playbackRate = 3;
+      video.playbackRate = 1;
     } catch {
       /* ignore */
     }
@@ -155,7 +176,7 @@ export async function compressHeroVideo(
       };
       const onTime = () => {
         const percent = Math.max(3, Math.min(92, Math.round((video.currentTime / duration) * 90) + 3));
-        onProgress?.({ phase: "compressing", percent, label: `Shrinking video… ${percent}%` });
+        onProgress?.({ phase: "compressing", percent, label: `Optimizing video… ${percent}%` });
       };
       const cleanup = () => {
         video.removeEventListener("ended", onEnded);
@@ -188,7 +209,7 @@ export async function compressHeroVideo(
     onProgress?.({
       phase: "done",
       percent: 100,
-      label: `Compressed ${(file.size / 1048576).toFixed(1)} MB → ${(next.size / 1048576).toFixed(1)} MB`,
+      label: `Optimized ${(file.size / 1048576).toFixed(1)} MB → ${(next.size / 1048576).toFixed(1)} MB`,
     });
     return next;
   } catch (err) {
@@ -203,5 +224,6 @@ export async function compressHeroVideo(
     URL.revokeObjectURL(objectUrl);
     canvasStream?.getTracks().forEach((track) => track.stop());
     mediaStream?.getTracks().forEach((track) => track.stop());
+    recordStream?.getTracks().forEach((track) => track.stop());
   }
 }

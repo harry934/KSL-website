@@ -21,7 +21,9 @@
     "restore:build-package": "node scripts/build-restore-package.mjs",
     "cleanup:staff": "node scripts/cleanup-staff.mjs",
     "db:smoke": "node scripts/db-smoke.mjs",
-    "test:pg": "node scripts/local-pg-test.mjs"
+    "test:pg": "node scripts/local-pg-test.mjs",
+    "dev:local": "node scripts/dev-local-with-pg.mjs",
+    "verify:hero-video": "node scripts/verify-hero-video-fix.mjs"
   },
   "dependencies": {
     "@simplewebauthn/browser": "^14.0.0",
