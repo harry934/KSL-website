@@ -155,7 +155,7 @@
     function publishHero(data) {
         var list = data && data.hero;
         if (!Array.isArray(list) || !list.length) return;
-        // Photos only — the shipped hero.mp4 is always the first slide in main.js.
+        var mode = data && data.heroMode === "images_only" ? "images_only" : "video_and_images";
         var clean = [];
         list.forEach(function (item) {
             var url = safeUrl(item && item.url);
@@ -173,10 +173,11 @@
             });
         });
         if (!clean.length) return;
+        window.KSL_HERO_MODE = mode;
         window.KSL_HERO_MEDIA = clean;
         primeHero();
         try {
-            window.dispatchEvent(new CustomEvent("ksl-hero-media", { detail: clean }));
+            window.dispatchEvent(new CustomEvent("ksl-hero-media", { detail: { items: clean, mode: mode } }));
         } catch (err) {}
     }
 
@@ -216,9 +217,8 @@
                 if (heroHref) button.setAttribute("href", heroHref);
             }
         }
-        // Photos follow the shipped hero.mp4 — never strip the film source or wipe its poster
-        // (that caused a blue flash while a replacement clip buffered).
-        if (item && item.kind === "image") {
+        // Keep the film poster/source intact for video+photos mode (avoids a blue flash).
+        if (item && item.kind === "image" && window.KSL_HERO_MODE === "images_only") {
             revealPhoto(hero);
         }
         hero.classList.add("is-live");

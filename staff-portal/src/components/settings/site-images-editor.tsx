@@ -9,7 +9,15 @@ import { useFeedback } from "@/components/ui/feedback";
 import { sendJson, uploadFile } from "@/lib/upload-client";
 import { PhotoCropDialog } from "@/components/ui/photo-crop";
 import { siteAssetUrl } from "@/lib/site-url";
-import { HERO_MEDIA_LIMIT, HOME_HERO_SLOT, isImagePath, parseHeroMedia, type SiteImageSlot } from "@/lib/site-images";
+import {
+  HERO_MEDIA_LIMIT,
+  HOME_HERO_SLOT,
+  isImagePath,
+  parseHeroBundle,
+  parseHeroMedia,
+  type HeroMode,
+  type SiteImageSlot,
+} from "@/lib/site-images";
 
 type Override = { slot_id: string; source: string; public_url: string | null; storage_path: string | null; media?: unknown };
 type LibraryImage = { url: string; storagePath: string | null; label: string };
@@ -63,7 +71,8 @@ function SectionTitle({ step, title, note }: { step: string; title: string; note
 }
 
 function heroFromOverride(override: Override | undefined) {
-  const parsed = parseHeroMedia(override?.media).filter((item) => item.kind === "image");
+  const bundle = parseHeroBundle(override?.media);
+  const parsed = bundle.items.filter((item) => item.kind === "image");
   const source =
     parsed.length > 0
       ? parsed
@@ -81,6 +90,7 @@ function heroFromOverride(override: Override | undefined) {
         : [];
   return {
     live: parsed.length > 0,
+    mode: bundle.mode as HeroMode,
     items: source.map((item) => ({
       kind: "image" as const,
       url: item.public_url,
@@ -99,6 +109,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
   const [slots, setSlots] = useState<SiteImageSlot[]>([]);
   const [overrides, setOverrides] = useState<Override[]>([]);
   const [heroItems, setHeroItems] = useState<HeroItem[]>([]);
+  const [heroMode, setHeroMode] = useState<HeroMode>("video_and_images");
   const [heroListLive, setHeroListLive] = useState(false);
   const [library, setLibrary] = useState<LibraryImage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,6 +132,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
       setOverrides(rows);
       const hero = heroFromOverride(rows.find((row) => row.slot_id === HOME_HERO_SLOT));
       setHeroItems(hero.items);
+      setHeroMode(hero.mode);
       setHeroListLive(hero.live);
       setSelectedHeroIndex((current) => (hero.items.length ? Math.min(current, hero.items.length - 1) : 0));
       setLibrary(data.library ?? []);
@@ -187,7 +199,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
     setBusy(null);
   }
 
-  async function persistHero(next: HeroItem[], gallery?: HeroItem) {
+  async function persistHero(next: HeroItem[], gallery?: HeroItem, mode: HeroMode = heroMode) {
     setBusy(HOME_HERO_SLOT);
     try {
       if (!next.length) {
@@ -197,6 +209,7 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
         await sendJson("/api/site-images", "POST", {
           slotId: HOME_HERO_SLOT,
           source: "storage",
+          mode,
           items: next.map((item) => ({
             kind: "image",
             publicUrl: item.url,
@@ -418,10 +431,52 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
               <h3 className="m-0 mt-1 text-[15px] font-bold text-[#0b1f3a]">Hero slides</h3>
               <p className="mb-0 mt-1 text-[13px] text-[#5b6775]">
                 {heroListLive
-                  ? "The original film always plays first, then these photos. Drag to reorder photos. Click a photo to edit its words."
-                  : "The original film is showing. Add photos to follow it on the homepage carousel."}
+                  ? heroMode === "images_only"
+                    ? "Photos only — the film is off. Drag to reorder. Click a photo to edit its words."
+                    : "Film stays on the left; photos rotate on the right. Drag to reorder. Click a photo to edit its words."
+                  : "The original film is showing full width. Add photos, then choose film + photos or photos only."}
               </p>
             </div>
+
+            {canEdit && heroItems.length > 0 && (
+              <div className="mt-4">
+                <p className="m-0 mb-2 text-[13px] font-semibold text-[#0b1f3a]">Display mode</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={busy !== null}
+                    onClick={() => {
+                      if (heroMode === "video_and_images") return;
+                      setHeroMode("video_and_images");
+                      void persistHero(heroItems, undefined, "video_and_images");
+                    }}
+                    className={`h-10 border px-4 text-[14px] font-semibold ${
+                      heroMode === "video_and_images"
+                        ? "border-[#0b1f3a] bg-[#0b1f3a] text-white"
+                        : "border-[#d5dce4] bg-white text-[#0b1f3a]"
+                    }`}
+                  >
+                    Film + photos
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy !== null}
+                    onClick={() => {
+                      if (heroMode === "images_only") return;
+                      setHeroMode("images_only");
+                      void persistHero(heroItems, undefined, "images_only");
+                    }}
+                    className={`h-10 border px-4 text-[14px] font-semibold ${
+                      heroMode === "images_only"
+                        ? "border-[#0b1f3a] bg-[#0b1f3a] text-white"
+                        : "border-[#d5dce4] bg-white text-[#0b1f3a]"
+                    }`}
+                  >
+                    Photos only
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="mt-4">
               <p className="m-0 mb-2 text-[13px] font-semibold text-[#0b1f3a]">Slides</p>
@@ -467,7 +522,9 @@ export function SiteImagesEditor({ canEdit }: { canEdit: boolean }) {
                         <div className="min-w-0 flex-1">
                           <p className="m-0 text-[14px] font-semibold text-[#0b1f3a]">
                             Photo {index + 1}
-                            <span className="ml-2 text-[12.5px] font-medium text-[#6b7785]">after film</span>
+                            <span className="ml-2 text-[12.5px] font-medium text-[#6b7785]">
+                              {heroMode === "images_only" ? "carousel" : "beside film"}
+                            </span>
                           </p>
                           <p className="m-0 mt-0.5 truncate text-[12.5px] text-[#5b6775]">{item.title}</p>
                         </div>

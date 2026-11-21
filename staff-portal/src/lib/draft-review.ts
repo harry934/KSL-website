@@ -3,7 +3,7 @@ import { createDatabaseClient } from "@/lib/db-client";
 import { logActivity } from "@/lib/api-auth";
 import { needsPublisherReview } from "@/lib/draft-access";
 import { canAccess, MODULE_LABELS, MODULE_ROUTES, type ModuleKey, type ModulePermission } from "@/lib/modules";
-import { HOME_HERO_SLOT, isImagePath, parseHeroMedia, safeImageUrl } from "@/lib/site-images";
+import { HOME_HERO_SLOT, isImagePath, parseHeroMedia, parseHeroMode, safeImageUrl } from "@/lib/site-images";
 
 type Actor = {
   userId: string;
@@ -690,6 +690,7 @@ async function acceptSiteImage(admin: Admin, userId: string, slotId: string, pay
   }
   if (slotId === HOME_HERO_SLOT && Array.isArray(payload.items)) {
     const items = parseHeroMedia(payload.items).filter((item) => item.kind === "image");
+    const mode = parseHeroMode(payload.mode);
     if (!items.length) {
       const { error } = await admin.from("site_image_overrides").delete().eq("slot_id", slotId);
       return error ? "Could not accept this draft." : null;
@@ -699,7 +700,7 @@ async function acceptSiteImage(admin: Admin, userId: string, slotId: string, pay
       source: "storage",
       public_url: items[0].public_url,
       storage_path: items[0].storage_path,
-      media: items,
+      media: { mode, items },
       updated_by: userId,
     });
     return error ? "Could not accept this draft." : null;

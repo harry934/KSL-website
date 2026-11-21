@@ -26,6 +26,9 @@ export function isSiteImageSlot(id: string) {
 export const HOME_HERO_SLOT = "chrome.home-hero";
 export const HERO_MEDIA_LIMIT = 8;
 
+/** How the homepage pairs the shipped film with CMS photos. */
+export type HeroMode = "video_and_images" | "images_only";
+
 export type HeroMediaItem = {
   kind: "image" | "video";
   public_url: string;
@@ -37,6 +40,30 @@ export type HeroMediaItem = {
   buttonLabel: string;
   buttonUrl: string;
 };
+
+export type HeroBundle = {
+  mode: HeroMode;
+  items: HeroMediaItem[];
+};
+
+export function parseHeroMode(value: unknown): HeroMode {
+  return value === "images_only" ? "images_only" : "video_and_images";
+}
+
+/** Stored `media` may be a legacy photo array or `{ mode, items }`. */
+export function parseHeroBundle(value: unknown): HeroBundle {
+  if (Array.isArray(value)) {
+    return { mode: "video_and_images", items: parseHeroMedia(value) };
+  }
+  if (value && typeof value === "object") {
+    const record = value as { mode?: unknown; items?: unknown };
+    return {
+      mode: parseHeroMode(record.mode),
+      items: parseHeroMedia(record.items),
+    };
+  }
+  return { mode: "video_and_images", items: [] };
+}
 
 const DEFAULT_HERO_TITLE = "Catalyzing Shipbuilding Industry";
 const DEFAULT_HERO_SUBTITLE = "";

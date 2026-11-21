@@ -359,6 +359,8 @@
         var customTimer = 0;
         var customPlaying = false;
         var framedClips = [];
+        var heroMediaMode = "video_and_images";
+        var sideBySide = false;
 
         function placeFramedClip(clip) {
             var crop = clip._kslCrop;
@@ -544,7 +546,11 @@
             customMedia = null;
             customIndex = 0;
             framedClips = [];
+            sideBySide = false;
+            heroMediaMode = "video_and_images";
             hero.classList.remove("has-custom-media");
+            hero.classList.remove("has-side-carousel");
+            hero.classList.remove("is-images-only");
             hero.classList.remove("is-slide-ready");
             // Restore the shipped homepage film when CMS photos are cleared.
             heroVideoAttached = false;
@@ -554,110 +560,81 @@
             if (heroVideoEnabled && !reduceMotion.matches) playHeroVideo();
         }
 
-        function takeCustom(items) {
-            // CMS may only supply photos. The shipped hero.mp4 always plays first.
-            var photos = (items || []).filter(function (item) {
+        function takeCustom(payload) {
+            var list = payload;
+            var mode = window.KSL_HERO_MODE || "video_and_images";
+            if (payload && !Array.isArray(payload) && typeof payload === "object") {
+                list = payload.items;
+                if (payload.mode === "images_only" || payload.mode === "video_and_images") mode = payload.mode;
+            }
+            var photos = (list || []).filter(function (item) {
                 return item && item.kind === "image" && item.url;
             });
             if (!photos.length) {
                 if (customMedia) clearCustomMedia();
                 return;
             }
-            var defaultSrc = (heroVideo.getAttribute("data-src") || heroVideo.getAttribute("src") || "/img/ksl/hero.mp4").trim();
-            if (defaultSrc.charAt(0) !== "/" && defaultSrc.indexOf("://") === -1) {
-                defaultSrc = "/" + defaultSrc.replace(/^\.\//, "");
-            }
-            var defaultStart = parseFloat(heroVideo.getAttribute("data-start"));
-            if (!Number.isFinite(defaultStart) || defaultStart < 0) defaultStart = heroVideoStart || 0;
-            var filmPoster = heroVideo.getAttribute("poster") || "img/ksl/mombasa.webp";
-            var film = {
-                kind: "video",
-                url: defaultSrc,
-                start: defaultStart,
-                poster: filmPoster,
-                title: "Catalyzing Shipbuilding Industry",
-                subtitle: "",
-                buttonLabel: "Read our story",
-                buttonUrl: "about.html"
-            };
-            var usable = reduceMotion.matches ? photos.slice() : [film].concat(photos);
+            // Prefer photos-only when the visitor asked to reduce motion.
+            if (reduceMotion.matches) mode = "images_only";
+            heroMediaMode = mode;
+            sideBySide = mode === "video_and_images";
+            var usable = photos.slice();
             if (!usable.length) return;
             // Replace an existing carousel when CMS sends an updated hero list.
             if (customMedia) clearCustomMedia();
+            heroMediaMode = mode;
+            sideBySide = mode === "video_and_images";
             customMedia = usable;
             customIndex = 0;
             hero.classList.add("has-custom-media");
+            hero.classList.toggle("has-side-carousel", sideBySide);
+            hero.classList.toggle("is-images-only", !sideBySide);
             hero.classList.remove("is-slide-ready");
             hero.classList.add("is-photo-ready");
-            heroVideo.pause();
-            heroVideo.removeAttribute("src");
-            heroVideo.removeAttribute("data-src");
-            heroVideoAttached = true;
+            if (sideBySide) {
+                // Keep the shipped film playing beside the photo carousel.
+                heroVideoAttached = false;
+                if (!heroVideo.getAttribute("data-src") && !heroVideo.getAttribute("src")) {
+                    heroVideo.setAttribute("data-src", "/img/ksl/hero.mp4");
+                }
+            } else {
+                heroVideo.pause();
+                heroVideo.removeAttribute("src");
+                heroVideo.removeAttribute("data-src");
+                heroVideoAttached = true;
+            }
             customHost = document.createElement("div");
-            customHost.className = "ksl-hero-slides";
+            customHost.className = "ksl-hero-slides" + (sideBySide ? " is-side" : "");
             customHost.setAttribute("aria-hidden", "true");
             usable.forEach(function (item, itemIndex) {
                 var slide = document.createElement("div");
                 slide.className = "ksl-hero-slide" + (itemIndex === 0 ? " is-active" : "");
-                if (item.kind === "video") {
-                    var clip = document.createElement("video");
-                    clip.muted = true;
-                    clip.defaultMuted = true;
-                    clip.setAttribute("muted", "");
-                    clip.playsInline = true;
-                    clip.setAttribute("playsinline", "");
-                    // Start the shipped film immediately — preload="none" caused a blue hold.
-                    clip.preload = "auto";
-                    if (item.poster) clip.setAttribute("poster", item.poster);
-                    clip.src = item.url;
-                    clip.setAttribute("aria-hidden", "true");
-                    if (usable.length === 1 && !(item.trim && item.trim.end > item.trim.start)) clip.loop = true;
-                    if (item.trim && item.trim.end > item.trim.start) clip._kslTrim = item.trim;
-                    if (item.crop && item.crop.w && item.crop.h) {
-                        clip._kslCrop = item.crop;
-                        clip.classList.add("is-framed");
-                        clip.addEventListener("loadedmetadata", function () { placeFramedClip(clip); });
-                        framedClips.push(clip);
-                    }
-                    function markSlideReady() {
-                        hero.classList.add("is-slide-ready");
-                    }
-                    clip.addEventListener("loadeddata", markSlideReady, { once: true });
-                    clip.addEventListener("canplay", markSlideReady, { once: true });
-                    clip.addEventListener("error", function () {
-                        hero.classList.add("is-slide-ready");
-                        if (!customMedia || customMedia.length < 2) return;
-                        if (customHost && customHost.children[customIndex] === slide) showCustom(customIndex + 1);
-                    });
-                    slide.appendChild(clip);
-                } else {
-                    var img = document.createElement("img");
-                    img.alt = "";
-                    img.src = item.url;
-                    if (itemIndex === 0) {
-                        img.addEventListener("load", function () { hero.classList.add("is-slide-ready"); }, { once: true });
-                    }
-                    slide.appendChild(img);
+                var img = document.createElement("img");
+                img.alt = "";
+                img.src = item.url;
+                if (itemIndex === 0) {
+                    img.addEventListener("load", function () { hero.classList.add("is-slide-ready"); }, { once: true });
                 }
+                slide.appendChild(img);
                 customHost.appendChild(slide);
             });
             // Keep the poster hold under slides; insert the carousel above it.
             var hold = hero.querySelector(".ksl-hero-hold");
-            hero.insertBefore(customHost, hold && hold.nextSibling ? hold.nextSibling : heroVideo);
-            if (framedClips.length) {
-                placeFramedClips();
-                window.addEventListener("resize", placeFramedClips);
+            if (sideBySide) {
+                hero.insertBefore(customHost, heroVideo.nextSibling || null);
+            } else {
+                hero.insertBefore(customHost, hold && hold.nextSibling ? hold.nextSibling : heroVideo);
             }
             if (usable.length > 1) {
                 customDots = document.createElement("div");
-                customDots.className = "ksl-hero-dots";
+                customDots.className = "ksl-hero-dots" + (sideBySide ? " is-side" : "");
                 customDots.setAttribute("role", "group");
-                customDots.setAttribute("aria-label", "Hero slides");
+                customDots.setAttribute("aria-label", "Hero photos");
                 usable.forEach(function (item, itemIndex) {
                     var dot = document.createElement("button");
                     dot.type = "button";
                     dot.className = "ksl-hero-dot" + (itemIndex === 0 ? " is-active" : "");
-                    dot.setAttribute("aria-label", (item.kind === "video" ? "Play film " : "Show photo ") + (itemIndex + 1));
+                    dot.setAttribute("aria-label", "Show photo " + (itemIndex + 1));
                     if (itemIndex === 0) dot.setAttribute("aria-current", "true");
                     dot.addEventListener("click", function () {
                         customPlaying = true;
@@ -667,12 +644,19 @@
                 });
                 hero.appendChild(customDots);
             }
-            if (heroVideoEnabled && !reduceMotion.matches) playCustom();
-            else showCustom(0);
+            if (sideBySide && heroVideoEnabled && !reduceMotion.matches) {
+                playHeroVideo();
+                playCustom();
+            } else if (heroVideoEnabled && !reduceMotion.matches) {
+                playCustom();
+            } else {
+                showCustom(0);
+            }
         }
 
         var attachHeroVideo = function () {
-            if (customMedia || !heroVideoEnabled || heroVideoAttached || heroSlowNet) {
+            // In photos-only mode the film stays off; side-by-side keeps the film attached.
+            if ((customMedia && !sideBySide) || !heroVideoEnabled || heroVideoAttached || heroSlowNet) {
                 return;
             }
             heroVideoAttached = true;
@@ -690,7 +674,7 @@
         };
 
         var playHeroVideo = function () {
-            if (customMedia) {
+            if (customMedia && !sideBySide) {
                 playCustom();
                 return;
             }
@@ -702,12 +686,13 @@
             if (playPromise && typeof playPromise.catch === "function") {
                 playPromise.catch(function () { });
             }
+            if (customMedia && sideBySide) playCustom();
         };
 
         var pauseHeroVideo = function () {
             if (customMedia) {
                 pauseCustom();
-                return;
+                if (!sideBySide) return;
             }
             heroVideo.pause();
         };
@@ -769,7 +754,12 @@
         window.addEventListener("ksl-hero-media", function (event) {
             takeCustom(event.detail);
         });
-        if (window.KSL_HERO_MEDIA) takeCustom(window.KSL_HERO_MEDIA);
+        if (window.KSL_HERO_MEDIA) {
+            takeCustom({
+                items: window.KSL_HERO_MEDIA,
+                mode: window.KSL_HERO_MODE === "images_only" ? "images_only" : "video_and_images"
+            });
+        }
     }
 
     var parallaxTargets = document.querySelectorAll("[data-ksl-parallax]");

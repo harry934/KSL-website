@@ -1,5 +1,5 @@
 import { createDatabaseClient } from "@/lib/db-client";
-import { HOME_HERO_SLOT, isImagePath, parseHeroMedia, safeImageUrl } from "@/lib/site-images";
+import { HOME_HERO_SLOT, isImagePath, parseHeroBundle, safeImageUrl } from "@/lib/site-images";
 import { NextResponse } from "next/server";
 import { signPayload } from "@/lib/stored-file";
 import { PUBLIC_CMS_CACHE } from "@/lib/public-cache";
@@ -22,11 +22,13 @@ export async function GET() {
     buttonLabel: string;
     buttonUrl: string;
   }[] = [];
+  let heroMode: "video_and_images" | "images_only" = "video_and_images";
   for (const row of data ?? []) {
     if (row.slot_id === HOME_HERO_SLOT) {
-      // Public hero carousel is photos only; the shipped hero.mp4 plays first on the site.
-      const items = parseHeroMedia(row.media).filter((item) => item.kind === "image");
+      const bundle = parseHeroBundle(row.media);
+      const items = bundle.items.filter((item) => item.kind === "image");
       if (items.length) {
+        heroMode = bundle.mode;
         hero = items.map((item) => ({
           kind: "image" as const,
           url: item.public_url,
@@ -46,7 +48,7 @@ export async function GET() {
   }
 
   return NextResponse.json(
-    await signPayload({ images, hero }),
+    await signPayload({ images, hero, heroMode }),
     { headers: { "Cache-Control": PUBLIC_CMS_CACHE } }
   );
 }

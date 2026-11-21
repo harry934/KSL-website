@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261121-herohold";
+    var ASSET_V = "20261121-heroside";
 
     var BUNDLES = {
         wow: [

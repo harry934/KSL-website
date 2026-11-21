@@ -1,7 +1,7 @@
 import { createDatabaseClient } from "@/lib/db-client";
 import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { clearReviewDraft, editorSavePlan, saveBody } from "@/lib/draft-review";
-import { HOME_HERO_SLOT, isImagePath, isSiteImageSlot, parseHeroMedia, safeImageUrl, SITE_IMAGE_SLOTS } from "@/lib/site-images";
+import { HOME_HERO_SLOT, isImagePath, isSiteImageSlot, parseHeroMedia, parseHeroMode, safeImageUrl, SITE_IMAGE_SLOTS } from "@/lib/site-images";
 import { siteAssetUrl } from "@/lib/site-url";
 import { signedStoredFileUrl, storedFileUrl } from "@/lib/storage";
 import { storageObjectFrom } from "@/lib/storage-path";
@@ -145,8 +145,9 @@ export async function POST(req: NextRequest) {
   }
 
   if (slotId === HOME_HERO_SLOT && Array.isArray(body.items)) {
-    // Hero CMS slides are photos only — the hardcoded film stays first on the public site.
+    // Hero CMS slides are photos only; mode chooses film+photos side-by-side or photos only.
     const items = parseHeroMedia(body.items).filter((item) => item.kind === "image");
+    const mode = parseHeroMode(body.mode);
     if (!items.length && body.items.length > 0) {
       return NextResponse.json({ error: "Use a JPG, PNG, or WebP photo for hero slides." }, { status: 400 });
     }
@@ -166,7 +167,7 @@ export async function POST(req: NextRequest) {
         source: "storage",
         public_url: poster?.public_url ?? null,
         storage_path: poster?.storage_path ?? items[0].storage_path,
-        media: items,
+        media: { mode, items },
         updated_by: session.userId,
       },
       { onConflict: "slot_id" },

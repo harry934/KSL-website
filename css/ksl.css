@@ -5656,6 +5656,10 @@ body {
     padding: 0;
 }
 
+.ksl-hero-dots.is-side {
+    right: max(12px, calc(48% - 28px));
+}
+
 .ksl-hero-dot {
     width: 8px;
     height: 8px;
@@ -5852,14 +5856,15 @@ body {
     position: absolute;
     z-index: 1;
     left: 0;
-    top: -14%;
+    top: 0;
     width: 100%;
-    height: 128%;
+    height: 100%;
     min-height: 100%;
     object-fit: cover;
-    object-position: center 38%;
+    object-position: center 42%;
     opacity: 0;
-    filter: brightness(0.95) saturate(0.92) contrast(1.02);
+    /* Keep the film sharp — no soft color filter. */
+    filter: none;
     transform: translate3d(0, 0, 0);
     transform-origin: center center;
     will-change: transform, opacity;
@@ -5870,9 +5875,22 @@ body {
     opacity: 1;
 }
 
-.ksl-hero.has-custom-media > .ksl-hero-video {
+.ksl-hero.has-custom-media.is-images-only > .ksl-hero-video {
     opacity: 0 !important;
     visibility: hidden;
+}
+
+/* Film + photos: video stays on the left, carousel on the right. */
+.ksl-hero.has-side-carousel > .ksl-hero-video {
+    left: 0;
+    top: 0;
+    width: 52%;
+    height: 100%;
+}
+
+.ksl-hero.has-side-carousel > .ksl-hero-video.is-ready {
+    opacity: 1;
+    visibility: visible;
 }
 
 .ksl-hero-slides {
@@ -5881,6 +5899,26 @@ body {
     z-index: 1;
     pointer-events: none;
     transition: opacity 1.15s cubic-bezier(.4, 0, .2, 1);
+}
+
+.ksl-hero-slides.is-side {
+    inset: 0 0 0 52%;
+}
+
+@media (max-width: 767.98px) {
+    .ksl-hero.has-side-carousel > .ksl-hero-video {
+        width: 100%;
+        height: 48%;
+    }
+
+    .ksl-hero-slides.is-side {
+        inset: 48% 0 0 0;
+    }
+
+    .ksl-hero-dots.is-side {
+        top: 72%;
+        right: 10px;
+    }
 }
 
 .ksl-hero-slide {
