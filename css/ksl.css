@@ -5458,7 +5458,7 @@ body {
        calc(50vh - 80px) sits a little above the middle.
        50vh sits on the middle.
        calc(50vh + 80px) sits a little below the middle. */
-    --ksl-hero-title-top: calc(50vh + 70px);
+    --ksl-hero-title-top: calc(50vh + 20px);
     /* ADJUST THE HOME HERO HEIGHT HERE (desktop).
        This sets the height of .ksl-hero-copy.
        Bigger number = taller section. Smaller number = shorter section.
