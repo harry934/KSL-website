@@ -545,11 +545,13 @@
             customIndex = 0;
             framedClips = [];
             hero.classList.remove("has-custom-media");
+            hero.classList.remove("is-slide-ready");
             // Restore the shipped homepage film when CMS photos are cleared.
             heroVideoAttached = false;
             if (heroVideo && !heroVideo.getAttribute("src") && !heroVideo.getAttribute("data-src")) {
                 heroVideo.setAttribute("data-src", "/img/ksl/hero.mp4");
             }
+            if (heroVideoEnabled && !reduceMotion.matches) playHeroVideo();
         }
 
         function takeCustom(items) {
@@ -561,19 +563,18 @@
                 if (customMedia) clearCustomMedia();
                 return;
             }
-            if (reduceMotion.matches) {
-                // Prefer still photos only when motion is reduced.
-            }
             var defaultSrc = (heroVideo.getAttribute("data-src") || heroVideo.getAttribute("src") || "/img/ksl/hero.mp4").trim();
             if (defaultSrc.charAt(0) !== "/" && defaultSrc.indexOf("://") === -1) {
                 defaultSrc = "/" + defaultSrc.replace(/^\.\//, "");
             }
             var defaultStart = parseFloat(heroVideo.getAttribute("data-start"));
             if (!Number.isFinite(defaultStart) || defaultStart < 0) defaultStart = heroVideoStart || 0;
+            var filmPoster = heroVideo.getAttribute("poster") || "img/ksl/mombasa.webp";
             var film = {
                 kind: "video",
                 url: defaultSrc,
                 start: defaultStart,
+                poster: filmPoster,
                 title: "Catalyzing Shipbuilding Industry",
                 subtitle: "",
                 buttonLabel: "Read our story",
@@ -586,6 +587,8 @@
             customMedia = usable;
             customIndex = 0;
             hero.classList.add("has-custom-media");
+            hero.classList.remove("is-slide-ready");
+            hero.classList.add("is-photo-ready");
             heroVideo.pause();
             heroVideo.removeAttribute("src");
             heroVideo.removeAttribute("data-src");
@@ -603,7 +606,10 @@
                     clip.setAttribute("muted", "");
                     clip.playsInline = true;
                     clip.setAttribute("playsinline", "");
-                    clip.preload = "none";
+                    // Start the shipped film immediately — preload="none" caused a blue hold.
+                    clip.preload = "auto";
+                    if (item.poster) clip.setAttribute("poster", item.poster);
+                    clip.src = item.url;
                     clip.setAttribute("aria-hidden", "true");
                     if (usable.length === 1 && !(item.trim && item.trim.end > item.trim.start)) clip.loop = true;
                     if (item.trim && item.trim.end > item.trim.start) clip._kslTrim = item.trim;
@@ -613,7 +619,13 @@
                         clip.addEventListener("loadedmetadata", function () { placeFramedClip(clip); });
                         framedClips.push(clip);
                     }
+                    function markSlideReady() {
+                        hero.classList.add("is-slide-ready");
+                    }
+                    clip.addEventListener("loadeddata", markSlideReady, { once: true });
+                    clip.addEventListener("canplay", markSlideReady, { once: true });
                     clip.addEventListener("error", function () {
+                        hero.classList.add("is-slide-ready");
                         if (!customMedia || customMedia.length < 2) return;
                         if (customHost && customHost.children[customIndex] === slide) showCustom(customIndex + 1);
                     });
@@ -622,6 +634,9 @@
                     var img = document.createElement("img");
                     img.alt = "";
                     img.src = item.url;
+                    if (itemIndex === 0) {
+                        img.addEventListener("load", function () { hero.classList.add("is-slide-ready"); }, { once: true });
+                    }
                     slide.appendChild(img);
                 }
                 customHost.appendChild(slide);
@@ -707,11 +722,15 @@
                         pauseHeroVideo();
                     }
                 });
-            }, { threshold: 0.15 });
+            }, { threshold: 0.01 });
             if (heroVideoEnabled) {
+                // Kick the film buffer immediately on the homepage — do not wait for scroll.
+                attachHeroVideo();
                 heroMediaObserver.observe(hero);
+                playHeroVideo();
             }
         } else if (heroVideoEnabled) {
+            attachHeroVideo();
             playHeroVideo();
         }
 

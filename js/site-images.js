@@ -51,8 +51,12 @@
         });
         var hero = document.querySelector(".ksl-hero");
         if (hero) {
-            hero.classList.add("is-waiting");
-            hero.classList.remove("is-photo-ready");
+            // Keep the shipped poster visible — never drop back to bare blue while CMS loads.
+            hero.classList.remove("is-waiting");
+            hero.classList.add("is-photo-ready");
+            if (!document.documentElement.style.getPropertyValue("--ksl-photo-home-hero")) {
+                document.documentElement.style.setProperty("--ksl-photo-home-hero", 'url("img/ksl/mombasa.webp")');
+            }
         }
     }
 
@@ -212,35 +216,10 @@
                 if (heroHref) button.setAttribute("href", heroHref);
             }
         }
+        // Photos follow the shipped hero.mp4 — never strip the film source or wipe its poster
+        // (that caused a blue flash while a replacement clip buffered).
         if (item && item.kind === "image") {
-            var video = hero.querySelector("video.ksl-hero-video");
-            whenLoaded(item.url, function (ok) {
-                if (!ok) return;
-                if (video) {
-                    video.setAttribute("poster", item.url);
-                    video.removeAttribute("data-src");
-                }
-                document.documentElement.style.setProperty("--ksl-photo-home-hero", 'url("' + item.url + '")');
-                revealPhoto(hero);
-            });
-        }
-        if (item && item.kind === "video") {
-            var clip = hero.querySelector("video.ksl-hero-video");
-            if (clip) {
-                clip.setAttribute("poster", "");
-                clip.src = item.url;
-                clip.removeAttribute("data-src");
-                function onVideoReady() {
-                    clip.classList.add("is-ready");
-                    hero.classList.add("has-custom-media");
-                    revealPhoto(hero);
-                }
-                if (clip.readyState >= 2) onVideoReady();
-                else {
-                    clip.addEventListener("loadeddata", onVideoReady, { once: true });
-                    clip.addEventListener("error", function () {}, { once: true });
-                }
-            }
+            revealPhoto(hero);
         }
         hero.classList.add("is-live");
     }

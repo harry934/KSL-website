@@ -6,7 +6,8 @@
     --bs-light: #F7F9FB;
     --bs-dark: #273272;
     /* No shipped photo until CMS media loads — waiting state uses a soft blue wash. */
-    --ksl-photo-home-hero: none;
+    /* Poster hold so the homepage never flashes bare navy while hero.mp4 buffers. */
+    --ksl-photo-home-hero: url("../img/ksl/mombasa.webp");
     --ksl-photo-page-header: none;
     --ksl-photo-flag: url("../img/ksl/kenya-flag-strip.png");
     --ksl-photo-banner-mombasa: none;
@@ -5473,7 +5474,7 @@ body {
     position: absolute;
     inset: 0;
     z-index: 0;
-    /* Soft blue hold — no default photo until .is-photo-ready */
+    /* Soft blue hold — replaced by poster/photo once .is-photo-ready is set */
     background: rgba(1, 101, 252, 0.16);
     pointer-events: none;
     transition: opacity .35s ease, background-color .45s ease;
@@ -5483,7 +5484,8 @@ body {
     background: var(--ksl-photo-home-hero) center 42% / cover no-repeat;
 }
 
-.ksl-hero.has-custom-media.is-photo-ready::before {
+/* Keep the poster under slides until the first media frame is actually ready. */
+.ksl-hero.has-custom-media.is-photo-ready.is-slide-ready::before {
     opacity: 0;
 }
 
