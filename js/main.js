@@ -641,7 +641,9 @@
                 }
                 customHost.appendChild(slide);
             });
-            hero.insertBefore(customHost, heroVideo);
+            // Keep the poster hold under slides; insert the carousel above it.
+            var hold = hero.querySelector(".ksl-hero-hold");
+            hero.insertBefore(customHost, hold && hold.nextSibling ? hold.nextSibling : heroVideo);
             if (framedClips.length) {
                 placeFramedClips();
                 window.addEventListener("resize", placeFramedClips);

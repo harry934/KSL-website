@@ -5466,7 +5466,12 @@ body {
     --ksl-hero-height: clamp(950px, 125vh, 1480px); 
     min-height: var(--ksl-hero-height);
     overflow: hidden;
-    background: #09296C;
+    /* Poster is on the hero itself so a buffering video never flashes bare navy. */
+    background-color: #09296C;
+    background-image: var(--ksl-photo-home-hero, url("../img/ksl/mombasa.webp"));
+    background-position: center 42%;
+    background-size: cover;
+    background-repeat: no-repeat;
 }
 
 .ksl-hero::before {
@@ -5474,18 +5479,24 @@ body {
     position: absolute;
     inset: 0;
     z-index: 0;
-    /* Soft blue hold — replaced by poster/photo once .is-photo-ready is set */
-    background: rgba(1, 101, 252, 0.16);
+    background: transparent;
     pointer-events: none;
-    transition: opacity .35s ease, background-color .45s ease;
 }
 
-.ksl-hero.is-photo-ready::before {
-    background: var(--ksl-photo-home-hero) center 42% / cover no-repeat;
+.ksl-hero-hold {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 42%;
+    pointer-events: none;
+    transition: opacity .35s ease;
 }
 
-/* Keep the poster under slides until the first media frame is actually ready. */
-.ksl-hero.has-custom-media.is-photo-ready.is-slide-ready::before {
+.ksl-hero:has(.ksl-hero-video.is-ready) .ksl-hero-hold,
+.ksl-hero.has-custom-media.is-slide-ready .ksl-hero-hold {
     opacity: 0;
 }
 
