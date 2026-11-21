@@ -3190,17 +3190,40 @@ body {
     margin-bottom: 6px;
 }
 
-/* Homepage / page section titles — match News Room (navy h2). */
+/* Homepage / page section titles — navy + thin half underline. */
 .ksl-section-title,
 .ksl-home-news-section .ksl-section-head h2,
 #about .about-copy > .ksl-section-title,
 [data-ksl-what-we-do-label].ksl-section-title,
 #yards .ksl-section-title {
-    margin: 0 0 .85rem;
+    position: relative;
+    display: inline-block;
+    margin: 0 0 .95rem;
+    padding-bottom: 0.45rem;
     color: #273272;
     font: 700 2.25rem / 1.2 Poppins, sans-serif;
     letter-spacing: 0;
     text-transform: none;
+}
+
+.ksl-section-title::after,
+.ksl-home-news-section .ksl-section-head h2::after,
+#about .about-copy > .ksl-section-title::after,
+[data-ksl-what-we-do-label].ksl-section-title::after,
+#yards .ksl-section-title::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 50%;
+    height: 1px;
+    background: #c9a95c;
+}
+
+.ksl-section-head.text-center .ksl-section-title::after,
+.ksl-section-head.text-center [data-ksl-what-we-do-label].ksl-section-title::after,
+.text-center > .ksl-section-title::after {
+    left: 25%;
 }
 
 /* Legacy blue kickers (inner pages / older blocks). */
