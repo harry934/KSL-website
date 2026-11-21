@@ -3190,47 +3190,17 @@ body {
     margin-bottom: 6px;
 }
 
-/* Homepage / page section titles — navy + short brass mark. */
+/* Homepage / page section titles — match News Room (navy h2). */
 .ksl-section-title,
 .ksl-home-news-section .ksl-section-head h2,
 #about .about-copy > .ksl-section-title,
 [data-ksl-what-we-do-label].ksl-section-title,
 #yards .ksl-section-title {
-    position: relative;
-    display: inline-block;
-    margin: 0 0 1rem;
+    margin: 0 0 .85rem;
     color: #273272;
-    font: 700 clamp(1.65rem, 2.4vw, 2.05rem) / 1.15 Poppins, sans-serif;
-    letter-spacing: -0.018em;
+    font: 700 2rem / 1.2 Poppins, sans-serif;
+    letter-spacing: 0;
     text-transform: none;
-}
-
-.ksl-section-title::after,
-.ksl-home-news-section .ksl-section-head h2::after,
-#about .about-copy > .ksl-section-title::after,
-[data-ksl-what-we-do-label].ksl-section-title::after,
-#yards .ksl-section-title::after {
-    content: "";
-    display: block;
-    width: 2.6rem;
-    height: 3px;
-    margin-top: 0.55rem;
-    border-radius: 1px;
-    background: linear-gradient(90deg, #C9A95C 0%, #99792c 100%);
-}
-
-/* Centered section heads keep the brass mark centered under the words. */
-.ksl-section-head.text-center .ksl-section-title,
-.ksl-section-head.text-center [data-ksl-what-we-do-label].ksl-section-title,
-.text-center > .ksl-section-title {
-    display: inline-block;
-}
-
-.ksl-section-head.text-center .ksl-section-title::after,
-.ksl-section-head.text-center [data-ksl-what-we-do-label].ksl-section-title::after,
-.text-center > .ksl-section-title::after {
-    margin-left: auto;
-    margin-right: auto;
 }
 
 /* Legacy blue kickers (inner pages / older blocks). */
