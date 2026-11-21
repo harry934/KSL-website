@@ -2197,7 +2197,7 @@ body {
 }
 
 /* Shared homepage explanation copy — same as Who we are. */
-.ksl-prose > p,
+.ksl-prose > p:not(.ksl-incorp-kicker):not(.ksl-values-kicker):not(.org-kicker),
 #about .about-copy-body p,
 #about .about-copy > p {
     margin: 0 0 0.85rem;
@@ -2212,7 +2212,7 @@ body {
     -webkit-hyphens: none;
 }
 
-.ksl-prose > p:last-child,
+.ksl-prose > p:not(.ksl-incorp-kicker):not(.ksl-values-kicker):not(.org-kicker):last-child,
 #about .about-copy-body p:last-child {
     margin-bottom: 0;
 }
@@ -14187,11 +14187,19 @@ button.ksl-more:focus-visible .ksl-ship-flag {
     margin-bottom: 18px;
 }
 
+/* Match Who we are / .ksl-prose explanation type. */
+.ksl-incorp-text.ksl-prose > p:not(.ksl-incorp-kicker),
 .ksl-incorp-text p:not(.ksl-incorp-kicker) {
     margin: 0;
     color: #3d4a63;
-    font-size: 1.05rem;
-    line-height: 1.8;
+    font-family: "Open Sans", sans-serif;
+    font-size: 1.02rem;
+    font-weight: 400;
+    line-height: 1.62;
+    letter-spacing: 0.01em;
+    text-wrap: pretty;
+    hyphens: none;
+    -webkit-hyphens: none;
 }
 
 .ksl-incorp-log {
