@@ -22,6 +22,7 @@ const PUBLIC_API_PATHS = new Set([
   "/api/health",
   "/api/auth/sign-in",
   "/api/auth/passkey",
+  "/api/auth/mfa",
   "/api/auth/session",
   "/api/auth/pulse",
   "/api/auth/sign-out",

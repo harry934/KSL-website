@@ -20,6 +20,10 @@ export function LoginForm({ notice }: { notice?: string | null }) {
   const [forgot, setForgot] = useState(false);
   const [forgotMessage, setForgotMessage] = useState<string | null>(null);
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [mfaStep, setMfaStep] = useState(false);
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaRecovery, setMfaRecovery] = useState("");
+  const [showRecovery, setShowRecovery] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,6 +38,37 @@ export function LoginForm({ notice }: { notice?: string | null }) {
     if (!res || !res.ok) {
       setLoading(false);
       const message = json.error ?? "Could not sign in. Check your internet connection and try again.";
+      setError(message);
+      toast(message, "error");
+      return;
+    }
+    setLoading(false);
+    if (json.mfaRequired) {
+      setMfaStep(true);
+      setError(null);
+      toast("Enter the code from your authenticator app.");
+      return;
+    }
+    toast("Signed in.");
+    window.location.href = appPath("/");
+  }
+
+  async function onMfaSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    const body = showRecovery
+      ? { recoveryCode: mfaRecovery.trim() }
+      : { code: mfaCode.replace(/\D/g, "").slice(0, 6) };
+    const res = await fetch(appPath("/api/auth/mfa"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).catch(() => null);
+    const json = res ? await res.json().catch(() => ({})) : {};
+    setLoading(false);
+    if (!res || !res.ok) {
+      const message = json.error ?? "The code was not accepted.";
       setError(message);
       toast(message, "error");
       return;
@@ -101,6 +136,74 @@ export function LoginForm({ notice }: { notice?: string | null }) {
     const ok = json.message ?? "Your request has been sent. Wait for an email or message from an administrator.";
     setForgotMessage(ok);
     toast(ok);
+  }
+
+  if (mfaStep) {
+    return (
+      <form onSubmit={onMfaSubmit} className="space-y-4">
+        <p className="text-[13.5px] text-[#5b6775]">Password accepted. Open your authenticator app and enter the 6-digit code.</p>
+        {!showRecovery ? (
+          <div>
+            <label htmlFor="login-mfa-code" className={fieldLabel}>
+              Authenticator code
+            </label>
+            <Input
+              id="login-mfa-code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              required
+              disabled={loading}
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              autoFocus
+            />
+          </div>
+        ) : (
+          <div>
+            <label htmlFor="login-mfa-recovery" className={fieldLabel}>
+              Recovery code
+            </label>
+            <Input
+              id="login-mfa-recovery"
+              autoComplete="off"
+              required
+              disabled={loading}
+              value={mfaRecovery}
+              onChange={(e) => setMfaRecovery(e.target.value)}
+              autoFocus
+            />
+          </div>
+        )}
+        {error && <Notice kind="error">{error}</Notice>}
+        <Button type="submit" className="w-full" disabled={loading} aria-busy={loading}>
+          {loading ? "Checking…" : "Continue"}
+        </Button>
+        <button
+          type="button"
+          className="block w-full text-center text-[13.5px] font-semibold text-[#0b1f3a] underline"
+          onClick={() => {
+            setShowRecovery((value) => !value);
+            setError(null);
+          }}
+        >
+          {showRecovery ? "Use authenticator code instead" : "Use a recovery code instead"}
+        </button>
+        <button
+          type="button"
+          className="block w-full text-center text-[13px] text-[#6b7785] underline"
+          onClick={() => {
+            setMfaStep(false);
+            setMfaCode("");
+            setMfaRecovery("");
+            setShowRecovery(false);
+            setError(null);
+          }}
+        >
+          Back to sign in
+        </button>
+      </form>
+    );
   }
 
   return (

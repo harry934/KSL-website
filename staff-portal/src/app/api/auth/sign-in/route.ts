@@ -3,6 +3,7 @@ import { createDatabaseClient } from "@/lib/db-client";
 import { clientIp, formatClock, generateOneTimePassword, hashPassword, lockedUntil, recordAttempt, verifyPassword } from "@/lib/auth-server";
 import { normalizeUsername } from "@/lib/accounts";
 import { logActivity } from "@/lib/api-auth";
+import { startMfaPending } from "@/lib/mfa-pending";
 import { openStaffSession } from "@/lib/staff-session-server";
 
 const INVALID = "Invalid username or password.";
@@ -60,12 +61,24 @@ export async function POST(req: NextRequest) {
   }
 
   await recordAttempt(username, ip, true);
+
+  const { data: totp } = await admin.from("staff_totp").select("user_id").eq("user_id", gate.id).maybeSingle();
+  if (totp?.user_id && !gate.must_change_password) {
+    try {
+      await startMfaPending(gate.id);
+    } catch (pendingError) {
+      console.error("Could not start MFA step", pendingError);
+      return NextResponse.json({ error: "Sign-in is temporarily unavailable." }, { status: 503 });
+    }
+    return NextResponse.json({ ok: true, mfaRequired: true });
+  }
+
   try {
     await openStaffSession(gate.id, req.headers.get("user-agent"));
   } catch (sessionError) {
     console.error("Could not start staff session", sessionError);
     return NextResponse.json({ error: "Could not start a session. Try again." }, { status: 500 });
   }
-  await logActivity(gate.id, "staff", "sign in", "session", gate.id, { ip });
+  await logActivity(gate.id, "staff", "sign in", "session", gate.id, { ip, method: "password" });
   return NextResponse.json({ ok: true });
 }
