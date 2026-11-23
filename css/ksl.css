@@ -5,6 +5,12 @@
     --bs-secondary: #99792c;
     --bs-light: #F7F9FB;
     --bs-dark: #273272;
+    --ksl-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ksl-ease-in: cubic-bezier(0.55, 0, 0.85, 0.25);
+    --ksl-ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+    --ksl-motion-overlay: 280ms;
+    --ksl-motion-reveal: 560ms;
+    --ksl-motion-stagger: 85ms;
     /* No shipped photo until CMS media loads — waiting state uses a soft blue wash. */
     /* Poster hold so the homepage never flashes bare navy while hero.mp4 buffers. */
     --ksl-photo-home-hero: url("../img/ksl/mombasa.webp");
@@ -1669,17 +1675,23 @@ main {
 /* ── ksl-reveal: scroll-triggered fade ── */
 .ksl-reveal {
     opacity: 0;
-    transform: translateY(18px);
-    transition: opacity .72s ease, transform .72s cubic-bezier(.22, 1, .36, 1);
+    transform: translate3d(0, 14px, 0);
+    transition:
+        opacity var(--ksl-motion-reveal) var(--ksl-ease-out),
+        transform var(--ksl-motion-reveal) var(--ksl-ease-out);
+    transition-delay: var(--ksl-reveal-delay, 0s);
+    will-change: opacity, transform;
 }
 
 .ksl-reveal.is-visible {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
 }
 
 .ksl-reveal.is-instant {
     transition: none;
+    opacity: 1;
+    transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2672,7 +2684,7 @@ body {
 }
 
 .dropdown-menu.show {
-    animation: dropdown-reveal 160ms ease-out both;
+    animation: dropdown-reveal 260ms var(--ksl-ease-out) both;
 }
 
 @media (min-width: 992px) {
@@ -2692,7 +2704,10 @@ body {
         visibility: hidden;
         transform: translateY(12px);
         pointer-events: none;
-        transition: opacity .3s ease, transform .3s ease, visibility .3s ease;
+        transition:
+            opacity var(--ksl-motion-overlay) var(--ksl-ease-out),
+            transform var(--ksl-motion-overlay) var(--ksl-ease-out),
+            visibility var(--ksl-motion-overlay) ease;
     }
 
     .navbar .nav-item.dropdown > .dropdown-menu::before,
@@ -2884,8 +2899,8 @@ body {
 }
 
 @keyframes dropdown-reveal {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translate3d(0, -6px, 0) scale(0.99); }
+    to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
 
 .product-intro,
@@ -4576,11 +4591,39 @@ html.board-motion .board-card.is-in .board-card-body {
 }
 
 .board-modal:not([hidden]) .board-modal-backdrop {
-    animation: ksl-fade .25s ease;
+    animation: ksl-overlay-fade-in var(--ksl-motion-overlay) var(--ksl-ease-out) both;
 }
 
 .board-modal:not([hidden]) .board-modal-dialog {
-    animation: ksl-pop .3s ease;
+    animation: ksl-overlay-rise-in 320ms var(--ksl-ease-out) both;
+}
+
+.board-modal.ksl-overlay-closing .board-modal-backdrop {
+    animation: ksl-overlay-fade-out var(--ksl-motion-overlay) var(--ksl-ease-in) both;
+}
+
+.board-modal.ksl-overlay-closing .board-modal-dialog {
+    animation: ksl-overlay-rise-out 280ms var(--ksl-ease-in) both;
+}
+
+@keyframes ksl-overlay-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes ksl-overlay-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes ksl-overlay-rise-in {
+    from { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.985); }
+    to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes ksl-overlay-rise-out {
+    from { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+    to { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.99); }
 }
 
 @keyframes ksl-fade {
@@ -11104,13 +11147,24 @@ html {
     box-shadow: 0 18px 40px rgba(9, 41, 108, .16);
     text-align: left;
     opacity: 0;
-    transform: translateY(-6px);
-    transition: opacity .2s ease, transform .25s cubic-bezier(.22, 1, .36, 1);
+    transform: translate3d(0, -8px, 0) scale(0.985);
+    transition:
+        opacity var(--ksl-motion-overlay) var(--ksl-ease-out),
+        transform var(--ksl-motion-overlay) var(--ksl-ease-out);
+    pointer-events: none;
 }
 
 .ksl-suggest.is-open {
     opacity: 1;
-    transform: none;
+    transform: translate3d(0, 0, 0) scale(1);
+    pointer-events: auto;
+}
+
+.ksl-suggest.is-closing {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0) scale(0.99);
+    transition-timing-function: var(--ksl-ease-in);
+    pointer-events: none;
 }
 
 .modal-body .ksl-suggest,
@@ -15955,4 +16009,49 @@ body[data-ksl-motif-2="lantern"] { --ksl-motif-2: var(--ksl-draw-lantern); --ksl
     .ksl-banner.is-ticker .ksl-banner-track { white-space: normal; display: block; }
     .ksl-banner.is-ticker .ksl-banner-text + .ksl-banner-text { display: none; }
     .ksl-banner.is-ticker .ksl-banner-text::after { content: none; }
+}
+
+/* ── Overlays: modals, collapse, accessibility drawers ── */
+.modal.fade {
+    transition: opacity var(--ksl-motion-overlay) var(--ksl-ease-out);
+}
+
+.modal.fade .modal-dialog {
+    transform: translate3d(0, 12px, 0) scale(0.985);
+    transition: transform 320ms var(--ksl-ease-out);
+}
+
+.modal.show .modal-dialog,
+.modal.ksl-overlay-open .modal-dialog {
+    transform: translate3d(0, 0, 0) scale(1);
+}
+
+.modal.ksl-overlay-closing .modal-dialog {
+    transform: translate3d(0, 8px, 0) scale(0.99);
+    transition-duration: var(--ksl-motion-overlay);
+    transition-timing-function: var(--ksl-ease-in);
+}
+
+.modal-backdrop.fade {
+    transition: opacity var(--ksl-motion-overlay) var(--ksl-ease-out);
+}
+
+.modal-backdrop.show {
+    opacity: 0.55;
+}
+
+.ksl-a11y-panel,
+.ksl-wa-pop {
+    transition:
+        transform var(--ksl-motion-overlay) var(--ksl-ease-out),
+        visibility 0s linear var(--ksl-motion-overlay),
+        opacity var(--ksl-motion-overlay) var(--ksl-ease-out);
+}
+
+.ksl-a11y.is-open .ksl-a11y-panel,
+.ksl-wa-pop.is-open {
+    transition:
+        transform var(--ksl-motion-overlay) var(--ksl-ease-out),
+        visibility 0s,
+        opacity var(--ksl-motion-overlay) var(--ksl-ease-out);
 }

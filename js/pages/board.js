@@ -61,9 +61,18 @@
 
     function closeCard() {
         if (modal.hidden) return;
-        modal.hidden = true;
-        document.documentElement.style.overflow = "";
-        if (lastCard && lastCard.focus) lastCard.focus();
+        var finish = function () {
+            modal.classList.remove("ksl-overlay-closing");
+            modal.hidden = true;
+            document.documentElement.style.overflow = "";
+            if (lastCard && lastCard.focus) lastCard.focus();
+        };
+        if (window.KSL_MOTION && window.KSL_MOTION.motionOff && window.KSL_MOTION.motionOff()) {
+            finish();
+            return;
+        }
+        modal.classList.add("ksl-overlay-closing");
+        window.setTimeout(finish, (window.KSL_MOTION && window.KSL_MOTION.overlayMs) || 280);
     }
 
     function applyFilter(name) {

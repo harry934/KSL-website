@@ -234,6 +234,9 @@
                 grid.innerHTML = slice.map(feedCard).join("");
             }
             renderPages(filtered.length);
+            if (window.KSL_MOTION && window.KSL_MOTION.wireFeedGrid) {
+                window.KSL_MOTION.wireFeedGrid(grid);
+            }
             if (window.KSL_LIVE) window.KSL_LIVE.show("[data-ksl-await='page']");
         }
 

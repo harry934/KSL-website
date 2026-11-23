@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261123-whitelist";
+    var ASSET_V = "20261123-motion";
 
     var BUNDLES = {
         wow: [
@@ -27,6 +27,7 @@
         "js/site-images.js",
         "js/site-settings.js",
         "js/access.js",
+        "js/motion.js",
         "js/lang.js",
         "js/doodles.js",
         "js/main.js?v=" + ASSET_V,

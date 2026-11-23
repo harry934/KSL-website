@@ -101,6 +101,9 @@
                 return;
             }
             mount.innerHTML = items.map(feedCard).join("");
+            if (window.KSL_MOTION && window.KSL_MOTION.wireFeedGrid) {
+                window.KSL_MOTION.wireFeedGrid(mount);
+            }
             if (window.KSL_LIVE) window.KSL_LIVE.show(mount);
         })
         .catch(function () {

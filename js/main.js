@@ -30,12 +30,6 @@
     spinner();
 
 
-    // Initiate the wowjs
-    if (!window.matchMedia("(max-width: 991.98px)").matches) {
-        new WOW().init();
-    }
-
-
     var topbar = document.querySelector(".topbar-ksl");
     var stickyNav = document.querySelector(".sticky-top");
     var mast = document.querySelector(".ksl-mast");
@@ -124,66 +118,6 @@
         });
     }
 
-
-    // Morph + reveal observer
-    if ("IntersectionObserver" in window) {
-        var morphObserver = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add("is-morphed");
-                    morphObserver.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.35 });
-
-        document.querySelectorAll(".ksl-morph").forEach(function (el) {
-            morphObserver.observe(el);
-        });
-
-        var pendingReveal = [];
-        var showReveal = function (el, instant) {
-            if (instant) el.classList.add("is-instant");
-            el.classList.add("is-visible");
-            revealObserver.unobserve(el);
-            var i = pendingReveal.indexOf(el);
-            if (i > -1) pendingReveal.splice(i, 1);
-        };
-        var revealObserver = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-                if (entry.isIntersecting) showReveal(entry.target, false);
-                else if (entry.boundingClientRect.bottom < 0) showReveal(entry.target, true);
-            });
-        }, { rootMargin: "0px 0px 12% 0px", threshold: 0 });
-
-        document.querySelectorAll(".ksl-reveal").forEach(function (el) {
-            pendingReveal.push(el);
-            revealObserver.observe(el);
-        });
-
-        // Anchor jumps and fast flicks can skip past a block without it ever intersecting.
-        var sweepTicking = false;
-        var sweepReveal = function () {
-            sweepTicking = false;
-            pendingReveal.slice().forEach(function (el) {
-                var r = el.getBoundingClientRect();
-                if (r.bottom < 0) showReveal(el, true);
-                else if (r.top < window.innerHeight) showReveal(el, false);
-            });
-        };
-        window.addEventListener("scroll", function () {
-            if (sweepTicking || !pendingReveal.length) return;
-            sweepTicking = true;
-            window.requestAnimationFrame(sweepReveal);
-        }, { passive: true });
-
-    } else {
-        document.querySelectorAll(".ksl-morph").forEach(function (el) {
-            el.classList.add("is-morphed");
-        });
-        document.querySelectorAll(".ksl-reveal").forEach(function (el) {
-            el.classList.add("is-visible");
-        });
-    }
 
     var aboutMainImage = document.querySelector(".about-frame-main img");
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -1275,8 +1209,8 @@
         if (!grids.length) {
             return;
         }
-        var pause = 900;
-        var step = 380;
+        var pause = 0;
+        var step = 110;
 
         function bindGrid(grid) {
             var cards = Array.prototype.slice.call(grid.querySelectorAll(".service-item"));
@@ -2269,11 +2203,19 @@
 
     function closeSuggest(input) {
         var box = suggestBoxFor(input);
-        box.hidden = true;
+        if (box.hidden) {
+            return;
+        }
+        var ms = window.KSL_MOTION && window.KSL_MOTION.motionOff && window.KSL_MOTION.motionOff() ? 0 : (window.KSL_MOTION && window.KSL_MOTION.overlayMs) || 240;
         box.classList.remove("is-open");
-        box.parentElement.classList.remove("is-suggesting");
-        input.setAttribute("aria-expanded", "false");
-        input.removeAttribute("aria-activedescendant");
+        box.classList.add("is-closing");
+        window.setTimeout(function () {
+            box.hidden = true;
+            box.classList.remove("is-closing");
+            box.parentElement.classList.remove("is-suggesting");
+            input.setAttribute("aria-expanded", "false");
+            input.removeAttribute("aria-activedescendant");
+        }, ms);
     }
 
     function renderSuggest(input) {
