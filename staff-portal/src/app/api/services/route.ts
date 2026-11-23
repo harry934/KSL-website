@@ -106,7 +106,8 @@ export async function POST(req: NextRequest) {
   if (plan.held) return plan.held;
   const slug = (body.slug || slugify(body.title || "service")).trim();
   const status = plan.status;
-  const actions: ServiceModalActions | null =
+  const category = String(body.category ?? "").trim() || null;
+  const actions: ServiceModalActions | null | undefined =
     body.actions && typeof body.actions === "object"
       ? {
           primary: cleanOptionalAction((body.actions as ServiceModalActions).primary),
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
   const row: Record<string, unknown> = {
     id: body.id || crypto.randomUUID(),
     slug,
-    category: String(body.category ?? "").trim() || null,
+    category,
     title: body.title,
     excerpt: body.excerpt ?? null,
     detail: body.detail ?? null,
@@ -145,7 +146,7 @@ export async function POST(req: NextRequest) {
     }
   }
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
-  if (row.category) await rememberGroup(admin, "services_settings", row.category);
+  if (category) await rememberGroup(admin, "services_settings", category);
   await releaseUnusedValues(admin, previous);
   await clearReviewDraft(admin, "service_items", data?.id);
   await logActivity(session.userId, "services", "upsert", "service_item", data?.id ?? slug);
