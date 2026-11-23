@@ -10843,17 +10843,36 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     max-width: none;
 }
 
-/* Full-width content inside xxl bands — avoids a narrow centred column when the page is zoomed out. */
-#ksl-page .container-xxl > .container,
-#ksl-page .container-fluid:not(.footer):not(.copyright) > .container {
-    max-width: none;
-    width: 100%;
+/* Fluid page width: tracks the layout viewport when zooming in/out (no fixed min-width or
+   narrow centred column floating in empty space). Cap only on very wide monitors at 100% zoom. */
+:root {
+    --ksl-page-pad: clamp(16px, 2.5vw, 52px);
+    --ksl-page-max: min(1520px, calc(100vw - 2 * var(--ksl-page-pad)));
 }
 
-@media (min-width: 992px) {
-    #ksl-page {
-        min-width: 1320px;
-    }
+html {
+    background: #e8edf4;
+}
+
+#ksl-page {
+    width: 100%;
+    margin-inline: auto;
+    background: #fff;
+    box-shadow: 0 0 0 1px rgba(9, 41, 108, .04);
+}
+
+#ksl-page .container,
+#ksl-page .container-xxl > .container,
+#ksl-page .container-fluid:not(.footer):not(.copyright) > .container {
+    width: 100%;
+    max-width: var(--ksl-page-max);
+    margin-inline: auto;
+    padding-inline: var(--ksl-page-pad);
+}
+
+#ksl-page .navbar .container,
+#ksl-page .ksl-mast .container-fluid > .container {
+    max-width: var(--ksl-page-max);
 }
 
 .ksl-service-modal-scroll,
@@ -11121,7 +11140,7 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     grid-template-columns: minmax(0, 470px) minmax(0, 1fr);
     gap: clamp(24px, 4vw, 56px);
     align-items: center;
-    max-width: 1100px;
+    max-width: min(1180px, 100%);
     margin: 0 auto;
 }
 
