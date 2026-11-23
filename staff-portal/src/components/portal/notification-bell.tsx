@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
-import { dismissNotices, NOTICES_REFRESH, readDismissed, readSeen, SEEN_EVENT } from "@/lib/notification-seen";
+import { dismissNotices, NOTICES_REFRESH, readDismissed, readSeen, SEEN_EVENT, writeSeen } from "@/lib/notification-seen";
 import { NotificationCenter, type NotificationIcon, type NotificationItem, type NotificationTone } from "@/components/ui/notification-center";
 import { appPath } from "@/lib/base-path";
 
@@ -82,6 +82,25 @@ export function NotificationBell({ userId }: { userId: string }) {
     };
   }, [load, userId]);
 
+  /** Each browser session starts with a clean badge; only activity after this point counts as unread. */
+  useEffect(() => {
+    if (!loaded || !items.length) return;
+    const bootKey = `ksl-notif-boot:${userId}`;
+    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(bootKey)) return;
+    if (typeof sessionStorage !== "undefined") sessionStorage.setItem(bootKey, "1");
+    const latest = Math.max(
+      readSeen(userId),
+      ...items
+        .filter((item) => item.kind !== "request")
+        .map((item) => new Date(item.createdAt).getTime())
+        .filter(Number.isFinite),
+    );
+    if (latest > readSeen(userId)) {
+      writeSeen(userId, latest);
+      setSeenAt(latest);
+    }
+  }, [loaded, items, userId]);
+
   useEffect(() => {
     if (!open) return;
     function close(event: MouseEvent) {
@@ -100,8 +119,10 @@ export function NotificationBell({ userId }: { userId: string }) {
 
   const isUnread = (item: Item) => {
     if (dismissed.includes(item.id)) return false;
-    if (item.kind === "request" || item.kind === "watch") return true;
-    return item.kind === "message" ? !!item.unread : new Date(item.createdAt).getTime() > seenAt;
+    if (item.kind === "request") return true;
+    if (item.kind === "message") return !!item.unread;
+    const at = new Date(item.createdAt).getTime();
+    return Number.isFinite(at) && at > seenAt;
   };
 
   const shown = items.filter((item) => !dismissed.includes(item.id));
@@ -173,6 +194,7 @@ export function NotificationBell({ userId }: { userId: string }) {
               items={stack}
               title="Notifications"
               className="max-w-none"
+              defaultExpanded={false}
               onDismiss={(id) => {
                 dismissNotices(userId, [id]);
                 markMessages([id]);
@@ -182,7 +204,17 @@ export function NotificationBell({ userId }: { userId: string }) {
                 markMessages(shown.map((item) => item.id));
               }}
               onMarkAllRead={() => {
-                dismissNotices(userId, shown.filter(isUnread).map((item) => item.id));
+                const unreadItems = shown.filter(isUnread);
+                const latest = Math.max(
+                  seenAt,
+                  ...unreadItems
+                    .filter((item) => item.kind !== "request")
+                    .map((item) => new Date(item.createdAt).getTime())
+                    .filter(Number.isFinite),
+                  Date.now(),
+                );
+                writeSeen(userId, latest);
+                setSeenAt(latest);
                 markMessages(shown.map((item) => item.id));
               }}
               onSelect={openItem}

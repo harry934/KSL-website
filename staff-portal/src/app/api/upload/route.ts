@@ -1,6 +1,7 @@
 import { requireStaff } from "@/lib/api-auth";
 import { matchesDeclaredType, mp4IsHevc } from "@/lib/file-bytes";
 import { privateRef } from "@/lib/stored-file";
+import { registerUploadedImage } from "@/lib/gallery-register";
 import { saveStoredFile, signedStoredFileUrl, storedFileUrl } from "@/lib/storage";
 import type { ModuleKey } from "@/lib/modules";
 import { NextRequest, NextResponse } from "next/server";
@@ -200,6 +201,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const url = storedFileUrl(bucket, path);
+    if (image) {
+      const galleryErr = await registerUploadedImage(session.userId, path, file.name);
+      if (galleryErr) console.error("Could not add upload to gallery index", galleryErr);
+    }
     return NextResponse.json({ ok: true, storage_path: path, public_url: url, preview_url: url }, { headers });
   } catch (urlError) {
     console.error("Could not build public media URL", urlError);

@@ -14,7 +14,7 @@ export async function GET() {
   const { data, error: loadErr } = await admin
     .from("gallery_photos")
     .select("title, public_url, storage_path, deleted_at")
-    .eq("status", "published")
+    .in("status", ["draft", "published"])
     .order("sort_order");
   if (loadErr) return NextResponse.json({ error: dbError(loadErr) }, { status: 500 });
 

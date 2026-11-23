@@ -9,6 +9,7 @@ import {
 } from "@/lib/chunked-upload";
 import { matchesDeclaredType, mp4IsHevc } from "@/lib/file-bytes";
 import { privateRef } from "@/lib/stored-file";
+import { registerUploadedImage } from "@/lib/gallery-register";
 import { signedStoredFileUrl, storedFileUrl } from "@/lib/storage";
 import type { ModuleKey } from "@/lib/modules";
 
@@ -68,6 +69,10 @@ export async function POST(req: NextRequest) {
     }
 
     const url = storedFileUrl(meta.bucket, meta.path);
+    if (image && meta.bucket === "media-public") {
+      const galleryErr = await registerUploadedImage(session.userId, meta.path);
+      if (galleryErr) console.error("Could not add upload to gallery index", galleryErr);
+    }
     return NextResponse.json({ ok: true, storage_path: meta.path, public_url: url, preview_url: url });
   } catch (err) {
     const message = err instanceof Error ? err.message : "The upload did not work. Please try again.";

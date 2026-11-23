@@ -5,6 +5,7 @@ import { HOME_HERO_SLOT, isImagePath, isSiteImageSlot, parseHeroMedia, parseHero
 import { siteAssetUrl } from "@/lib/site-url";
 import { signedStoredFileUrl, storedFileUrl } from "@/lib/storage";
 import { storageObjectFrom } from "@/lib/storage-path";
+import { registerUploadedImage } from "@/lib/gallery-register";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -29,30 +30,9 @@ function galleryFileUrl(
     : signedStoredFileUrl(object.bucket, object.path);
 }
 
-async function addGalleryPhoto(
-  admin: ReturnType<typeof createDatabaseClient>,
-  userId: string,
-  publicUrl: string,
-  storagePath: string | null,
-  title: unknown
-) {
-  const already = storagePath
-    ? await admin.from("gallery_photos").select("id").eq("storage_path", storagePath).limit(1)
-    : await admin.from("gallery_photos").select("id").eq("public_url", publicUrl).limit(1);
-  if (already.error) return dbError(already.error);
-  if (already.data?.length) return null;
-  const { data: latest } = await admin.from("gallery_photos").select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle();
-  const name = String(title || "").replace(/\.[a-z0-9]+$/i, "").trim().slice(0, 120);
-  const { error } = await admin.from("gallery_photos").insert({
-    title: name || null,
-    category: "all",
-    storage_path: storagePath,
-    public_url: publicUrl,
-    sort_order: (latest?.sort_order ?? 0) + 1,
-    status: "published",
-    updated_by: userId,
-  });
-  return error ? dbError(error) : null;
+async function addGalleryPhoto(userId: string, storagePath: string | null, title: unknown) {
+  if (!storagePath) return null;
+  return registerUploadedImage(userId, storagePath, String(title || ""), { status: "published" });
 }
 
 async function storedImages() {
@@ -179,7 +159,7 @@ export async function POST(req: NextRequest) {
       const galleryUrl = safeImageUrl(body.publicUrl);
       const galleryPath = typeof body.storagePath === "string" && /^[\w./-]+$/.test(body.storagePath) ? body.storagePath : null;
       if (galleryUrl && isImagePath(galleryUrl)) {
-        const galleryErr = await addGalleryPhoto(admin, session.userId, galleryUrl, galleryPath, body.title);
+        const galleryErr = await addGalleryPhoto(session.userId, galleryPath, body.title);
         if (galleryErr) return NextResponse.json({ error: galleryErr }, { status: 500 });
       }
     }
@@ -196,7 +176,7 @@ export async function POST(req: NextRequest) {
   const storagePath = typeof body.storagePath === "string" && /^[\w./-]+$/.test(body.storagePath) ? body.storagePath : null;
 
   if (body.addToGallery) {
-    const galleryErr = await addGalleryPhoto(admin, session.userId, publicUrl, storagePath, body.title);
+    const galleryErr = await addGalleryPhoto(session.userId, storagePath, body.title);
     if (galleryErr) return NextResponse.json({ error: galleryErr }, { status: 500 });
   }
 
