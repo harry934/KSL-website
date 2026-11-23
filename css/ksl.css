@@ -1163,15 +1163,44 @@ main {
     margin-bottom: 16px;
 }
 
+/* Clients / partners: full viewport width, logos fade in and out at screen edges */
+.ksl-logo-band {
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding-block: 10px 6px;
+    overflow: hidden;
+}
+
+.ksl-logos-section .container {
+    margin-bottom: 0;
+}
+
 .logo-marquee {
     overflow: hidden;
+    -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        #000 clamp(32px, 7vw, 120px),
+        #000 calc(100% - clamp(32px, 7vw, 120px)),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        #000 clamp(32px, 7vw, 120px),
+        #000 calc(100% - clamp(32px, 7vw, 120px)),
+        transparent 100%
+    );
 }
 
 .logo-track {
     display: flex;
     align-items: center;
-    gap: 48px;
+    gap: clamp(32px, 4vw, 56px);
     width: max-content;
+    padding-inline: clamp(24px, 5vw, 64px);
     animation: ksl-marquee 48s linear infinite;
 }
 
