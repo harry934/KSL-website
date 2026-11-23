@@ -24,7 +24,12 @@
     }
 
     function toDate(iso) {
-        return new Date(iso + "T12:00:00");
+        if (window.KSL_CONTENT && window.KSL_CONTENT.calendarDay) {
+            var day = window.KSL_CONTENT.calendarDay(iso);
+            return new Date(day ? day + "T12:00:00" : iso);
+        }
+        var match = String(iso || "").match(/^(\d{4}-\d{2}-\d{2})/);
+        return new Date(match ? match[1] + "T12:00:00" : iso);
     }
 
     function formatDate(iso, opts) {

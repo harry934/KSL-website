@@ -10843,6 +10843,19 @@ html.ksl-intro-handoff .ksl-hero-video.is-ready {
     max-width: none;
 }
 
+/* Full-width content inside xxl bands — avoids a narrow centred column when the page is zoomed out. */
+#ksl-page .container-xxl > .container,
+#ksl-page .container-fluid:not(.footer):not(.copyright) > .container {
+    max-width: none;
+    width: 100%;
+}
+
+@media (min-width: 992px) {
+    #ksl-page {
+        min-width: 1320px;
+    }
+}
+
 .ksl-service-modal-scroll,
 .ksl-service-modal,
 .ksl-feed-modal-dialog,

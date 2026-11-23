@@ -5,6 +5,7 @@ import { slugify } from "@/lib/news";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
 import { sanitizeRichHtml } from "@/lib/sanitize-html";
+import { nairobiToday } from "@/lib/dates";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -56,7 +57,11 @@ export async function POST(req: NextRequest) {
     title: body.title,
     excerpt: body.excerpt ?? null,
     category: body.category ?? "News",
-    published_date: body.published_date ?? null,
+    published_date: body.published_date
+      ? String(body.published_date).slice(0, 10)
+      : status === "published"
+        ? nairobiToday()
+        : null,
     image_path: body.image_path ?? null,
     image_alt: imageAlt || null,
     author: body.author ?? "KSL Communications",

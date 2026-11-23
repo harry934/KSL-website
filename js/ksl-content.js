@@ -92,11 +92,37 @@
         return "";
     }
 
+    /** YYYY-MM-DD from a date string, Date, or timestamp (API/Postgres shapes). */
+    function calendarDay(value) {
+        var text = String(value == null ? "" : value).trim();
+        if (!text) return "";
+        var match = text.match(/^(\d{4}-\d{2}-\d{2})/);
+        return match ? match[1] : "";
+    }
+
+    function formatDisplayDate(value, opts) {
+        var day = calendarDay(value);
+        var parsed;
+        try {
+            parsed = day ? new Date(day + "T12:00:00") : new Date(value);
+            if (isNaN(parsed.getTime())) return day || textFallback(value);
+            return parsed.toLocaleDateString("en-KE", opts || { year: "numeric", month: "long", day: "numeric" });
+        } catch (err) {
+            return day || String(value == null ? "" : value);
+        }
+    }
+
+    function textFallback(value) {
+        return String(value == null ? "" : value);
+    }
+
     global.KSL_CONTENT = {
         apiBase: apiBase,
         fetchJson: fetchJson,
         safeMediaUrl: safeMediaUrl,
         isImageMedia: isImageMedia,
-        isVideoMedia: isVideoMedia
+        isVideoMedia: isVideoMedia,
+        calendarDay: calendarDay,
+        formatDisplayDate: formatDisplayDate
     };
 })(window);

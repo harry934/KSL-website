@@ -3,8 +3,16 @@
     "use strict";
 
     function formatDate(iso) {
+        if (window.KSL_CONTENT && window.KSL_CONTENT.formatDisplayDate) {
+            return window.KSL_CONTENT.formatDisplayDate(iso);
+        }
         try {
-            return new Date(iso + "T12:00:00").toLocaleDateString("en-KE", { year: "numeric", month: "long", day: "numeric" });
+            var day = String(iso || "").match(/^(\d{4}-\d{2}-\d{2})/);
+            return new Date((day ? day[1] : iso) + (day ? "T12:00:00" : "")).toLocaleDateString("en-KE", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+            });
         } catch (e) {
             return iso;
         }
