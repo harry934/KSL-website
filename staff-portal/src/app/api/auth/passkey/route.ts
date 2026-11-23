@@ -12,7 +12,7 @@ import { clientIp, lockedUntil, recordAttempt } from "@/lib/auth-server";
 import { query, withTransaction } from "@/lib/db";
 import { logActivity } from "@/lib/api-auth";
 import { getStaffSession } from "@/lib/session";
-import { openStaffSession } from "@/lib/staff-session-server";
+import { finishPrimaryAuth } from "@/lib/auth-mfa";
 
 type CredentialRow = {
   credential_id: string;
@@ -161,9 +161,7 @@ export async function POST(req: NextRequest) {
       return authError();
     }
     await recordAttempt(identifier, ip, true);
-    await openStaffSession(updated, req.headers.get("user-agent"));
-    await logActivity(updated, "staff", "sign in", "session", updated, { method: "passkey", ip });
-    return NextResponse.json({ ok: true });
+    return finishPrimaryAuth(req, updated, "login", { ip, method: "passkey" });
   }
 
   const session = await getStaffSession();

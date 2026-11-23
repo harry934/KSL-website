@@ -6,6 +6,7 @@ import { liveStaffSession, sessionUserIdForToken } from "@/lib/staff-session-ser
 import type { SessionStop } from "@/lib/staff-session";
 import { signedStoredFileUrl } from "@/lib/storage";
 import { STAFF_SESSION_COOKIE } from "@/lib/staff-session";
+import { needsTotpEnrollment } from "@/lib/totp-user";
 
 /** Long-lived enough for a workday; each page load refreshes the signature. */
 export async function avatarUrl(path: string) {
@@ -22,6 +23,7 @@ export type StaffSession = {
   isActive: boolean;
   mustChangePassword: boolean;
   mustChangeUsername: boolean;
+  mustSetupTotp: boolean;
   avatarUrl: string | null;
   permissions: ModulePermission[];
 };
@@ -36,6 +38,7 @@ type ProfileRow = {
   deleted_at?: string | null;
   must_change_password: boolean;
   must_change_username: boolean;
+  must_setup_totp: boolean;
   avatar_path: string | null;
   admin_module_permissions: ModulePermission[] | null;
 };
@@ -60,7 +63,7 @@ export const staffGate = cache(async (): Promise<StaffGate> => {
   const { data, error } = await createDatabaseClient()
     .from("admin_profiles")
     .select(
-      "display_name, username, contact_email, role_title, is_super_admin, is_active, deleted_at, must_change_password, must_change_username, avatar_path, admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
+      "display_name, username, contact_email, role_title, is_super_admin, is_active, deleted_at, must_change_password, must_change_username, must_setup_totp, avatar_path, admin_module_permissions(module_key, can_view, can_edit, can_publish, can_delete)"
     )
     .eq("id", userId)
     .maybeSingle();
@@ -70,6 +73,7 @@ export const staffGate = cache(async (): Promise<StaffGate> => {
   if (!profile || !profile.is_active || profile.deleted_at) return { state: "suspended" };
 
   const email = profile.contact_email || "";
+  const mustSetupTotp = await needsTotpEnrollment(userId);
 
   return {
     state: "ok",
@@ -83,6 +87,7 @@ export const staffGate = cache(async (): Promise<StaffGate> => {
       isActive: profile.is_active,
       mustChangePassword: profile.must_change_password,
       mustChangeUsername: profile.must_change_username,
+      mustSetupTotp,
       avatarUrl: profile.avatar_path ? await avatarUrl(profile.avatar_path) : null,
       permissions: profile.admin_module_permissions ?? [],
     },

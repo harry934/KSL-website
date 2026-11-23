@@ -5,12 +5,17 @@ import { NextResponse } from "next/server";
 
 export { dbError, newRequestId } from "@/lib/db-errors";
 
-export function credentialsCurrent(session: { mustChangePassword: boolean; mustChangeUsername: boolean }) {
-  if (!session.mustChangePassword && !session.mustChangeUsername) return null;
-  return NextResponse.json(
-    { error: "Change your sign-in details before continuing." },
-    { status: 403 }
-  );
+export function credentialsCurrent(
+  session: { mustChangePassword: boolean; mustChangeUsername: boolean; mustSetupTotp?: boolean },
+  options?: { allowTotpSetup?: boolean },
+) {
+  if (session.mustChangePassword || session.mustChangeUsername) {
+    return NextResponse.json({ error: "Change your sign-in details before continuing." }, { status: 403 });
+  }
+  if (session.mustSetupTotp && !options?.allowTotpSetup) {
+    return NextResponse.json({ error: "Set up your authenticator app before continuing." }, { status: 403 });
+  }
+  return null;
 }
 
 export async function requireStaff(

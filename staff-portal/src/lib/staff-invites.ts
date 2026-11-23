@@ -548,8 +548,8 @@ export async function completeInvite(input: {
       const created = await client.query<{ id: string }>(
         `INSERT INTO admin_profiles
           (username, contact_email, display_name, role_title, is_super_admin, is_active,
-           must_change_password, must_change_username, one_time_password_expires_at, created_by, password_hash)
-         VALUES ($1, $2, $3, $4, $5, true, false, false, NULL, $6, $7)
+           must_change_password, must_change_username, must_setup_totp, one_time_password_expires_at, created_by, password_hash)
+         VALUES ($1, $2, $3, $4, $5, true, false, false, true, NULL, $6, $7)
          RETURNING id`,
         [username, invite.contact_email, username, invite.role_title, invite.is_super_admin, invite.created_by, passwordHash],
       );

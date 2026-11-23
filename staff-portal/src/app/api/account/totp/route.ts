@@ -5,6 +5,7 @@ import { credentialsCurrent, logActivity } from "@/lib/api-auth";
 import { createDatabaseClient } from "@/lib/db-client";
 import { verifyPassword } from "@/lib/auth-server";
 import { query } from "@/lib/db";
+import { needsTotpEnrollment } from "@/lib/totp-user";
 import {
   base32Encode,
   decryptTotpSecret,
@@ -24,19 +25,21 @@ type Action = "status" | "begin" | "confirm" | "disable";
 export async function POST(req: NextRequest) {
   const session = await getStaffSession();
   if (!session) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
-  const blocked = credentialsCurrent(session);
-  if (blocked) return blocked;
-
   const body = await req.json().catch(() => ({})) as {
     action?: unknown;
     password?: unknown;
     code?: unknown;
     recoveryCode?: unknown;
+    mandatory?: unknown;
   };
   const action = body.action as Action;
   if (!["status", "begin", "confirm", "disable"].includes(action)) {
     return NextResponse.json({ error: "That action is not available." }, { status: 400 });
   }
+
+  const mustEnroll = await needsTotpEnrollment(session.userId);
+  const blocked = credentialsCurrent(session, { allowTotpSetup: mustEnroll && (action === "begin" || action === "confirm") });
+  if (blocked) return blocked;
 
   const admin = createDatabaseClient();
 
@@ -59,7 +62,8 @@ export async function POST(req: NextRequest) {
   }
 
   const password = typeof body.password === "string" ? body.password : "";
-  if ((action === "begin" || action === "disable") && !password) {
+  const mandatoryBegin = action === "begin" && body.mandatory === true && mustEnroll;
+  if ((action === "begin" || action === "disable") && !password && !mandatoryBegin) {
     return NextResponse.json({ error: "Enter your current password." }, { status: 400 });
   }
   if (password) {
@@ -134,6 +138,7 @@ export async function POST(req: NextRequest) {
         hashRecoveryCode(raw),
       ]);
     }
+    await query(`UPDATE admin_profiles SET must_setup_totp = false WHERE id = $1::uuid`, [session.userId]);
     await logActivity(session.userId, "staff", "enable authenticator", "totp", session.userId);
     return NextResponse.json({ ok: true, recoveryCodes });
   }

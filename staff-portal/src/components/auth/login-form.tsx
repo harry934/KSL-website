@@ -9,6 +9,9 @@ import { useFeedback } from "@/components/ui/feedback";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { passkeyError } from "@/lib/passkey";
 import { appPath } from "@/lib/base-path";
+import { AuthenticatorCodeStep } from "@/components/auth/authenticator-code-step";
+
+type LoginStep = "sign-in" | "mfa" | "recover" | "recover-totp" | "recover-passkey";
 
 export function LoginForm({ notice }: { notice?: string | null }) {
   const { toast } = useFeedback();
@@ -17,13 +20,12 @@ export function LoginForm({ notice }: { notice?: string | null }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
-  const [forgot, setForgot] = useState(false);
-  const [forgotMessage, setForgotMessage] = useState<string | null>(null);
-  const [forgotLoading, setForgotLoading] = useState(false);
-  const [mfaStep, setMfaStep] = useState(false);
-  const [mfaCode, setMfaCode] = useState("");
-  const [mfaRecovery, setMfaRecovery] = useState("");
-  const [showRecovery, setShowRecovery] = useState(false);
+  const [step, setStep] = useState<LoginStep>("sign-in");
+  const [afterRecoveryMfa, setAfterRecoveryMfa] = useState(false);
+
+  function goHome() {
+    window.location.href = appPath("/");
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,22 +46,22 @@ export function LoginForm({ notice }: { notice?: string | null }) {
     }
     setLoading(false);
     if (json.mfaRequired) {
-      setMfaStep(true);
+      setAfterRecoveryMfa(false);
+      setStep("mfa");
       setError(null);
       toast("Enter the code from your authenticator app.");
       return;
     }
     toast("Signed in.");
-    window.location.href = appPath("/");
+    goHome();
   }
 
-  async function onMfaSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function onMfaSubmit(input: { code: string; recoveryCode: string; useRecovery: boolean }) {
     setError(null);
     setLoading(true);
-    const body = showRecovery
-      ? { recoveryCode: mfaRecovery.trim() }
-      : { code: mfaCode.replace(/\D/g, "").slice(0, 6) };
+    const body = input.useRecovery
+      ? { recoveryCode: input.recoveryCode.trim() }
+      : { code: input.code.replace(/\D/g, "").slice(0, 6) };
     const res = await fetch(appPath("/api/auth/mfa"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -73,8 +75,12 @@ export function LoginForm({ notice }: { notice?: string | null }) {
       toast(message, "error");
       return;
     }
-    toast("Signed in.");
-    window.location.href = appPath("/");
+    if (json.passwordResetRequired) {
+      toast("Choose a new password to continue.");
+    } else {
+      toast("Signed in.");
+    }
+    goHome();
   }
 
   async function onPasskey() {
@@ -100,8 +106,15 @@ export function LoginForm({ notice }: { notice?: string | null }) {
       });
       const result = await verifyResponse.json().catch(() => ({}));
       if (!verifyResponse.ok) throw new Error(result.error ?? "The passkey was not accepted.");
+      if (result.mfaRequired) {
+        setPasskeyLoading(false);
+        setAfterRecoveryMfa(false);
+        setStep("mfa");
+        toast("Enter the code from your authenticator app.");
+        return;
+      }
       toast("Signed in.");
-      window.location.href = appPath("/");
+      goHome();
     } catch (caught) {
       setPasskeyLoading(false);
       const message = passkeyError(caught);
@@ -112,97 +125,164 @@ export function LoginForm({ notice }: { notice?: string | null }) {
     }
   }
 
-  async function onForgot() {
-    setError(null);
-    setForgotMessage(null);
+  async function onRecoverTotpSubmit(input: { code: string; recoveryCode: string; useRecovery: boolean }) {
     if (!username.trim()) {
       setError("Enter the username you sign in with.");
       return;
     }
-    setForgotLoading(true);
-    const res = await fetch(appPath("/api/auth/forgot-password"), {
+    setError(null);
+    setLoading(true);
+    const body = input.useRecovery
+      ? { action: "totp-verify", username, recoveryCode: input.recoveryCode.trim() }
+      : { action: "totp-verify", username, code: input.code.replace(/\D/g, "").slice(0, 6) };
+    const res = await fetch(appPath("/api/auth/recover"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username }),
+      body: JSON.stringify(body),
     }).catch(() => null);
     const json = res ? await res.json().catch(() => ({})) : {};
-    setForgotLoading(false);
+    setLoading(false);
     if (!res || !res.ok) {
-      const fail = json.error ?? "Could not send the request. Please try again.";
-      setError(fail);
-      toast(fail, "error");
+      const message = json.error ?? "Could not recover access.";
+      setError(message);
+      toast(message, "error");
       return;
     }
-    const ok = json.message ?? "Your request has been sent. Wait for an email or message from an administrator.";
-    setForgotMessage(ok);
-    toast(ok);
+    toast("Choose a new password to continue.");
+    goHome();
   }
 
-  if (mfaStep) {
+  async function onRecoverPasskey() {
+    if (!username.trim()) {
+      setError("Enter the username you sign in with.");
+      return;
+    }
+    setError(null);
+    setPasskeyLoading(true);
+    try {
+      const optionsResponse = await fetch(appPath("/api/auth/recover"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "passkey-options", username }),
+      });
+      const options = await optionsResponse.json().catch(() => ({}));
+      if (!optionsResponse.ok) throw new Error(options.error ?? "Passkey recovery is unavailable.");
+      const credential = await startAuthentication({ optionsJSON: options });
+      const verifyResponse = await fetch(appPath("/api/auth/recover"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "passkey-verify",
+          username,
+          challenge: options.challenge,
+          response: credential,
+        }),
+      });
+      const result = await verifyResponse.json().catch(() => ({}));
+      if (!verifyResponse.ok) throw new Error(result.error ?? "The passkey was not accepted.");
+      setPasskeyLoading(false);
+      if (result.mfaRequired) {
+        setAfterRecoveryMfa(true);
+        setStep("mfa");
+        toast("Enter the code from your authenticator app.");
+        return;
+      }
+      if (result.passwordResetRequired) {
+        toast("Choose a new password to continue.");
+        goHome();
+        return;
+      }
+      toast("Signed in.");
+      goHome();
+    } catch (caught) {
+      setPasskeyLoading(false);
+      const message = passkeyError(caught);
+      if (message) {
+        setError(message);
+        toast(message, "error");
+      }
+    }
+  }
+
+  if (step === "mfa") {
     return (
-      <form onSubmit={onMfaSubmit} className="space-y-4">
-        <p className="text-[13.5px] text-[#5b6775]">Password accepted. Open your authenticator app and enter the 6-digit code.</p>
-        {!showRecovery ? (
-          <div>
-            <label htmlFor="login-mfa-code" className={fieldLabel}>
-              Authenticator code
-            </label>
-            <Input
-              id="login-mfa-code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              required
-              disabled={loading}
-              value={mfaCode}
-              onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              autoFocus
-            />
-          </div>
-        ) : (
-          <div>
-            <label htmlFor="login-mfa-recovery" className={fieldLabel}>
-              Recovery code
-            </label>
-            <Input
-              id="login-mfa-recovery"
-              autoComplete="off"
-              required
-              disabled={loading}
-              value={mfaRecovery}
-              onChange={(e) => setMfaRecovery(e.target.value)}
-              autoFocus
-            />
-          </div>
-        )}
-        {error && <Notice kind="error">{error}</Notice>}
-        <Button type="submit" className="w-full" disabled={loading} aria-busy={loading}>
-          {loading ? "Checking…" : "Continue"}
-        </Button>
-        <button
-          type="button"
-          className="block w-full text-center text-[13.5px] font-semibold text-[#0b1f3a] underline"
-          onClick={() => {
-            setShowRecovery((value) => !value);
+      <AuthenticatorCodeStep
+        intro={
+          afterRecoveryMfa
+            ? "Passkey accepted. Enter the 6-digit code from your authenticator app to finish recovering access."
+            : "Password accepted. Open your authenticator app and enter the 6-digit code."
+        }
+        busy={loading}
+        error={error}
+        showRecoveryToggle
+        onSubmit={onMfaSubmit}
+        onBack={() => {
+          setStep(afterRecoveryMfa ? "recover" : "sign-in");
+          setAfterRecoveryMfa(false);
+          setError(null);
+        }}
+      />
+    );
+  }
+
+  if (step === "recover-totp") {
+    return (
+      <div className="space-y-4">
+        <AuthenticatorCodeStep
+          intro="Enter a current code from your authenticator app, or use a recovery code. You will be asked to choose a new password next."
+          busy={loading}
+          error={error}
+          showRecoveryToggle
+          onSubmit={onRecoverTotpSubmit}
+          onBack={() => {
+            setStep("recover");
             setError(null);
           }}
-        >
-          {showRecovery ? "Use authenticator code instead" : "Use a recovery code instead"}
-        </button>
+        />
+      </div>
+    );
+  }
+
+  if (step === "recover") {
+    return (
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="recover-username" className={fieldLabel}>
+            Username
+          </label>
+          <Input
+            id="recover-username"
+            type="text"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            required
+            disabled={loading || passkeyLoading}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        </div>
+        <p className="text-[13.5px] text-[#5b6775]">
+          Prove it is you with your authenticator app or a passkey. If you use a passkey, you will still need your authenticator code.
+        </p>
+        {error && <Notice kind="error">{error}</Notice>}
+        <Button type="button" className="w-full" disabled={loading || passkeyLoading} onClick={() => setStep("recover-totp")}>
+          Use authenticator app
+        </Button>
+        <Button type="button" variant="secondary" className="w-full" disabled={loading || passkeyLoading} onClick={onRecoverPasskey}>
+          {passkeyLoading ? "Waiting for your passkey…" : "Use a passkey"}
+        </Button>
         <button
           type="button"
           className="block w-full text-center text-[13px] text-[#6b7785] underline"
           onClick={() => {
-            setMfaStep(false);
-            setMfaCode("");
-            setMfaRecovery("");
-            setShowRecovery(false);
+            setStep("sign-in");
             setError(null);
           }}
         >
           Back to sign in
         </button>
-      </form>
+      </div>
     );
   }
 
@@ -241,34 +321,22 @@ export function LoginForm({ notice }: { notice?: string | null }) {
       </div>
       {notice && <Notice kind="info">{notice}</Notice>}
       {error && <Notice kind="error">{error}</Notice>}
-      {forgotMessage && <Notice kind="info">{forgotMessage}</Notice>}
-      <Button type="submit" className="w-full" disabled={loading || passkeyLoading || forgotLoading} aria-busy={loading}>
+      <Button type="submit" className="w-full" disabled={loading || passkeyLoading} aria-busy={loading}>
         {loading ? "Signing in…" : "Sign in"}
       </Button>
-      <Button type="button" variant="secondary" className="w-full" disabled={loading || passkeyLoading || forgotLoading} onClick={onPasskey}>
+      <Button type="button" variant="secondary" className="w-full" disabled={loading || passkeyLoading} onClick={onPasskey}>
         {passkeyLoading ? "Waiting for your passkey…" : "Sign in with a passkey"}
       </Button>
-      {forgot ? (
-        <div className="space-y-3 border-t border-[#eef1f4] pt-3">
-          <p className="text-[13.5px] text-[#5b6775]">
-            An administrator will send a sign-up link and a one-time passcode by email or message. You will need to wait for that. The username above is the one the request uses.
-          </p>
-          <Button type="button" className="w-full" disabled={loading || forgotLoading} onClick={onForgot}>
-            {forgotLoading ? "Sending…" : "Request a password reset"}
-          </Button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          className="block w-full text-center text-[13.5px] font-semibold text-[#0b1f3a] underline"
-          onClick={() => {
-            setError(null);
-            setForgot(true);
-          }}
-        >
-          Forgot password?
-        </button>
-      )}
+      <button
+        type="button"
+        className="block w-full text-center text-[13.5px] font-semibold text-[#0b1f3a] underline"
+        onClick={() => {
+          setError(null);
+          setStep("recover");
+        }}
+      >
+        Forgot password?
+      </button>
     </form>
   );
 }

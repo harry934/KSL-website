@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { clientIp, formatClock, lockedUntil, recordAttempt, verifyPassword } from "@/lib/auth-server";
+import { clientIp, formatClock, lockedUntil, recordAttempt } from "@/lib/auth-server";
 import { createDatabaseClient } from "@/lib/db-client";
 import { logActivity } from "@/lib/api-auth";
-import { clearMfaPending, resolveMfaPendingUserId } from "@/lib/mfa-pending";
+import { clearMfaPending, resolveMfaPending } from "@/lib/mfa-pending";
+import { beginRecoveryAfterVerification } from "@/lib/totp-user";
 import { openStaffSession } from "@/lib/staff-session-server";
 import {
   decryptTotpSecret,
@@ -16,10 +17,11 @@ import { query } from "@/lib/db";
 const FAIL = "The code was not accepted.";
 
 export async function POST(req: NextRequest) {
-  const userId = await resolveMfaPendingUserId(req);
-  if (!userId) {
+  const pending = await resolveMfaPending(req);
+  if (!pending) {
     return NextResponse.json({ error: "This sign-in step expired. Start again with your username and password." }, { status: 401 });
   }
+  const { userId, purpose } = pending;
   const ip = clientIp(req);
   const identifier = `mfa:${userId}`;
   const blockedUntil = await lockedUntil(identifier, ip);
@@ -74,15 +76,20 @@ export async function POST(req: NextRequest) {
 
   await recordAttempt(identifier, ip, true);
   await clearMfaPending(req);
+  if (purpose === "recovery") {
+    await beginRecoveryAfterVerification(userId);
+  }
   try {
     await openStaffSession(userId, req.headers.get("user-agent"));
   } catch (error) {
     console.error("Could not start staff session after MFA", error);
     return NextResponse.json({ error: "Could not start a session. Try again." }, { status: 500 });
   }
-  await logActivity(userId, "staff", "sign in", "session", userId, {
-    ip,
-    method: usedRecovery ? "totp-recovery" : "totp",
-  });
+  const action = purpose === "recovery" ? "recover access" : "sign in";
+  const method = usedRecovery ? "totp-recovery" : purpose === "recovery" ? "passkey-then-totp" : "totp";
+  await logActivity(userId, "staff", action, "session", userId, { ip, method });
+  if (purpose === "recovery") {
+    return NextResponse.json({ ok: true, passwordResetRequired: true });
+  }
   return NextResponse.json({ ok: true });
 }

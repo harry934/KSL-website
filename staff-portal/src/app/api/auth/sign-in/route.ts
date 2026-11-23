@@ -3,8 +3,9 @@ import { createDatabaseClient } from "@/lib/db-client";
 import { clientIp, formatClock, generateOneTimePassword, hashPassword, lockedUntil, recordAttempt, verifyPassword } from "@/lib/auth-server";
 import { normalizeUsername } from "@/lib/accounts";
 import { logActivity } from "@/lib/api-auth";
-import { startMfaPending } from "@/lib/mfa-pending";
+import { finishPrimaryAuth } from "@/lib/auth-mfa";
 import { openStaffSession } from "@/lib/staff-session-server";
+import { userHasTotp } from "@/lib/totp-user";
 
 const INVALID = "Invalid username or password.";
 
@@ -62,15 +63,13 @@ export async function POST(req: NextRequest) {
 
   await recordAttempt(username, ip, true);
 
-  const { data: totp } = await admin.from("staff_totp").select("user_id").eq("user_id", gate.id).maybeSingle();
-  if (totp?.user_id && !gate.must_change_password) {
+  if (!gate.must_change_password && (await userHasTotp(gate.id))) {
     try {
-      await startMfaPending(gate.id);
+      return await finishPrimaryAuth(req, gate.id, "login", { ip, method: "password" });
     } catch (pendingError) {
       console.error("Could not start MFA step", pendingError);
       return NextResponse.json({ error: "Sign-in is temporarily unavailable." }, { status: 503 });
     }
-    return NextResponse.json({ ok: true, mfaRequired: true });
   }
 
   try {

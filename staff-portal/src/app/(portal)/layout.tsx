@@ -2,6 +2,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { PortalShell } from "@/components/portal/shell";
 import { ChangePasswordForm } from "@/components/account/change-password-form";
+import { MandatoryTotpSetup } from "@/components/account/mandatory-totp-setup";
 import { SessionWatch } from "@/components/auth/session-watch";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { staffGate } from "@/lib/session";
@@ -55,6 +56,21 @@ export default async function PortalLayout({ children }: { children: React.React
       >
         <SessionWatch />
         <ChangePasswordForm forced changeUsername={firstSignIn} accountUsername={session.username} />
+        <div className="mt-4 text-center">
+          <SignOutButton />
+        </div>
+      </Gate>
+    );
+  }
+
+  if (session.mustSetupTotp) {
+    return (
+      <Gate
+        title="Set up your authenticator app"
+        intro="Every staff account needs an authenticator app for sign-in. Scan the QR code, then enter a 6-digit code to finish."
+      >
+        <SessionWatch />
+        <MandatoryTotpSetup />
         <div className="mt-4 text-center">
           <SignOutButton />
         </div>
