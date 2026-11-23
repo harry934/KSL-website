@@ -4,6 +4,13 @@ import { verifyContactToken, verifyTurnstile } from "@/lib/contact-token";
 import { assessContactRisk } from "@/lib/contact-risk";
 import { shouldRetainSubmitterIp } from "@/lib/contact-threat";
 import { scanContactFields } from "@/lib/contact-payload-scan";
+import {
+  isAllowedContactEmail,
+  isAllowedContactMessage,
+  isAllowedContactName,
+  isAllowedContactNameOptional,
+  isAllowedContactSubject,
+} from "@/lib/public-input-whitelist";
 import { NextRequest, NextResponse } from "next/server";
 
 const PREFERRED = new Set(["Phone Call", "Email", "Message / WhatsApp", ""]);
@@ -30,14 +37,27 @@ export async function POST(req: NextRequest) {
   const message = clip(body.message, 4000);
   const preferred = clip(body.preferredContact, 40);
 
-  const payloadScan = scanContactFields([firstName, otherName, surname, email, subject, message]);
+  const payloadScan = scanContactFields([
+    { value: firstName, allowed: isAllowedContactName },
+    { value: otherName, allowed: isAllowedContactNameOptional },
+    { value: surname, allowed: isAllowedContactName },
+    { value: email, allowed: isAllowedContactEmail },
+    { value: subject, allowed: isAllowedContactSubject },
+    { value: message, allowed: isAllowedContactMessage },
+  ]);
   if (payloadScan.blocked) {
     return NextResponse.json({ error: "That text was blocked.", code: "blocked" }, { status: 400 });
   }
-  if (!firstName || !surname || !subject || !message) {
-    return NextResponse.json({ error: "Please complete the required fields." }, { status: 400 });
+  if (
+    !isAllowedContactName(firstName) ||
+    !isAllowedContactNameOptional(otherName) ||
+    !isAllowedContactName(surname) ||
+    !isAllowedContactSubject(subject) ||
+    !isAllowedContactMessage(message)
+  ) {
+    return NextResponse.json({ error: "That text was blocked.", code: "blocked" }, { status: 400 });
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!isAllowedContactEmail(email)) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
   }
   if (!PREFERRED.has(preferred)) {

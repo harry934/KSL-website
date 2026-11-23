@@ -5,6 +5,7 @@ import { getStaffSession } from "@/lib/session";
 import { hrefForDraft } from "@/lib/draft-review";
 import { canAccess, MODULE_LABELS, type ModuleKey } from "@/lib/modules";
 import { messagesViewUnlocked } from "@/lib/message-unlock-server";
+import { isAllowedPublicSearchQuery } from "@/lib/public-input-whitelist";
 
 type Hit = { id: string; title: string; hint: string; href: string; area: string; text?: string };
 
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
   if (blocked) return blocked;
 
   const q = new URL(req.url).searchParams.get("q")?.trim() ?? "";
-  if (q.length < 2) return NextResponse.json({ results: [] });
+  if (q.length < 2 || !isAllowedPublicSearchQuery(q)) return NextResponse.json({ results: [] });
 
   const like = safeLike(q);
   const admin = createDatabaseClient();

@@ -1,35 +1,91 @@
-/* Stops code-like text in search and the contact form. */
+/* Whitelist validation for site search and the contact form (client-side; server repeats). */
 (function (global) {
     "use strict";
 
     var SCOPE = ".ksl-search, .ksl-mobile-menu-search, .ksl-empty-search, .ksl-contact-form";
+    var LIMITS = { search: 120, name: 80, email: 200, subject: 160, message: 4000 };
+    var SEARCH_CHARS = /^[\p{L}\p{N}\s'.-]+$/u;
+    var NAME_CHARS = /^[\p{L}\p{M}\s'.-]+$/u;
+    var SUBJECT_CHARS = /^[\p{L}\p{N}\p{M}\s.,;:!?'"()[\]\-/&%+@#_]+$/u;
 
-    function looksLikeCode(value) {
+    function hasControlChar(text) {
+        var i;
+        for (i = 0; i < text.length; i++) {
+            var cp = text.codePointAt(i);
+            if (cp < 32 && cp !== 9 && cp !== 10 && cp !== 13) return true;
+            if (cp === 0x7f) return true;
+            if (cp > 0xffff) i++;
+        }
+        return false;
+    }
+
+    function isAllowedPublicSearchQuery(value) {
+        var text = String(value == null ? "" : value).trim();
+        if (!text || text.length > LIMITS.search) return false;
+        return SEARCH_CHARS.test(text);
+    }
+
+    function isAllowedContactName(value) {
+        var text = String(value == null ? "" : value).trim();
+        if (!text || text.length > LIMITS.name) return false;
+        if (!NAME_CHARS.test(text) || !/\p{L}/u.test(text)) return false;
+        return true;
+    }
+
+    function isAllowedContactNameOptional(value) {
+        var text = String(value == null ? "" : value).trim();
+        if (!text) return true;
+        return isAllowedContactName(text);
+    }
+
+    function isAllowedContactEmail(value) {
+        var text = String(value == null ? "" : value).trim().toLowerCase();
+        if (!text || text.length > LIMITS.email) return false;
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) return false;
+        var parts = text.split("@");
+        var local = parts[0];
+        var domain = parts[1];
+        if (!local || !domain) return false;
+        if (!/^[\p{L}\p{N}._%+\-]+$/u.test(local)) return false;
+        if (!/^[\p{L}\p{N}.-]+$/u.test(domain)) return false;
+        return true;
+    }
+
+    function isAllowedContactSubject(value) {
+        var text = String(value == null ? "" : value).trim();
+        if (!text || text.length > LIMITS.subject) return false;
+        return SUBJECT_CHARS.test(text);
+    }
+
+    function isAllowedContactMessage(value) {
         var text = String(value == null ? "" : value);
-        if (!text) return false;
-        var decoded = text
-            .replace(/\\u003c/gi, "<")
-            .replace(/\\u003e/gi, ">")
-            .replace(/&#x0*3c;?/gi, "<")
-            .replace(/&#0*60;?/gi, "<")
-            .replace(/&#x0*3e;?/gi, ">")
-            .replace(/&#0*62;?/gi, ">")
-            .replace(/&lt;/gi, "<")
-            .replace(/&gt;/gi, ">")
-            .replace(/%3c/gi, "<")
-            .replace(/%3e/gi, ">");
-        return /<\s*\/?\s*(script|iframe|object|embed|svg|math|link|meta|style|base|form|img|video|source|body|html|xml)\b/i.test(decoded) ||
-            /javascript\s*:/i.test(decoded) ||
-            /vbscript\s*:/i.test(decoded) ||
-            /data\s*:\s*text\/html/i.test(decoded) ||
-            /\bon[a-z]+\s*=/i.test(decoded) ||
-            /\b(document\.cookie|document\.write|eval\s*\()/i.test(decoded);
+        if (!text || text.length > LIMITS.message) return false;
+        if (hasControlChar(text)) return false;
+        if (text.indexOf("<") !== -1 || text.indexOf(">") !== -1) return false;
+        if (/(?:javascript|vbscript)\s*:/i.test(text)) return false;
+        if (/data\s*:\s*text\/html/i.test(text)) return false;
+        if (/\bon[a-z]{2,}\s*=/i.test(text)) return false;
+        return true;
+    }
+
+    function allowedForField(el, value) {
+        if (!el || !el.name) return true;
+        var name = el.name;
+        if (name === "website") return true;
+        if (name === "s") return isAllowedPublicSearchQuery(value);
+        if (name === "first_name" || name === "surname") return isAllowedContactName(value);
+        if (name === "other_name") return isAllowedContactNameOptional(value);
+        if (name === "email") return isAllowedContactEmail(value);
+        if (name === "subject") return isAllowedContactSubject(value);
+        if (name === "message") return isAllowedContactMessage(value);
+        if (name === "pref") return true;
+        return isAllowedPublicSearchQuery(value);
     }
 
     function inScope(el) {
         if (!el || !el.closest) return false;
         if (el.matches(SCOPE) || el.closest(SCOPE)) return true;
-        if (el.matches('input[name="s"], textarea[name="s"], textarea[name="message"]')) return true;
+        if (el.matches('input[name="s"], textarea[name="s"], textarea[name="message"], input[name="subject"]')) return true;
         if (el.matches("form") && el.querySelector('input[name="s"], textarea[name="message"]')) return true;
         return !!el.closest("#searchModal, form");
     }
@@ -41,12 +97,24 @@
         global.location.replace("404.html?blocked=1");
     }
 
-    global.KSL_LOOKS_LIKE_CODE = looksLikeCode;
+    global.KSL_INPUT = {
+        isAllowedPublicSearchQuery: isAllowedPublicSearchQuery,
+        isAllowedContactName: isAllowedContactName,
+        isAllowedContactNameOptional: isAllowedContactNameOptional,
+        isAllowedContactEmail: isAllowedContactEmail,
+        isAllowedContactSubject: isAllowedContactSubject,
+        isAllowedContactMessage: isAllowedContactMessage,
+    };
+
+    /** Backwards compatibility for older snippets. */
+    global.KSL_LOOKS_LIKE_CODE = function (value) {
+        return !isAllowedContactMessage(String(value == null ? "" : value));
+    };
 
     document.addEventListener("input", function (event) {
         var el = event.target;
         if (!el || el.name === "website" || !inScope(el)) return;
-        if (!looksLikeCode(el.value)) return;
+        if (allowedForField(el, el.value)) return;
         event.preventDefault();
         event.stopPropagation();
         leave();
@@ -59,7 +127,7 @@
         var i;
         for (i = 0; i < fields.length; i += 1) {
             if (fields[i].name === "website") continue;
-            if (!looksLikeCode(fields[i].value)) continue;
+            if (allowedForField(fields[i], fields[i].value)) continue;
             event.preventDefault();
             event.stopPropagation();
             leave();
@@ -68,5 +136,5 @@
     }, true);
 
     var posted = new URLSearchParams(global.location.search).get("s");
-    if (looksLikeCode(posted)) leave();
+    if (posted && !isAllowedPublicSearchQuery(posted)) leave();
 })(window);

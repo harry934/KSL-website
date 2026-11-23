@@ -9,6 +9,12 @@ import { assessContactRisk } from "./contact-risk.ts";
 import { scanContactPayload } from "./contact-payload-scan.ts";
 import { gzipSync } from "node:zlib";
 import { looksLikeCode } from "./input-guard.ts";
+import {
+  isAllowedContactMessage,
+  isAllowedContactName,
+  isAllowedContactSubject,
+  isAllowedPublicSearchQuery,
+} from "./public-input-whitelist.ts";
 import { issueMessagesUnlockToken, maskWebsiteMessage, verifyMessagesUnlockToken } from "./message-unlock.ts";
 import { IDLE_MS, judgeSession, sessionIsLive } from "./staff-session.ts";
 import { sanitizeRichHtml } from "./sanitize-html.ts";
@@ -230,13 +236,19 @@ test("a hero trim stays inside the film", () => {
   assert.equal(parseHeroTrim({ start: 4, end: 4.1 }), null);
 });
 
-test("code-like text is blocked and ordinary messages are not", () => {
-  assert.equal(looksLikeCode("Please tell me about dry dock dates."), false);
-  assert.equal(looksLikeCode("A price under 2 million is fine."), false);
+test("whitelist allows real enquiries and blocks markup in contact text", () => {
+  assert.equal(isAllowedContactMessage("Please tell me about dry dock dates."), true);
+  assert.equal(isAllowedContactMessage("A price under 2 million is fine."), true);
+  assert.equal(isAllowedContactMessage("Call me about https://example.com when you can."), true);
+  assert.equal(isAllowedContactMessage("<script>alert(1)</script>"), false);
+  assert.equal(isAllowedContactMessage("javascript:alert(1)"), false);
+  assert.equal(isAllowedContactName("O'Brien"), true);
+  assert.equal(isAllowedContactName("12345"), false);
+  assert.equal(isAllowedContactSubject("Dry dock enquiry - Q3"), true);
+  assert.equal(isAllowedContactMessage("hello onerror=alert(1)"), false);
+  assert.equal(isAllowedPublicSearchQuery("dry dock"), true);
+  assert.equal(isAllowedPublicSearchQuery("<img onerror=x>"), false);
   assert.equal(looksLikeCode("<script>alert(1)</script>"), true);
-  assert.equal(looksLikeCode("javascript:alert(1)"), true);
-  assert.equal(looksLikeCode("&lt;iframe src=x&gt;"), true);
-  assert.equal(looksLikeCode("hello onerror=alert(1)"), true);
 });
 
 test("a staff session stays open for one browser and 20 minutes of use", () => {
@@ -341,18 +353,21 @@ test("Turnstile fails closed in production without a secret", async () => {
 });
 
 test("contact payload scan decodes obfuscation layers before blocking", () => {
-  assert.equal(scanContactPayload("Hello, we need a quote for dry dock work.").blocked, false);
+  assert.equal(
+    scanContactPayload("Hello, we need a quote for dry dock work.", isAllowedContactMessage).blocked,
+    false,
+  );
 
   const b64Script = Buffer.from("<script>alert(1)</script>", "utf8").toString("base64");
-  assert.equal(scanContactPayload(b64Script).blocked, true);
+  assert.equal(scanContactPayload(b64Script, isAllowedContactMessage).blocked, true);
 
-  assert.equal(scanContactPayload("%3Cscript%3Ealert(1)%3C/script%3E").blocked, true);
-  assert.equal(scanContactPayload("&lt;script&gt;alert(1)&lt;/script&gt;").blocked, true);
-  assert.equal(scanContactPayload("\\x3cscript\\x3ealert(1)\\x3c/script\\x3e").blocked, true);
+  assert.equal(scanContactPayload("%3Cscript%3Ealert(1)%3C/script%3E", isAllowedContactMessage).blocked, true);
+  assert.equal(scanContactPayload("&lt;script&gt;alert(1)&lt;/script&gt;", isAllowedContactMessage).blocked, true);
+  assert.equal(scanContactPayload("\\x3cscript\\x3ealert(1)\\x3c/script\\x3e", isAllowedContactMessage).blocked, true);
 
   const gz = gzipSync(Buffer.from("<iframe src=x></iframe>", "utf8")).toString("base64");
-  assert.equal(scanContactPayload(gz).blocked, true);
-  assert.ok(scanContactPayload(gz).encodings.includes("gzip"));
+  assert.equal(scanContactPayload(gz, isAllowedContactMessage).blocked, true);
+  assert.ok(scanContactPayload(gz, isAllowedContactMessage).encodings.includes("gzip"));
 });
 
 test("contact risk flags injection in names and links in messages", () => {

@@ -2283,6 +2283,11 @@
             closeSuggest(input);
             return;
         }
+        if (window.KSL_INPUT && !window.KSL_INPUT.isAllowedPublicSearchQuery(query)) {
+            closeSuggest(input);
+            window.location.replace("404.html?blocked=1");
+            return;
+        }
         var results = searchMatches(query);
         if (!results.length) {
             box.innerHTML = '<p class="ksl-suggest-empty">Nothing on this site matches that.</p>';
@@ -2338,6 +2343,10 @@
         var query = input.value.trim();
         if (query.length < 2) {
             input.focus();
+            return;
+        }
+        if (window.KSL_INPUT && !window.KSL_INPUT.isAllowedPublicSearchQuery(query)) {
+            window.location.replace("404.html?blocked=1");
             return;
         }
         loadSearchIndex().then(function () {

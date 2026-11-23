@@ -1,5 +1,4 @@
 import { gunzipSync } from "node:zlib";
-import { looksLikeCode } from "@/lib/input-guard";
 
 const MAX_VARIANTS = 24;
 const MAX_DECODE_BYTES = 12_000;
@@ -187,8 +186,8 @@ function variantsFor(text: string): { next: string[]; tags: string[] } {
   return { next, tags };
 }
 
-/** Decode common obfuscation layers and block if any layer looks malicious. */
-export function scanContactPayload(value: string): PayloadScan {
+/** Decode common obfuscation layers and block if any layer breaks the field whitelist. */
+export function scanContactPayload(value: string, allowed: (text: string) => boolean): PayloadScan {
   const encodings = new Set<string>();
   const queue: string[] = [value];
   const seen = new Set<string>();
@@ -200,7 +199,7 @@ export function scanContactPayload(value: string): PayloadScan {
     if (seen.has(current)) continue;
     seen.add(current);
 
-    if (looksLikeCode(current)) {
+    if (!allowed(current)) {
       return { blocked: true, encodings: [...encodings] };
     }
 
@@ -214,11 +213,13 @@ export function scanContactPayload(value: string): PayloadScan {
   return { blocked: false, encodings: [...encodings] };
 }
 
-export function scanContactFields(fields: string[]): PayloadScan {
+export type ContactFieldScan = { value: string; allowed: (text: string) => boolean };
+
+export function scanContactFields(fields: ContactFieldScan[]): PayloadScan {
   const encodings = new Set<string>();
   for (const field of fields) {
-    if (!field) continue;
-    const scan = scanContactPayload(field);
+    if (!field.value) continue;
+    const scan = scanContactPayload(field.value, field.allowed);
     scan.encodings.forEach((e) => encodings.add(e));
     if (scan.blocked) return { blocked: true, encodings: [...encodings] };
   }

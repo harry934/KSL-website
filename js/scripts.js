@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261121-events";
+    var ASSET_V = "20261123-whitelist";
 
     var BUNDLES = {
         wow: [

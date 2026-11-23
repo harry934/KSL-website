@@ -52,6 +52,10 @@
     if (grid) {
         var params = new URLSearchParams(window.location.search);
         var query = (params.get("s") || "").trim();
+        if (query && window.KSL_INPUT && !window.KSL_INPUT.isAllowedPublicSearchQuery(query)) {
+            window.location.replace("404.html?blocked=1");
+            return;
+        }
         var needle = query.toLocaleLowerCase("en");
         var summary = document.getElementById("searchNote");
         var heading = document.getElementById("ksl-news-heading");

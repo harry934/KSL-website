@@ -1,4 +1,7 @@
-/** True when text looks like code rather than a normal message. */
+/**
+ * Legacy tag-pattern check (staff risk tools). Public Contact Us and site search use
+ * {@link ./public-input-whitelist.ts} on the server and `js/input-guard.js` in the browser.
+ */
 export function looksLikeCode(value: unknown) {
   const text = String(value ?? "");
   if (!text) return false;

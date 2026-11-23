@@ -1,4 +1,8 @@
-import { looksLikeCode } from "@/lib/input-guard";
+import {
+  isAllowedContactMessage,
+  isAllowedContactName,
+  isAllowedContactSubject,
+} from "@/lib/public-input-whitelist";
 
 const DISPOSABLE_DOMAINS = new Set([
   "mailinator.com",
@@ -35,7 +39,7 @@ export function assessContactRisk(input: {
   const message = input.message;
   const email = input.email.toLowerCase();
 
-  if (names.some((part) => looksLikeCode(part))) bump(risk, 45, "suspicious_name");
+  if (names.some((part) => part && !isAllowedContactName(part))) bump(risk, 45, "suspicious_name");
   if (/(https?:\/\/|www\.)/i.test(fullName)) bump(risk, 40, "link_in_name");
   if (/\d{6,}/.test(fullName)) bump(risk, 20, "name_has_numbers");
   if (fullName.length > 4 && fullName === fullName.toUpperCase() && /[A-Z]/.test(fullName)) {
@@ -46,7 +50,7 @@ export function assessContactRisk(input: {
   const domain = email.includes("@") ? email.split("@")[1] ?? "" : "";
   if (domain && DISPOSABLE_DOMAINS.has(domain)) bump(risk, 35, "disposable_email");
   if (email.length > 72) bump(risk, 10, "long_email");
-  if (looksLikeCode(input.subject) || looksLikeCode(message)) bump(risk, 50, "injection_pattern");
+  if (!isAllowedContactSubject(input.subject) || !isAllowedContactMessage(message)) bump(risk, 50, "injection_pattern");
 
   const linkCount = (message.match(/https?:\/\/|www\.\S+/gi) ?? []).length;
   if (linkCount >= 1) bump(risk, 10, "contains_links");
