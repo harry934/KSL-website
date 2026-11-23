@@ -20,10 +20,19 @@ export async function GET() {
     kept((itemsRes.data ?? []) as Array<ServiceRow & { deleted_at?: string | null }>)
   );
   // item.downloads are catalog keys (e.g. "brochure"), not file paths — do not rewrite them.
-  for (const item of Object.values(payload.downloadCatalog)) {
-    item.href = (await openStoredUrl(item.href)) || "";
+  // Open the file links first, then clear them before signPayload. A signed download
+  // URL is a stored-file link, and signPayload would otherwise blank it.
+  const openedHrefs = new Map<string, string>();
+  for (const [key, item] of Object.entries(payload.downloadCatalog)) {
+    const href = typeof item?.href === "string" ? item.href : "";
+    openedHrefs.set(key, (await openStoredUrl(href)) || "");
+    item.href = "";
   }
   const safePayload = await signPayload(payload);
+  for (const [key, href] of openedHrefs) {
+    const entry = safePayload.downloadCatalog[key];
+    if (entry && href) entry.href = href;
+  }
 
   return NextResponse.json(safePayload, {
     headers: { "Cache-Control": PUBLIC_CMS_CACHE },

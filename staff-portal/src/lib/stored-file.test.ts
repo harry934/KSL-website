@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { openStoredUrl, signPayload } from "./stored-file.ts";
+import { openStoredUrl, publicDocumentPath, signPayload } from "./stored-file.ts";
 
 test("public payload signing never exposes private stored-file paths", async () => {
   const previousPortal = process.env.NEXT_PUBLIC_PORTAL_URL;
@@ -42,6 +42,9 @@ test("only explicit download references receive signed links", async () => {
     assert.equal(url.searchParams.get("path"), "downloads/reports/annual.pdf");
     assert.ok(url.searchParams.get("signature"));
     assert.equal(await openStoredUrl("private:avatars/profile.png"), "");
+    assert.equal(await openStoredUrl("docs/KSL-Brochure-version-28-NOV-2024.pdf"), "docs/KSL-Brochure-version-28-NOV-2024.pdf");
+    assert.equal(publicDocumentPath("docs/../secret.pdf"), "");
+    assert.equal(publicDocumentPath("https://example.test/docs/file.pdf"), "");
   } finally {
     if (previousPortal === undefined) delete process.env.NEXT_PUBLIC_PORTAL_URL;
     else process.env.NEXT_PUBLIC_PORTAL_URL = previousPortal;

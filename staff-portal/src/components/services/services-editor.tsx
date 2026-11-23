@@ -12,7 +12,6 @@ import {
   Textarea,
   VisibilitySwitch,
 } from "@/components/ui/form-bits";
-import { FileField } from "@/components/ui/file-field";
 import { ImageField } from "@/components/ui/image-field";
 import { ItemList } from "@/components/ui/item-list";
 import { useFeedback } from "@/components/ui/feedback";
@@ -36,12 +35,14 @@ import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { useOpenEdit } from "@/lib/open-edit";
 import { appPath } from "@/lib/base-path";
 
-type EditorDownload = ServiceDownloadDraft & { existing?: boolean };
-
 type ServiceDraft = Partial<ServiceRow> & {
   popupButtons: ServiceModalAction[];
-  downloadRows: EditorDownload[];
+  downloadRows: ServiceDownloadDraft[];
 };
+
+function downloadKey(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, "-");
+}
 
 const BUTTON_NAMES = ["Main button", "Second button", "Text link"];
 
@@ -160,7 +161,7 @@ export function ServicesEditor() {
           return [{ key: String(record.key ?? ""), title: String(record.title ?? ""), href: String(record.href ?? "") }];
         })
       : serviceDownloadRows(item.downloads, savedCatalog)
-    ).map((doc) => ({ ...doc, existing: true }));
+    );
     setEditing({
       ...item,
       actions,
@@ -179,13 +180,7 @@ export function ServicesEditor() {
     }
     setSaving("item");
     try {
-      const downloadRows = editing.downloadRows.filter((doc) => doc.existing || doc.title.trim() || doc.href.trim());
-      const incompleteDoc = downloadRows.find((doc) => !doc.title.trim() || !doc.href.trim());
-      if (incompleteDoc) {
-        toast("Each related document needs a name and a file. Remove a document you no longer want.", "error");
-        setSaving(null);
-        return;
-      }
+      const downloadRows = editing.downloadRows.filter((doc) => doc.key.trim() && doc.title.trim() && doc.href.trim());
       const incompleteButton = editing.popupButtons.find((button) => button.label.trim() && !button.href.trim());
       if (incompleteButton) {
         toast("Each popup button needs a label and a page.", "error");
@@ -260,9 +255,19 @@ export function ServicesEditor() {
         popupButtons: editing.popupButtons.map((button, i) => (i === index ? { ...button, ...patch } : button)),
       });
     };
-    const setDownload = (index: number, patch: Partial<EditorDownload>) => {
+    const library = Object.entries(savedCatalog).map(([key, value]) => ({
+      key,
+      title: value?.title?.trim() || key,
+      href: value?.href?.trim() || "",
+    }));
+    const selected = new Set(editing.downloadRows.map((doc) => downloadKey(doc.key)));
+    const toggleDownload = (doc: ServiceDownloadDraft) => {
+      const key = downloadKey(doc.key);
+      const on = selected.has(key);
       set({
-        downloadRows: editing.downloadRows.map((doc, i) => (i === index ? { ...doc, ...patch } : doc)),
+        downloadRows: on
+          ? editing.downloadRows.filter((row) => downloadKey(row.key) !== key)
+          : [...editing.downloadRows.filter((row) => downloadKey(row.key) !== key), doc],
       });
     };
     return (
@@ -340,51 +345,30 @@ export function ServicesEditor() {
             </FormSection>
             <FormSection
               title="Related downloads"
-              description="Documents shown in this service’s popup. Add a file here, or remove one that should no longer appear."
+              description="Tick the documents that should appear in this service’s popup."
             >
-              {editing.downloadRows.length === 0 && (
-                <p className="text-[13.5px] text-[#6b7785]">No documents on this service yet.</p>
+              {library.length === 0 ? (
+                <p className="text-[13.5px] text-[#6b7785]">No documents are available yet.</p>
+              ) : (
+                <ul className="divide-y divide-[#e6ebf1] rounded-[8px] border border-[#e3e8ee]">
+                  {library.map((doc) => {
+                    const on = selected.has(downloadKey(doc.key));
+                    return (
+                      <li key={doc.key}>
+                        <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5 text-[14px] text-[#0b1f3a]">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-[#0b1f3a]"
+                            checked={on}
+                            onChange={() => toggleDownload(doc)}
+                          />
+                          <span className="font-medium">{doc.title}</span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
-              <div className="space-y-3">
-                {editing.downloadRows.map((doc, index) => (
-                  <div key={doc.key || index} className="rounded-[8px] border border-[#e3e8ee] bg-[#fafbfc] p-3">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5b6775]">
-                        {doc.title.trim() || "Document"}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => set({ downloadRows: editing.downloadRows.filter((_, i) => i !== index) })}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-[6px] px-2 text-[13px] font-semibold text-[#b42318] hover:bg-[#fdecea]"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Remove
-                      </button>
-                    </div>
-                    <div className="space-y-3">
-                      <Field label="Document name">
-                        <Input
-                          value={doc.title}
-                          onChange={(e) => setDownload(index, { title: e.target.value })}
-                          placeholder="e.g. KSL Brochure"
-                        />
-                      </Field>
-                      {doc.existing && (!doc.title.trim() || !doc.href.trim()) && (
-                        <p className="text-[12.5px] text-[#b45309]">This document is missing its name or file. Upload it again, or remove it.</p>
-                      )}
-                      <FileField module="services" value={doc.href} onChange={(href) => setDownload(index, { href })} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <Button
-                variant="secondary"
-                onClick={() => set({
-                  downloadRows: [...editing.downloadRows, { key: crypto.randomUUID(), title: "", href: "" }],
-                })}
-              >
-                <Plus className="h-4 w-4" /> Add document
-              </Button>
             </FormSection>
           </div>
           <div className="space-y-4">

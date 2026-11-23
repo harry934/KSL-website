@@ -13,9 +13,17 @@ export function isPrivateRef(value: string) {
   return value.startsWith(PREFIX);
 }
 
+/** Public website files such as docs/brochure.pdf. These are not storage objects. */
+export function publicDocumentPath(href: string): string {
+  const raw = href.trim();
+  if (!raw || raw.length > 500 || raw.includes("..") || raw.includes(":") || /[\s<>"'`]/.test(raw)) return "";
+  if (/^docs\/[A-Za-z0-9][\w.-]*\.(pdf|docx?)$/i.test(raw)) return raw;
+  return "";
+}
+
 export async function openStoredUrl(href: string, seconds = 3600) {
   const object = storageObjectFrom(href);
-  if (!object) return safeLink(href) ?? "";
+  if (!object) return safeLink(href) ?? publicDocumentPath(href);
   if (object.bucket !== "downloads") return "";
   return signedStoredFileUrl(object.bucket, object.path, seconds);
 }
