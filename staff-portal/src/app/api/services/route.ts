@@ -1,7 +1,16 @@
 import { createDatabaseClient } from "@/lib/db-client";
 import { requireStaff, logActivity, dbError } from "@/lib/api-auth";
 import { clearReviewDraft, editorSavePlan, overlayDrafts, overlaySettings, saveBody } from "@/lib/draft-review";
-import { cleanModalActions, cleanOptionalAction, DEFAULT_SERVICE_MODAL_ACTIONS, slugify, type ServiceModalActions } from "@/lib/services";
+import {
+  applyServiceDownloads,
+  cleanDownloadDrafts,
+  cleanModalActions,
+  cleanOptionalAction,
+  DEFAULT_SERVICE_MODAL_ACTIONS,
+  incompleteDownloadDrafts,
+  slugify,
+  type ServiceModalActions,
+} from "@/lib/services";
 import { cleanGroupOrder, rememberGroup } from "@/lib/group-order";
 import { applyBinDelete, restoreRow, splitRemoved } from "@/lib/recycle";
 import { releaseUnusedValues, rememberFiles } from "@/lib/storage-files";
@@ -104,9 +113,41 @@ export async function POST(req: NextRequest) {
     payload: body,
   });
   if (plan.held) return plan.held;
+  if (incompleteDownloadDrafts(body.download_rows)) {
+    return NextResponse.json({ error: "Each related document needs a name and a file." }, { status: 400 });
+  }
   const slug = (body.slug || slugify(body.title || "service")).trim();
   const status = plan.status;
   const category = String(body.category ?? "").trim() || null;
+  const itemId = String(body.id || crypto.randomUUID());
+  let downloads = Array.isArray(body.downloads) ? body.downloads : [];
+  let nextCatalog: Record<string, { title: string; href: string }> | null = null;
+  if (Array.isArray(body.download_rows)) {
+    const drafts = cleanDownloadDrafts(body.download_rows);
+    const [settingsRes, itemsRes, currentRes] = await Promise.all([
+      admin.from("services_settings").select("download_catalog").eq("id", "default").maybeSingle(),
+      admin.from("service_items").select("id, downloads"),
+      body.id
+        ? admin.from("service_items").select("downloads").eq("id", body.id).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+    if (settingsRes.error) return NextResponse.json({ error: dbError(settingsRes.error) }, { status: 500 });
+    if (itemsRes.error) return NextResponse.json({ error: dbError(itemsRes.error) }, { status: 500 });
+    if (currentRes.error) return NextResponse.json({ error: dbError(currentRes.error) }, { status: 500 });
+    const usedByOthers = new Set<string>();
+    for (const item of itemsRes.data ?? []) {
+      if (String(item.id) === itemId) continue;
+      const keys = Array.isArray(item.downloads) ? item.downloads : [];
+      for (const key of keys) usedByOthers.add(String(key));
+    }
+    const previousKeys = Array.isArray(currentRes.data?.downloads) ? currentRes.data.downloads.map(String) : [];
+    const catalog = settingsRes.data?.download_catalog && typeof settingsRes.data.download_catalog === "object"
+      ? settingsRes.data.download_catalog as Record<string, { title: string; href: string }>
+      : {};
+    const applied = applyServiceDownloads(catalog, previousKeys, drafts, usedByOthers);
+    downloads = applied.keys;
+    nextCatalog = applied.catalog;
+  }
   const actions: ServiceModalActions | null | undefined =
     body.actions && typeof body.actions === "object"
       ? {
@@ -119,14 +160,14 @@ export async function POST(req: NextRequest) {
         : undefined;
 
   const row: Record<string, unknown> = {
-    id: body.id || crypto.randomUUID(),
+    id: itemId,
     slug,
     category,
     title: body.title,
     excerpt: body.excerpt ?? null,
     detail: body.detail ?? null,
     image_path: body.image_path ?? null,
-    downloads: Array.isArray(body.downloads) ? body.downloads : [],
+    downloads,
     source_popup_id: body.source_popup_id ?? null,
     sort_order: body.sort_order ?? 0,
     status,
@@ -146,6 +187,13 @@ export async function POST(req: NextRequest) {
     }
   }
   if (upErr) return NextResponse.json({ error: dbError(upErr) }, { status: 500 });
+  if (nextCatalog) {
+    const { error: catalogErr } = await admin.from("services_settings").upsert({
+      id: "default",
+      download_catalog: nextCatalog,
+    });
+    if (catalogErr) return NextResponse.json({ error: dbError(catalogErr) }, { status: 500 });
+  }
   if (category) await rememberGroup(admin, "services_settings", category);
   await releaseUnusedValues(admin, previous);
   await clearReviewDraft(admin, "service_items", data?.id);

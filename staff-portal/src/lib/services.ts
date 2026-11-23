@@ -1,3 +1,4 @@
+import { keyFrom } from "@/lib/list-utils";
 import { slugify } from "@/lib/news";
 import { safeLink } from "@/lib/safe-link";
 
@@ -87,6 +88,101 @@ export function resolveServiceActions(
 ): ServiceModalActions {
   if (itemActions != null) return cleanModalActions(itemActions, false);
   return cleanModalActions(settingsActions, true);
+}
+
+const POPUP_SLOTS = ["primary", "secondary", "tertiary"] as const;
+
+/** Buttons that actually appear, in popup order. A blank label is hidden. */
+export function popupButtonsFromActions(actions: ServiceModalActions): ServiceModalAction[] {
+  return POPUP_SLOTS.map((slot) => actions[slot]).filter((button) => button.label.trim());
+}
+
+/** First button is the main button, second is the outline button, third is the text link. */
+export function actionsFromPopupButtons(buttons: ServiceModalAction[]): ServiceModalActions {
+  const blank = { label: "", href: "" };
+  const kept = buttons
+    .filter((button) => button.label.trim())
+    .slice(0, POPUP_SLOTS.length)
+    .map((button) => cleanOptionalAction(button));
+  return {
+    primary: kept[0] ?? blank,
+    secondary: kept[1] ?? blank,
+    tertiary: kept[2] ?? blank,
+  };
+}
+
+export type ServiceDownloadDraft = { key: string; title: string; href: string };
+
+export function cleanDownloadDrafts(value: unknown): ServiceDownloadDraft[] {
+  if (!Array.isArray(value)) return [];
+  const used = new Set<string>();
+  const rows: ServiceDownloadDraft[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object") continue;
+    const record = entry as Record<string, unknown>;
+    const title = String(record.title ?? "").trim().slice(0, 120);
+    const href = String(record.href ?? "").trim().slice(0, 2000);
+    if (!title || !href) continue;
+    let key = String(record.key ?? "").trim().slice(0, 80);
+    if (!key || used.has(key)) key = keyFrom(title, used);
+    used.add(key);
+    rows.push({ key, title, href });
+  }
+  return rows;
+}
+
+/** A document row is incomplete when only the name or only the file is filled in. */
+export function incompleteDownloadDrafts(value: unknown): boolean {
+  if (!Array.isArray(value)) return false;
+  return value.some((entry) => {
+    if (!entry || typeof entry !== "object") return false;
+    const record = entry as Record<string, unknown>;
+    const title = String(record.title ?? "").trim();
+    const href = String(record.href ?? "").trim();
+    return Boolean(title) !== Boolean(href);
+  });
+}
+
+/** Documents already saved on a service, including ones whose catalog entry is missing. */
+export function serviceDownloadRows(keys: unknown, catalog: unknown): ServiceDownloadDraft[] {
+  if (!Array.isArray(keys)) return [];
+  const map = catalog && typeof catalog === "object" ? catalog as Record<string, { title?: unknown; href?: unknown }> : {};
+  const rows: ServiceDownloadDraft[] = [];
+  for (const entry of keys) {
+    const key = String(entry ?? "").trim();
+    if (!key) continue;
+    const found = map[key];
+    rows.push({
+      key,
+      title: String(found?.title ?? "").trim(),
+      href: String(found?.href ?? "").trim(),
+    });
+  }
+  return rows;
+}
+
+export function applyServiceDownloads(
+  catalog: Record<string, { title: string; href: string }>,
+  previousKeys: string[],
+  rows: ServiceDownloadDraft[],
+  usedByOtherServices: Set<string>,
+) {
+  const next = { ...catalog };
+  const taken = new Set(Object.keys(next));
+  const keys: string[] = [];
+  for (const row of rows) {
+    let key = row.key.trim();
+    const current = key ? next[key] : undefined;
+    const changed = Boolean(current && (current.title !== row.title || current.href !== row.href));
+    if (!key || (usedByOtherServices.has(key) && changed)) key = keyFrom(row.title || "document", taken);
+    taken.add(key);
+    next[key] = { title: row.title, href: row.href };
+    keys.push(key);
+  }
+  for (const key of previousKeys) {
+    if (!keys.includes(key) && !usedByOtherServices.has(key)) delete next[key];
+  }
+  return { catalog: next, keys };
 }
 
 export function toPublicServiceItem(row: ServiceRow, settings?: ServicesSettings | null) {
