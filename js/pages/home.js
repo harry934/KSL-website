@@ -81,7 +81,7 @@
             '<span class="ksl-feed-body">' +
             '<span class="ksl-feed-top"><span class="ksl-feed-pill">' + escapeHtml(item.category || "News") + "</span>" + arrow + "</span>" +
             '<span class="ksl-feed-name">' + escapeHtml(item.title) + "</span>" +
-            '<span class="ksl-feed-meta">' + escapeHtml(formatDate(item.date)) + "</span>" +
+            (item.date ? '<span class="ksl-feed-meta">' + escapeHtml(formatDate(item.date)) + "</span>" : "") +
             "</span></a>"
         );
     }

@@ -97,8 +97,8 @@
                 label: item.category || "News",
                 title: item.title,
                 imageAlt: item.imageAlt || item.title || "",
-                meta: formatDate(item.date),
-                sortDate: item.date || "",
+                meta: item.date ? formatDate(item.date) : "",
+                sortDate: item.date || "0000-01-01",
                 excerpt: item.excerpt || ""
             };
         }

@@ -19,7 +19,7 @@ import { RichText } from "@/components/ui/rich-text";
 import { useFeedback } from "@/components/ui/feedback";
 import { useCan } from "@/components/portal/session-context";
 import type { NewsRow } from "@/lib/news";
-import { nairobiToday } from "@/lib/dates";
+import { formatDay, nairobiToday, normalizeCalendarDay } from "@/lib/dates";
 import { newsPublicUrl } from "@/lib/public-links";
 import { useOpenEdit } from "@/lib/open-edit";
 import { uniqueSlug } from "@/lib/list-utils";
@@ -27,8 +27,8 @@ import { sendJson, awaitingReview, DRAFT_SAVED } from "@/lib/upload-client";
 import { appPath } from "@/lib/base-path";
 
 function formatDate(value: string | null) {
-  if (!value) return "";
-  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(new Date(value));
+  const day = normalizeCalendarDay(value);
+  return day ? formatDay(day) : "";
 }
 
 export function NewsEditor() {
@@ -67,7 +67,7 @@ export function NewsEditor() {
       slug: "",
       excerpt: "",
       category: "News",
-      published_date: new Date().toISOString().slice(0, 10),
+      published_date: "",
       image_path: "",
       author: "KSL Communications",
       location: "",
@@ -91,7 +91,12 @@ export function NewsEditor() {
       const slug =
         editing.slug?.trim() ||
         uniqueSlug(editing.title, items.filter((i) => i.id !== editing.id).map((i) => i.slug), "news");
-      const saved = await sendJson("/api/news", "POST", { ...editing, slug, go_live_on: editing.go_live_on || null });
+      const saved = await sendJson("/api/news", "POST", {
+        ...editing,
+        slug,
+        published_date: normalizeCalendarDay(editing.published_date),
+        go_live_on: normalizeCalendarDay(editing.go_live_on),
+      });
       const waiting = !awaitingReview(saved) && editing.status === "published" && editing.go_live_on && editing.go_live_on > nairobiToday();
       toast(
         awaitingReview(saved)
@@ -162,11 +167,19 @@ export function NewsEditor() {
               <VisibilitySwitch status={editing.status ?? "draft"} canPublish={canPublish} onChange={(status) => set({ status })} />
             </FormSection>
             <FormSection title="Details">
-              <Field label="Date">
-                <Input type="date" value={editing.published_date ?? ""} onChange={(e) => set({ published_date: e.target.value })} />
+              <Field label="Date" optional hint="Leave blank to show the story without a date on the website.">
+                <Input
+                  type="date"
+                  value={normalizeCalendarDay(editing.published_date) ?? ""}
+                  onChange={(e) => set({ published_date: e.target.value || null })}
+                />
               </Field>
               <Field label="Show on the website from" hint="Leave this blank to show the story as soon as it is published. A future date keeps it hidden until that morning.">
-                <Input type="date" value={editing.go_live_on ?? ""} onChange={(e) => set({ go_live_on: e.target.value })} />
+                <Input
+                  type="date"
+                  value={normalizeCalendarDay(editing.go_live_on) ?? ""}
+                  onChange={(e) => set({ go_live_on: e.target.value || null })}
+                />
               </Field>
               <Field label="Category">
                 <ChoiceField value={editing.category ?? ""} options={categories} onChange={(category) => set({ category })} />
@@ -232,7 +245,18 @@ export function NewsEditor() {
               ? newsPublicUrl(i.slug)
               : undefined,
         }))}
-        onEdit={(id) => setEditing(items.find((i) => i.id === id) ?? null)}
+        onEdit={(id) => {
+          const item = items.find((i) => i.id === id);
+          if (!item) {
+            setEditing(null);
+            return;
+          }
+          setEditing({
+            ...item,
+            published_date: normalizeCalendarDay(item.published_date),
+            go_live_on: normalizeCalendarDay(item.go_live_on),
+          });
+        }}
         onDelete={canDelete ? remove : undefined}
         emptyText="No articles yet. Click New article to write the first one."
       />

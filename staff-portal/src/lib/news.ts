@@ -1,3 +1,4 @@
+import { normalizeCalendarDay } from "@/lib/dates";
 import { sanitizeRichHtml } from "@/lib/sanitize-html";
 
 export type NewsRow = {
@@ -24,7 +25,7 @@ export function toPublicNewsItem(row: NewsRow) {
     title: row.title,
     excerpt: row.excerpt ?? undefined,
     category: row.category ?? "News",
-    date: row.published_date ? String(row.published_date).slice(0, 10) : undefined,
+    date: normalizeCalendarDay(row.published_date) ?? undefined,
     image: row.image_path ?? undefined,
     imageAlt: row.image_alt ?? undefined,
     author: row.author ?? undefined,

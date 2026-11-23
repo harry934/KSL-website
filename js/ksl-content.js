@@ -102,13 +102,13 @@
 
     function formatDisplayDate(value, opts) {
         var day = calendarDay(value);
-        var parsed;
+        if (!day) return "";
         try {
-            parsed = day ? new Date(day + "T12:00:00") : new Date(value);
-            if (isNaN(parsed.getTime())) return day || textFallback(value);
+            var parsed = new Date(day + "T12:00:00");
+            if (isNaN(parsed.getTime())) return "";
             return parsed.toLocaleDateString("en-KE", opts || { year: "numeric", month: "long", day: "numeric" });
         } catch (err) {
-            return day || String(value == null ? "" : value);
+            return "";
         }
     }
 

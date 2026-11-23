@@ -66,7 +66,7 @@
             '<span class="ksl-story-kicker">' + escapeHtml(item.category || "News") + (item.location ? " \u00b7 " + escapeHtml(item.location) : "") + "</span>" +
             '<span class="ksl-story-title">' + escapeHtml(item.title) + "</span>" +
             (item.excerpt ? '<span class="ksl-story-excerpt">' + escapeHtml(item.excerpt) + "</span>" : "") +
-            '<time datetime="' + escapeHtml(item.date) + '">' + escapeHtml(formatDate(item.date)) + "</time>" +
+            (item.date ? '<time datetime="' + escapeHtml(item.date) + '">' + escapeHtml(formatDate(item.date)) + "</time>" : "") +
             "</span></a>"
         );
     }
@@ -146,9 +146,10 @@
         } else if (window.KSL_SANITIZE) {
             body = window.KSL_SANITIZE(body);
         }
-        byId("kslArticleMeta").innerHTML =
-            '<time datetime="' + escapeHtml(item.date) + '">' + escapeHtml(formatDate(item.date)) + "</time>" +
-            '<span aria-hidden="true">·</span>' + readMinutes(body) + " min read";
+        var dateLine = item.date
+            ? '<time datetime="' + escapeHtml(item.date) + '">' + escapeHtml(formatDate(item.date)) + '</time><span aria-hidden="true">·</span>'
+            : "";
+        byId("kslArticleMeta").innerHTML = dateLine + readMinutes(body) + " min read";
 
         var figure = isBrief && item.image
             ? '<figure class="ksl-article-figure"><img src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.title) + '">' +
@@ -166,10 +167,11 @@
             "</footer>";
 
         var lead = main.querySelector(".ksl-article-prose > p");
-        if (lead) {
+        if (lead && item.date) {
             var dateline = document.createElement("span");
             dateline.className = "ksl-article-dateline";
-            dateline.textContent = (item.location || "Nairobi") + ", " + formatDate(item.date) + " \u2014 ";
+            var when = formatDate(item.date);
+            dateline.textContent = (item.location || "Nairobi") + (when ? ", " + when : "") + " \u2014 ";
             lead.insertBefore(dateline, lead.firstChild);
         }
 
