@@ -495,7 +495,7 @@
             // Restore the shipped homepage film when CMS photos are cleared.
             heroVideoAttached = false;
             if (heroVideo && !heroVideo.getAttribute("src") && !heroVideo.getAttribute("data-src")) {
-                heroVideo.setAttribute("data-src", "/img/ksl/hero.mp4");
+                heroVideo.setAttribute("data-src", "/img/ksl/hero.mp4?v=20261124-720p");
             }
             if (heroVideoEnabled && !reduceMotion.matches) playHeroVideo();
         }
@@ -525,7 +525,7 @@
                 hero.classList.remove("is-images-only");
                 hero.classList.remove("has-custom-media");
                 if (!heroVideo.getAttribute("data-src") && !heroVideo.getAttribute("src")) {
-                    heroVideo.setAttribute("data-src", "/img/ksl/hero.mp4");
+                    heroVideo.setAttribute("data-src", "/img/ksl/hero.mp4?v=20261124-720p");
                 }
                 heroVideoAttached = false;
                 if (heroVideoEnabled && !reduceMotion.matches) playHeroVideo();
@@ -544,7 +544,7 @@
             sideBySide = false;
             hero.classList.remove("has-side-carousel");
 
-            var filmSrc = heroVideo.getAttribute("data-src") || heroVideo.getAttribute("src") || "/img/ksl/hero.mp4";
+            var filmSrc = heroVideo.getAttribute("data-src") || heroVideo.getAttribute("src") || "/img/ksl/hero.mp4?v=20261124-720p";
             var usable = [];
             if (mode === "video_and_images" && !reduceMotion.matches) {
                 usable.push({
