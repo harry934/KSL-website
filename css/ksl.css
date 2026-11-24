@@ -5611,7 +5611,7 @@ body {
     inset: 0;
     z-index: 1;
     background:
-        linear-gradient(180deg, rgba(9, 41, 108, .22) 0%, rgba(9, 41, 108, .38) 50%, rgba(6, 26, 69, .62) 100%);
+        linear-gradient(180deg, rgba(9, 41, 108, .12) 0%, rgba(9, 41, 108, .28) 50%, rgba(6, 26, 69, .5) 100%);
     pointer-events: none;
 }
 
@@ -5917,11 +5917,6 @@ body {
         animation-range: var(--ksl-sd-start) var(--ksl-sd-end), var(--ksl-zoom-start) var(--ksl-zoom-end);
     }
 
-    .ksl-hero.is-intro-crossfade .ksl-hero-video.is-ready.ksl-scroll-linked {
-        animation: kslHeroMediaIn .9s ease-out both, ksl-scroll-shift linear both;
-        animation-timeline: auto, scroll(root block);
-        animation-range: normal, var(--ksl-sd-start) var(--ksl-sd-end);
-    }
 }
 
 .ksl-hero-video {
@@ -5937,9 +5932,9 @@ body {
     opacity: 0;
     /* Keep the film sharp — no soft color filter. */
     filter: none;
-    transform: translate3d(0, 0, 0);
+    transform: none;
     transform-origin: center center;
-    will-change: transform, opacity;
+    will-change: opacity;
     transition: opacity 0.55s ease;
 }
 
@@ -6016,7 +6011,8 @@ body {
 
 .ksl-hero-slide video.is-framed {
     max-width: none;
-    object-fit: fill;
+    object-fit: cover;
+    object-position: center center;
 }
 
 .ksl-hero.is-intro-crossfade .ksl-hero-shade {
@@ -6040,12 +6036,10 @@ body {
 @keyframes kslHeroMediaIn {
     from {
         opacity: 0;
-        transform: scale(1.015);
     }
 
     to {
         opacity: 1;
-        transform: scale(1);
     }
 }
 
@@ -6069,9 +6063,9 @@ body {
     position: absolute;
     inset: 0;
     z-index: 1;
-    background: rgba(8, 32, 82, .45);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(8, 32, 82, .38);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     -webkit-mask: var(--ksl-wave-shape) 0 10px / 720px 32px repeat-x, linear-gradient(#000, #000) 0 41px / 100% calc(100% - 41px) no-repeat;
     mask: var(--ksl-wave-shape) 0 10px / 720px 32px repeat-x, linear-gradient(#000, #000) 0 41px / 100% calc(100% - 41px) no-repeat;
 }

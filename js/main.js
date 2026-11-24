@@ -696,16 +696,12 @@
             playHeroVideo();
         }
 
+        /* Keep the hero film fixed (no scroll translate). Moving a full-bleed video
+           with CSS transform resamples frames and looks soft on many displays. */
         var heroTicking = false;
         var updateHeroParallax = function () {
             var top = hero.getBoundingClientRect().top;
-            var shift = -top * 0.85;
-            if (shift > 280) shift = 280;
-            if (shift < -280) shift = -280;
             var focus = 18 + Math.max(0, Math.min(42, -top * 0.06));
-            if (!scrollLinked) {
-                heroVideo.style.transform = "translate3d(0, " + shift.toFixed(2) + "px, 0)";
-            }
             heroVideo.style.objectPosition = "center " + Math.min(48, focus).toFixed(1) + "%";
             heroTicking = false;
         };
@@ -719,12 +715,6 @@
             window.addEventListener("scroll", requestHeroParallax, { passive: true });
             window.addEventListener("resize", requestHeroParallax);
             updateHeroParallax();
-        }
-        if (scrollLinked) {
-            heroVideo.classList.add("ksl-scroll-linked");
-            scrollLinks.push(function () {
-                setScrollRange(heroVideo, "sd", 0.85, pageTop(hero), -280, 280, "px");
-            });
         }
         window.addEventListener("ksl-hero-media", function (event) {
             takeCustom(event.detail);

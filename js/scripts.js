@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    var ASSET_V = "20261123-motion";
+    var ASSET_V = "20261124-hero-sharp";
 
     var BUNDLES = {
         wow: [
